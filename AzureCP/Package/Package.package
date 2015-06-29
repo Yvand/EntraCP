@@ -1,0 +1,18 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<package xmlns:dm0="http://schemas.microsoft.com/VisualStudio/2008/DslTools/Core" dslVersion="1.0.0.0" Id="1db45b9b-2fff-4f07-992b-344dde907316" solutionId="1db45b9b-2fff-4f07-992b-344dde907316" resetWebServer="false" title="Azure AD Claims Provider" sharePointProductVersion="15.0" name="AzureCP" xmlns="http://schemas.microsoft.com/VisualStudio/2008/SharePointTools/PackageModel">
+  <assemblies>
+    <customAssembly location="Microsoft.Azure.ActiveDirectory.GraphClient.dll" deploymentTarget="GlobalAssemblyCache" sourcePath="bin\Release\Microsoft.Azure.ActiveDirectory.GraphClient.dll" />
+    <customAssembly location="Microsoft.Data.Edm.dll" deploymentTarget="GlobalAssemblyCache" sourcePath="bin\Release\Microsoft.Data.Edm.dll" />
+    <customAssembly location="Microsoft.Data.OData.dll" deploymentTarget="GlobalAssemblyCache" sourcePath="bin\Release\Microsoft.Data.OData.dll" />
+    <customAssembly location="Microsoft.Data.Services.Client.dll" deploymentTarget="GlobalAssemblyCache" sourcePath="bin\Release\Microsoft.Data.Services.Client.dll" />
+    <customAssembly location="Microsoft.IdentityModel.Clients.ActiveDirectory.dll" deploymentTarget="GlobalAssemblyCache" sourcePath="bin\Release\Microsoft.IdentityModel.Clients.ActiveDirectory.dll" />
+    <customAssembly location="System.Spatial.dll" deploymentTarget="GlobalAssemblyCache" sourcePath="bin\Release\System.Spatial.dll" />
+  </assemblies>
+  <features>
+    <featureReference itemId="70b104e2-19df-4cb1-9802-c98eaf14d84e" />
+    <featureReference itemId="b82964c9-f57c-4826-b1dd-f03f63c7f197" />
+  </features>
+  <projectItems>
+    <projectItemReference itemId="aa00a720-1ea7-47a5-8993-73b778baef87" />
+  </projectItems>
+</package>

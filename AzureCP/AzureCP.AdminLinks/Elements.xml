@@ -1,0 +1,28 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Elements xmlns="http://schemas.microsoft.com/sharepoint/">
+  <CustomActionGroup
+    Id = "AzureCP"
+    Location = "Microsoft.SharePoint.Administration.Security"
+    Sequence = "600"
+    Title = "Claims Provider for Azure AD Configuration"
+    ImageUrl="/_layouts/15/images/CentralAdmin_Security_Users_32x32.png?rev=23">
+  </CustomActionGroup>
+
+  <CustomAction
+      Id="AzureCPSettings"
+      GroupId="AzureCP"
+      Location="Microsoft.SharePoint.Administration.Security"
+      Title="Global configuration"
+      Sequence="10">
+    <UrlAction Url="/_admin/azurecp/AzureCPSettings.aspx" />
+  </CustomAction>
+
+  <CustomAction
+      Id="AzureCPClaimsMappings"
+      GroupId="AzureCP"
+      Location="Microsoft.SharePoint.Administration.Security"
+      Title="Claims mapping"
+      Sequence="20">
+    <UrlAction Url="/_admin/azurecp/ClaimsTable.aspx" />
+  </CustomAction>
+</Elements>
