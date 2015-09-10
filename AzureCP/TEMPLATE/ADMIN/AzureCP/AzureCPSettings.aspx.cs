@@ -33,7 +33,7 @@ namespace azurecp
             if (!this.IsPostBack)
             {
                 FileVersionInfo fvi = FileVersionInfo.GetVersionInfo(Assembly.GetExecutingAssembly().Location);
-                LblTitle.Text = String.Format("AzureCP v{0} - <a href=\"http://azurecp.codeplex.com\" target=\"_blank\">azurecp.codeplex.com</a>", fvi.FileVersion);
+                LblTitle.Text = String.Format("AzureCP v{0} - <a href=\"https://github.com/Yvand/AzureCP\" target=\"_blank\">GitHub.com/Yvand/AzureCP</a>", fvi.FileVersion);
             }
 
             // Get trust currently associated with AzureCP, if any

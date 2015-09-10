@@ -196,7 +196,7 @@
 				</wssawc:InputFormRadioButton>
 			</template_inputformcontrols>
         </wssuc:InputFormSection>
-        <wssuc:InputFormSection runat="server" Title="Bypass Azure AD lookup" Description="Bypass Azure AD lookup and validate user input on each claim type configured (quite similar to standard SharePoint behavior).<br/>It may be useful to enable if there is a temporary issue to reach the tenant, as it will still be possible to grant new permissions and validate existing ones.">
+        <wssuc:InputFormSection runat="server" Title="Bypass Azure AD lookup" Description="Completely bypass Azure AD lookup and consider any input as valid.<br/><br/>This can be useful to keep people picker working even if connectivity with Azure tenant is lost.">
             <template_inputformcontrols>
                 <asp:Checkbox Runat="server" Name="ChkAlwaysResolveUserInput" ID="ChkAlwaysResolveUserInput" Text="Bypass Azure AD lookup" />
 			</template_inputformcontrols>
@@ -206,7 +206,7 @@
 				<asp:Checkbox Runat="server" Name="ChkFilterExactMatchOnly" ID="ChkFilterExactMatchOnly" Text="Require exact match" />
 			</template_inputformcontrols>
         </wssuc:InputFormSection>
-        <wssuc:InputFormSection runat="server" Title="Retrieve Azure AD groups" Description="If enabled, every time a user authenticates, his Azure tenant will be queried to retrieve his groups and add them in his SAML token, so that SharePoint can process permissions on Azure groups.">
+        <wssuc:InputFormSection runat="server" Title="Augment users with their Azure groups" Description="If enabled, upon successful authentication, query Azure to get the groups of current user and include them in his SAML token.<br/><br/>Without this augmentation, permissions granted on Azure groups won't work.">
             <template_inputformcontrols>
 				<asp:Checkbox Runat="server" Name="ChkAugmentAADRoles" ID="ChkAugmentAADRoles" Text="Retrieve Azure AD groups" />
 			</template_inputformcontrols>

@@ -96,8 +96,10 @@ namespace azurecp
                 {
                     if (SPTrust == null)
                     {
-                        if (!SetSPTrustInCurrentContext(context)) return false;
+                        SPTrust = GetSPTrustAssociatedWithCP(ProviderInternalName);
+                        if (SPTrust == null) return false;
                     }
+                    if (!CheckIfShouldProcessInput(context)) return false;
 
                     // Should not try to get PersistedObject if not OOB AzureCP since with current design it works correctly only for OOB AzureCP
                     if (String.Equals(ProviderInternalName, AzureCP._ProviderInternalName, StringComparison.InvariantCultureIgnoreCase))
@@ -350,39 +352,24 @@ namespace azurecp
         }
 
         /// <summary>
-        /// Set AzureCP.SPTrust property
+        /// Check if AzureCP should process input (and show results) based on current URL (context)
         /// </summary>
         /// <param name="context">The context, as a URI</param>
         /// <returns></returns>
-        protected virtual bool SetSPTrustInCurrentContext(Uri context)
+        protected virtual bool CheckIfShouldProcessInput(Uri context)
         {
-            if (context == null)
-            {
-                SPTrust = GetSPTrustAssociatedWithCP(ProviderInternalName);
-                if (SPTrust == null) return false;
-                return true;
-            }
-
+            if (context == null) return true;
             var webApp = SPWebApplication.Lookup(context);
             if (webApp == null) return false;
+            if (webApp.IsAdministrationWebApplication) return true;
 
-            if (webApp.IsAdministrationWebApplication)
-            {
-                // If current site is central administration (can happen if admin sets a user in a SA, should just check if claims provider is associated with a trust
-                SPTrust = GetSPTrustAssociatedWithCP(ProviderInternalName);
-                if (SPTrust == null) return false;
-                return true;
-            }
-
-            // Not central admin web app, show claims provider only if current web app needs it
+            // Not central admin web app, enable AzureCP only if current web app uses it
+            // It is not possible to exclude zones where AzureCP is not used because:
             // Consider following scenario: default zone is NTLM, intranet zone is claims
-            // In intranet zone, when creating permission, claim provider will get request 2 times for default and intranet zone
-            // So it cannot exclude zones where it is not used
-            // otherwise permissions cannot be created and SharePoint will throw error "The user does not exist or is not unique"
+            // In intranet zone, when creating permission, AzureCP will be called 2 times, but the 2nd time (from FillResolve (SPClaim)) the context will always be the URL of default zone
             foreach (var zone in Enum.GetValues(typeof(SPUrlZone)))
             {
                 SPIisSettings iisSettings = webApp.GetIisSettingsWithFallback((SPUrlZone)zone);
-
                 if (!iisSettings.UseTrustedClaimsAuthenticationProvider)
                     continue;
 
@@ -392,11 +379,7 @@ namespace azurecp
                     if (prov.GetType() == typeof(Microsoft.SharePoint.Administration.SPTrustedAuthenticationProvider))
                     {
                         // Check if the current SPTrustedAuthenticationProvider is associated with the claim provider
-                        if (String.Equals(prov.ClaimProviderName, ProviderInternalName, StringComparison.OrdinalIgnoreCase))
-                        {
-                            SPTrust = GetSPTrustAssociatedWithCP(ProviderInternalName);
-                            return SPTrust == null ? false : true;
-                        }
+                        if (String.Equals(prov.ClaimProviderName, ProviderInternalName, StringComparison.OrdinalIgnoreCase)) return true;
                     }
                 }
             }
@@ -572,7 +555,7 @@ namespace azurecp
                     // if claim type, GraphProperty and value are identical, then result is already in collection
                     int numberResultFound = results.FindAll(x =>
                         String.Equals(x.AzureObject.ClaimType, objCompare.ClaimType, StringComparison.InvariantCultureIgnoreCase) &&
-                            //x.AzureObject.GraphProperty == objCompare.GraphProperty &&
+                        //x.AzureObject.GraphProperty == objCompare.GraphProperty &&
                         String.Equals(x.PermissionValue, valueToCheck, StringComparison.InvariantCultureIgnoreCase)).Count;
                     if (numberResultFound > 0) continue;
 
@@ -739,10 +722,10 @@ namespace azurecp
                 List<IReadOnlyQueryableSetBase> queries = new List<IReadOnlyQueryableSetBase>(2);
                 if (userQuery != null) queries.Add(coco.ADClient.DirectoryObjects.OfType<User>().Where(userQuery));
                 if (groupQuery != null) queries.Add(coco.ADClient.DirectoryObjects.OfType<Group>().Where(groupQuery));
-                
+
                 //IBatchElementResult[] batchResult = coco.ADClient.Context.ExecuteBatchAsync(queries.ToArray()).Result;
                 Task<IBatchElementResult[]> ta = coco.ADClient.Context.ExecuteBatchAsync(queries.ToArray());
-                IBatchElementResult[] batchResult = ta.Result;                
+                IBatchElementResult[] batchResult = ta.Result;
 
                 //var exceptions = new ConcurrentQueue<Exception>();
                 List<AzurecpResult> allADResults = new List<AzurecpResult>();
@@ -1048,7 +1031,7 @@ namespace azurecp
             LogToULS(String.Format("[{0}] FillClaimsForEntity called, incoming envity: \"{1}\", claim type: \"{2}\", claim issuer: \"{3}\"", ProviderInternalName, entity.Value, entity.ClaimType, entity.OriginalIssuer),
                             TraceSeverity.VerboseEx, EventSeverity.Information, AzureCPLogging.Categories.Claims_Augmentation);
 
-            SPSecurity.RunWithElevatedPrivileges(delegate()
+            SPSecurity.RunWithElevatedPrivileges(delegate ()
             {
                 if (!Initialize(context, null))
                     return;
@@ -1166,7 +1149,7 @@ namespace azurecp
             LogToULS(String.Format("[{0}] FillHierarchy called", ProviderInternalName),
                 TraceSeverity.VerboseEx, EventSeverity.Information, AzureCPLogging.Categories.Core);
 
-            SPSecurity.RunWithElevatedPrivileges(delegate()
+            SPSecurity.RunWithElevatedPrivileges(delegate ()
             {
                 if (!Initialize(context, entityTypes))
                     return;
@@ -1205,7 +1188,7 @@ namespace azurecp
             LogToULS(String.Format("[{0}] FillResolve(SPClaim) called, incoming claim value: \"{1}\", claim type: \"{2}\", claim issuer: \"{3}\"", ProviderInternalName, resolveInput.Value, resolveInput.ClaimType, resolveInput.OriginalIssuer),
                             TraceSeverity.VerboseEx, EventSeverity.Information, AzureCPLogging.Categories.Core);
 
-            SPSecurity.RunWithElevatedPrivileges(delegate()
+            SPSecurity.RunWithElevatedPrivileges(delegate ()
             {
                 if (!Initialize(context, entityTypes))
                     return;
@@ -1245,14 +1228,20 @@ namespace azurecp
                         return;
                     }
 
-                    // At this stage, it is impossible to know if user typed input with a keyword so that it should be validated without AAD lookup
-                    // So best we can do is to check whether this claim type can be resolved without lookup, and create permission if so
-                    if (!String.IsNullOrEmpty(attribute.PrefixToBypassLookup))
+                    // Claims provider is called by static methods in SPClaimProviderOperations class. As a consequence, results must be declared in the method (and not in the class) to ensure that each thread has it own unique collection
+                    List<AzurecpResult> results = new List<AzurecpResult>();
+                    BuildFilterAndProcessResults(input, attributes, true, context, entityTypes, ref results);
+                    if (results != null && results.Count == 1)
                     {
-                        PickerEntity entity = CreatePickerEntityForSpecificClaimType(
-                            input,
-                            attribute,
-                            false);
+                        resolved.Add(results[0].PickerEntity);
+                        LogToULS(String.Format("[{0}] Validated permission with AAD lookup. Claim value: \"{1}\", Claim type: \"{2}\"", ProviderInternalName, results[0].PickerEntity.Claim.Value, results[0].PickerEntity.Claim.ClaimType), TraceSeverity.Medium, EventSeverity.Information, AzureCPLogging.Categories.Claims_Picking);
+                        return;
+                    }
+                    else if (!String.IsNullOrEmpty(attribute.PrefixToBypassLookup))
+                    {
+                        // At this stage, it is impossible to know if input was originally created with the keyword that bypasses AAD lookup
+                        // But it should be validated anyway since keyword is set for this claim type
+                        PickerEntity entity = CreatePickerEntityForSpecificClaimType(input, attribute, false);
                         if (entity != null)
                         {
                             resolved.Add(entity);
@@ -1260,22 +1249,10 @@ namespace azurecp
                             return;
                         }
                     }
-                    else
+                    else if (results != null && results.Count != 1)
                     {
-                        // Claims provider is called by static methods in SPClaimProviderOperations class. As a consequence, results must be declared in the method (and not in the class) to ensure that each thread has it own unique collection
-                        List<AzurecpResult> results = new List<AzurecpResult>();
-                        BuildFilterAndProcessResults(input, attributes, true, context, entityTypes, ref results);
-                        if (results != null && results.Count == 1)
-                        {
-                            resolved.Add(results[0].PickerEntity);
-                            LogToULS(String.Format("[{0}] Validated permission with AAD lookup. Claim value: \"{1}\", Claim type: \"{2}\"", ProviderInternalName, results[0].PickerEntity.Claim.Value, results[0].PickerEntity.Claim.ClaimType), TraceSeverity.Medium, EventSeverity.Information, AzureCPLogging.Categories.Claims_Picking);
-                            return;
-                        }
-                        else if (results != null && results.Count != 1)
-                        {
-                            LogToULS(String.Format("[{0}] Validation with AAD lookup created {1} permissions instead of 1 expected. Aborting operation", ProviderInternalName, results.Count.ToString()), TraceSeverity.Unexpected, EventSeverity.Error, AzureCPLogging.Categories.Claims_Picking);
-                            return;
-                        }
+                        LogToULS(String.Format("[{0}] Validation with AAD lookup created {1} permissions instead of 1 expected. Aborting operation", ProviderInternalName, results.Count.ToString()), TraceSeverity.Unexpected, EventSeverity.Error, AzureCPLogging.Categories.Claims_Picking);
+                        return;
                     }
                 }
                 catch (Exception ex)
@@ -1294,7 +1271,7 @@ namespace azurecp
             LogToULS(String.Format("[{0}] FillResolve(string) called, incoming input \"{1}\"", ProviderInternalName, resolveInput),
                 TraceSeverity.VerboseEx, EventSeverity.Information, AzureCPLogging.Categories.Core);
 
-            SPSecurity.RunWithElevatedPrivileges(delegate()
+            SPSecurity.RunWithElevatedPrivileges(delegate ()
             {
                 if (!Initialize(context, entityTypes))
                     return;
@@ -1394,7 +1371,7 @@ namespace azurecp
             LogToULS(String.Format("[{0}] FillSearch called, incoming input: \"{1}\"", ProviderInternalName, searchPattern),
                 TraceSeverity.VerboseEx, EventSeverity.Information, AzureCPLogging.Categories.Core);
 
-            SPSecurity.RunWithElevatedPrivileges(delegate()
+            SPSecurity.RunWithElevatedPrivileges(delegate ()
             {
                 if (!Initialize(context, entityTypes))
                     return;
