@@ -13,4 +13,4 @@ It is highly customizable through administration pages added in Central administ
 - Supports rehydration for provider hosted apps. 
 
 # How to install AzureCP
-Download [latest release](https://raw.githubusercontent.com/Yvand/AzureCP/master/AzureCP.wsp) and please visit [the wiki](https://github.com/Yvand/AzureCP/wiki) for important information and installation instructions.
+Download [latest release](https://github.com/Yvand/AzureCP/releases) and please visit [the wiki](https://github.com/Yvand/AzureCP/wiki) for important information and installation instructions.
