@@ -24,6 +24,7 @@ namespace azurecp
         string TextErrorNoTrustAssociation = "AzureCP is currently not associated with any TrustedLoginProvider. It is mandatory because it cannot create permission for a trust if it is not associated to it.<br/>Visit <a href=\"http://ldapcp.codeplex.com/\" target=\"_blank\">http://ldapcp.codeplex.com/</a> to see how to associate it.<br/>Settings on this page will not be available as long as AzureCP will not associated to a trut.";
         string TextErrorAzureTenantFieldsMissing = "Some mandatory fields are missing.";
         string TextErrorTestAzureADConnection = "Unable to connect to Azure tenant<br/>It may be expected if w3wp process of central admin has intentionally no access to Azure.<br/>{0}";
+        string TextErrorTestAzureADConnectionTenantNotFound = "Tenant was not found.";
         string TextConnectionSuccessful = "Connection successful.";
         string TextErrorNoIdentityClaimType = "The TrustedLoginProvider {0} is set with identity claim type \"{1}\" but it is not in the claims list of AzureCP.<br/>Please visit AzureCP page \"claims mapping\" in Security tab to set it and return to this page afterwards.";
         string TextErrorPersistedObjectStale = "Modification is cancelled because persisted object was modified since last load of the page. Please refresh the page and try again.";
@@ -48,7 +49,7 @@ namespace azurecp
                 return;
             }
 
-            SPSecurity.RunWithElevatedPrivileges(delegate()
+            SPSecurity.RunWithElevatedPrivileges(delegate ()
             {
                 // Get SPPersisted Object and create it if it doesn't exist
                 PersistedObject = AzureCPConfig.GetFromConfigDB();
@@ -208,7 +209,7 @@ namespace azurecp
         void UpdatePersistedObject()
         {
             // Update object in database
-            SPSecurity.RunWithElevatedPrivileges(delegate()
+            SPSecurity.RunWithElevatedPrivileges(delegate ()
             {
                 this.Web.AllowUnsafeUpdates = true;
                 PersistedObject.Update();
@@ -238,22 +239,22 @@ namespace azurecp
                 string clientId = this.TxtClientId.Text;
                 string clientSecret = this.TxtClientSecret.Text;
 
+                // Get access token
                 activeDirectoryClient = AuthenticationHelper.GetActiveDirectoryClientAsApplication(tenantName, tenantId, clientId, clientSecret);
-
-                ITenantDetail tenant = null;
-                TenantDetail tenantDetail = null;
-                List<ITenantDetail> tenantsList = activeDirectoryClient.TenantDetails
+                // Get information on tenant
+                ITenantDetail tenant = activeDirectoryClient.TenantDetails
                     .Where(tDetail => tDetail.ObjectId.Equals(tenantId))
-                    .ExecuteAsync().Result.CurrentPage.ToList();
-                if (tenantsList.Count > 0)
+                    .ExecuteAsync()
+                    .Result.CurrentPage.FirstOrDefault();
+                if (tenant != null)
                 {
-                    tenant = tenantsList.First();
-                    tenantDetail = (TenantDetail)tenant;
+                    this.LabelTestTenantConnectionOK.Text = TextConnectionSuccessful;
+                    this.LabelTestTenantConnectionOK.Text += "<br>" + tenant.DisplayName;
                 }
-
-                this.LabelTestTenantConnectionOK.Text = TextConnectionSuccessful;
-                this.LabelTestTenantConnectionOK.Text += "<br>" + tenantDetail.DisplayName;
-
+                else
+                {
+                    this.LabelErrorTestLdapConnection.Text = TextErrorTestAzureADConnectionTenantNotFound = "Tenant was not found.";
+                }
                 activeDirectoryClient = null;
             }
             catch (AuthenticationException ex)

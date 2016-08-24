@@ -716,6 +716,9 @@ namespace azurecp
                         return null;
                     }
                     coco.ADClient = activeDirectoryClient;
+                    LogToULS(String.Format("[{0}] Got new access token for tenant '{1}'", ProviderInternalName, coco.TenantName), TraceSeverity.Medium, EventSeverity.Information, AzureCPLogging.Categories.Lookup);
+                    //activeDirectoryClient.Oauth2PermissionGrants.
+                    //activeDirectoryClient.Oauth2PermissionGrants.Context.
                 }
 
                 List<AzurecpResult> allADResults = new List<AzurecpResult>();

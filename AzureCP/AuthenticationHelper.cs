@@ -2,6 +2,7 @@
 using System.Threading.Tasks;
 using Microsoft.Azure.ActiveDirectory.GraphClient;
 using Microsoft.IdentityModel.Clients.ActiveDirectory;
+using Microsoft.SharePoint.Utilities;
 
 namespace azurecp
 {
@@ -38,11 +39,14 @@ namespace azurecp
         /// <returns>ActiveDirectoryClient for Application.</returns>
         public static ActiveDirectoryClient GetActiveDirectoryClientAsApplication(string tenantName, string tenantId, string clientId, string clientSecret)
         {
-            Uri servicePointUri = new Uri(Constants.ResourceUrl);
-            Uri serviceRoot = new Uri(servicePointUri, tenantId);
-            ActiveDirectoryClient activeDirectoryClient = new ActiveDirectoryClient(serviceRoot,
-                async () => await AcquireTokenAsyncForApplication(tenantName, clientId, clientSecret));
-            return activeDirectoryClient;
+            using (new SPMonitoredScope(String.Format("[AzureCP] Getting access token for tenant {0} by connecting to '{1}' ", tenantName, Constants.ResourceUrl), 1000))
+            {
+                Uri servicePointUri = new Uri(Constants.ResourceUrl);
+                Uri serviceRoot = new Uri(servicePointUri, tenantId);
+                ActiveDirectoryClient activeDirectoryClient = new ActiveDirectoryClient(serviceRoot,
+                    async () => await AcquireTokenAsyncForApplication(tenantName, clientId, clientSecret));
+                return activeDirectoryClient;
+            }
         }
 
         ///// <summary>
