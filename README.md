@@ -52,7 +52,12 @@ Once the app is created in Azure AD, information can be entered in Central Admin
 AzureCP makes HTTP requests to Azure under the process of the site (for people picker requests) and the SharePoint STS (for augmentation), but there are also requests made by lsass.exe to validate CRL and certificate chain of certificates returned by Azure.<br>
 If SharePoint servers need to connect through a HTTP proxy, additional configuration is required to configure it:
 ### For AzureCP to be able to connect to Azure
-Edit web.config of the SharePoint site and add proxy configuration as described in [this msdn article](https://msdn.microsoft.com/en-us/library/kd3cf2ex.aspx):
+Add the following [proxy configuration](https://msdn.microsoft.com/en-us/library/kd3cf2ex.aspx) in the web.config of:
+- SharePoint sites that use AzureCP
+- SharePoine central administration site
+- SharePoint STS located in 15\WebServices\SecurityToken
+- SharePoint Web Services root site
+- Also create file owstimer.exe.config in 15\BIN of each SharePoint server to put proxy configuration
 ```xml
 <system.net>
     <defaultProxy>
