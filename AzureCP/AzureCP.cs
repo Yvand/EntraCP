@@ -1023,13 +1023,24 @@ namespace azurecp
             claimValueTypes.Add(WIF.ClaimValueTypes.String);
         }
 
+        protected override void FillClaimsForEntity(Uri context, SPClaim entity, SPClaimProviderContext claimProviderContext, List<SPClaim> claims)
+        {
+            Augment(context, entity, claimProviderContext, claims);
+        }
+        
+        protected override void FillClaimsForEntity(Uri context, SPClaim entity, List<SPClaim> claims)
+        {
+            Augment(context, entity, null, claims);
+        }
+
         /// <summary>
-        /// Augment SAML token of incoming user with AAD roles
+        /// Perform augmentation of entity supplied
         /// </summary>
         /// <param name="context"></param>
-        /// <param name="entity"></param>
+        /// <param name="entity">entity to augment</param>
+        /// <param name="claimProviderContext">Can be null</param>
         /// <param name="claims"></param>
-        protected override void FillClaimsForEntity(Uri context, SPClaim entity, List<SPClaim> claims)
+        protected virtual void Augment(Uri context, SPClaim entity, SPClaimProviderContext claimProviderContext, List<SPClaim> claims)
         {
             // Augment role claims of current user
             LogToULS(String.Format("[{0}] FillClaimsForEntity called, incoming envity: \"{1}\", claim type: \"{2}\", claim issuer: \"{3}\"", ProviderInternalName, entity.Value, entity.ClaimType, entity.OriginalIssuer),
@@ -1062,16 +1073,18 @@ namespace azurecp
                     }
                     AzureADObject groupObject = groups.First();
 
-                    //get the claim provider manager
-                    SPClaimProviderManager cpm = SPClaimProviderManager.Local;
+                    SPClaim curUser;
+                    if (SPClaimProviderManager.IsUserIdentifierClaim(entity))
+                        curUser = SPClaimProviderManager.DecodeUserIdentifierClaim(entity);
+                    else
+                    {
+                        if (SPClaimProviderManager.IsEncodedClaim(entity.Value))
+                            curUser = SPClaimProviderManager.Local.DecodeClaim(entity.Value);
+                        else
+                            curUser = entity;
+                    }
 
-                    //get the current user so we can get to the "real" original issuer
-                    SPClaim curUser = SPClaimProviderManager.DecodeUserIdentifierClaim(entity);
-
-                    //get the original issuer for the user
                     SPOriginalIssuerType loginType = SPOriginalIssuers.GetIssuerType(curUser.OriginalIssuer);
-
-                    //we only need to do this for SAML users, so see if that's what our user is
                     if (loginType == SPOriginalIssuerType.TrustedProvider || loginType == SPOriginalIssuerType.ClaimProvider)
                     {
                         string input = curUser.Value;
