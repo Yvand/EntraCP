@@ -863,19 +863,16 @@ namespace azurecp
             //pe.EntityGroupName = "";
 
             int nbMetadata = 0;
-            if (result.AzureObject.ClaimEntityType == SPClaimEntityTypes.User)
+            // Populate metadata attributes of permission created
+            foreach (var entityAttrib in ProcessedAzureObjectsMetadata)
             {
-                // Populate metadata attributes of permission created
-                foreach (var entityAttrib in ProcessedAzureObjectsMetadata)
+                // if there is actally a value in the GraphObject, then it can be set
+                string entityAttribValue = GetGraphPropertyValue(result.DirectoryObjectResult, entityAttrib.GraphProperty.ToString());
+                if (!String.IsNullOrEmpty(entityAttribValue))
                 {
-                    // if there is actally a value in the GraphObject, then it can be set
-                    string entityAttribValue = GetGraphPropertyValue(result.DirectoryObjectResult, entityAttrib.GraphProperty.ToString());
-                    if (!String.IsNullOrEmpty(entityAttribValue))
-                    {
-                        pe.EntityData[entityAttrib.EntityDataKey] = entityAttribValue;
-                        nbMetadata++;
-                        LogToULS(String.Format("[{0}] Added metadata \"{1}\" with value \"{2}\" to permission", ProviderInternalName, entityAttrib.EntityDataKey, entityAttribValue), TraceSeverity.Verbose, EventSeverity.Information, AzureCPLogging.Categories.Claims_Picking);
-                    }
+                    pe.EntityData[entityAttrib.EntityDataKey] = entityAttribValue;
+                    nbMetadata++;
+                    LogToULS(String.Format("[{0}] Added metadata \"{1}\" with value \"{2}\" to permission", ProviderInternalName, entityAttrib.EntityDataKey, entityAttribValue), TraceSeverity.Verbose, EventSeverity.Information, AzureCPLogging.Categories.Claims_Picking);
                 }
             }
 
@@ -1027,7 +1024,7 @@ namespace azurecp
         {
             Augment(context, entity, claimProviderContext, claims);
         }
-        
+
         protected override void FillClaimsForEntity(Uri context, SPClaim entity, List<SPClaim> claims)
         {
             Augment(context, entity, null, claims);
