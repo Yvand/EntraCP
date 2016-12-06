@@ -2,6 +2,7 @@
 using Microsoft.SharePoint.Administration;
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Linq;
 
 namespace azurecp
@@ -17,30 +18,130 @@ namespace azurecp
         public enum Categories
         {
             [CategoryName("Core"),
-            DefaultTraceSeverity(TraceSeverity.Medium),
-                //DefaultTraceSeverity(TraceSeverity.VerboseEx),
+#if DEBUG
+             DefaultTraceSeverity(TraceSeverity.VerboseEx),
+#else
+             DefaultTraceSeverity(TraceSeverity.Medium),
+#endif
             DefaultEventSeverity(EventSeverity.Error)]
             Core,
             [CategoryName("Configuration"),
-            DefaultTraceSeverity(TraceSeverity.Medium),
+#if DEBUG
+             DefaultTraceSeverity(TraceSeverity.VerboseEx),
+#else
+             DefaultTraceSeverity(TraceSeverity.Medium),
+#endif
             DefaultEventSeverity(EventSeverity.Error)]
             Configuration,
             [CategoryName("Lookup"),
+#if DEBUG
+             DefaultTraceSeverity(TraceSeverity.VerboseEx),
+#else
              DefaultTraceSeverity(TraceSeverity.Medium),
+#endif
              DefaultEventSeverity(EventSeverity.Error)]
             Lookup,
             [CategoryName("Claims Picking"),
+#if DEBUG
+             DefaultTraceSeverity(TraceSeverity.VerboseEx),
+#else
              DefaultTraceSeverity(TraceSeverity.Medium),
+#endif
              DefaultEventSeverity(EventSeverity.Error)]
             Claims_Picking,
-            [CategoryName("Claims Augmentation"),
-             DefaultTraceSeverity(TraceSeverity.Medium),
-             DefaultEventSeverity(EventSeverity.Error)]
-            Claims_Augmentation,
             [CategoryName("Rehydration"),
+#if DEBUG
+             DefaultTraceSeverity(TraceSeverity.VerboseEx),
+#else
              DefaultTraceSeverity(TraceSeverity.Medium),
+#endif
              DefaultEventSeverity(EventSeverity.Error)]
             Rehydration,
+            [CategoryName("Claims Augmentation"),
+#if DEBUG
+             DefaultTraceSeverity(TraceSeverity.VerboseEx),
+#else
+             DefaultTraceSeverity(TraceSeverity.Medium),
+#endif
+             DefaultEventSeverity(EventSeverity.Error)]
+            Claims_Augmentation,
+            [CategoryName("Debug"),
+#if DEBUG
+             DefaultTraceSeverity(TraceSeverity.VerboseEx),
+#else
+             DefaultTraceSeverity(TraceSeverity.High),
+#endif
+             DefaultEventSeverity(EventSeverity.Error)]
+            Debug,
+            [CategoryName("Custom"),
+#if DEBUG
+             DefaultTraceSeverity(TraceSeverity.VerboseEx),
+#else
+             DefaultTraceSeverity(TraceSeverity.Medium),
+#endif
+             DefaultEventSeverity(EventSeverity.Error)]
+            Custom,
+        }
+
+        public static void Log(string message, TraceSeverity traceSeverity, EventSeverity eventSeverity, AzureCPLogging.Categories category)
+        {
+            try
+            {
+                WriteTrace(category, traceSeverity, message);
+                //LdapcpLoggingService.WriteEvent(LdapcpLoggingService.Categories.LDAPCP, eventSeverity, message);
+            }
+            catch
+            {   // Don't want to do anything if logging goes wrong, just ignore and continue
+            }
+        }
+
+        public static void LogException(string ProviderInternalName, string faultyAction, AzureCPLogging.Categories category, Exception ex)
+        {
+            try
+            {
+                string message = "[{0}] Unexpected error {1}: {2}: {3}, Callstack: {4}";
+                if (ex is AggregateException)
+                {
+                    var aggEx = ex as AggregateException;
+                    foreach (var innerEx in aggEx.InnerExceptions)
+                    {
+                        if (innerEx.InnerException != null)
+                            message = String.Format(message, ProviderInternalName, faultyAction, innerEx.InnerException.GetType().FullName, innerEx.InnerException.Message, innerEx.InnerException.StackTrace);
+                        else
+                            message = String.Format(message, ProviderInternalName, faultyAction, innerEx.GetType().FullName, innerEx.Message, innerEx.StackTrace);
+                        WriteTrace(category, TraceSeverity.Unexpected, message);
+                    }
+                }
+                else
+                {
+                    if (ex.InnerException != null)
+                        message = String.Format(message, ProviderInternalName, faultyAction, ex.InnerException.GetType().FullName, ex.InnerException.Message, ex.InnerException.StackTrace);
+                    else
+                        message = String.Format(message, ProviderInternalName, faultyAction, ex.GetType().FullName, ex.Message, ex.StackTrace);
+                    WriteTrace(category, TraceSeverity.Unexpected, message);
+                }
+            }
+            catch
+            {   // Don't want to do anything if logging goes wrong, just ignore and continue
+            }
+        }
+
+        public static void LogDebug(string message)
+        {
+            try
+            {
+                TraceSeverity severity;
+#if DEBUG
+                severity = TraceSeverity.High;
+#else
+                severity = TraceSeverity.VerboseEx;
+#endif
+                WriteTrace(AzureCPLogging.Categories.Debug, severity, message);
+                Debug.WriteLine(message);
+            }
+            catch
+            {   // Don't want to do anything if logging goes wrong, just ignore and continue
+            }
         }
 
         public static AzureCPLogging Local

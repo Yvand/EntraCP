@@ -21,7 +21,7 @@ namespace azurecp
         AzureADObject IdentityClaim;
         bool AllowPersistedObjectUpdate = true;
 
-        string TextErrorNoTrustAssociation = "AzureCP is currently not associated with any TrustedLoginProvider. It is mandatory because it cannot create permission for a trust if it is not associated to it.<br/>Visit <a href=\"http://ldapcp.codeplex.com/\" target=\"_blank\">http://ldapcp.codeplex.com/</a> to see how to associate it.<br/>Settings on this page will not be available as long as AzureCP will not associated to a trut.";
+        string TextErrorNoTrustAssociation = "AzureCP is currently not associated with any TrustedLoginProvider. It is mandatory because it cannot create permission for a trust if it is not associated to it.<br/>Visit <a href=\"https://github.com/Yvand/AzureCP\" target=\"_blank\">https://github.com/Yvand/AzureCP</a> for documentation.<br/>Settings on this page will not be available as long as AzureCP will not associated to a trut.";
         string TextErrorAzureTenantFieldsMissing = "Some mandatory fields are missing.";
         string TextErrorTestAzureADConnection = "Unable to connect to Azure tenant<br/>It may be expected if w3wp process of central admin has intentionally no access to Azure.<br/>{0}";
         string TextErrorTestAzureADConnectionTenantNotFound = "Tenant was not found.";
@@ -146,7 +146,7 @@ namespace azurecp
 
             // Update object in database
             UpdatePersistedObject();
-            AzureCP.LogToULS(
+            AzureCPLogging.Log(
                     String.Format("Removed an Azure tenant in PersistedObject {0}", Constants.AZURECPCONFIG_NAME),
                     TraceSeverity.Medium,
                     EventSeverity.Information,
@@ -163,7 +163,7 @@ namespace azurecp
             if (!this.AllowPersistedObjectUpdate) return;
             if (null == PersistedObject)
             {
-                AzureCP.LogToULS(
+                AzureCPLogging.Log(
                     String.Format("PersistedObject {0} should not be null.", Constants.AZURECPCONFIG_NAME),
                     TraceSeverity.Unexpected,
                     EventSeverity.Error,
@@ -173,7 +173,7 @@ namespace azurecp
 
             if (null == CurrentTrustedLoginProvider)
             {
-                AzureCP.LogToULS(
+                AzureCPLogging.Log(
                     "Trust associated with AzureCP could not be found.",
                     TraceSeverity.Unexpected,
                     EventSeverity.Error,
@@ -196,7 +196,7 @@ namespace azurecp
             PersistedObject.AugmentAADRoles = this.ChkAugmentAADRoles.Checked;
 
             UpdatePersistedObject();
-            AzureCP.LogToULS(
+            AzureCPLogging.Log(
                 String.Format("Updated PersistedObject {0}", Constants.AZURECPCONFIG_NAME),
                 TraceSeverity.Medium,
                 EventSeverity.Information,
@@ -266,6 +266,7 @@ namespace azurecp
                 {
                     this.LabelErrorTestLdapConnection.Text += String.Format("<br>Error detail: {0}", ex.InnerException.Message);
                 }
+                AzureCPLogging.LogException("AzureCP", "while testing connectivity", AzureCPLogging.Categories.Configuration, ex);
             }
             catch (Exception ex)
             {
@@ -276,6 +277,7 @@ namespace azurecp
                 {
                     this.LabelErrorTestLdapConnection.Text += String.Format("<br>Error detail: {0}", ex.InnerException.Message);
                 }
+                AzureCPLogging.LogException("AzureCP", "while testing connectivity", AzureCPLogging.Categories.Configuration, ex);
             }
 
             //try
@@ -343,7 +345,7 @@ namespace azurecp
             if (!this.AllowPersistedObjectUpdate) return;
             if (null == PersistedObject)
             {
-                AzureCP.LogToULS(
+                AzureCPLogging.Log(
                     String.Format("PersistedObject {0} should not be null.", Constants.AZURECPCONFIG_NAME),
                     TraceSeverity.Unexpected,
                     EventSeverity.Error,
@@ -353,7 +355,7 @@ namespace azurecp
 
             if (null == CurrentTrustedLoginProvider)
             {
-                AzureCP.LogToULS(
+                AzureCPLogging.Log(
                     "Trust associated with AzureCP could not be found.",
                     TraceSeverity.Unexpected,
                     EventSeverity.Error,
@@ -379,7 +381,7 @@ namespace azurecp
 
             // Update object in database
             UpdatePersistedObject();
-            AzureCP.LogToULS(
+            AzureCPLogging.Log(
                    String.Format("Added a new Azure tenant in PersistedObject {0}", Constants.AZURECPCONFIG_NAME),
                    TraceSeverity.Medium,
                    EventSeverity.Information,

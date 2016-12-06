@@ -95,7 +95,7 @@ namespace azurecp
             }
             catch (Exception ex)
             {
-                AzureCP.LogToULS(String.Format("Error while retrieving SPPersistedObject {0}: {1}", Constants.AZURECPCONFIG_NAME, ex.Message), TraceSeverity.Unexpected, EventSeverity.Error, AzureCPLogging.Categories.Core);
+                AzureCPLogging.Log(String.Format("Error while retrieving SPPersistedObject {0}: {1}", Constants.AZURECPCONFIG_NAME, ex.Message), TraceSeverity.Unexpected, EventSeverity.Error, AzureCPLogging.Categories.Core);
             }
             return null;
         }
@@ -108,7 +108,7 @@ namespace azurecp
                 AzureCPConfig newPersistedObject = GetDefaultSettings(persistedObject);
                 newPersistedObject.Update();
 
-                AzureCP.LogToULS(
+                AzureCPLogging.Log(
                     String.Format("Claims list of PersistedObject {0} was successfully reset to default relationship table", Constants.AZURECPCONFIG_NAME),
                     TraceSeverity.High, EventSeverity.Information, AzureCPLogging.Categories.Core);
             }
@@ -124,7 +124,7 @@ namespace azurecp
                 persistedObject.AzureADObjects = GetDefaultAADClaimTypeList();
                 persistedObject.Update();
 
-                AzureCP.LogToULS(
+                AzureCPLogging.Log(
                     String.Format("Claims list of PersistedObject {0} was successfully reset to default relationship table", Constants.AZURECPCONFIG_NAME),
                     TraceSeverity.High, EventSeverity.Information, AzureCPLogging.Categories.Core);
             }
@@ -150,7 +150,7 @@ namespace azurecp
             PersistedObject.AzureTenants = new List<AzureTenant>();
             PersistedObject = GetDefaultSettings(PersistedObject);
             PersistedObject.Update();
-            AzureCP.LogToULS(
+            AzureCPLogging.Log(
                 String.Format("Created PersistedObject {0} with Id {1}", PersistedObject.Name, PersistedObject.Id),
                 TraceSeverity.Medium, EventSeverity.Information, AzureCPLogging.Categories.Core);
 

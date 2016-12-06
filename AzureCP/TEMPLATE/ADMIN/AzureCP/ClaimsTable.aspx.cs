@@ -24,7 +24,7 @@ namespace azurecp
         public bool HideAllContent = false;
         public string TrustName = String.Empty;
 
-        string TextErrorNoTrustAssociation = "AzureCP is currently not associated with any TrustedLoginProvider. It is mandatory because it cannot create permission for a trust if it is not associated to it.<br/>Visit <a href=\"http://ldapcp.codeplex.com/\" target=\"_blank\">http://ldapcp.codeplex.com/</a> to see how to associate it.<br/>Settings on this page will not be available as long as AzureCP will not associated to a trut.";
+        string TextErrorNoTrustAssociation = "AzureCP is currently not associated with any TrustedLoginProvider. It is mandatory because it cannot create permission for a trust if it is not associated to it.<br/>Visit <a href=\"https://github.com/Yvand/AzureCP\" target=\"_blank\">https://github.com/Yvand/AzureCP</a> for documentation.<br/>Settings on this page will not be available as long as AzureCP will not associated to a trut.";
         string TextErrorFieldsMissing = "Some mandatory fields are missing.";
         string TextErrorDuplicateClaimType = "This claim type already exists in the list, you cannot create duplicates.";
         string TextErrorUpdateEmptyClaimType = "You tried to update item {0} with an empty claim type, which is not allowed.";
@@ -336,7 +336,7 @@ namespace azurecp
         {
             if (null == PersistedObject)
             {
-                AzureCP.LogToULS(
+                AzureCPLogging.Log(
                     String.Format("PersistedObject {0} should not be null.", Constants.AZURECPCONFIG_NAME),
                     TraceSeverity.Unexpected,
                     EventSeverity.Error,
@@ -346,7 +346,7 @@ namespace azurecp
 
             if (null == CurrentTrustedLoginProvider)
             {
-                AzureCP.LogToULS(
+                AzureCPLogging.Log(
                     "Trust associated with AzureCP could not be found.",
                     TraceSeverity.Unexpected,
                     EventSeverity.Error,
@@ -361,7 +361,7 @@ namespace azurecp
                 PersistedObject.Update();
                 this.Web.AllowUnsafeUpdates = false;
 
-                AzureCP.LogToULS(
+                AzureCPLogging.Log(
                     String.Format("Objects list of AzureCP was successfully updated in PersistedObject {0}.", Constants.AZURECPCONFIG_NAME),
                     TraceSeverity.Medium,
                     EventSeverity.Information,

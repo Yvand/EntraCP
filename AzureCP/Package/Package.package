@@ -7,6 +7,7 @@
     <customAssembly location="Microsoft.Data.Services.Client.dll" deploymentTarget="GlobalAssemblyCache" sourcePath="bin\Release\Microsoft.Data.Services.Client.dll" />
     <customAssembly location="Microsoft.IdentityModel.Clients.ActiveDirectory.dll" deploymentTarget="GlobalAssemblyCache" sourcePath="bin\Release\Microsoft.IdentityModel.Clients.ActiveDirectory.dll" />
     <customAssembly location="System.Spatial.dll" deploymentTarget="GlobalAssemblyCache" sourcePath="bin\Release\System.Spatial.dll" />
+    <customAssembly location="Microsoft.IdentityModel.Clients.ActiveDirectory.Platform.dll" deploymentTarget="GlobalAssemblyCache" sourcePath="bin\Release\Microsoft.IdentityModel.Clients.ActiveDirectory.Platform.dll" />
   </assemblies>
   <features>
     <featureReference itemId="70b104e2-19df-4cb1-9802-c98eaf14d84e" />

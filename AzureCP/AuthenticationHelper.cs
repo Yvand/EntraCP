@@ -28,8 +28,8 @@ namespace azurecp
             AuthenticationContext authenticationContext = new AuthenticationContext(String.Format(Constants.AuthString, tenantName), false);
             // Config for OAuth client credentials 
             ClientCredential clientCred = new ClientCredential(clientId, clientSecret);
-            AuthenticationResult authenticationResult = authenticationContext.AcquireToken(Constants.ResourceUrl, clientCred);
-            string token = authenticationResult.AccessToken;
+            Task<AuthenticationResult> authenticationResult = authenticationContext.AcquireTokenAsync(Constants.ResourceUrl, clientCred);
+            string token = authenticationResult.Result.AccessToken;
             return token;
         }
 

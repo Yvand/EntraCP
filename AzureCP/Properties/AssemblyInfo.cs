@@ -9,9 +9,9 @@ using System.Security;
 [assembly: AssemblyTitle("AzureCP")]
 [assembly: AssemblyDescription("")]
 [assembly: AssemblyConfiguration("")]
-[assembly: AssemblyCompany("Yvan Duhamel - yvan84@live.com")]
+[assembly: AssemblyCompany("Yvan Duhamel -  yvandev@outlook.fr")]
 [assembly: AssemblyProduct("AzureCP")]
-[assembly: AssemblyCopyright("Copyright ©  2014, Yvan Duhamel - yvan84@live.com")]
+[assembly: AssemblyCopyright("Copyright ©  2016, Yvan Duhamel - yvandev@outlook.fr")]
 [assembly: AssemblyTrademark("")]
 [assembly: AssemblyCulture("")]
 
@@ -34,5 +34,5 @@ using System.Security;
 // by using the '*' as shown below:
 // [assembly: AssemblyVersion("1.0.*")]
 [assembly: AssemblyVersion("1.0.0.0")]
-[assembly: AssemblyFileVersion("2.8")]
+[assembly: AssemblyFileVersion("2.9")]
 
