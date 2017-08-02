@@ -1,0 +1,91 @@
+<!DOCTYPE html>
+<html lang="en-us">
+  
+  <head>
+  <meta charset="UTF-8">
+  <title></title>
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#157878">
+  <link rel="stylesheet" href="/css/normalize.css">
+  <link href='https://fonts.googleapis.com/css?family=Open+Sans:400,700' rel='stylesheet' type='text/css'>
+  <link rel="stylesheet" href="/css/cayman.css">
+  <link rel="stylesheet" href="/css/yvandchanges.css">
+</head>
+
+  <body>
+    <section class="page-header">
+  <h1 class="project-name">AzureCP</h1>
+  <h2 class="project-tagline">Azure Active Directory claims provider for SharePoint</h2>
+  <a href="https://github.com/Yvand/AzureCP" target="_blank" class="btn">View project on GitHub</a>
+  <a href="https://github.com/Yvand/AzureCP/releases/download/v2016.12/AzureCP.wsp" class="btn">Download AzureCP</a>
+</section>
+
+
+    <section style="">
+      <!--<div style="display: block;">-->
+        <div class="navigation">
+            <h2><a href="index.html">AzureCP</a></h2>
+<ul>
+
+    <li><a href="Install-AzureCP.html" alt="Install">Install</a></li>
+
+    <li><a href="Update-AzureCP.html" alt="Update">Update</a></li>
+
+    <li><a href="Remove-AzureCP.html" alt="Remove">Remove</a></li>
+
+    <li><a href="Configure-AzureCP.html" alt="Configure">Configure</a></li>
+
+</ul>
+        </div>
+        <div class="main-content">
+            <h2 id="proxy-configuration">Proxy configuration</h2>
+<p>AzureCP makes HTTP requests to Azure under the process of the site (for people picker requests) and the SharePoint STS (for augmentation), but there are also requests made by lsass.exe to validate CRL and certificate chain of certificates returned by Azure.<br />
+If SharePoint servers need to connect through a HTTP proxy, additional configuration is required to configure it:</p>
+<h3 id="for-azurecp-to-be-able-to-connect-to-azure">For AzureCP to be able to connect to Azure</h3>
+<p>Add the following <a href="https://msdn.microsoft.com/en-us/library/kd3cf2ex.aspx">proxy configuration</a> in the web.config of:</p>
+<ul>
+  <li>SharePoint sites that use AzureCP</li>
+  <li>SharePoine central administration site</li>
+  <li>SharePoint STS located in 15\WebServices\SecurityToken</li>
+  <li>SharePoint Web Services root site</li>
+  <li>Also create file owstimer.exe.config in 15\BIN of each SharePoint server to put proxy configuration</li>
+</ul>
+
+<div class="language-xml highlighter-rouge"><pre class="highlight"><code><span class="nt">&lt;system.net&gt;</span>
+    <span class="nt">&lt;defaultProxy&gt;</span>
+        <span class="nt">&lt;proxy</span> <span class="na">proxyaddress=</span><span class="s">"http://proxy.contoso.com:3128"</span> <span class="na">bypassonlocal=</span><span class="s">"true"</span> <span class="nt">/&gt;</span>
+    <span class="nt">&lt;/defaultProxy&gt;</span>
+<span class="nt">&lt;/system.net&gt;</span>
+</code></pre>
+</div>
+
+<h3 id="for-certificate-validation-to-succeed">For certificate validation to succeed</h3>
+<ul>
+  <li>Display proxy configuration with this command:<br />
+netsh winhttp show proxy</li>
+  <li>Set proxy configuration with this command:<br />
+netsh winhttp set proxy proxy-server=”http=myproxy;https=sproxy:88” bypass-list=”*.foo.com”</li>
+</ul>
+
+<h2 id="claims-supported">Claims supported</h2>
+<p>Azure AD binds property UserPrincipalName (which identifies the user) to claim type “<em>http://schemas.xmlsoap.org/ws/2005/05/identity/claims/name</em>”. Unfortunately this claim type is reserved by SharePoint and cannot be used.</p>
+
+<p>So the STS (whatever it is ACS, ADFS or another one) must transform this claim type into another one.<br />
+AzureCP assumes it will be either “<em>http://schemas.xmlsoap.org/ws/2005/05/identity/claims/emailaddress</em>” or “<em>http://schemas.xmlsoap.org/ws/2005/05/identity/claims/upn</em>” (you should define only 1 in the SPTrust), so both are binded to property <strong>UserPrincipalName</strong>.<br />
+Properties <strong>DisplayName, GivenName, Surname</strong> are also used to query users, and <strong>Mail, Mobile, JobTitle</strong> are used as metadata for the permission created.<br />
+For groups, property <strong>DisplayName</strong> is linked to <em>http://schemas.microsoft.com/ws/2008/06/identity/claims/role</em></p>
+
+<p>AzureCP can augment Azure AD users with their group membership. This is configurable and enabled by default. Groups are stored in claim type “<em>http://schemas.microsoft.com/ws/2008/06/identity/claims/role</em>”, but this can be changed. However there can be only 1 claim type used for the roles, otherwise augmentation will be disabled.</p>
+
+<p><strong>All of this can be configured</strong> in AzureCP pages added in central administration &gt; security.</p>
+
+        </div>
+      <!--</div>-->
+    </section>
+    <footer class="site-footer">
+  <span class="site-footer-owner"><a href="index.html">AzureCP</a> is maintained by <a href="https://www.linkedin.com/in/yvand/" target="_blank">Yvan Duhamel</a>.</span>
+  <span class="site-footer-credits">This page was generated by <a href="https://pages.github.com">GitHub Pages</a>.</span>
+</footer>
+
+  </body>
+</html>

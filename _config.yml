@@ -1,1 +1,20 @@
-theme: jekyll-theme-cayman
+#theme: jekyll-theme-cayman
+#title: AzureCP
+tagline: Azure Active Directory claims provider for SharePoint
+#paginate: 1
+show_downloads: true
+repository: Yvand/AzureCP
+timezone: Europe/Paris
+
+# About/contact
+author:
+  name:       Yvan Duhamel
+  url:        https://www.linkedin.com/in/yvand/
+
+# Gems
+gems:
+ # - jekyll-paginate
+  - jekyll-sitemap
+
+#Others
+markdown: kramdown

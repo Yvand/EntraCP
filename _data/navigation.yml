@@ -1,0 +1,14 @@
+docs_list_title: AzureCP
+
+docs:
+- title: Install
+  url: Install-AzureCP.html
+
+- title: Update
+  url: Update-AzureCP.html
+
+- title: Remove
+  url: Remove-AzureCP.html
+
+- title: Configure
+  url: Configure-AzureCP.html

@@ -1,0 +1,21 @@
+<!DOCTYPE html>
+<html lang="en-us">
+  
+  {% include head.html %}
+
+  <body>
+    {% include page-header.html %}
+
+    <section style="">
+      <!--<div style="display: block;">-->
+        <div class="navigation">
+            {% include navigation.html %}
+        </div>
+        <div class="main-content">
+            {{ content }}
+        </div>
+      <!--</div>-->
+    </section>
+    {% include page-footer.html %}
+  </body>
+</html>
