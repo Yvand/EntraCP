@@ -58,6 +58,7 @@ Add the following [proxy configuration](https://msdn.microsoft.com/en-us/library
 - SharePoint STS located in 15\WebServices\SecurityToken
 - SharePoint Web Services root site
 - Also create file owstimer.exe.config in 15\BIN of each SharePoint server to put proxy configuration
+
 ```xml
 <system.net>
     <defaultProxy>
@@ -65,6 +66,7 @@ Add the following [proxy configuration](https://msdn.microsoft.com/en-us/library
     </defaultProxy>
 </system.net>
 ```
+
 ### For certificate validation to succeed
 - Display proxy configuration with this command:<br>
 netsh winhttp show proxy
