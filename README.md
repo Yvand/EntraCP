@@ -29,7 +29,7 @@ $publish.GacInstall("C:\Data\Dev\AzureCP.dll")
 ```
 
 ## How to install AzureCP
-Download [latest release](https://github.com/Yvand/AzureCP/releases).
+Download [latest release](https://github.com/Yvand/AzureCP/releases/latest).
 Install and deploy the solution (that will automatically activate the "AzureCP" farm feature):
 ```powershell
 Add-SPSolution "PATH TO WSP FILE"
