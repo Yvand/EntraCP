@@ -30,4 +30,4 @@ Validate that claims provider was removed:
 Get-SPClaimProvider| ft DisplayName
 # If AzureCP appears in cmdlet above, remove it:
 Remove-SPClaimProvider AzureCP
-`
+```
