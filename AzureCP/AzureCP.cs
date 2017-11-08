@@ -726,45 +726,58 @@ namespace azurecp
                     //activeDirectoryClient.Oauth2PermissionGrants.Context.
                 }
 
+                object lockUserQuery = new object();
+                object lockGroupQuery = new object();
+                object lockAddResultQuery = new object();
                 List<AzurecpResult> allADResults = new List<AzurecpResult>();
-
-                // Workaroud implemented to avoid deadlock when calling DataServiceContextWrapper.ExecuteBatchAsync
-                if (userQuery != null)
+                lock (lockUserQuery)
                 {
-                    IUserCollection userCollection = coco.ADClient.Users;
-                    IPagedCollection<IUser> userSearchResults = null;
-                    do
+                    // Workaroud implemented to avoid deadlock when calling DataServiceContextWrapper.ExecuteBatchAsync
+                    if (userQuery != null)
                     {
-                        userSearchResults = userCollection.Where(userQuery).ExecuteAsync().Result;
-                        List<IUser> searchResultsList = userSearchResults.CurrentPage.ToList();
-                        foreach (IDirectoryObject objectResult in searchResultsList)
+                        IUserCollection userCollection = coco.ADClient.Users;
+                        IPagedCollection<IUser> userSearchResults = null;
+                        do
                         {
-                            AzurecpResult azurecpResult = new AzurecpResult();
-                            azurecpResult.DirectoryObjectResult = objectResult as DirectoryObject;
-                            azurecpResult.TenantId = coco.TenantId;
-                            allADResults.Add(azurecpResult);
-                        }
-                        userSearchResults = userSearchResults.GetNextPageAsync().Result;
-                    } while (userSearchResults != null && userSearchResults.MorePagesAvailable);
+                            userSearchResults = userCollection.Where(userQuery).ExecuteAsync().Result;
+                            List<IUser> searchResultsList = userSearchResults.CurrentPage.ToList();
+                            foreach (IDirectoryObject objectResult in searchResultsList)
+                            {
+                                AzurecpResult azurecpResult = new AzurecpResult();
+                                azurecpResult.DirectoryObjectResult = objectResult as DirectoryObject;
+                                azurecpResult.TenantId = coco.TenantId;
+                                lock (lockAddResultQuery)
+                                {
+                                    allADResults.Add(azurecpResult);
+                                }
+                            }
+                            userSearchResults = userSearchResults.GetNextPageAsync().Result;
+                        } while (userSearchResults != null && userSearchResults.MorePagesAvailable);
+                    }
                 }
-
-                if (groupQuery != null)
+                lock (lockGroupQuery)
                 {
-                    IGroupCollection groupCollection = coco.ADClient.Groups;
-                    IPagedCollection<IGroup> groupSearchResults = null;
-                    do
+                    if (groupQuery != null)
                     {
-                        groupSearchResults = groupCollection.Where(groupQuery).ExecuteAsync().Result;
-                        List<IGroup> searchResultsList = groupSearchResults.CurrentPage.ToList();
-                        foreach (IDirectoryObject objectResult in searchResultsList)
+                        IGroupCollection groupCollection = coco.ADClient.Groups;
+                        IPagedCollection<IGroup> groupSearchResults = null;
+                        do
                         {
-                            AzurecpResult azurecpResult = new AzurecpResult();
-                            azurecpResult.DirectoryObjectResult = objectResult as DirectoryObject;
-                            azurecpResult.TenantId = coco.TenantId;
-                            allADResults.Add(azurecpResult);
-                        }
-                        groupSearchResults = groupSearchResults.GetNextPageAsync().Result;
-                    } while (groupSearchResults != null && groupSearchResults.MorePagesAvailable);
+                            groupSearchResults = groupCollection.Where(groupQuery).ExecuteAsync().Result;
+                            List<IGroup> searchResultsList = groupSearchResults.CurrentPage.ToList();
+                            foreach (IDirectoryObject objectResult in searchResultsList)
+                            {
+                                AzurecpResult azurecpResult = new AzurecpResult();
+                                azurecpResult.DirectoryObjectResult = objectResult as DirectoryObject;
+                                azurecpResult.TenantId = coco.TenantId;
+                                lock (lockAddResultQuery)
+                                {
+                                    allADResults.Add(azurecpResult);
+                                }
+                            }
+                            groupSearchResults = groupSearchResults.GetNextPageAsync().Result;
+                        } while (groupSearchResults != null && groupSearchResults.MorePagesAvailable);
+                    }
                 }
 
                 return allADResults;
@@ -779,29 +792,33 @@ namespace azurecp
         /// <returns></returns>
         private List<AzurecpResult> GetUserMembership(User userToAugment, AzureTenant coco)
         {
+            object lockUserQuery = new object();
             List<AzurecpResult> searchResults = new List<AzurecpResult>();
-            IUserFetcher retrievedUserFetcher = userToAugment;
-            IPagedCollection<IDirectoryObject> pagedCollection = retrievedUserFetcher.MemberOf.ExecuteAsync().Result;
-            do
+            lock (lockUserQuery)
             {
-                List<IDirectoryObject> directoryObjects = pagedCollection.CurrentPage.ToList();
-                foreach (IDirectoryObject directoryObject in directoryObjects)
+                IUserFetcher retrievedUserFetcher = userToAugment;
+                IPagedCollection<IDirectoryObject> pagedCollection = retrievedUserFetcher.MemberOf.ExecuteAsync().Result;
+                do
                 {
-                    if (directoryObject is Group)
+                    List<IDirectoryObject> directoryObjects = pagedCollection.CurrentPage.ToList();
+                    foreach (IDirectoryObject directoryObject in directoryObjects)
                     {
-                        AzurecpResult result = new AzurecpResult();
-                        Group group = directoryObject as Group;
-                        result.DirectoryObjectResult = group;
-                        result.TenantId = coco.TenantId;
-                        searchResults.Add(result);
+                        if (directoryObject is Group)
+                        {
+                            AzurecpResult result = new AzurecpResult();
+                            Group group = directoryObject as Group;
+                            result.DirectoryObjectResult = group;
+                            result.TenantId = coco.TenantId;
+                            searchResults.Add(result);
+                        }
+                        //if (directoryObject is DirectoryRole)
+                        //{
+                        //    DirectoryRole role = directoryObject as DirectoryRole;
+                        //}
                     }
-                    //if (directoryObject is DirectoryRole)
-                    //{
-                    //    DirectoryRole role = directoryObject as DirectoryRole;
-                    //}
-                }
-                pagedCollection = pagedCollection.GetNextPageAsync().Result;
-            } while (pagedCollection != null && pagedCollection.MorePagesAvailable);
+                    pagedCollection = pagedCollection.GetNextPageAsync().Result;
+                } while (pagedCollection != null && pagedCollection.MorePagesAvailable);
+            }
             return searchResults;
         }
 
