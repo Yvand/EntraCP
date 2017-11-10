@@ -36,6 +36,10 @@ namespace azurecp
         public const string _ProviderInternalName = "AzureCP";
         public virtual string ProviderInternalName { get { return "AzureCP"; } }
 
+        private object lockUserQuery = new object();
+        private object lockGroupQuery = new object();
+        private object lockAddResultToCollection = new object();
+        private object lockGetUserMembership = new object();
         private object Sync_Init = new object();
         private ReaderWriterLockSlim Lock_Config = new ReaderWriterLockSlim();
         private long AzureCPConfigVersion = 0;
@@ -726,9 +730,6 @@ namespace azurecp
                     //activeDirectoryClient.Oauth2PermissionGrants.Context.
                 }
 
-                object lockUserQuery = new object();
-                object lockGroupQuery = new object();
-                object lockAddResultQuery = new object();
                 List<AzurecpResult> allADResults = new List<AzurecpResult>();
                 lock (lockUserQuery)
                 {
@@ -746,7 +747,7 @@ namespace azurecp
                                 AzurecpResult azurecpResult = new AzurecpResult();
                                 azurecpResult.DirectoryObjectResult = objectResult as DirectoryObject;
                                 azurecpResult.TenantId = coco.TenantId;
-                                lock (lockAddResultQuery)
+                                lock (lockAddResultToCollection)
                                 {
                                     allADResults.Add(azurecpResult);
                                 }
@@ -770,7 +771,7 @@ namespace azurecp
                                 AzurecpResult azurecpResult = new AzurecpResult();
                                 azurecpResult.DirectoryObjectResult = objectResult as DirectoryObject;
                                 azurecpResult.TenantId = coco.TenantId;
-                                lock (lockAddResultQuery)
+                                lock (lockAddResultToCollection)
                                 {
                                     allADResults.Add(azurecpResult);
                                 }
@@ -792,9 +793,8 @@ namespace azurecp
         /// <returns></returns>
         private List<AzurecpResult> GetUserMembership(User userToAugment, AzureTenant coco)
         {
-            object lockUserQuery = new object();
             List<AzurecpResult> searchResults = new List<AzurecpResult>();
-            lock (lockUserQuery)
+            lock (lockGetUserMembership)
             {
                 IUserFetcher retrievedUserFetcher = userToAugment;
                 IPagedCollection<IDirectoryObject> pagedCollection = retrievedUserFetcher.MemberOf.ExecuteAsync().Result;
