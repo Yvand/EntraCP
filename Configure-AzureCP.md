@@ -1,8 +1,12 @@
 ## Proxy configuration
+
 AzureCP makes HTTP requests to Azure under the process of the site (for people picker requests) and the SharePoint STS (for augmentation), but there are also requests made by lsass.exe to validate CRL and certificate chain of certificates returned by Azure.<br>
 If SharePoint servers need to connect through a HTTP proxy, additional configuration is required to configure it:
+
 ### For AzureCP to be able to connect to Azure
+
 Add the following [proxy configuration](https://msdn.microsoft.com/en-us/library/kd3cf2ex.aspx) in the web.config of:
+
 - SharePoint sites that use AzureCP
 - SharePoine central administration site
 - SharePoint STS located in 15\WebServices\SecurityToken
@@ -17,14 +21,23 @@ Add the following [proxy configuration](https://msdn.microsoft.com/en-us/library
 </system.net>
 ```
 
-### For certificate validation to succeed
-- Display proxy configuration with this command:<br>
+### For certificate validation (CRL) to succeed
+
+Certificate validation is performed by lsass.exe
+
+- Display proxy configuration with this command:
+
+```Text
 netsh winhttp show proxy
+```
+
 - Set proxy configuration with this command:<br>
+
 netsh winhttp set proxy proxy-server="http=myproxy;https=sproxy:88" bypass-list="*.foo.com"
 
 
 ## Claims supported
+
 Azure AD binds property UserPrincipalName (which identifies the user) to claim type "_http://schemas.xmlsoap.org/ws/2005/05/identity/claims/name_". Unfortunately this claim type is reserved by SharePoint and cannot be used.
 
 So the STS (whatever it is ACS, ADFS or another one) must transform this claim type into another one.  
