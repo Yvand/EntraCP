@@ -36,8 +36,8 @@ namespace azurecp
         public const string _ProviderInternalName = "AzureCP";
         public virtual string ProviderInternalName { get { return "AzureCP"; } }
 
-        private object lockUserQuery = new object();
-        private object lockGroupQuery = new object();
+        //private object lockUserQuery = new object();
+        //private object lockGroupQuery = new object();
         private object lockAddResultToCollection = new object();
         private object lockGetUserMembership = new object();
         private object Sync_Init = new object();
@@ -495,7 +495,8 @@ namespace azurecp
                 }
             }
 
-            List<AzurecpResult> searchResults = this.QueryAzureADCollection(input, userQuery, groupQuery);
+            Task<List<AzurecpResult>> searchResultsTask = this.QueryAzureADCollection(input, userQuery, groupQuery);
+            List<AzurecpResult> searchResults = searchResultsTask.Result;
             if (searchResults == null || searchResults.Count == 0) return;
 
             // If exactSearch is true, we don't care about attributes with CreateAsIdentityClaim = true
@@ -606,7 +607,7 @@ namespace azurecp
         /// <param name="groupQuery"></param>
         /// <param name="input"></param>
         /// <returns></returns>
-        private List<AzurecpResult> QueryAzureADCollection(string input, Expression<Func<IUser, bool>> userQuery, Expression<Func<IGroup, bool>> groupQuery)
+        private async Task<List<AzurecpResult>> QueryAzureADCollection(string input, Expression<Func<IUser, bool>> userQuery, Expression<Func<IGroup, bool>> groupQuery)
         {
             if (userQuery == null && groupQuery == null) return null;
             List<AzurecpResult> allSearchResults = new List<AzurecpResult>();
@@ -616,11 +617,12 @@ namespace azurecp
             //Parallel.ForEach(this.CurrentConfiguration.AzureTenants, coco =>
             {
                 Stopwatch lookupTimer = new Stopwatch();
+                //List<AzurecpResult> searchResult = null;
                 List<AzurecpResult> searchResult = null;
                 try
                 {
                     lookupTimer.Start();
-                    searchResult = QueryAzureAD(coco, userQuery, groupQuery);
+                    searchResult = await QueryAzureAD(coco, userQuery, groupQuery);
                 }
                 catch (Exception ex)
                 {
@@ -630,7 +632,7 @@ namespace azurecp
                         // AccessToken provided as a part of GraphConnection has expired. Reset it and try to renew it
                         AzureCPLogging.Log(String.Format("[{0}] Access token of Azure AD tenant {3} expired. Renew it and try again: ExpiredTokenException: {1}, Callstack: {2}.", ProviderInternalName, ex.InnerException.Message, ex.InnerException.StackTrace, coco.TenantName), TraceSeverity.High, EventSeverity.Information, AzureCPLogging.Categories.Lookup);
                         coco.ADClient = null;
-                        searchResult = QueryAzureAD(coco, userQuery, groupQuery);
+                        searchResult = await QueryAzureAD(coco, userQuery, groupQuery);
                     }
                     else if (ex.InnerException is AuthorizationException)
                     {
@@ -706,7 +708,7 @@ namespace azurecp
         /// <param name="groupFilter"></param>
         /// <param name="coco"></param>
         /// <returns></returns>
-        private List<AzurecpResult> QueryAzureAD(AzureTenant coco, Expression<Func<IUser, bool>> userQuery, Expression<Func<IGroup, bool>> groupQuery)
+        private async Task<List<AzurecpResult>> QueryAzureAD(AzureTenant coco, Expression<Func<IUser, bool>> userQuery, Expression<Func<IGroup, bool>> groupQuery)
         {
             using (new SPMonitoredScope(String.Format("[{0}] Connecting to Azure AD {1}", ProviderInternalName, coco.TenantName), 1000))
             {
@@ -731,55 +733,59 @@ namespace azurecp
                 }
 
                 List<AzurecpResult> allADResults = new List<AzurecpResult>();
-                lock (lockUserQuery)
+                //lock (lockUserQuery)
+                //{
+                // Workaroud implemented to avoid deadlock when calling DataServiceContextWrapper.ExecuteBatchAsync
+                if (userQuery != null)
                 {
-                    // Workaroud implemented to avoid deadlock when calling DataServiceContextWrapper.ExecuteBatchAsync
-                    if (userQuery != null)
+                    IUserCollection userCollection = coco.ADClient.Users;
+                    IPagedCollection<IUser> userSearchResults = null;
+                    do
                     {
-                        IUserCollection userCollection = coco.ADClient.Users;
-                        IPagedCollection<IUser> userSearchResults = null;
-                        do
+                        //IPagedCollection<IUser> userSearchResultsAsync = await userCollection.Where(userQuery).ExecuteAsync();
+                        //userSearchResults = userSearchResultsAsync.Result;
+                        userSearchResults = await userCollection.Where(userQuery).ExecuteAsync();
+                        //userSearchResults = userCollection.Where(userQuery).ExecuteAsync().Result;
+                        List<IUser> searchResultsList = userSearchResults.CurrentPage.ToList();
+                        foreach (IDirectoryObject objectResult in searchResultsList)
                         {
-                            userSearchResults = userCollection.Where(userQuery).ExecuteAsync().Result;
-                            List<IUser> searchResultsList = userSearchResults.CurrentPage.ToList();
-                            foreach (IDirectoryObject objectResult in searchResultsList)
+                            AzurecpResult azurecpResult = new AzurecpResult();
+                            azurecpResult.DirectoryObjectResult = objectResult as DirectoryObject;
+                            azurecpResult.TenantId = coco.TenantId;
+                            lock (lockAddResultToCollection)
                             {
-                                AzurecpResult azurecpResult = new AzurecpResult();
-                                azurecpResult.DirectoryObjectResult = objectResult as DirectoryObject;
-                                azurecpResult.TenantId = coco.TenantId;
-                                lock (lockAddResultToCollection)
-                                {
-                                    allADResults.Add(azurecpResult);
-                                }
+                                allADResults.Add(azurecpResult);
                             }
-                            userSearchResults = userSearchResults.GetNextPageAsync().Result;
-                        } while (userSearchResults != null && userSearchResults.MorePagesAvailable);
-                    }
+                        }
+                        userSearchResults = userSearchResults.GetNextPageAsync().Result;
+                    } while (userSearchResults != null && userSearchResults.MorePagesAvailable);
                 }
-                lock (lockGroupQuery)
+                //}
+                //lock (lockGroupQuery)
+                //{
+                if (groupQuery != null)
                 {
-                    if (groupQuery != null)
+                    IGroupCollection groupCollection = coco.ADClient.Groups;
+                    IPagedCollection<IGroup> groupSearchResults = null;
+                    do
                     {
-                        IGroupCollection groupCollection = coco.ADClient.Groups;
-                        IPagedCollection<IGroup> groupSearchResults = null;
-                        do
+                        //groupSearchResults = groupCollection.Where(groupQuery).ExecuteAsync().Result;
+                        groupSearchResults = await groupCollection.Where(groupQuery).ExecuteAsync();
+                        List<IGroup> searchResultsList = groupSearchResults.CurrentPage.ToList();
+                        foreach (IDirectoryObject objectResult in searchResultsList)
                         {
-                            groupSearchResults = groupCollection.Where(groupQuery).ExecuteAsync().Result;
-                            List<IGroup> searchResultsList = groupSearchResults.CurrentPage.ToList();
-                            foreach (IDirectoryObject objectResult in searchResultsList)
+                            AzurecpResult azurecpResult = new AzurecpResult();
+                            azurecpResult.DirectoryObjectResult = objectResult as DirectoryObject;
+                            azurecpResult.TenantId = coco.TenantId;
+                            lock (lockAddResultToCollection)
                             {
-                                AzurecpResult azurecpResult = new AzurecpResult();
-                                azurecpResult.DirectoryObjectResult = objectResult as DirectoryObject;
-                                azurecpResult.TenantId = coco.TenantId;
-                                lock (lockAddResultToCollection)
-                                {
-                                    allADResults.Add(azurecpResult);
-                                }
+                                allADResults.Add(azurecpResult);
                             }
-                            groupSearchResults = groupSearchResults.GetNextPageAsync().Result;
-                        } while (groupSearchResults != null && groupSearchResults.MorePagesAvailable);
-                    }
+                        }
+                        groupSearchResults = groupSearchResults.GetNextPageAsync().Result;
+                    } while (groupSearchResults != null && groupSearchResults.MorePagesAvailable);
                 }
+                //}
 
                 return allADResults;
             }
