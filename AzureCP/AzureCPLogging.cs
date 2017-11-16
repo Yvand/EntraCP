@@ -67,9 +67,9 @@ namespace azurecp
             Claims_Augmentation,
             [CategoryName("Debug"),
 #if DEBUG
-             DefaultTraceSeverity(TraceSeverity.VerboseEx),
-#else
              DefaultTraceSeverity(TraceSeverity.High),
+#else
+             DefaultTraceSeverity(TraceSeverity.VerboseEx),
 #endif
              DefaultEventSeverity(EventSeverity.Error)]
             Debug,
@@ -218,6 +218,8 @@ namespace azurecp
                         CreateCategory(Categories.Core),
                         CreateCategory(Categories.Claims_Augmentation),
                         CreateCategory(Categories.Rehydration),
+                        CreateCategory(Categories.Debug),
+                        CreateCategory(Categories.Custom),
                     }
                 );
             }
