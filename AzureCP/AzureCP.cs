@@ -491,7 +491,7 @@ namespace azurecp
                 }
             }
 
-            Task<List<AzurecpResult>> searchResultsTask = this.QueryAzureADCollection(input, userQuery, groupQuery);
+            Task<List<AzurecpResult>> searchResultsTask = this.QueryAzureADCollectionAsync(input, userQuery, groupQuery);
             List<AzurecpResult> searchResults = searchResultsTask.Result;
             if (searchResults == null || searchResults.Count == 0) return;
 
@@ -603,7 +603,7 @@ namespace azurecp
         /// <param name="groupQuery"></param>
         /// <param name="input"></param>
         /// <returns></returns>
-        private async Task<List<AzurecpResult>> QueryAzureADCollection(string input, Expression<Func<IUser, bool>> userQuery, Expression<Func<IGroup, bool>> groupQuery)
+        private async Task<List<AzurecpResult>> QueryAzureADCollectionAsync(string input, Expression<Func<IUser, bool>> userQuery, Expression<Func<IGroup, bool>> groupQuery)
         {
             if (userQuery == null && groupQuery == null) return null;
             List<AzurecpResult> allSearchResults = new List<AzurecpResult>();
@@ -612,74 +612,20 @@ namespace azurecp
             foreach (AzureTenant coco in this.CurrentConfiguration.AzureTenants)
             //Parallel.ForEach(this.CurrentConfiguration.AzureTenants, coco =>
             {
-                Stopwatch lookupTimer = new Stopwatch();
-                //List<AzurecpResult> searchResult = null;
+                Stopwatch timer = new Stopwatch();
                 List<AzurecpResult> searchResult = null;
                 try
                 {
-                    lookupTimer.Start();
-                    searchResult = await QueryAzureAD(coco, userQuery, groupQuery);
+                    timer.Start();
+                    searchResult = await QueryAzureADAsync(coco, userQuery, groupQuery).ConfigureAwait(false);
                 }
                 catch (Exception ex)
                 {
-                    // Handle exceptions documented in http://blogs.msdn.com/b/aadgraphteam/archive/2014/06/02/azure-active-directory-graph-client-library-1-0-api-reference-publish.aspx
-                    if (ex.InnerException is ExpiredTokenException)
-                    {
-                        // AccessToken provided as a part of GraphConnection has expired. Reset it and try to renew it
-                        AzureCPLogging.Log(String.Format("[{0}] Access token of Azure AD tenant {3} expired. Renew it and try again: ExpiredTokenException: {1}, Callstack: {2}.", ProviderInternalName, ex.InnerException.Message, ex.InnerException.StackTrace, coco.TenantName), TraceSeverity.High, EventSeverity.Information, AzureCPLogging.Categories.Lookup);
-                        coco.ADClient = null;
-                        searchResult = await QueryAzureAD(coco, userQuery, groupQuery);
-                    }
-                    else if (ex.InnerException is AuthorizationException)
-                    {
-                        // Insufficient privileges to complete the operation
-                        AzureCPLogging.Log(String.Format("[{0}] Insufficient privileges to access tenant {3}. Check permissions of AzureCP application in Azure AD: AuthorizationException: {1}, Callstack: {2}.", ProviderInternalName, ex.InnerException.Message, ex.InnerException.StackTrace, coco.TenantName), TraceSeverity.Unexpected, EventSeverity.Error, AzureCPLogging.Categories.Lookup);
-                    }
-                    else if (ex.InnerException is UnsupportedQueryException)
-                    {
-                        // userFilter provided is not supported by the server
-                        AzureCPLogging.Log(String.Format("[{0}] Invalid search filter while querying tenant {3}, which indicates invalid object in AzureADObjects: UnsupportedQueryException: {1}, Callstack: {2}.", ProviderInternalName, ex.InnerException.Message, ex.InnerException.StackTrace, coco.TenantName), TraceSeverity.Unexpected, EventSeverity.Error, AzureCPLogging.Categories.Lookup);
-                    }
-                    else if (ex.InnerException is ArgumentNullException)
-                    {
-                        // objectType is null
-                        AzureCPLogging.Log(String.Format("[{0}] objectType is null while querying tenant {3}, which indicates a null or invalid ClaimEntityType in an object in AzureADObjects: ArgumentNullException: {1}, Callstack: {2}.", ProviderInternalName, ex.InnerException.Message, ex.InnerException.StackTrace, coco.TenantName), TraceSeverity.Unexpected, EventSeverity.Error, AzureCPLogging.Categories.Lookup);
-                    }
-                    else if (ex.InnerException is AuthenticationException)
-                    {
-                        // accessToken provided as a part of GraphConnection is not valid
-                        AzureCPLogging.Log(String.Format("[{0}] accessToken provided as a part of GraphConnection is not valid while querying tenant {3}: AuthenticationException: {1}, Callstack: {2}.", ProviderInternalName, ex.InnerException.Message, ex.InnerException.StackTrace, coco.TenantName), TraceSeverity.Unexpected, EventSeverity.Error, AzureCPLogging.Categories.Lookup);
-                    }
-                    else if (ex.InnerException is RequestThrottledException)
-                    {
-                        // Number of calls has exceeded the throttle limit set by the server
-                        AzureCPLogging.Log(String.Format("[{0}] Number of calls exceeded the throttle limit set by the server while querying tenant {3}: RequestThrottledException: {1}, Callstack: {2}.", ProviderInternalName, ex.InnerException.Message, ex.InnerException.StackTrace, coco.TenantName), TraceSeverity.Unexpected, EventSeverity.Error, AzureCPLogging.Categories.Lookup);
-                    }
-                    else if (ex.InnerException is PageNotAvailableException)
-                    {
-                        // pageToken has expired (which is not used here)
-                        AzureCPLogging.Log(String.Format("[{0}] pageToken expired while querying tenant {3}: PageNotAvailableException: {1}, Callstack: {2}.", ProviderInternalName, ex.InnerException.Message, ex.InnerException.StackTrace, coco.TenantName), TraceSeverity.Unexpected, EventSeverity.Error, AzureCPLogging.Categories.Lookup);
-                    }
-                    else if (ex.InnerException is GraphException)
-                    {
-                        // Non specific GraphException that must be last checked as it's base exception of all exceptions types above
-                        // (documentation is wrong to say that this is a network error, it may be true but it just can't assume that)
-                        AzureCPLogging.Log(String.Format("[{0}] GraphException occurred while querying tenant {3}: {1}, Callstack: {2}.", ProviderInternalName, ex.InnerException.Message, ex.InnerException.StackTrace, coco.TenantName), TraceSeverity.Unexpected, EventSeverity.Error, AzureCPLogging.Categories.Lookup);
-                    }
-                    else if (ex.InnerException is Microsoft.Data.OData.ODataErrorException)
-                    {
-                        // Typically occurs when app doesn't have enough privileges
-                        AzureCPLogging.Log(String.Format("[{0}] ODataErrorException occurred while querying tenant {3}: {1}, Callstack: {2}.", ProviderInternalName, ex.InnerException.Message, ex.InnerException.StackTrace, coco.TenantName), TraceSeverity.Unexpected, EventSeverity.Error, AzureCPLogging.Categories.Lookup);
-                    }
-                    else
-                    {
-                        // Unknown exception
-                        AzureCPLogging.LogException(ProviderInternalName, String.Format("while querying tenant {0}", coco.TenantName), AzureCPLogging.Categories.Lookup, ex);
-                    }
+                    AzureCPLogging.LogException(ProviderInternalName, String.Format("in QueryAzureADCollectionAsync while querying tenant {0}", coco.TenantName), AzureCPLogging.Categories.Lookup, ex);
                 }
                 finally
                 {
-                    lookupTimer.Stop();
+                    timer.Stop();
                 }
 
                 if (searchResult != null && searchResult.Count > 0)
@@ -687,10 +633,10 @@ namespace azurecp
                     lock (lockResults)
                     {
                         allSearchResults.AddRange(searchResult);
-                        AzureCPLogging.Log(String.Format("[{0}] Search on {1} took {2}ms and found {3} result(s) for '{4}'", ProviderInternalName, coco.TenantName, lookupTimer.ElapsedMilliseconds.ToString(), searchResult.Count.ToString(), input), TraceSeverity.Medium, EventSeverity.Information, AzureCPLogging.Categories.Lookup);
+                        AzureCPLogging.Log(String.Format("[{0}] Search on {1} took {2}ms and found {3} result(s) for '{4}'", ProviderInternalName, coco.TenantName, timer.ElapsedMilliseconds.ToString(), searchResult.Count.ToString(), input), TraceSeverity.Medium, EventSeverity.Information, AzureCPLogging.Categories.Lookup);
                     }
                 }
-                else AzureCPLogging.Log(String.Format("[{0}] Search on \"{1}\" took {2}ms and found no result for '{3}'", ProviderInternalName, coco.TenantName, lookupTimer.ElapsedMilliseconds.ToString(), input), TraceSeverity.Medium, EventSeverity.Information, AzureCPLogging.Categories.Lookup);
+                else AzureCPLogging.Log(String.Format("[{0}] Search on \"{1}\" took {2}ms and found no result for '{3}'", ProviderInternalName, coco.TenantName, timer.ElapsedMilliseconds.ToString(), input), TraceSeverity.Medium, EventSeverity.Information, AzureCPLogging.Categories.Lookup);
 
                 //});
             }
@@ -704,88 +650,177 @@ namespace azurecp
         /// <param name="groupFilter"></param>
         /// <param name="coco"></param>
         /// <returns></returns>
-        private async Task<List<AzurecpResult>> QueryAzureAD(AzureTenant coco, Expression<Func<IUser, bool>> userQuery, Expression<Func<IGroup, bool>> groupQuery)
+        private async Task<List<AzurecpResult>> QueryAzureADAsync(AzureTenant coco, Expression<Func<IUser, bool>> userQuery, Expression<Func<IGroup, bool>> groupQuery)
         {
-            object lockAddResultToCollection = new object();
-            using (new SPMonitoredScope(String.Format("[{0}] Connecting to Azure AD {1}", ProviderInternalName, coco.TenantName), 1000))
+            List<AzurecpResult> allAADResults = new List<AzurecpResult>();
+            try
             {
-                if (coco.ADClient == null)
+                object lockAddResultToCollection = new object();
+                using (new SPMonitoredScope(String.Format("[{0}] Connecting to Azure AD {1}", ProviderInternalName, coco.TenantName), 1000))
                 {
-                    ActiveDirectoryClient activeDirectoryClient;
-                    try
+                    if (coco.ADClient == null)
                     {
-                        activeDirectoryClient = AuthenticationHelper.GetActiveDirectoryClientAsApplication(coco.TenantName, coco.TenantId, coco.ClientId, coco.ClientSecret);
-                    }
-                    catch (AuthenticationException ex)
-                    {
-                        //You should implement retry and back-off logic per the guidance given here:http://msdn.microsoft.com/en-us/library/dn168916.aspx
-                        //InnerException Message will contain the HTTP error status codes mentioned in the link above
-                        AzureCPLogging.LogException(ProviderInternalName, String.Format("while acquiring token for tenant {0}", coco.TenantName), AzureCPLogging.Categories.Lookup, ex);
-                        return null;
-                    }
-                    coco.ADClient = activeDirectoryClient;
-                    AzureCPLogging.Log(String.Format("[{0}] Got new access token for tenant '{1}'", ProviderInternalName, coco.TenantName), TraceSeverity.Medium, EventSeverity.Information, AzureCPLogging.Categories.Lookup);
-                    //activeDirectoryClient.Oauth2PermissionGrants.
-                    //activeDirectoryClient.Oauth2PermissionGrants.Context.
-                }
-
-                List<AzurecpResult> allADResults = new List<AzurecpResult>();
-                //lock (lockUserQuery)
-                //{
-                // Workaroud implemented to avoid deadlock when calling DataServiceContextWrapper.ExecuteBatchAsync
-                if (userQuery != null)
-                {
-                    IUserCollection userCollection = coco.ADClient.Users;
-                    IPagedCollection<IUser> userSearchResults = null;
-                    do
-                    {
-                        //IPagedCollection<IUser> userSearchResultsAsync = await userCollection.Where(userQuery).ExecuteAsync();
-                        //userSearchResults = userSearchResultsAsync.Result;
-                        userSearchResults = await userCollection.Where(userQuery).ExecuteAsync();
-                        //userSearchResults = userCollection.Where(userQuery).ExecuteAsync().Result;
-                        List<IUser> searchResultsList = userSearchResults.CurrentPage.ToList();
-                        foreach (IDirectoryObject objectResult in searchResultsList)
+                        ActiveDirectoryClient activeDirectoryClient;
+                        try
                         {
-                            AzurecpResult azurecpResult = new AzurecpResult();
-                            azurecpResult.DirectoryObjectResult = objectResult as DirectoryObject;
-                            azurecpResult.TenantId = coco.TenantId;
-                            lock (lockAddResultToCollection)
-                            {
-                                allADResults.Add(azurecpResult);
-                            }
+                            activeDirectoryClient = AuthenticationHelper.GetActiveDirectoryClientAsApplication(coco.TenantName, coco.TenantId, coco.ClientId, coco.ClientSecret);
                         }
-                        userSearchResults = userSearchResults.GetNextPageAsync().Result;
-                    } while (userSearchResults != null && userSearchResults.MorePagesAvailable);
-                }
-                //}
-                //lock (lockGroupQuery)
-                //{
-                if (groupQuery != null)
-                {
-                    IGroupCollection groupCollection = coco.ADClient.Groups;
-                    IPagedCollection<IGroup> groupSearchResults = null;
-                    do
-                    {
-                        //groupSearchResults = groupCollection.Where(groupQuery).ExecuteAsync().Result;
-                        groupSearchResults = await groupCollection.Where(groupQuery).ExecuteAsync();
-                        List<IGroup> searchResultsList = groupSearchResults.CurrentPage.ToList();
-                        foreach (IDirectoryObject objectResult in searchResultsList)
+                        catch (AuthenticationException ex)
                         {
-                            AzurecpResult azurecpResult = new AzurecpResult();
-                            azurecpResult.DirectoryObjectResult = objectResult as DirectoryObject;
-                            azurecpResult.TenantId = coco.TenantId;
-                            lock (lockAddResultToCollection)
-                            {
-                                allADResults.Add(azurecpResult);
-                            }
+                            //You should implement retry and back-off logic per the guidance given here:http://msdn.microsoft.com/en-us/library/dn168916.aspx
+                            //InnerException Message will contain the HTTP error status codes mentioned in the link above
+                            AzureCPLogging.LogException(ProviderInternalName, String.Format("while acquiring token for tenant {0}", coco.TenantName), AzureCPLogging.Categories.Lookup, ex);
+                            return null;
                         }
-                        groupSearchResults = groupSearchResults.GetNextPageAsync().Result;
-                    } while (groupSearchResults != null && groupSearchResults.MorePagesAvailable);
-                }
-                //}
+                        coco.ADClient = activeDirectoryClient;
+                        AzureCPLogging.Log(String.Format("[{0}] Got new access token for tenant '{1}'", ProviderInternalName, coco.TenantName), TraceSeverity.Medium, EventSeverity.Information, AzureCPLogging.Categories.Lookup);
+                    }
 
-                return allADResults;
+                    //Task<IPagedCollection<IUser>> userQueryTask = Task.Run(() =>
+                    //{
+                    //    if (userQuery == null) return null;
+                    //    IUserCollection userCollection = coco.ADClient.Users;
+                    //    return userCollection.Where(userQuery).ExecuteAsync();
+                    //});
+
+                    //Task<IPagedCollection<IGroup>> groupQueryTask = Task.Run(() =>
+                    //{
+                    //    if (groupQuery == null) return null;
+                    //    IGroupCollection groupCollection = coco.ADClient.Groups;
+                    //    return groupCollection.Where(groupQuery).ExecuteAsync();
+                    //});
+
+                    //var continuationUserTask = userQueryTask.ContinueWith((t) =>
+                    //{
+                    //    if (t.IsFaulted)
+                    //    {
+                    //        // Previous task running the AAD query got an error
+                    //        return;
+                    //    }
+                    //    IPagedCollection<IUser> userSearchResults = t.Result;
+                    //    do
+                    //    {
+                    //        List<IUser> searchResultsList = userSearchResults.CurrentPage.ToList();
+                    //        foreach (IDirectoryObject objectResult in searchResultsList)
+                    //        {
+                    //            AzurecpResult azurecpResult = new AzurecpResult();
+                    //            azurecpResult.DirectoryObjectResult = objectResult as DirectoryObject;
+                    //            azurecpResult.TenantId = coco.TenantId;
+                    //            lock (lockAddResultToCollection)
+                    //            {
+                    //                allAADResults.Add(azurecpResult);
+                    //            }
+                    //        }
+                    //        //userSearchResults = await userSearchResults.GetNextPageAsync().ConfigureAwait(false);
+                    //        Task<IPagedCollection<IUser>> userSearchResultsTask = userSearchResults.GetNextPageAsync();
+                    //        userSearchResults = userSearchResultsTask.Result;
+                    //    } while (userSearchResults != null && userSearchResults.MorePagesAvailable);
+                    //});
+
+                    //await Task.WhenAll(userQueryTask, continuationUserTask);
+
+                    // Workaroud implemented to avoid deadlock when calling DataServiceContextWrapper.ExecuteBatchAsync
+                    if (userQuery != null)
+                    {
+                        IUserCollection userCollection = coco.ADClient.Users;
+                        IPagedCollection<IUser> userSearchResults = null;
+                        do
+                        {
+                            userSearchResults = await userCollection.Where(userQuery).ExecuteAsync().ConfigureAwait(false);
+                            List<IUser> searchResultsList = userSearchResults.CurrentPage.ToList();
+                            foreach (IDirectoryObject objectResult in searchResultsList)
+                            {
+                                AzurecpResult azurecpResult = new AzurecpResult();
+                                azurecpResult.DirectoryObjectResult = objectResult as DirectoryObject;
+                                azurecpResult.TenantId = coco.TenantId;
+                                lock (lockAddResultToCollection)
+                                {
+                                    allAADResults.Add(azurecpResult);
+                                }
+                            }
+                            userSearchResults = await userSearchResults.GetNextPageAsync().ConfigureAwait(false);
+                        } while (userSearchResults != null && userSearchResults.MorePagesAvailable);
+                    }
+                    if (groupQuery != null)
+                    {
+                        IGroupCollection groupCollection = coco.ADClient.Groups;
+                        IPagedCollection<IGroup> groupSearchResults = null;
+                        do
+                        {
+                            groupSearchResults = await groupCollection.Where(groupQuery).ExecuteAsync().ConfigureAwait(false);
+                            List<IGroup> searchResultsList = groupSearchResults.CurrentPage.ToList();
+                            foreach (IDirectoryObject objectResult in searchResultsList)
+                            {
+                                AzurecpResult azurecpResult = new AzurecpResult();
+                                azurecpResult.DirectoryObjectResult = objectResult as DirectoryObject;
+                                azurecpResult.TenantId = coco.TenantId;
+                                lock (lockAddResultToCollection)
+                                {
+                                    allAADResults.Add(azurecpResult);
+                                }
+                            }
+                            groupSearchResults = await groupSearchResults.GetNextPageAsync().ConfigureAwait(false);
+                        } while (groupSearchResults != null && groupSearchResults.MorePagesAvailable);
+                    }
+                }
             }
+            catch (Exception ex)
+            {
+                // Handle exceptions documented in http://blogs.msdn.com/b/aadgraphteam/archive/2014/06/02/azure-active-directory-graph-client-library-1-0-api-reference-publish.aspx
+                if (ex.InnerException is ExpiredTokenException)
+                {
+                    // AccessToken provided as a part of GraphConnection has expired. Reset it and try to renew it
+                    AzureCPLogging.Log(String.Format("[{0}] Access token of Azure AD tenant {3} expired. Renew it and try again: ExpiredTokenException: {1}, Callstack: {2}.", ProviderInternalName, ex.InnerException.Message, ex.InnerException.StackTrace, coco.TenantName), TraceSeverity.High, EventSeverity.Information, AzureCPLogging.Categories.Lookup);
+                    allAADResults = await QueryAzureADAsync(coco, userQuery, groupQuery).ConfigureAwait(false);
+                }
+                else if (ex.InnerException is AuthorizationException)
+                {
+                    // Insufficient privileges to complete the operation
+                    AzureCPLogging.Log(String.Format("[{0}] Insufficient privileges to access tenant {3}. Check permissions of AzureCP application in Azure AD: AuthorizationException: {1}, Callstack: {2}.", ProviderInternalName, ex.InnerException.Message, ex.InnerException.StackTrace, coco.TenantName), TraceSeverity.Unexpected, EventSeverity.Error, AzureCPLogging.Categories.Lookup);
+                }
+                else if (ex.InnerException is UnsupportedQueryException)
+                {
+                    // userFilter provided is not supported by the server
+                    AzureCPLogging.Log(String.Format("[{0}] Invalid search filter while querying tenant {3}, which indicates invalid object in AzureADObjects: UnsupportedQueryException: {1}, Callstack: {2}.", ProviderInternalName, ex.InnerException.Message, ex.InnerException.StackTrace, coco.TenantName), TraceSeverity.Unexpected, EventSeverity.Error, AzureCPLogging.Categories.Lookup);
+                }
+                else if (ex.InnerException is ArgumentNullException)
+                {
+                    // objectType is null
+                    AzureCPLogging.Log(String.Format("[{0}] objectType is null while querying tenant {3}, which indicates a null or invalid ClaimEntityType in an object in AzureADObjects: ArgumentNullException: {1}, Callstack: {2}.", ProviderInternalName, ex.InnerException.Message, ex.InnerException.StackTrace, coco.TenantName), TraceSeverity.Unexpected, EventSeverity.Error, AzureCPLogging.Categories.Lookup);
+                }
+                else if (ex.InnerException is AuthenticationException)
+                {
+                    // accessToken provided as a part of GraphConnection is not valid
+                    AzureCPLogging.Log(String.Format("[{0}] accessToken provided as a part of GraphConnection is not valid while querying tenant {3}: AuthenticationException: {1}, Callstack: {2}.", ProviderInternalName, ex.InnerException.Message, ex.InnerException.StackTrace, coco.TenantName), TraceSeverity.Unexpected, EventSeverity.Error, AzureCPLogging.Categories.Lookup);
+                }
+                else if (ex.InnerException is RequestThrottledException)
+                {
+                    // Number of calls has exceeded the throttle limit set by the server
+                    AzureCPLogging.Log(String.Format("[{0}] Number of calls exceeded the throttle limit set by the server while querying tenant {3}: RequestThrottledException: {1}, Callstack: {2}.", ProviderInternalName, ex.InnerException.Message, ex.InnerException.StackTrace, coco.TenantName), TraceSeverity.Unexpected, EventSeverity.Error, AzureCPLogging.Categories.Lookup);
+                }
+                else if (ex.InnerException is PageNotAvailableException)
+                {
+                    // pageToken has expired (which is not used here)
+                    AzureCPLogging.Log(String.Format("[{0}] pageToken expired while querying tenant {3}: PageNotAvailableException: {1}, Callstack: {2}.", ProviderInternalName, ex.InnerException.Message, ex.InnerException.StackTrace, coco.TenantName), TraceSeverity.Unexpected, EventSeverity.Error, AzureCPLogging.Categories.Lookup);
+                }
+                else if (ex.InnerException is GraphException)
+                {
+                    // Non specific GraphException that must be last checked as it's base exception of all exceptions types above
+                    // (documentation is wrong to say that this is a network error, it may be true but it just can't assume that)
+                    AzureCPLogging.Log(String.Format("[{0}] GraphException occurred while querying tenant {3}: {1}, Callstack: {2}.", ProviderInternalName, ex.InnerException.Message, ex.InnerException.StackTrace, coco.TenantName), TraceSeverity.Unexpected, EventSeverity.Error, AzureCPLogging.Categories.Lookup);
+                }
+                else if (ex.InnerException is Microsoft.Data.OData.ODataErrorException)
+                {
+                    // Typically occurs when app doesn't have enough privileges
+                    AzureCPLogging.Log(String.Format("[{0}] ODataErrorException occurred while querying tenant {3}: {1}, Callstack: {2}.", ProviderInternalName, ex.InnerException.Message, ex.InnerException.StackTrace, coco.TenantName), TraceSeverity.Unexpected, EventSeverity.Error, AzureCPLogging.Categories.Lookup);
+                }
+                else
+                {
+                    // Unknown exception
+                    AzureCPLogging.LogException(ProviderInternalName, String.Format("while querying tenant {0}", coco.TenantName), AzureCPLogging.Categories.Lookup, ex);
+                }
+            }
+            return allAADResults;
         }
 
         /// <summary>
