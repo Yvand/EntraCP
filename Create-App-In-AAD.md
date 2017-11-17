@@ -1,6 +1,6 @@
 ## Create the app in Azure Active Directory
 
-AzureCP must be registered as an application in Azure AD to be able to connect and make queries. It requires only permission "Read directory data", and it must not have any deleated permission.
+AzureCP must be registered as an application in Azure AD to be able to connect and make queries. It requires only permission "Read directory data", and it must not have any delegated permission.
 
 Once AzureCP is installed in SharePoint farm, connection to Azure AD can be made and tested in Central Administration > Security > AzureCP Glogal configuration > "New Azure tenant" section.
 
