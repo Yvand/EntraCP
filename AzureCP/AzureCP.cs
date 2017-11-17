@@ -738,14 +738,28 @@ namespace azurecp
                     });
 
                     await Task.WhenAll(userQueryTask, groupQueryTask);
+                    #region tests
+                    //Task<IPagedCollection<IUser>> userQueryTask = Task.Run(async () =>
+                    //{
+                    //    if (userQuery == null) return null;
+                    //    IUserCollection userCollection = coco.ADClient.Users;
+                    //    return await userCollection.Where(userQuery).ExecuteAsync();
+                    //});
 
-                    //Task<IPagedCollection<IGroup>> groupQueryTask = new Task<IPagedCollection<IGroup>>(() =>
+                    //Task<IPagedCollection<IGroup>> groupQueryTask = Task.Run(async () =>
                     //{
                     //    if (groupQuery == null) return null;
                     //    IGroupCollection groupCollection = coco.ADClient.Groups;
-                    //    Task<IPagedCollection<IGroup>> result = groupCollection.Where(groupQuery).ExecuteAsync();
-                    //    return result.Result;
+                    //    return await groupCollection.Where(groupQuery).ExecuteAsync();
                     //});
+
+                    ////Task<IPagedCollection<IGroup>> groupQueryTask = new Task<IPagedCollection<IGroup>>(() =>
+                    ////{
+                    ////    if (groupQuery == null) return null;
+                    ////    IGroupCollection groupCollection = coco.ADClient.Groups;
+                    ////    Task<IPagedCollection<IGroup>> result = groupCollection.Where(groupQuery).ExecuteAsync();
+                    ////    return result.Result;
+                    ////});
 
                     //Task userQueryContinuationTask = userQueryTask.ContinueWith((t) =>
                     //{
@@ -820,60 +834,7 @@ namespace azurecp
                     //        AzureCPLogging.LogException(ProviderInternalName, String.Format("while getting group results in tenant {0}", coco.TenantName), AzureCPLogging.Categories.Lookup, ex);
                     //    }
                     //});
-
-
-                    //List<Task> tasksToRun = new List<Task>();
-                    //if (groupQuery != null)
-                    //{
-                    //    tasksToRun.Add(groupQueryTask);
-                    //    tasksToRun.Add(groupQueryContinuationTask);
-                    //}
-
-                    //await Task.WhenAll(tasksToRun);
-
-                    //// Workaroud implemented to avoid deadlock when calling DataServiceContextWrapper.ExecuteBatchAsync
-                    //if (userQuery != null)
-                    //{
-                    //    IUserCollection userCollection = coco.ADClient.Users;
-                    //    IPagedCollection<IUser> userSearchResults = null;
-                    //    do
-                    //    {
-                    //        userSearchResults = await userCollection.Where(userQuery).ExecuteAsync().ConfigureAwait(false);
-                    //        List<IUser> searchResultsList = userSearchResults.CurrentPage.ToList();
-                    //        foreach (IDirectoryObject objectResult in searchResultsList)
-                    //        {
-                    //            AzurecpResult azurecpResult = new AzurecpResult();
-                    //            azurecpResult.DirectoryObjectResult = objectResult as DirectoryObject;
-                    //            azurecpResult.TenantId = coco.TenantId;
-                    //            lock (lockAddResultToCollection)
-                    //            {
-                    //                allAADResults.Add(azurecpResult);
-                    //            }
-                    //        }
-                    //        userSearchResults = await userSearchResults.GetNextPageAsync().ConfigureAwait(false);
-                    //    } while (userSearchResults != null && userSearchResults.MorePagesAvailable);
-                    //}
-                    //if (groupQuery != null)
-                    //{
-                    //    IGroupCollection groupCollection = coco.ADClient.Groups;
-                    //    IPagedCollection<IGroup> groupSearchResults = null;
-                    //    do
-                    //    {
-                    //        groupSearchResults = await groupCollection.Where(groupQuery).ExecuteAsync().ConfigureAwait(false);
-                    //        List<IGroup> searchResultsList = groupSearchResults.CurrentPage.ToList();
-                    //        foreach (IDirectoryObject objectResult in searchResultsList)
-                    //        {
-                    //            AzurecpResult azurecpResult = new AzurecpResult();
-                    //            azurecpResult.DirectoryObjectResult = objectResult as DirectoryObject;
-                    //            azurecpResult.TenantId = coco.TenantId;
-                    //            lock (lockAddResultToCollection)
-                    //            {
-                    //                allAADResults.Add(azurecpResult);
-                    //            }
-                    //        }
-                    //        groupSearchResults = await groupSearchResults.GetNextPageAsync().ConfigureAwait(false);
-                    //    } while (groupSearchResults != null && groupSearchResults.MorePagesAvailable);
-                    //}
+#endregion
                 }
             }
             catch (AggregateException ae)
