@@ -17,9 +17,7 @@ $trust.ClaimProviderName = "AzureCP"
 $trust.Update()
 ```
 
-Finally, AzureCP must be registered as an application in Azure Active Directory to be able to query it, with permission "Read directory data". Check [this page](Create-App-In-AAD.html) to create the app.
-
-Once the app is created in Azure AD, information can be entered in Central Administration > Security > AzureCP Glogal configuration > "New Azure tenant" section.
+Finally, AzureCP must be registered as an application in Azure Active Directory. Check [this page](Create-App-In-AAD.html) to create the app.
 
 ## Important - Limitations
 
