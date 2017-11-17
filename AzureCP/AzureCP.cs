@@ -634,7 +634,7 @@ namespace azurecp
                     {
                         allSearchResults.AddRange(searchResult);
                         //AzureCPLogging.Log(String.Format("[{0}] Search on {1} took {2}ms and found {3} result(s) for '{4}'", ProviderInternalName, coco.TenantName, timer.ElapsedMilliseconds.ToString(), searchResult.Count.ToString(), input), TraceSeverity.Medium, EventSeverity.Information, AzureCPLogging.Categories.Lookup);
-                        AzureCPLogging.Log(String.Format("[{0}] Got {1} result(s) in {2}ms from \"{3}\" with input '{4}'", ProviderInternalName, timer.ElapsedMilliseconds.ToString(), searchResult.Count.ToString(), coco.TenantName, input),
+                        AzureCPLogging.Log(String.Format("[{0}] Got {1} result(s) in {2}ms from \"{3}\" with input '{4}'", ProviderInternalName, searchResult.Count.ToString(), timer.ElapsedMilliseconds.ToString(), coco.TenantName, input),
                             TraceSeverity.Medium, EventSeverity.Information, AzureCPLogging.Categories.Lookup);
                     }
                 }
@@ -677,33 +677,14 @@ namespace azurecp
                         AzureCPLogging.Log(String.Format("[{0}] Got new access token for tenant '{1}'", ProviderInternalName, coco.TenantName), TraceSeverity.Medium, EventSeverity.Information, AzureCPLogging.Categories.Lookup);
                     }
 
-                    Task<IPagedCollection<IUser>> userQueryTask = Task.Run(() =>
+                    Task userQueryTask = Task.Run(async () =>
                     {
-                        if (userQuery == null) return null;
-                        IUserCollection userCollection = coco.ADClient.Users;
-                        return userCollection.Where(userQuery).ExecuteAsync();
-                    });
-
-                    Task<IPagedCollection<IGroup>> groupQueryTask = Task.Run(() =>
-                    {
-                        if (groupQuery == null) return null;
-                        IGroupCollection groupCollection = coco.ADClient.Groups;
-                        return groupCollection.Where(groupQuery).ExecuteAsync();
-                    });
-
-                    Task userQueryContinuationTask = userQueryTask.ContinueWith((t) =>
-                    {
-                        if (t.IsFaulted)
-                        {
-                            // Previous task running the AAD query got an error
-                            AzureCPLogging.LogException(ProviderInternalName, String.Format("while querying users in tenant {0}", coco.TenantName), AzureCPLogging.Categories.Lookup, t.Exception);
-                            return;
-                        }
                         try
                         {
-                            if (t.Status == TaskStatus.Canceled) return;
-                            if (t.Result == null) return;
-                            IPagedCollection<IUser> userSearchResults = t.Result;
+                            if (userQuery == null) return;
+                            IUserCollection userCollection = coco.ADClient.Users;
+                            IPagedCollection<IUser> userSearchResults = await userCollection.Where(userQuery).ExecuteAsync().ConfigureAwait(false);
+                            if (userSearchResults == null) return;
                             do
                             {
                                 List<IUser> searchResultsList = userSearchResults.CurrentPage.ToList();
@@ -717,30 +698,23 @@ namespace azurecp
                                         allAADResults.Add(azurecpResult);
                                     }
                                 }
-                                //userSearchResults = await userSearchResults.GetNextPageAsync().ConfigureAwait(false);
-                                Task<IPagedCollection<IUser>> userSearchResultsTask = userSearchResults.GetNextPageAsync();
-                                userSearchResults = userSearchResultsTask.Result;
+                                userSearchResults = await userSearchResults.GetNextPageAsync().ConfigureAwait(false);
                             } while (userSearchResults != null && userSearchResults.MorePagesAvailable);
                         }
                         catch (Exception ex)
                         {
-                            AzureCPLogging.LogException(ProviderInternalName, String.Format("while getting user results in tenant {0}", coco.TenantName), AzureCPLogging.Categories.Lookup, ex);
+                            AzureCPLogging.LogException(ProviderInternalName, String.Format("while getting users in tenant {0}", coco.TenantName), AzureCPLogging.Categories.Lookup, ex);
                         }
                     });
 
-                    Task groupQueryContinuationTask = groupQueryTask.ContinueWith((t) =>
+                    Task groupQueryTask = Task.Run(async () =>
                     {
-                        if (t.IsFaulted)
-                        {
-                            // Previous task running the AAD query got an error
-                            AzureCPLogging.LogException(ProviderInternalName, String.Format("while querying groups in tenant {0}", coco.TenantName), AzureCPLogging.Categories.Lookup, t.Exception);
-                            return;
-                        }
                         try
                         {
-                            if (t.Status == TaskStatus.Canceled) return;
-                            if (t.Result == null) return;
-                            IPagedCollection<IGroup> groupSearchResults = t.Result;
+                            if (groupQuery == null) return;
+                            IGroupCollection groupCollection = coco.ADClient.Groups;
+                            IPagedCollection<IGroup> groupSearchResults = await groupCollection.Where(groupQuery).ExecuteAsync().ConfigureAwait(false);
+                            if (groupSearchResults == null) return;
                             do
                             {
                                 List<IGroup> searchResultsList = groupSearchResults.CurrentPage.ToList();
@@ -754,18 +728,108 @@ namespace azurecp
                                         allAADResults.Add(azurecpResult);
                                     }
                                 }
-                                //userSearchResults = await userSearchResults.GetNextPageAsync().ConfigureAwait(false);
-                                Task<IPagedCollection<IGroup>> userSearchResultsTask = groupSearchResults.GetNextPageAsync();
-                                groupSearchResults = userSearchResultsTask.Result;
+                                groupSearchResults = await groupSearchResults.GetNextPageAsync().ConfigureAwait(false);
                             } while (groupSearchResults != null && groupSearchResults.MorePagesAvailable);
                         }
                         catch (Exception ex)
                         {
-                            AzureCPLogging.LogException(ProviderInternalName, String.Format("while getting group results in tenant {0}", coco.TenantName), AzureCPLogging.Categories.Lookup, ex);
+                            AzureCPLogging.LogException(ProviderInternalName, String.Format("while getting groups in tenant {0}", coco.TenantName), AzureCPLogging.Categories.Lookup, ex);
                         }
                     });
 
-                    await Task.WhenAll(userQueryTask, userQueryContinuationTask, groupQueryTask, groupQueryContinuationTask);
+                    await Task.WhenAll(userQueryTask, groupQueryTask);
+
+                    //Task<IPagedCollection<IGroup>> groupQueryTask = new Task<IPagedCollection<IGroup>>(() =>
+                    //{
+                    //    if (groupQuery == null) return null;
+                    //    IGroupCollection groupCollection = coco.ADClient.Groups;
+                    //    Task<IPagedCollection<IGroup>> result = groupCollection.Where(groupQuery).ExecuteAsync();
+                    //    return result.Result;
+                    //});
+
+                    //Task userQueryContinuationTask = userQueryTask.ContinueWith((t) =>
+                    //{
+                    //    if (t.IsFaulted)
+                    //    {
+                    //        // Previous task running the AAD query got an error
+                    //        AzureCPLogging.LogException(ProviderInternalName, String.Format("while querying users in tenant {0}", coco.TenantName), AzureCPLogging.Categories.Lookup, t.Exception);
+                    //        return;
+                    //    }
+                    //    try
+                    //    {
+                    //        if (t.Status == TaskStatus.Canceled) return;
+                    //        if (t.Result == null) return;
+                    //        IPagedCollection<IUser> userSearchResults = t.Result;
+                    //        do
+                    //        {
+                    //            List<IUser> searchResultsList = userSearchResults.CurrentPage.ToList();
+                    //            foreach (IDirectoryObject objectResult in searchResultsList)
+                    //            {
+                    //                AzurecpResult azurecpResult = new AzurecpResult();
+                    //                azurecpResult.DirectoryObjectResult = objectResult as DirectoryObject;
+                    //                azurecpResult.TenantId = coco.TenantId;
+                    //                lock (lockAddResultToCollection)
+                    //                {
+                    //                    allAADResults.Add(azurecpResult);
+                    //                }
+                    //            }
+                    //            //userSearchResults = await userSearchResults.GetNextPageAsync().ConfigureAwait(false);
+                    //            Task<IPagedCollection<IUser>> userSearchResultsTask = userSearchResults.GetNextPageAsync();
+                    //            userSearchResults = userSearchResultsTask.Result;
+                    //        } while (userSearchResults != null && userSearchResults.MorePagesAvailable);
+                    //    }
+                    //    catch (Exception ex)
+                    //    {
+                    //        AzureCPLogging.LogException(ProviderInternalName, String.Format("while getting user results in tenant {0}", coco.TenantName), AzureCPLogging.Categories.Lookup, ex);
+                    //    }
+                    //});
+
+                    //Task groupQueryContinuationTask = groupQueryTask.ContinueWith((t) =>
+                    //{
+                    //    if (t.IsFaulted)
+                    //    {
+                    //        // Previous task running the AAD query got an error
+                    //        AzureCPLogging.LogException(ProviderInternalName, String.Format("while querying groups in tenant {0}", coco.TenantName), AzureCPLogging.Categories.Lookup, t.Exception);
+                    //        return;
+                    //    }
+                    //    try
+                    //    {
+                    //        if (t.Status == TaskStatus.Canceled) return;
+                    //        if (t.Result == null) return;
+                    //        IPagedCollection<IGroup> groupSearchResults = t.Result;
+                    //        do
+                    //        {
+                    //            List<IGroup> searchResultsList = groupSearchResults.CurrentPage.ToList();
+                    //            foreach (IDirectoryObject objectResult in searchResultsList)
+                    //            {
+                    //                AzurecpResult azurecpResult = new AzurecpResult();
+                    //                azurecpResult.DirectoryObjectResult = objectResult as DirectoryObject;
+                    //                azurecpResult.TenantId = coco.TenantId;
+                    //                lock (lockAddResultToCollection)
+                    //                {
+                    //                    allAADResults.Add(azurecpResult);
+                    //                }
+                    //            }
+                    //            //userSearchResults = await userSearchResults.GetNextPageAsync().ConfigureAwait(false);
+                    //            Task<IPagedCollection<IGroup>> userSearchResultsTask = groupSearchResults.GetNextPageAsync();
+                    //            groupSearchResults = userSearchResultsTask.Result;
+                    //        } while (groupSearchResults != null && groupSearchResults.MorePagesAvailable);
+                    //    }
+                    //    catch (Exception ex)
+                    //    {
+                    //        AzureCPLogging.LogException(ProviderInternalName, String.Format("while getting group results in tenant {0}", coco.TenantName), AzureCPLogging.Categories.Lookup, ex);
+                    //    }
+                    //});
+
+
+                    //List<Task> tasksToRun = new List<Task>();
+                    //if (groupQuery != null)
+                    //{
+                    //    tasksToRun.Add(groupQueryTask);
+                    //    tasksToRun.Add(groupQueryContinuationTask);
+                    //}
+
+                    //await Task.WhenAll(tasksToRun);
 
                     //// Workaroud implemented to avoid deadlock when calling DataServiceContextWrapper.ExecuteBatchAsync
                     //if (userQuery != null)
