@@ -13,7 +13,7 @@ docs:
 - title: Configure
   url: Configure-AzureCP.html
 
-- Title: Create app in Azure AD
+- title: Create app in Azure AD
   url: Create-App-In-AAD.html
 
 - title: Report an issue
