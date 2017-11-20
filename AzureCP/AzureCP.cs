@@ -1208,7 +1208,8 @@ namespace azurecp
                 SPOriginalIssuerType loginType = SPOriginalIssuers.GetIssuerType(decodedEntity.OriginalIssuer);
                 if (loginType != SPOriginalIssuerType.TrustedProvider && loginType != SPOriginalIssuerType.ClaimProvider)
                 {
-                    AzureCPLogging.LogDebug(String.Format("[{0}] Not trying to augment '{1}' because OriginalIssuer is '{2}'.", ProviderInternalName, decodedEntity.Value, decodedEntity.OriginalIssuer));
+                    AzureCPLogging.Log(String.Format("[{0}] Not trying to augment '{1}' because OriginalIssuer is '{2}'.", ProviderInternalName, decodedEntity.Value, decodedEntity.OriginalIssuer),
+                        TraceSeverity.VerboseEx, EventSeverity.Information, AzureCPLogging.Categories.Claims_Augmentation);
                     return;
                 }
 
@@ -1289,7 +1290,7 @@ namespace azurecp
                             TraceSeverity.Verbose, EventSeverity.Information, AzureCPLogging.Categories.Claims_Augmentation);
                     }
                     timer.Stop();
-                    AzureCPLogging.Log(String.Format("[{0}] Augmentation of user '{1}' completed in {2}ms and added {3} Azure AD group(s) from tenant {4}",
+                    AzureCPLogging.Log(String.Format("[{0}] Augmentation of user '{1}' completed in {2}ms {3} AAD group(s) added from '{4}'",
                         ProviderInternalName, input, timer.ElapsedMilliseconds.ToString(), userMembership.Count, userTenant.TenantName),
                         TraceSeverity.Medium, EventSeverity.Information, AzureCPLogging.Categories.Claims_Augmentation);
                 }
@@ -1301,10 +1302,6 @@ namespace azurecp
                 {
                     this.Lock_Config.ExitReadLock();
                 }
-            }
-            catch (ThreadAbortException ex)
-            {
-                AzureCPLogging.LogException(ProviderInternalName, "in FillClaimsForEntity (ThreadAbortException parent catch)", AzureCPLogging.Categories.Claims_Augmentation, ex);
             }
             catch (Exception ex)
             {
