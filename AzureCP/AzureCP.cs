@@ -843,22 +843,15 @@ namespace azurecp
             }
             catch (Exception ex)
             {
+                bool tryAgain = false;
                 // Handle exceptions documented in http://blogs.msdn.com/b/aadgraphteam/archive/2014/06/02/azure-active-directory-graph-client-library-1-0-api-reference-publish.aspx
                 if (ex.InnerException is ExpiredTokenException)
                 {
                     // AccessToken provided as a part of GraphConnection has expired. Reset it and try to renew it
                     coco.ADClient = null;
-                    if (firstAttempt)
-                    {
-                        AzureCPLogging.Log(String.Format("[{0}] Access token of Azure AD tenant '{1}' expired. Renew it and try again: ExpiredTokenException: {2}", ProviderInternalName, coco.TenantName, ex.InnerException.Message),
-                            TraceSeverity.High, EventSeverity.Information, AzureCPLogging.Categories.Lookup);
-                        allAADResults = await QueryAzureADAsync(coco, userQuery, groupQuery, false).ConfigureAwait(false);
-                    }
-                    else
-                    {
-                        AzureCPLogging.Log(String.Format("[{0}] Access token of Azure AD tenant '{1}' expired but we just tried to renew it, this is unexpected: ExpiredTokenException: {2}", ProviderInternalName, coco.TenantName, ex.InnerException.Message),
-                            TraceSeverity.Unexpected, EventSeverity.Error, AzureCPLogging.Categories.Lookup);
-                    }
+                    tryAgain = true;
+                    AzureCPLogging.Log(String.Format("[{0}] Access token of Azure AD tenant '{1}' expired. Renew it and try again: ExpiredTokenException: {2}", ProviderInternalName, coco.TenantName, ex.InnerException.Message),
+                        TraceSeverity.High, EventSeverity.Information, AzureCPLogging.Categories.Lookup);
                 }
                 else if (ex.InnerException is AuthorizationException)
                 {
@@ -878,6 +871,8 @@ namespace azurecp
                 else if (ex.InnerException is AuthenticationException)
                 {
                     // accessToken provided as a part of GraphConnection is not valid
+                    coco.ADClient = null;
+                    tryAgain = true;
                     AzureCPLogging.Log(String.Format("[{0}] accessToken provided as a part of GraphConnection is not valid while querying tenant '{3}': AuthenticationException: {1}, Callstack: {2}.", ProviderInternalName, ex.InnerException.Message, ex.InnerException.StackTrace, coco.TenantName), TraceSeverity.Unexpected, EventSeverity.Error, AzureCPLogging.Categories.Lookup);
                 }
                 else if (ex.InnerException is RequestThrottledException)
@@ -888,12 +883,14 @@ namespace azurecp
                 else if (ex.InnerException is PageNotAvailableException)
                 {
                     // pageToken has expired (which is not used here)
+                    tryAgain = true;
                     AzureCPLogging.Log(String.Format("[{0}] pageToken expired while querying tenant {3}: PageNotAvailableException: {1}, Callstack: '{2}'.", ProviderInternalName, ex.InnerException.Message, ex.InnerException.StackTrace, coco.TenantName), TraceSeverity.Unexpected, EventSeverity.Error, AzureCPLogging.Categories.Lookup);
                 }
                 else if (ex.InnerException is GraphException)
                 {
                     // Non specific GraphException that must be last checked as it's base exception of all exceptions types above
                     // (documentation is wrong to say that this is a network error, it may be true but it just can't assume that)
+                    tryAgain = true;
                     AzureCPLogging.Log(String.Format("[{0}] GraphException occurred while querying tenant '{3}': {1}, Callstack: {2}.", ProviderInternalName, ex.InnerException.Message, ex.InnerException.StackTrace, coco.TenantName), TraceSeverity.Unexpected, EventSeverity.Error, AzureCPLogging.Categories.Lookup);
                 }
                 else if (ex.InnerException is Microsoft.Data.OData.ODataErrorException)
@@ -904,10 +901,17 @@ namespace azurecp
                 else
                 {
                     // Unknown exception
+                    tryAgain = true;
                     AzureCPLogging.LogException(ProviderInternalName, String.Format("while querying tenant '{0}'", coco.TenantName), AzureCPLogging.Categories.Lookup, ex);
                 }
-            }
 
+                if (firstAttempt && tryAgain)
+                {
+                    AzureCPLogging.Log(String.Format("[{0}] Trying query one more time on tenant '{1}'...", ProviderInternalName),
+                        TraceSeverity.Medium, EventSeverity.Information, AzureCPLogging.Categories.Lookup);
+                    allAADResults = await QueryAzureADAsync(coco, userQuery, groupQuery, false).ConfigureAwait(false);
+                }
+            }
             return allAADResults;
         }
 
@@ -1290,7 +1294,7 @@ namespace azurecp
                             TraceSeverity.Verbose, EventSeverity.Information, AzureCPLogging.Categories.Claims_Augmentation);
                     }
                     timer.Stop();
-                    AzureCPLogging.Log(String.Format("[{0}] Augmentation of user '{1}' completed in {2}ms {3} AAD group(s) added from '{4}'",
+                    AzureCPLogging.Log(String.Format("[{0}] Augmentation of user '{1}' completed in {2}ms with {3} AAD group(s) added from '{4}'",
                         ProviderInternalName, input, timer.ElapsedMilliseconds.ToString(), userMembership.Count, userTenant.TenantName),
                         TraceSeverity.Medium, EventSeverity.Information, AzureCPLogging.Categories.Claims_Augmentation);
                 }
