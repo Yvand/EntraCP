@@ -907,7 +907,7 @@ namespace azurecp
 
                 if (firstAttempt && tryAgain)
                 {
-                    AzureCPLogging.Log(String.Format("[{0}] Trying query one more time on tenant '{1}'...", ProviderInternalName),
+                    AzureCPLogging.Log(String.Format("[{0}] Trying query one more time on tenant '{1}'...", ProviderInternalName, coco.TenantName),
                         TraceSeverity.Medium, EventSeverity.Information, AzureCPLogging.Categories.Lookup);
                     allAADResults = await QueryAzureADAsync(coco, userQuery, groupQuery, false).ConfigureAwait(false);
                 }
