@@ -655,10 +655,15 @@ namespace azurecp
         /// <returns></returns>
         private async Task<List<AzurecpResult>> QueryAzureADAsync(AzureTenant coco, Expression<Func<IUser, bool>> userQuery, Expression<Func<IGroup, bool>> groupQuery, bool firstAttempt)
         {
+            AzureCPLogging.Log(String.Format("[{0}] Entering QueryAzureADAsync for tenant '{1}'", ProviderInternalName, coco.TenantName), TraceSeverity.Verbose, EventSeverity.Information, AzureCPLogging.Categories.Lookup);
+            bool tryAgain = false;
+            int timeout = 5000;
+            CancellationTokenSource cts = new CancellationTokenSource();
             List<AzurecpResult> allAADResults = new List<AzurecpResult>();
+            object lockAddResultToCollection = new object();
             try
             {
-                object lockAddResultToCollection = new object();
+                cts.CancelAfter(timeout);
                 using (new SPMonitoredScope(String.Format("[{0}] Connecting to Azure AD {1}", ProviderInternalName, coco.TenantName), 1000))
                 {
                     if (coco.ADClient == null)
@@ -708,7 +713,7 @@ namespace azurecp
                             AzureCPLogging.LogException(ProviderInternalName, String.Format("while getting users in tenant {0}", coco.TenantName), AzureCPLogging.Categories.Lookup, ex);
                             throw ex;
                         }
-                    });
+                    }, cts.Token);
 
                     Task groupQueryTask = Task.Run(async () =>
                     {
@@ -739,7 +744,7 @@ namespace azurecp
                             AzureCPLogging.LogException(ProviderInternalName, String.Format("while getting groups in tenant {0}", coco.TenantName), AzureCPLogging.Categories.Lookup, ex);
                             throw ex;
                         }
-                    });
+                    }, cts.Token);
 
                     await Task.WhenAll(userQueryTask, groupQueryTask);
                     #region tests
@@ -841,9 +846,13 @@ namespace azurecp
                     #endregion
                 }
             }
+            catch (OperationCanceledException ex)
+            {
+                AzureCPLogging.Log(String.Format("[{0}] AAD lookup on Azure AD tenant '{1}' exceeded {2}ms and was cancelled.", ProviderInternalName, coco.TenantName, timeout), TraceSeverity.Unexpected, EventSeverity.Error, AzureCPLogging.Categories.Lookup);
+                //tryAgain = true;
+            }
             catch (Exception ex)
             {
-                bool tryAgain = false;
                 // Handle exceptions documented in http://blogs.msdn.com/b/aadgraphteam/archive/2014/06/02/azure-active-directory-graph-client-library-1-0-api-reference-publish.aspx
                 if (ex.InnerException is ExpiredTokenException)
                 {
@@ -904,14 +913,26 @@ namespace azurecp
                     tryAgain = true;
                     AzureCPLogging.LogException(ProviderInternalName, String.Format("while querying tenant '{0}'", coco.TenantName), AzureCPLogging.Categories.Lookup, ex);
                 }
-
-                if (firstAttempt && tryAgain)
-                {
-                    AzureCPLogging.Log(String.Format("[{0}] Trying query one more time on tenant '{1}'...", ProviderInternalName, coco.TenantName),
-                        TraceSeverity.Medium, EventSeverity.Information, AzureCPLogging.Categories.Lookup);
-                    allAADResults = await QueryAzureADAsync(coco, userQuery, groupQuery, false).ConfigureAwait(false);
-                }
             }
+            finally
+            {
+                cts.Dispose();
+            }
+
+            if (firstAttempt && tryAgain)
+            {
+                AzureCPLogging.Log(String.Format("[{0}] Trying query one more time on tenant '{1}'...", ProviderInternalName, coco.TenantName),
+                    TraceSeverity.Medium, EventSeverity.Information, AzureCPLogging.Categories.Lookup);
+
+                var result = await QueryAzureADAsync(coco, userQuery, groupQuery, false).ConfigureAwait(false);
+                lock (lockAddResultToCollection)
+                {
+                    allAADResults = result;
+                }
+
+            }
+
+            AzureCPLogging.Log(String.Format("[{0}] Leaving QueryAzureADAsync for tenant '{1}'", ProviderInternalName, coco.TenantName), TraceSeverity.Verbose, EventSeverity.Information, AzureCPLogging.Categories.Lookup);
             return allAADResults;
         }
 
