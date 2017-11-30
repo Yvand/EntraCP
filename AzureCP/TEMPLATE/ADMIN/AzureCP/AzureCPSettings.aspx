@@ -124,7 +124,7 @@
 					<Columns>
 						<asp:BoundField DataField="Id" ItemStyle-CssClass="Azurecp-HideCol" HeaderStyle-CssClass="Azurecp-HideCol"/>
 						<asp:BoundField HeaderText="TenantName" DataField="TenantName"/>
-						<asp:BoundField HeaderText="ClientID" DataField="ClientID"/>
+						<asp:BoundField HeaderText="ApplicationID" DataField="ClientID"/>
 						<asp:CommandField HeaderText="Action" ButtonType="Button" DeleteText="Remove" ShowDeleteButton="True" />
 					</Columns>
 				</wssawc:SPGridView>
@@ -144,19 +144,19 @@
 				<ol>
 					<li>
 						<label for="<%= TxtTenantName.ClientID %>">Tenant <a href="http://msdn.microsoft.com/en-us/library/system.directoryservices.directoryentry.path(v=vs.110).aspx" target="_blank">name</a>: <em>*</em></label>
-						<wssawc:InputFormTextBox title="Azure tenant name" class="ms-input" ID="TxtTenantName" Columns="50" Runat="server" MaxLength=255 Text="TENANTNAME.onMicrosoft.com" />
+						<wssawc:InputFormTextBox title="Azure tenant name" class="ms-input" ID="TxtTenantName" Columns="50" Runat="server" MaxLength="255" Text="TENANTNAME.onMicrosoft.com" />
 					</li>
 					<li>
 						<label for="<%= TxtTenantId.ClientID %>">Tenant ID: <em>*</em></label>
-						<wssawc:InputFormTextBox title="Username" class="ms-input" ID="TxtTenantId" Columns="50" Runat="server" MaxLength=255 />
+						<wssawc:InputFormTextBox title="Username" class="ms-input" ID="TxtTenantId" Columns="50" Runat="server" MaxLength="255" />
 					</li>
 					<li>
-						<label for="<%= TxtClientId.ClientID %>">Client ID: <em>*</em></label>
-						<wssawc:InputFormTextBox title="Password" class="ms-input" ID="TxtClientId" Columns="50" Runat="server" MaxLength=255 />
+						<label for="<%= TxtClientId.ClientID %>">Application ID: <em>*</em></label>
+						<wssawc:InputFormTextBox title="Password" class="ms-input" ID="TxtClientId" Columns="50" Runat="server" MaxLength="255" />
 					</li>
 					<li>
-						<label for="<%= TxtClientSecret.ClientID %>">Client Secret: <em>*</em></label>
-						<wssawc:InputFormTextBox title="Password" class="ms-input" ID="TxtClientSecret" Columns="50" Runat="server" MaxLength=255 TextMode="Password" />
+						<label for="<%= TxtClientSecret.ClientID %>">Application Secret: <em>*</em></label>
+						<wssawc:InputFormTextBox title="Password" class="ms-input" ID="TxtClientSecret" Columns="50" Runat="server" MaxLength="255" TextMode="Password" />
 					</li>
 				</ol>
 				</fieldset>
