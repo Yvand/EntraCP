@@ -688,6 +688,7 @@ namespace azurecp
                     {
                         try
                         {
+                            AzureCPLogging.Log(String.Format("[{0}] QueryAzureADAsync - entering userQueryTask for tenant '{1}'", ProviderInternalName, coco.TenantName), TraceSeverity.Verbose, EventSeverity.Information, AzureCPLogging.Categories.Lookup);
                             if (userQuery == null) return;
                             IUserCollection userCollection = coco.ADClient.Users;
                             IPagedCollection<IUser> userSearchResults = await userCollection.Where(userQuery).ExecuteAsync().ConfigureAwait(false);
@@ -713,12 +714,14 @@ namespace azurecp
                             AzureCPLogging.LogException(ProviderInternalName, String.Format("while getting users in tenant {0}", coco.TenantName), AzureCPLogging.Categories.Lookup, ex);
                             throw ex;
                         }
+                        AzureCPLogging.Log(String.Format("[{0}] QueryAzureADAsync - leaving userQueryTask for tenant '{1}'", ProviderInternalName, coco.TenantName), TraceSeverity.Verbose, EventSeverity.Information, AzureCPLogging.Categories.Lookup);
                     }, cts.Token);
 
                     Task groupQueryTask = Task.Run(async () =>
                     {
                         try
                         {
+                            AzureCPLogging.Log(String.Format("[{0}] QueryAzureADAsync - entering groupQueryTask for tenant '{1}'", ProviderInternalName, coco.TenantName), TraceSeverity.Verbose, EventSeverity.Information, AzureCPLogging.Categories.Lookup);
                             if (groupQuery == null) return;
                             IGroupCollection groupCollection = coco.ADClient.Groups;
                             IPagedCollection<IGroup> groupSearchResults = await groupCollection.Where(groupQuery).ExecuteAsync().ConfigureAwait(false);
@@ -744,9 +747,13 @@ namespace azurecp
                             AzureCPLogging.LogException(ProviderInternalName, String.Format("while getting groups in tenant {0}", coco.TenantName), AzureCPLogging.Categories.Lookup, ex);
                             throw ex;
                         }
+                        AzureCPLogging.Log(String.Format("[{0}] QueryAzureADAsync - leaving groupQueryTask for tenant '{1}'", ProviderInternalName, coco.TenantName), TraceSeverity.Verbose, EventSeverity.Information, AzureCPLogging.Categories.Lookup);
                     }, cts.Token);
 
-                    await Task.WhenAll(userQueryTask, groupQueryTask);
+                    AzureCPLogging.Log(String.Format("[{0}] QueryAzureADAsync - awaiting for tasks to complete for tenant '{1}'", ProviderInternalName, coco.TenantName), TraceSeverity.Verbose, EventSeverity.Information, AzureCPLogging.Categories.Lookup);
+                    await Task.WhenAll(userQueryTask, groupQueryTask).ConfigureAwait(false);
+                    AzureCPLogging.Log(String.Format("[{0}] QueryAzureADAsync - tasks completed for tenant '{1}'", ProviderInternalName, coco.TenantName), TraceSeverity.Verbose, EventSeverity.Information, AzureCPLogging.Categories.Lookup);
+
                     #region tests
                     //Task<IPagedCollection<IUser>> userQueryTask = Task.Run(async () =>
                     //{
@@ -921,15 +928,14 @@ namespace azurecp
 
             if (firstAttempt && tryAgain)
             {
-                AzureCPLogging.Log(String.Format("[{0}] Trying query one more time on tenant '{1}'...", ProviderInternalName, coco.TenantName),
-                    TraceSeverity.Medium, EventSeverity.Information, AzureCPLogging.Categories.Lookup);
+                //AzureCPLogging.Log(String.Format("[{0}] Trying query one more time on tenant '{1}'...", ProviderInternalName, coco.TenantName),
+                //    TraceSeverity.Medium, EventSeverity.Information, AzureCPLogging.Categories.Lookup);
 
-                var result = await QueryAzureADAsync(coco, userQuery, groupQuery, false).ConfigureAwait(false);
-                lock (lockAddResultToCollection)
-                {
-                    allAADResults = result;
-                }
-
+                //var result = await QueryAzureADAsync(coco, userQuery, groupQuery, false).ConfigureAwait(false);
+                //lock (lockAddResultToCollection)
+                //{
+                //    allAADResults = result;
+                //}
             }
 
             AzureCPLogging.Log(String.Format("[{0}] Leaving QueryAzureADAsync for tenant '{1}'", ProviderInternalName, coco.TenantName), TraceSeverity.Verbose, EventSeverity.Information, AzureCPLogging.Categories.Lookup);
