@@ -4,6 +4,7 @@ using Microsoft.SharePoint.Administration;
 using Microsoft.SharePoint.Administration.Claims;
 using Microsoft.SharePoint.Utilities;
 using Microsoft.SharePoint.WebControls;
+using Nito.AsyncEx;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
@@ -36,6 +37,8 @@ namespace azurecp
         private object Sync_Init = new object();
         private ReaderWriterLockSlim Lock_Config = new ReaderWriterLockSlim();
         private long AzureCPConfigVersion = 0;
+
+        private AsyncReaderWriterLock AccessTokenLock = new AsyncReaderWriterLock();
 
         /// <summary>
         /// Contains configuration currently used by claims provider
@@ -487,6 +490,7 @@ namespace azurecp
             }
 
             Task<List<AzurecpResult>> searchResultsTask = this.QueryAzureADCollectionAsync(input, userQuery, groupQuery);
+            searchResultsTask.ConfigureAwait(false);
             searchResultsTask.Wait();
             List<AzurecpResult> searchResults = searchResultsTask.Result;
             if (searchResults == null || searchResults.Count == 0) return;
@@ -652,33 +656,61 @@ namespace azurecp
         {
             AzureCPLogging.Log(String.Format("[{0}] Entering QueryAzureADAsync for tenant '{1}'", ProviderInternalName, coco.TenantName), TraceSeverity.VerboseEx, EventSeverity.Information, AzureCPLogging.Categories.Lookup);
             bool tryAgain = false;
-            int timeout = 5000;
-            CancellationTokenSource cts = new CancellationTokenSource();
+            bool resetAccessToken = false;
+
+#if DEBUG
+            int timeout = 1000000;    // 1000 secs
+#else
+            int timeout = 10000;    // 10 secs
+#endif
+
+            CancellationTokenSource cts = new CancellationTokenSource(timeout);
             List<AzurecpResult> allAADResults = new List<AzurecpResult>();
             object lockAddResultToCollection = new object();
+            IDisposable readerLock = null;
             try
             {
-                cts.CancelAfter(timeout);
-                using (new SPMonitoredScope(String.Format("[{0}] Connecting to Azure AD {1}", ProviderInternalName, coco.TenantName), 1000))
+                using (new SPMonitoredScope(String.Format("[{0}] Connecting to Azure AD tenant '{1}'", ProviderInternalName, coco.TenantName), 1000))
                 {
-                    if (coco.ADClient == null)
+                    // Check if access token needs to be updated
+                    ActiveDirectoryClient accessToken;
+                    using (AccessTokenLock.ReaderLock())
                     {
-                        ActiveDirectoryClient activeDirectoryClient;
-                        try
+                        accessToken = coco.ADClient;
+                    }
+                    if (accessToken == null)
+                    {
+                        // Get new access token and update it in configuration object
+                        using (AccessTokenLock.WriterLock())
                         {
-                            activeDirectoryClient = AuthenticationHelper.GetActiveDirectoryClientAsApplication(coco.TenantName, coco.TenantId, coco.ClientId, coco.ClientSecret);
+                            ActiveDirectoryClient newAccessToken = null;
+                            try
+                            {
+                                AzureCPLogging.Log(String.Format("[{0}] Getting new access token for tenant '{1}'", ProviderInternalName, coco.TenantName), TraceSeverity.Medium, EventSeverity.Information, AzureCPLogging.Categories.Lookup);
+                                Task refreshAccessTokenTask = Task<string>.Run(() =>
+                                {
+                                    newAccessToken = AuthenticationHelper.GetActiveDirectoryClientAsApplication(coco.TenantName, coco.TenantId, coco.ClientId, coco.ClientSecret);
+                                }, cts.Token);
+                                refreshAccessTokenTask.Wait();
+                                AzureCPLogging.Log(String.Format("[{0}] Got new access token for tenant '{1}'", ProviderInternalName, coco.TenantName), TraceSeverity.Medium, EventSeverity.Information, AzureCPLogging.Categories.Lookup);
+                                coco.ADClient = newAccessToken;
+                            }
+                            catch (AuthenticationException ex)
+                            {
+                                //You should implement retry and back-off logic per the guidance given here:http://msdn.microsoft.com/en-us/library/dn168916.aspx
+                                //InnerException Message will contain the HTTP error status codes mentioned in the link above
+                                AzureCPLogging.LogException(ProviderInternalName, String.Format("while acquiring access token for tenant '{0}'", coco.TenantName), AzureCPLogging.Categories.Lookup, ex);
+                                return null;
+                            }
+                            catch (OperationCanceledException ex)
+                            {
+                                AzureCPLogging.Log(String.Format("[{0}] Getting access token for tenant '{1}' exceeded {2}ms and was cancelled.", ProviderInternalName, coco.TenantName, timeout), TraceSeverity.Unexpected, EventSeverity.Error, AzureCPLogging.Categories.Lookup);
+                                return null;
+                            }
                         }
-                        catch (AuthenticationException ex)
-                        {
-                            //You should implement retry and back-off logic per the guidance given here:http://msdn.microsoft.com/en-us/library/dn168916.aspx
-                            //InnerException Message will contain the HTTP error status codes mentioned in the link above
-                            AzureCPLogging.LogException(ProviderInternalName, String.Format("while acquiring token for tenant {0}", coco.TenantName), AzureCPLogging.Categories.Lookup, ex);
-                            return null;
-                        }
-                        coco.ADClient = activeDirectoryClient;
-                        AzureCPLogging.Log(String.Format("[{0}] Got new access token for tenant '{1}'", ProviderInternalName, coco.TenantName), TraceSeverity.Medium, EventSeverity.Information, AzureCPLogging.Categories.Lookup);
                     }
 
+                    readerLock = AccessTokenLock.ReaderLock();
                     Task userQueryTask = Task.Run(async () =>
                     {
                         try
@@ -745,12 +777,10 @@ namespace azurecp
                         AzureCPLogging.Log(String.Format("[{0}] QueryAzureADAsync - leaving groupQueryTask for tenant '{1}'", ProviderInternalName, coco.TenantName), TraceSeverity.VerboseEx, EventSeverity.Information, AzureCPLogging.Categories.Lookup);
                     }, cts.Token);
 
-                    AzureCPLogging.Log(String.Format("[{0}] QueryAzureADAsync - awaiting for tasks to complete for tenant '{1}'", ProviderInternalName, coco.TenantName), TraceSeverity.VerboseEx, EventSeverity.Information, AzureCPLogging.Categories.Lookup);
                     await Task.WhenAll(userQueryTask, groupQueryTask).ConfigureAwait(false);
-                    AzureCPLogging.Log(String.Format("[{0}] QueryAzureADAsync - tasks completed for tenant '{1}'", ProviderInternalName, coco.TenantName), TraceSeverity.VerboseEx, EventSeverity.Information, AzureCPLogging.Categories.Lookup);
                 }
             }
-            catch (OperationCanceledException)
+            catch (OperationCanceledException ex)
             {
                 AzureCPLogging.Log(String.Format("[{0}] AAD lookup on Azure AD tenant '{1}' exceeded {2}ms and was cancelled.", ProviderInternalName, coco.TenantName, timeout), TraceSeverity.Unexpected, EventSeverity.Error, AzureCPLogging.Categories.Lookup);
                 //tryAgain = true;
@@ -761,7 +791,7 @@ namespace azurecp
                 if (ex.InnerException is ExpiredTokenException)
                 {
                     // AccessToken provided as a part of GraphConnection has expired. Reset it and try to renew it
-                    coco.ADClient = null;
+                    resetAccessToken = true;
                     tryAgain = true;
                     AzureCPLogging.Log(String.Format("[{0}] Access token of Azure AD tenant '{1}' expired. Renew it and try again: ExpiredTokenException: {2}", ProviderInternalName, coco.TenantName, ex.InnerException.Message),
                         TraceSeverity.High, EventSeverity.Information, AzureCPLogging.Categories.Lookup);
@@ -784,7 +814,7 @@ namespace azurecp
                 else if (ex.InnerException is AuthenticationException)
                 {
                     // accessToken provided as a part of GraphConnection is not valid
-                    coco.ADClient = null;
+                    resetAccessToken = true;
                     tryAgain = true;
                     AzureCPLogging.Log(String.Format("[{0}] accessToken provided as a part of GraphConnection is not valid while querying tenant '{3}': AuthenticationException: {1}, Callstack: {2}.", ProviderInternalName, ex.InnerException.Message, ex.InnerException.StackTrace, coco.TenantName), TraceSeverity.Unexpected, EventSeverity.Error, AzureCPLogging.Categories.Lookup);
                 }
@@ -820,7 +850,19 @@ namespace azurecp
             }
             finally
             {
+                AzureCPLogging.LogDebug(String.Format("Releasing AccessTokenLock ReadLock and cancellation token of tenant '{0}'", coco.TenantName));
+                readerLock.Dispose();
                 cts.Dispose();
+            }
+
+            if (resetAccessToken)
+            {
+                using (AccessTokenLock.WriterLock())
+                {
+                    AzureCPLogging.Log(String.Format("[{0}] Resetting access token of tenant '{1}'...", ProviderInternalName, coco.TenantName),
+                        TraceSeverity.Medium, EventSeverity.Information, AzureCPLogging.Categories.Lookup);
+                    coco.ADClient = null;
+                }
             }
 
             if (firstAttempt && tryAgain)

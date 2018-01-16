@@ -8,6 +8,9 @@
     <customAssembly location="Microsoft.IdentityModel.Clients.ActiveDirectory.dll" deploymentTarget="GlobalAssemblyCache" sourcePath="bin\Release\Microsoft.IdentityModel.Clients.ActiveDirectory.dll" />
     <customAssembly location="System.Spatial.dll" deploymentTarget="GlobalAssemblyCache" sourcePath="bin\Release\System.Spatial.dll" />
     <customAssembly location="Microsoft.IdentityModel.Clients.ActiveDirectory.Platform.dll" deploymentTarget="GlobalAssemblyCache" sourcePath="bin\Release\Microsoft.IdentityModel.Clients.ActiveDirectory.Platform.dll" />
+    <customAssembly location="Nito.AsyncEx.Concurrent.dll" deploymentTarget="GlobalAssemblyCache" sourcePath="bin\Release\Nito.AsyncEx.Concurrent.dll" />
+    <customAssembly location="Nito.AsyncEx.dll" deploymentTarget="GlobalAssemblyCache" sourcePath="bin\Release\Nito.AsyncEx.dll" />
+    <customAssembly location="Nito.AsyncEx.Enlightenment.dll" deploymentTarget="GlobalAssemblyCache" sourcePath="bin\Release\Nito.AsyncEx.Enlightenment.dll" />
   </assemblies>
   <features>
     <featureReference itemId="70b104e2-19df-4cb1-9802-c98eaf14d84e" />
