@@ -659,7 +659,7 @@ namespace azurecp
             bool resetAccessToken = false;
 
 #if DEBUG
-            int timeout = 1000000;    // 1000 secs
+            int timeout = 5000;    // 1000 secs      1000000
 #else
             int timeout = 10000;    // 10 secs
 #endif
@@ -683,17 +683,20 @@ namespace azurecp
                         // Get new access token and update it in configuration object
                         using (AccessTokenLock.WriterLock())
                         {
-                            ActiveDirectoryClient newAccessToken = null;
                             try
                             {
                                 AzureCPLogging.Log(String.Format("[{0}] Getting new access token for tenant '{1}'", ProviderInternalName, coco.TenantName), TraceSeverity.Medium, EventSeverity.Information, AzureCPLogging.Categories.Lookup);
-                                Task refreshAccessTokenTask = Task<string>.Run(() =>
+                                Stopwatch timer = new Stopwatch();
+                                timer.Start();
+                                ActiveDirectoryClient newAccessToken = null;
+                                Task refreshAccessTokenTask = Task.Run(() =>
                                 {
                                     newAccessToken = AuthenticationHelper.GetActiveDirectoryClientAsApplication(coco.TenantName, coco.TenantId, coco.ClientId, coco.ClientSecret);
                                 }, cts.Token);
-                                refreshAccessTokenTask.Wait();
-                                AzureCPLogging.Log(String.Format("[{0}] Got new access token for tenant '{1}'", ProviderInternalName, coco.TenantName), TraceSeverity.Medium, EventSeverity.Information, AzureCPLogging.Categories.Lookup);
+                                refreshAccessTokenTask.Wait(timeout, cts.Token);
                                 coco.ADClient = newAccessToken;
+                                timer.Stop();
+                                AzureCPLogging.Log(String.Format("[{0}] Got new access token for tenant '{1}' in {2}ms", ProviderInternalName, coco.TenantName, timer.ElapsedMilliseconds.ToString()), TraceSeverity.Medium, EventSeverity.Information, AzureCPLogging.Categories.Lookup);
                             }
                             catch (AuthenticationException ex)
                             {
@@ -704,7 +707,7 @@ namespace azurecp
                             }
                             catch (OperationCanceledException ex)
                             {
-                                AzureCPLogging.Log(String.Format("[{0}] Getting access token for tenant '{1}' exceeded {2}ms and was cancelled.", ProviderInternalName, coco.TenantName, timeout), TraceSeverity.Unexpected, EventSeverity.Error, AzureCPLogging.Categories.Lookup);
+                                AzureCPLogging.Log(String.Format("[{0}] Getting access token for tenant '{1}' exceeded timeout of {2}ms and was cancelled.", ProviderInternalName, coco.TenantName, timeout), TraceSeverity.Unexpected, EventSeverity.Error, AzureCPLogging.Categories.Lookup);
                                 return null;
                             }
                         }
@@ -777,12 +780,13 @@ namespace azurecp
                         AzureCPLogging.Log(String.Format("[{0}] QueryAzureADAsync - leaving groupQueryTask for tenant '{1}'", ProviderInternalName, coco.TenantName), TraceSeverity.VerboseEx, EventSeverity.Information, AzureCPLogging.Categories.Lookup);
                     }, cts.Token);
 
-                    await Task.WhenAll(userQueryTask, groupQueryTask).ConfigureAwait(false);
+                    Task.WaitAll(new Task[2] { userQueryTask, groupQueryTask }, timeout, cts.Token);
+                    //await Task.WhenAll(userQueryTask, groupQueryTask).ConfigureAwait(false);
                 }
             }
             catch (OperationCanceledException ex)
             {
-                AzureCPLogging.Log(String.Format("[{0}] AAD lookup on Azure AD tenant '{1}' exceeded {2}ms and was cancelled.", ProviderInternalName, coco.TenantName, timeout), TraceSeverity.Unexpected, EventSeverity.Error, AzureCPLogging.Categories.Lookup);
+                AzureCPLogging.Log(String.Format("[{0}] Query on Azure AD tenant '{1}' exceeded timeout of {2}ms and was cancelled.", ProviderInternalName, coco.TenantName, timeout), TraceSeverity.Unexpected, EventSeverity.Error, AzureCPLogging.Categories.Lookup);
                 //tryAgain = true;
             }
             catch (Exception ex)
@@ -851,7 +855,7 @@ namespace azurecp
             finally
             {
                 AzureCPLogging.LogDebug(String.Format("Releasing AccessTokenLock ReadLock and cancellation token of tenant '{0}'", coco.TenantName));
-                readerLock.Dispose();
+                if (readerLock != null) readerLock.Dispose();   // readerLock may be null if refreshAccessTokenTask timed out
                 cts.Dispose();
             }
 

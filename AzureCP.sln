@@ -1,7 +1,7 @@
 ﻿
 Microsoft Visual Studio Solution File, Format Version 12.00
-# Visual Studio 2013
-VisualStudioVersion = 12.0.31101.0
+# Visual Studio 15
+VisualStudioVersion = 15.0.27130.2020
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "AzureCP", "AzureCP\AzureCP.csproj", "{EEC47949-34B5-4805-A04D-A372BE75D3CB}"
 EndProject
@@ -23,6 +23,7 @@ Global
 		{EEC47949-34B5-4805-A04D-A372BE75D3CB}.Release|Any CPU.Build.0 = Release|Any CPU
 		{EEC47949-34B5-4805-A04D-A372BE75D3CB}.Release|Any CPU.Deploy.0 = Release|Any CPU
 		{EEC47949-34B5-4805-A04D-A372BE75D3CB}.Release|x64.ActiveCfg = Release|Any CPU
+		{EEC47949-34B5-4805-A04D-A372BE75D3CB}.Release|x64.Build.0 = Release|Any CPU
 		{D8CBE005-2EFB-4D96-9521-8CA5C368F514}.Debug|Any CPU.ActiveCfg = Debug|x64
 		{D8CBE005-2EFB-4D96-9521-8CA5C368F514}.Debug|Any CPU.Build.0 = Debug|x64
 		{D8CBE005-2EFB-4D96-9521-8CA5C368F514}.Debug|x64.ActiveCfg = Debug|x64
@@ -34,5 +35,8 @@ Global
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(ExtensibilityGlobals) = postSolution
+		SolutionGuid = {5EBC3283-3759-47C1-9B41-1BDD027B6DBF}
 	EndGlobalSection
 EndGlobal
