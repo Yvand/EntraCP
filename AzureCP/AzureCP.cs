@@ -634,15 +634,48 @@ namespace azurecp
                     lock (lockResults)
                     {
                         allSearchResults.AddRange(searchResult);
-                        //AzureCPLogging.Log(String.Format("[{0}] Search on {1} took {2}ms and found {3} result(s) for '{4}'", ProviderInternalName, coco.TenantName, timer.ElapsedMilliseconds.ToString(), searchResult.Count.ToString(), input), TraceSeverity.Medium, EventSeverity.Information, AzureCPLogging.Categories.Lookup);
-                        AzureCPLogging.Log(String.Format("[{0}] Got {1} result(s) in {2}ms from \"{3}\" with input '{4}'", ProviderInternalName, searchResult.Count.ToString(), timer.ElapsedMilliseconds.ToString(), coco.TenantName, input),
+                        //AzureCPLogging.Log(String.Format("[{0}] Search on {1} took {2} ms and found {3} result(s) for '{4}'", ProviderInternalName, coco.TenantName, timer.ElapsedMilliseconds.ToString(), searchResult.Count.ToString(), input), TraceSeverity.Medium, EventSeverity.Information, AzureCPLogging.Categories.Lookup);
+                        AzureCPLogging.Log(String.Format("[{0}] Got {1} result(s) in {2} ms from \"{3}\" with input '{4}'", ProviderInternalName, searchResult.Count.ToString(), timer.ElapsedMilliseconds.ToString(), coco.TenantName, input),
                             TraceSeverity.Medium, EventSeverity.Information, AzureCPLogging.Categories.Lookup);
                     }
                 }
-                else AzureCPLogging.Log(String.Format("[{0}] Got no result in {1}ms from \"{2}\" with input '{3}'", ProviderInternalName, timer.ElapsedMilliseconds.ToString(), coco.TenantName, input), TraceSeverity.Medium, EventSeverity.Information, AzureCPLogging.Categories.Lookup);
+                else AzureCPLogging.Log(String.Format("[{0}] Got no result in {1} ms from \"{2}\" with input '{3}'", ProviderInternalName, timer.ElapsedMilliseconds.ToString(), coco.TenantName, input), TraceSeverity.Medium, EventSeverity.Information, AzureCPLogging.Categories.Lookup);
                 //});
             }
             return allSearchResults;
+        }
+
+        private ActiveDirectoryClient RefreshAzureADContext(AzureTenant coco)
+        {
+            try
+            {
+                CancellationTokenSource cts = new CancellationTokenSource(Constants.timeout);
+                AzureCPLogging.Log(String.Format("[{0}] Getting new client context for tenant '{1}'", ProviderInternalName, coco.TenantName), TraceSeverity.Medium, EventSeverity.Information, AzureCPLogging.Categories.Lookup);
+                Stopwatch timer = new Stopwatch();
+                timer.Start();
+                ActiveDirectoryClient newAccessToken = null;
+                Task refreshAccessTokenTask = Task.Run(() =>
+                {
+                    newAccessToken = AuthenticationHelper.GetActiveDirectoryClientAsApplication(coco.TenantName, coco.TenantId, coco.ClientId, coco.ClientSecret);
+                }, cts.Token);
+                //refreshAccessTokenTask.ConfigureAwait(false);
+                refreshAccessTokenTask.Wait(Constants.timeout, cts.Token);
+                timer.Stop();
+                AzureCPLogging.Log(String.Format("[{0}] Got new client context for tenant '{1}' in {2} ms", ProviderInternalName, coco.TenantName, timer.ElapsedMilliseconds.ToString()), TraceSeverity.Medium, EventSeverity.Information, AzureCPLogging.Categories.Lookup);
+                return newAccessToken;
+            }
+            catch (AuthenticationException ex)
+            {
+                //You should implement retry and back-off logic per the guidance given here:http://msdn.microsoft.com/en-us/library/dn168916.aspx
+                //InnerException Message will contain the HTTP error status codes mentioned in the link above
+                AzureCPLogging.LogException(ProviderInternalName, String.Format("while acquiring access token for tenant '{0}'", coco.TenantName), AzureCPLogging.Categories.Lookup, ex);
+                return null;
+            }
+            catch (OperationCanceledException ex)
+            {
+                AzureCPLogging.Log(String.Format("[{0}] Getting client context for tenant '{1}' exceeded timeout of {2} ms and was cancelled.", ProviderInternalName, coco.TenantName, Constants.timeout), TraceSeverity.Unexpected, EventSeverity.Error, AzureCPLogging.Categories.Lookup);
+                return null;
+            }
         }
 
         /// <summary>
@@ -657,104 +690,119 @@ namespace azurecp
             AzureCPLogging.Log(String.Format("[{0}] Entering QueryAzureADAsync for tenant '{1}'", ProviderInternalName, coco.TenantName), TraceSeverity.VerboseEx, EventSeverity.Information, AzureCPLogging.Categories.Lookup);
             bool tryAgain = false;
             bool resetAADContext = false;
-
-#if DEBUG
-            int timeout = 5000;    // 1000 secs      1000000
-#else
-            int timeout = 10000;    // 10 secs
-#endif
-
-            CancellationTokenSource cts = new CancellationTokenSource(timeout);
+            CancellationTokenSource cts = new CancellationTokenSource(Constants.timeout);
             List<AzurecpResult> allAADResults = new List<AzurecpResult>();
             object lockAddResultToCollection = new object();
             try
             {
-                using (new SPMonitoredScope(String.Format("[{0}] Connecting to Azure AD tenant '{1}'", ProviderInternalName, coco.TenantName), 1000))
+                using (new SPMonitoredScope(String.Format("[{0}] Searching users and groups on Azure AD tenant '{1}'", ProviderInternalName, coco.TenantName), 1000))
                 {
-                    // Check if access token needs to be updated
-                    ActiveDirectoryClient accessToken;
-                    using (AADContextLock.Lock())
-                    {
-                        accessToken = coco.ADClient;
-                    }
-                    if (accessToken == null)
-                    {
-                        // Get new access token and update it in configuration object
-                        using (AADContextLock.Lock())
-                        {
-                            if (coco.ADClient == null)
-                            {
-                                try
-                                {
-                                    AzureCPLogging.Log(String.Format("[{0}] Getting new access token for tenant '{1}'", ProviderInternalName, coco.TenantName), TraceSeverity.Medium, EventSeverity.Information, AzureCPLogging.Categories.Lookup);
-                                    Stopwatch timer = new Stopwatch();
-                                    timer.Start();
-                                    ActiveDirectoryClient newAccessToken = null;
-                                    Task refreshAccessTokenTask = Task.Run(() =>
-                                    {
-                                        newAccessToken = AuthenticationHelper.GetActiveDirectoryClientAsApplication(coco.TenantName, coco.TenantId, coco.ClientId, coco.ClientSecret);
-                                    }, cts.Token);
-                                    //refreshAccessTokenTask.ConfigureAwait(false);
-                                    refreshAccessTokenTask.Wait(timeout, cts.Token);
-                                    coco.ADClient = newAccessToken;
-                                    timer.Stop();
-                                    AzureCPLogging.Log(String.Format("[{0}] Got new access token for tenant '{1}' in {2}ms", ProviderInternalName, coco.TenantName, timer.ElapsedMilliseconds.ToString()), TraceSeverity.Medium, EventSeverity.Information, AzureCPLogging.Categories.Lookup);
-                                }
-                                catch (AuthenticationException ex)
-                                {
-                                    //You should implement retry and back-off logic per the guidance given here:http://msdn.microsoft.com/en-us/library/dn168916.aspx
-                                    //InnerException Message will contain the HTTP error status codes mentioned in the link above
-                                    AzureCPLogging.LogException(ProviderInternalName, String.Format("while acquiring access token for tenant '{0}'", coco.TenantName), AzureCPLogging.Categories.Lookup, ex);
-                                    return null;
-                                }
-                                catch (OperationCanceledException ex)
-                                {
-                                    AzureCPLogging.Log(String.Format("[{0}] Getting access token for tenant '{1}' exceeded timeout of {2}ms and was cancelled.", ProviderInternalName, coco.TenantName, timeout), TraceSeverity.Unexpected, EventSeverity.Error, AzureCPLogging.Categories.Lookup);
-                                    return null;
-                                }
-                            }
-                        }
-                    }
+                    //// Check if access token needs to be updated
+                    //ActiveDirectoryClient accessToken;
+                    //using (AADContextLock.Lock())
+                    //{
+                    //    accessToken = coco.ADClient;
+                    //}
+                    //if (accessToken == null)
+                    //{
+                    //    // Get new access token and update it in configuration object
+                    //    using (AADContextLock.Lock())
+                    //    {
+                    //        if (coco.ADClient == null)
+                    //        {
+                    //            try
+                    //            {
+                    //                //AzureCPLogging.Log(String.Format("[{0}] Getting new access token for tenant '{1}'", ProviderInternalName, coco.TenantName), TraceSeverity.Medium, EventSeverity.Information, AzureCPLogging.Categories.Lookup);
+                    //                //Stopwatch timer = new Stopwatch();
+                    //                //timer.Start();
+                    //                //ActiveDirectoryClient newAccessToken = null;
+                    //                //Task refreshAccessTokenTask = Task.Run(() =>
+                    //                //{
+                    //                //    newAccessToken = AuthenticationHelper.GetActiveDirectoryClientAsApplication(coco.TenantName, coco.TenantId, coco.ClientId, coco.ClientSecret);
+                    //                //}, cts.Token);
+                    //                ////refreshAccessTokenTask.ConfigureAwait(false);
+                    //                //refreshAccessTokenTask.Wait(timeout, cts.Token);
+                    //                //coco.ADClient = newAccessToken;
+                    //                //timer.Stop();
+                    //                //AzureCPLogging.Log(String.Format("[{0}] Got new access token for tenant '{1}' in {2} ms", ProviderInternalName, coco.TenantName, timer.ElapsedMilliseconds.ToString()), TraceSeverity.Medium, EventSeverity.Information, AzureCPLogging.Categories.Lookup);
+                    //                coco.ADClient = RefreshAzureADContext(coco);
+                    //            }
+                    //            catch (AuthenticationException ex)
+                    //            {
+                    //                //You should implement retry and back-off logic per the guidance given here:http://msdn.microsoft.com/en-us/library/dn168916.aspx
+                    //                //InnerException Message will contain the HTTP error status codes mentioned in the link above
+                    //                AzureCPLogging.LogException(ProviderInternalName, String.Format("while acquiring access token for tenant '{0}'", coco.TenantName), AzureCPLogging.Categories.Lookup, ex);
+                    //                return null;
+                    //            }
+                    //            catch (OperationCanceledException ex)
+                    //            {
+                    //                AzureCPLogging.Log(String.Format("[{0}] Getting access token for tenant '{1}' exceeded timeout of {2} ms and was cancelled.", ProviderInternalName, coco.TenantName, timeout), TraceSeverity.Unexpected, EventSeverity.Error, AzureCPLogging.Categories.Lookup);
+                    //                return null;
+                    //            }
+                    //        }
+                    //    }
+                    //}
 
                     using (AADContextLock.Lock())
                     {
-                        //aadContextReaderLock = AADContextLock.ReaderLock();
-                        Task userQueryTask = Task.Run(async () =>
+                        if (coco.ADClient == null) coco.ADClient = RefreshAzureADContext(coco);
+                        if (coco.ADClient == null) return null;
+                        //if (coco.ADClient == null)
+                        //{
+                        //    try
+                        //    {
+                        //        coco.ADClient = RefreshAzureADContext(coco);
+                        //    }
+                        //    catch (AuthenticationException ex)
+                        //    {
+                        //        //You should implement retry and back-off logic per the guidance given here:http://msdn.microsoft.com/en-us/library/dn168916.aspx
+                        //        //InnerException Message will contain the HTTP error status codes mentioned in the link above
+                        //        AzureCPLogging.LogException(ProviderInternalName, String.Format("while acquiring access token for tenant '{0}'", coco.TenantName), AzureCPLogging.Categories.Lookup, ex);
+                        //        return null;
+                        //    }
+                        //    catch (OperationCanceledException ex)
+                        //    {
+                        //        AzureCPLogging.Log(String.Format("[{0}] Getting access token for tenant '{1}' exceeded timeout of {2} ms and was cancelled.", ProviderInternalName, coco.TenantName, timeout), TraceSeverity.Unexpected, EventSeverity.Error, AzureCPLogging.Categories.Lookup);
+                        //        return null;
+                        //    }
+                        //}
+
+                    Task userQueryTask = Task.Run(async () =>
+                    {
+                        try
                         {
-                            try
+                            if (userQuery == null) return;
+                            AzureCPLogging.Log(String.Format("[{0}] UserQueryTask starting for tenant '{1}'", ProviderInternalName, coco.TenantName), TraceSeverity.VerboseEx, EventSeverity.Information, AzureCPLogging.Categories.Lookup);
+                            IUserCollection userCollection = coco.ADClient.Users;
+                            IPagedCollection<IUser> userSearchResults = await userCollection.Where(userQuery).ExecuteAsync().ConfigureAwait(false);
+                            if (userSearchResults == null) return;
+                            do
                             {
-                                if (userQuery == null) return;
-                                AzureCPLogging.Log(String.Format("[{0}] UserQueryTask starting for tenant '{1}'", ProviderInternalName, coco.TenantName), TraceSeverity.VerboseEx, EventSeverity.Information, AzureCPLogging.Categories.Lookup);
-                                IUserCollection userCollection = coco.ADClient.Users;
-                                IPagedCollection<IUser> userSearchResults = await userCollection.Where(userQuery).ExecuteAsync().ConfigureAwait(false);
-                                if (userSearchResults == null) return;
-                                do
+                                List<IUser> searchResultsList = userSearchResults.CurrentPage.ToList();
+                                foreach (IDirectoryObject objectResult in searchResultsList)
                                 {
-                                    List<IUser> searchResultsList = userSearchResults.CurrentPage.ToList();
-                                    foreach (IDirectoryObject objectResult in searchResultsList)
+                                    AzurecpResult azurecpResult = new AzurecpResult();
+                                    azurecpResult.DirectoryObjectResult = objectResult as DirectoryObject;
+                                    azurecpResult.TenantId = coco.TenantId;
+                                    lock (lockAddResultToCollection)
                                     {
-                                        AzurecpResult azurecpResult = new AzurecpResult();
-                                        azurecpResult.DirectoryObjectResult = objectResult as DirectoryObject;
-                                        azurecpResult.TenantId = coco.TenantId;
-                                        lock (lockAddResultToCollection)
-                                        {
-                                            allAADResults.Add(azurecpResult);
-                                        }
+                                        allAADResults.Add(azurecpResult);
                                     }
-                                    if (userSearchResults.MorePagesAvailable)
-                                    {
-                                        AzureCPLogging.Log(String.Format("[{0}] UserQueryTask getting next page of result for tenant '{1}'", ProviderInternalName, coco.TenantName), TraceSeverity.VerboseEx, EventSeverity.Information, AzureCPLogging.Categories.Lookup);
-                                        userSearchResults = await userSearchResults.GetNextPageAsync().ConfigureAwait(false);
-                                    }
-                                } while (userSearchResults != null && userSearchResults.MorePagesAvailable);
-                            }
-                            catch (Exception ex)
-                            {
-                                AzureCPLogging.LogException(ProviderInternalName, String.Format("while getting users in tenant {0}", coco.TenantName), AzureCPLogging.Categories.Lookup, ex);
-                                throw ex;
-                            }
-                            AzureCPLogging.Log(String.Format("[{0}] UserQueryTask ending for tenant '{1}'", ProviderInternalName, coco.TenantName), TraceSeverity.VerboseEx, EventSeverity.Information, AzureCPLogging.Categories.Lookup);
-                        }, cts.Token);
+                                }
+                                if (userSearchResults.MorePagesAvailable)
+                                {
+                                    AzureCPLogging.Log(String.Format("[{0}] UserQueryTask getting next page of result for tenant '{1}'", ProviderInternalName, coco.TenantName), TraceSeverity.VerboseEx, EventSeverity.Information, AzureCPLogging.Categories.Lookup);
+                                    userSearchResults = await userSearchResults.GetNextPageAsync().ConfigureAwait(false);
+                                }
+                            } while (userSearchResults != null && userSearchResults.MorePagesAvailable);
+                        }
+                        catch (Exception ex)
+                        {
+                            AzureCPLogging.LogException(ProviderInternalName, String.Format("while getting users in tenant {0}", coco.TenantName), AzureCPLogging.Categories.Lookup, ex);
+                            throw ex;
+                        }
+                        AzureCPLogging.Log(String.Format("[{0}] UserQueryTask ending for tenant '{1}'", ProviderInternalName, coco.TenantName), TraceSeverity.VerboseEx, EventSeverity.Information, AzureCPLogging.Categories.Lookup);
+                    }, cts.Token);
 
                         Task groupQueryTask = Task.Run(async () =>
                         {
@@ -793,14 +841,14 @@ namespace azurecp
                             AzureCPLogging.Log(String.Format("[{0}] GroupQueryTask ending for tenant '{1}'", ProviderInternalName, coco.TenantName), TraceSeverity.VerboseEx, EventSeverity.Information, AzureCPLogging.Categories.Lookup);
                         }, cts.Token);
 
-                        Task.WaitAll(new Task[2] { userQueryTask, groupQueryTask }, timeout, cts.Token);
+                        Task.WaitAll(new Task[2] { userQueryTask, groupQueryTask }, Constants.timeout, cts.Token);
                         //await Task.WhenAll(userQueryTask, groupQueryTask).ConfigureAwait(false);
                     }
                 }
             }
             catch (OperationCanceledException ex)
             {
-                AzureCPLogging.Log(String.Format("[{0}] Query on Azure AD tenant '{1}' exceeded timeout of {2}ms and was cancelled.", ProviderInternalName, coco.TenantName, timeout), TraceSeverity.Unexpected, EventSeverity.Error, AzureCPLogging.Categories.Lookup);
+                AzureCPLogging.Log(String.Format("[{0}] Query on Azure AD tenant '{1}' exceeded timeout of {2} ms and was cancelled.", ProviderInternalName, coco.TenantName, Constants.timeout), TraceSeverity.Unexpected, EventSeverity.Error, AzureCPLogging.Categories.Lookup);
                 //tryAgain = true;
             }
             catch (Exception ex)
@@ -875,17 +923,18 @@ namespace azurecp
 
             if (resetAADContext)
             {
-                AzureCPLogging.Log(String.Format("[{0}] Resetting context of tenant '{1}'...", ProviderInternalName, coco.TenantName),
+                AzureCPLogging.Log(String.Format("[{0}] Resetting client context of tenant '{1}'...", ProviderInternalName, coco.TenantName),
                     TraceSeverity.Medium, EventSeverity.Information, AzureCPLogging.Categories.Lookup);
                 using (AADContextLock.Lock())
                 {
                     coco.ADClient = null;
+                    coco.ADClient = RefreshAzureADContext(coco);
                 }
             }
 
             if (firstAttempt && tryAgain)
             {
-                AzureCPLogging.Log(String.Format("[{0}] Trying query one more time on tenant '{1}'...", ProviderInternalName, coco.TenantName),
+                AzureCPLogging.Log(String.Format("[{0}] Doing new attempt to query tenant '{1}'...", ProviderInternalName, coco.TenantName),
                     TraceSeverity.Medium, EventSeverity.Information, AzureCPLogging.Categories.Lookup);
 
                 var result = await QueryAzureADAsync(coco, userQuery, groupQuery, false).ConfigureAwait(false);
@@ -909,27 +958,25 @@ namespace azurecp
         /// <param name="userToAugment"></param>
         /// <param name="coco"></param>
         /// <returns></returns>
-        private List<AzurecpResult> GetUserMembership(User userToAugment, AzureTenant coco)
+        private List<AzurecpResult> GetGroupMembership(User userToAugment, AzureTenant coco, bool firstAttempt)
         {
+            bool tryAgain = false;
             object lockAddResultToCollection = new object();
             List<AzurecpResult> searchResults = new List<AzurecpResult>();
-#if DEBUG
-            int timeout = 5000;    // 1000 secs      1000000
-#else
-            int timeout = 10000;    // 10 secs
-#endif
-
-            CancellationTokenSource cts = new CancellationTokenSource(timeout);
+            CancellationTokenSource cts = new CancellationTokenSource(Constants.timeout);
             try
             {
                 using (AADContextLock.Lock())
                 {
+                    if (coco.ADClient == null) coco.ADClient = RefreshAzureADContext(coco);
+                    if (coco.ADClient == null) return null;
+
                     IUserFetcher retrievedUserFetcher = userToAugment;
                     //IPagedCollection<IDirectoryObject> pagedCollection = retrievedUserFetcher.MemberOf.ExecuteAsync().Result;
                     AzureCPLogging.Log(String.Format("[{0}] groupMembershipTask starting for tenant '{1}'", ProviderInternalName, coco.TenantName), TraceSeverity.VerboseEx, EventSeverity.Information, AzureCPLogging.Categories.Lookup);
                     Task<IPagedCollection<IDirectoryObject>> groupMembershipTask = retrievedUserFetcher.MemberOf.ExecuteAsync();
                     groupMembershipTask.ConfigureAwait(false);
-                    groupMembershipTask.Wait(timeout, cts.Token);
+                    groupMembershipTask.Wait(Constants.timeout, cts.Token);
                     IPagedCollection<IDirectoryObject> pagedCollection = groupMembershipTask.Result;
                     do
                     {
@@ -958,7 +1005,7 @@ namespace azurecp
                             //pagedCollection = pagedCollection.GetNextPageAsync().Result;
                             groupMembershipTask = pagedCollection.GetNextPageAsync();
                             groupMembershipTask.ConfigureAwait(false);
-                            groupMembershipTask.Wait(timeout, cts.Token);
+                            groupMembershipTask.Wait(Constants.timeout, cts.Token);
                             pagedCollection = groupMembershipTask.Result;
                         }
                     } while (pagedCollection != null && pagedCollection.MorePagesAvailable);
@@ -967,15 +1014,30 @@ namespace azurecp
             }
             catch (OperationCanceledException ex)
             {
-                AzureCPLogging.Log(String.Format("[{0}] Getting group membership of '{1}' exceeded timeout of {2}ms and was cancelled.", ProviderInternalName, userToAugment.UserPrincipalName, timeout), TraceSeverity.Unexpected, EventSeverity.Error, AzureCPLogging.Categories.Lookup);
+                AzureCPLogging.Log(String.Format("[{0}] Getting group membership of '{1}' exceeded timeout of {2} ms and was cancelled.", ProviderInternalName, userToAugment.UserPrincipalName, Constants.timeout), TraceSeverity.Unexpected, EventSeverity.Error, AzureCPLogging.Categories.Lookup);
             }
             catch (Exception ex)
             {
                 AzureCPLogging.LogException(ProviderInternalName, String.Format("while getting group membership of '{0}' on tenant '{1}'", userToAugment.UserPrincipalName, coco.TenantName), AzureCPLogging.Categories.Lookup, ex);
+                using (AADContextLock.Lock())
+                {
+                    AzureCPLogging.Log(String.Format("[{0}] Resetting client context of tenant '{1}'...", ProviderInternalName, coco.TenantName),
+                        TraceSeverity.Medium, EventSeverity.Information, AzureCPLogging.Categories.Lookup);
+                    coco.ADClient = null;
+                    coco.ADClient = RefreshAzureADContext(coco);
+                }
+                tryAgain = true;
             }
             finally
             {
                 cts.Dispose();
+            }
+
+            if (firstAttempt && tryAgain)
+            {
+                AzureCPLogging.Log(String.Format("[{0}] Doing new attempt to get group membership of user '{1}' on tenant '{2}'...", ProviderInternalName, userToAugment.UserPrincipalName, coco.TenantName),
+                    TraceSeverity.Medium, EventSeverity.Information, AzureCPLogging.Categories.Lookup);
+                searchResults = GetGroupMembership(userToAugment, coco, false);
             }
             return searchResults;
         }
@@ -1308,7 +1370,7 @@ namespace azurecp
                     AzureCPLogging.Log(String.Format("[{0}] Starting augmentation for user \"{1}\" on tenant {2}", ProviderInternalName, input, userTenant.TenantName),
                         TraceSeverity.Verbose, EventSeverity.Information, AzureCPLogging.Categories.Claims_Augmentation);
 
-                    List<AzurecpResult> userMembership = GetUserMembership(result.DirectoryObjectResult as User, userTenant);
+                    List<AzurecpResult> userMembership = GetGroupMembership(result.DirectoryObjectResult as User, userTenant, true);
                     foreach (AzurecpResult groupResult in userMembership)
                     {
                         Group group = groupResult.DirectoryObjectResult as Group;
@@ -1318,7 +1380,7 @@ namespace azurecp
                             TraceSeverity.Verbose, EventSeverity.Information, AzureCPLogging.Categories.Claims_Augmentation);
                     }
                     timer.Stop();
-                    AzureCPLogging.Log(String.Format("[{0}] Augmentation of user '{1}' completed in {2}ms with {3} AAD group(s) added from '{4}'",
+                    AzureCPLogging.Log(String.Format("[{0}] Augmentation of user '{1}' completed in {2} ms with {3} AAD group(s) added from '{4}'",
                         ProviderInternalName, input, timer.ElapsedMilliseconds.ToString(), userMembership.Count, userTenant.TenantName),
                         TraceSeverity.Medium, EventSeverity.Information, AzureCPLogging.Categories.Claims_Augmentation);
                 }

@@ -27,6 +27,12 @@ namespace azurecp
         public const string AZURECPCONFIG_NAME = "AzureCPConfig";
         public const string AuthString = "https://login.windows.net/{0}";
         public const string ResourceUrl = "https://graph.windows.net";
+        //public const int timeout
+#if DEBUG
+        public const int timeout = 5000;    // 1000 secs      1000000
+#else
+        public const int timeout = 10000;    // 10 secs
+#endif
     }
 
     public class AzureCPConfig : SPPersistedObject, IAzureCPConfiguration
