@@ -499,10 +499,27 @@ namespace azurecp
             IEnumerable<string> domains = searchResultsTask.Result.OfType<string>();
             
             // return if no user or groups found
-            if (searchResults == null || !searchResults.Any()) return;
+            if (searchResults == null || !searchResults.Any())
+            {
+                AzureCPLogging.Log(
+                    String.Format("[{0}] BuildFilterAndProcess recieved no AzureCP results.",ProviderInternalName),
+                    TraceSeverity.VerboseEx, EventSeverity.Information, AzureCPLogging.Categories.Lookup);
+                return;
+            };
+            AzureCPLogging.Log(
+                String.Format("[{0}] BuildFilterAndProcess recieved {1} AzureCP results.", ProviderInternalName, searchResults.Count()),
+                TraceSeverity.VerboseEx, EventSeverity.Information, AzureCPLogging.Categories.Lookup);
             // return if no domains found
-            if (domains == null || !domains.Any()) return;
-
+            if (domains == null || !domains.Any())
+            {
+                AzureCPLogging.Log(
+                    String.Format("[{0}] BuildFilterAndProcess recieved no Domains.", ProviderInternalName),
+                    TraceSeverity.VerboseEx, EventSeverity.Information, AzureCPLogging.Categories.Lookup);
+                return;
+            };
+            AzureCPLogging.Log(
+                String.Format("[{0}] BuildFilterAndProcess recieved {1} Domains.", ProviderInternalName, domains.Count()),
+                TraceSeverity.VerboseEx, EventSeverity.Information, AzureCPLogging.Categories.Lookup);
 
             // If exactSearch is true, we don't care about attributes with CreateAsIdentityClaim = true
             List<AzureADObject> azureObjects;
@@ -517,12 +534,24 @@ namespace azurecp
                 if (searchResult.DirectoryObjectResult is User)
                 {
                     //skip shadow users (type is guest and mail domain in tenants verified domains)
-                    string userType = GetGraphPropertyValue(searchResult.DirectoryObjectResult, "userType");
-                    if (String.IsNullOrEmpty(userType)) continue;
+                    string userType = GetGraphPropertyValue(searchResult.DirectoryObjectResult, "UserType");
+                    if (String.IsNullOrEmpty(userType))
+                    {
+                        AzureCPLogging.Log(
+                            String.Format("[{0}] BuildFilterAndProcess skipped user because usertype is empty.", ProviderInternalName),
+                            TraceSeverity.Unexpected, EventSeverity.Warning, AzureCPLogging.Categories.Lookup);
+                        continue;
+                    }
                     if (String.Equals(userType, "Guest",StringComparison.InvariantCultureIgnoreCase))
                     {
-                        string mail = GetGraphPropertyValue(searchResult.DirectoryObjectResult, "mail");
-                        if (String.IsNullOrEmpty(mail)) continue;
+                        string mail = GetGraphPropertyValue(searchResult.DirectoryObjectResult, "Mail");
+                        if (String.IsNullOrEmpty(mail))
+                        {
+                            AzureCPLogging.Log(
+                                String.Format("[{0}] BuildFilterAndProcess skipped guest user because mail is empty.", ProviderInternalName),
+                                TraceSeverity.Unexpected, EventSeverity.Warning, AzureCPLogging.Categories.Lookup);
+                            continue;
+                        }
                         if (!mail.Contains('@')) continue;
                         string maildomain = mail.Split('@')[1];
                         if (domains.Any(x => String.Equals(x,maildomain,StringComparison.InvariantCultureIgnoreCase))) continue;
@@ -847,7 +876,7 @@ namespace azurecp
                                     }
                                     if (groupSearchResults.MorePagesAvailable)
                                     {
-                                        AzureCPLogging.Log(String.Format("[{0}] groupQueryTask getting next page of result for tenant '{1}'", ProviderInternalName, coco.TenantName), TraceSeverity.VerboseEx, EventSeverity.Information, AzureCPLogging.Categories.Lookup);
+                                        AzureCPLogging.Log(String.Format("[{0}] GroupQueryTask getting next page of result for tenant '{1}'", ProviderInternalName, coco.TenantName), TraceSeverity.VerboseEx, EventSeverity.Information, AzureCPLogging.Categories.Lookup);
                                         groupSearchResults = await groupSearchResults.GetNextPageAsync().ConfigureAwait(false);
                                     }
                                 } while (groupSearchResults != null && groupSearchResults.MorePagesAvailable);
@@ -862,6 +891,7 @@ namespace azurecp
                         
                         Task domainQueryTask = Task.Run(async () =>
                         {
+                            AzureCPLogging.Log(String.Format("[{0}] DomainQueryTask starting for tenant '{1}'", ProviderInternalName, coco.TenantName), TraceSeverity.VerboseEx, EventSeverity.Information, AzureCPLogging.Categories.Lookup);
                             try
                             {
                                 IPagedCollection<ITenantDetail> tenantDetailResults = await coco.ADClient.TenantDetails.ExecuteAsync().ConfigureAwait(false);
