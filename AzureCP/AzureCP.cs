@@ -525,7 +525,7 @@ namespace azurecp
             List<AzureADObject> azureObjects;
             if (exactSearch) azureObjects = azureObjectsToQuery.FindAll(x => !x.CreateAsIdentityClaim);
             else azureObjects = azureObjectsToQuery;
-
+            Stopwatch sw = Stopwatch.StartNew();
             foreach (AzurecpResult searchResult in searchResults)
             {
                 Type currentObjectType = null;
@@ -554,7 +554,13 @@ namespace azurecp
                         }
                         if (!mail.Contains('@')) continue;
                         string maildomain = mail.Split('@')[1];
-                        if (domains.Any(x => String.Equals(x,maildomain,StringComparison.InvariantCultureIgnoreCase))) continue;
+                        if (domains.Any(x => String.Equals(x, maildomain, StringComparison.InvariantCultureIgnoreCase)))
+                        {
+                            AzureCPLogging.Log(
+                                String.Format("[{0}] BuildFilterAndProcess skipped guest user {1} because it is in a registered domain.", ProviderInternalName, mail),
+                                TraceSeverity.Verbose, EventSeverity.Verbose, AzureCPLogging.Categories.Lookup);
+                            continue;
+                        }
                     }
                     currentObjectType = typeof(User);
                     currentObject = searchResult.DirectoryObjectResult;
@@ -566,7 +572,7 @@ namespace azurecp
                     currentObject = searchResult.DirectoryObjectResult;
                     claimEntityType = SPClaimEntityTypes.FormsRole;
                 }
-
+                // Start filter
                 foreach (AzureADObject azureObject in azureObjects.Where(x => x.ClaimEntityType == claimEntityType))
                 {
                     // Get value with of current GraphProperty
@@ -611,19 +617,23 @@ namespace azurecp
 
                     // Passed the checks, add it to the searchResults list
                     results.Add(
-                        new AzurecpResult
+                        new AzurecpResult(currentObject,searchResult.TenantId)
                         {
                             AzureObject = azureObject,
                             //GraphPropertyValue = graphPropertyValue,
                             PermissionValue = valueToCheck,
                             QueryMatchValue = queryMatchValue,
-                            DirectoryObjectResult = currentObject,
-                            TenantId = searchResult.TenantId,
+                            //DirectoryObjectResult = currentObject,
+                            //TenantId = searchResult.TenantId,
                         });
                 }
             }
 
-            AzureCPLogging.Log(String.Format("[{0}] {1} permission(s) to create after filtering", ProviderInternalName, results.Count), TraceSeverity.Verbose, EventSeverity.Information, AzureCPLogging.Categories.Lookup);
+            AzureCPLogging.Log(
+                String.Format(
+                    "[{0}] {1} permission(s) to create after filtering in {2} ms", 
+                    ProviderInternalName, results.Count, sw.ElapsedMilliseconds.ToString()),
+                TraceSeverity.Verbose, EventSeverity.Information, AzureCPLogging.Categories.Lookup);
             foreach (AzurecpResult result in results)
             {
                 PickerEntity pe = CreatePickerEntityHelper(result);
@@ -816,34 +826,50 @@ namespace azurecp
                         //    }
                         //}
 
+                        
                         Task userQueryTask = Task.Run(async () =>
                         {
                             if (userQuery == null) return;
                             AzureCPLogging.Log(String.Format("[{0}] UserQueryTask starting for tenant '{1}'", ProviderInternalName, coco.TenantName), TraceSeverity.VerboseEx, EventSeverity.Information, AzureCPLogging.Categories.Lookup);
                             try
                             {
-                                IUserCollection userCollection = coco.ADClient.Users;
-                                IPagedCollection<IUser> userSearchResults = await userCollection.Where(userQuery).ExecuteAsync().ConfigureAwait(false);
-                                if (userSearchResults == null) return;
+                                //IUserCollection userCollection = coco.ADClient.Users;
+                                //IPagedCollection<IUser> userSearchResults = await userCollection.Where(userQuery).ExecuteAsync().ConfigureAwait(false);
+                                //if (userSearchResults == null) return;
+                                //do
+                                //{
+                                //    List<IUser> searchResultsList = userSearchResults.CurrentPage.ToList();
+                                //    foreach (IDirectoryObject objectResult in searchResultsList)
+                                //    {
+                                //        AzurecpResult azurecpResult = new AzurecpResult();
+                                //        azurecpResult.DirectoryObjectResult = objectResult as DirectoryObject;
+                                //        azurecpResult.TenantId = coco.TenantId;
+                                //        lock (lockAddResultToCollection)
+                                //        {
+                                //            allAADResults.Add(azurecpResult);
+                                //        }
+                                //    }
+                                //    if (userSearchResults.MorePagesAvailable)
+                                //    {
+                                //        AzureCPLogging.Log(String.Format("[{0}] UserQueryTask getting next page of result for tenant '{1}'", ProviderInternalName, coco.TenantName), TraceSeverity.VerboseEx, EventSeverity.Information, AzureCPLogging.Categories.Lookup);
+                                //        userSearchResults = await userSearchResults.GetNextPageAsync().ConfigureAwait(false);
+                                //    }
+                                //} while (userSearchResults != null && userSearchResults.MorePagesAvailable);
+                                IPagedCollection<IUser> userSearchResults = await coco.ADClient.Users.Where(userQuery).ExecuteAsync().ConfigureAwait(false);
                                 do
                                 {
-                                    List<IUser> searchResultsList = userSearchResults.CurrentPage.ToList();
-                                    foreach (IDirectoryObject objectResult in searchResultsList)
+                                    IEnumerable<IUser> searchResults = userSearchResults.CurrentPage;
+                                    // foreach is simple: only aquire lock once
+                                    lock (lockAddResultToCollection)
                                     {
-                                        AzurecpResult azurecpResult = new AzurecpResult();
-                                        azurecpResult.DirectoryObjectResult = objectResult as DirectoryObject;
-                                        azurecpResult.TenantId = coco.TenantId;
-                                        lock (lockAddResultToCollection)
+                                        foreach (IDirectoryObject objectResult in searchResults)
                                         {
-                                            allAADResults.Add(azurecpResult);
+                                            allAADResults.Add(new AzurecpResult(objectResult, coco.TenantId));
                                         }
                                     }
-                                    if (userSearchResults.MorePagesAvailable)
-                                    {
-                                        AzureCPLogging.Log(String.Format("[{0}] UserQueryTask getting next page of result for tenant '{1}'", ProviderInternalName, coco.TenantName), TraceSeverity.VerboseEx, EventSeverity.Information, AzureCPLogging.Categories.Lookup);
-                                        userSearchResults = await userSearchResults.GetNextPageAsync().ConfigureAwait(false);
-                                    }
-                                } while (userSearchResults != null && userSearchResults.MorePagesAvailable);
+                                    userSearchResults = await userSearchResults.GetNextPageAsync().ConfigureAwait(false);
+                                }
+                                while (userSearchResults != null);
                             }
                             catch (Exception ex)
                             {
@@ -858,28 +884,43 @@ namespace azurecp
                             AzureCPLogging.Log(String.Format("[{0}] GroupQueryTask starting for tenant '{1}'", ProviderInternalName, coco.TenantName), TraceSeverity.VerboseEx, EventSeverity.Information, AzureCPLogging.Categories.Lookup);
                             try
                             {
-                                IGroupCollection groupCollection = coco.ADClient.Groups;
-                                IPagedCollection<IGroup> groupSearchResults = await groupCollection.Where(groupQuery).ExecuteAsync().ConfigureAwait(false);
-                                if (groupSearchResults == null) return;
+                                //IGroupCollection groupCollection = coco.ADClient.Groups;
+                                //IPagedCollection<IGroup> groupSearchResults = await groupCollection.Where(groupQuery).ExecuteAsync().ConfigureAwait(false);
+                                //if (groupSearchResults == null) return;
+                                //do
+                                //{
+                                //    List<IGroup> searchResultsList = groupSearchResults.CurrentPage.ToList();
+                                //    foreach (IDirectoryObject objectResult in searchResultsList)
+                                //    {
+                                //        AzurecpResult azurecpResult = new AzurecpResult();
+                                //        azurecpResult.DirectoryObjectResult = objectResult as DirectoryObject;
+                                //        azurecpResult.TenantId = coco.TenantId;
+                                //        lock (lockAddResultToCollection)
+                                //        {
+                                //            allAADResults.Add(azurecpResult);
+                                //        }
+                                //    }
+                                //    if (groupSearchResults.MorePagesAvailable)
+                                //    {
+                                //        AzureCPLogging.Log(String.Format("[{0}] GroupQueryTask getting next page of result for tenant '{1}'", ProviderInternalName, coco.TenantName), TraceSeverity.VerboseEx, EventSeverity.Information, AzureCPLogging.Categories.Lookup);
+                                //        groupSearchResults = await groupSearchResults.GetNextPageAsync().ConfigureAwait(false);
+                                //    }
+                                //} while (groupSearchResults != null && groupSearchResults.MorePagesAvailable);
+                                IPagedCollection<IGroup> groupSearchResults = await coco.ADClient.Groups.Where(groupQuery).ExecuteAsync().ConfigureAwait(false);
                                 do
                                 {
-                                    List<IGroup> searchResultsList = groupSearchResults.CurrentPage.ToList();
-                                    foreach (IDirectoryObject objectResult in searchResultsList)
+                                    IEnumerable<IGroup> searchResults = groupSearchResults.CurrentPage;
+                                    // foreach is simple: only aquire lock once
+                                    lock (lockAddResultToCollection)
                                     {
-                                        AzurecpResult azurecpResult = new AzurecpResult();
-                                        azurecpResult.DirectoryObjectResult = objectResult as DirectoryObject;
-                                        azurecpResult.TenantId = coco.TenantId;
-                                        lock (lockAddResultToCollection)
+                                        foreach(IDirectoryObject objectResult in searchResults)
                                         {
-                                            allAADResults.Add(azurecpResult);
+                                            allAADResults.Add(new AzurecpResult(objectResult, coco.TenantId));
                                         }
                                     }
-                                    if (groupSearchResults.MorePagesAvailable)
-                                    {
-                                        AzureCPLogging.Log(String.Format("[{0}] GroupQueryTask getting next page of result for tenant '{1}'", ProviderInternalName, coco.TenantName), TraceSeverity.VerboseEx, EventSeverity.Information, AzureCPLogging.Categories.Lookup);
-                                        groupSearchResults = await groupSearchResults.GetNextPageAsync().ConfigureAwait(false);
-                                    }
-                                } while (groupSearchResults != null && groupSearchResults.MorePagesAvailable);
+                                    groupSearchResults = await groupSearchResults.GetNextPageAsync().ConfigureAwait(false);
+                                }
+                                while (groupSearchResults != null);
                             }
                             catch (Exception ex)
                             {
@@ -888,33 +929,16 @@ namespace azurecp
                             }
                             AzureCPLogging.Log(String.Format("[{0}] GroupQueryTask ending for tenant '{1}'", ProviderInternalName, coco.TenantName), TraceSeverity.VerboseEx, EventSeverity.Information, AzureCPLogging.Categories.Lookup);
                         }, cts.Token);
-                        
                         Task domainQueryTask = Task.Run(async () =>
                         {
                             AzureCPLogging.Log(String.Format("[{0}] DomainQueryTask starting for tenant '{1}'", ProviderInternalName, coco.TenantName), TraceSeverity.VerboseEx, EventSeverity.Information, AzureCPLogging.Categories.Lookup);
                             try
                             {
-                                IPagedCollection<ITenantDetail> tenantDetailResults = await coco.ADClient.TenantDetails.ExecuteAsync().ConfigureAwait(false);
-                                if (tenantDetailResults == null) return;
-                                do
+                                ITenantDetail tenantDetail = await coco.ADClient.TenantDetails.Take(1).ExecuteSingleAsync().ConfigureAwait(false);
+                                lock (lockAddResultToCollection)
                                 {
-                                    List<ITenantDetail> tenantDetailList = tenantDetailResults.CurrentPage.ToList();
-                                    foreach (ITenantDetail tenantDetail in tenantDetailList)
-                                    {
-                                        foreach (VerifiedDomain verifiedDomain in tenantDetail.VerifiedDomains)
-                                        {
-                                            lock (lockAddResultToCollection)
-                                            {
-                                                allAADResults.Add(verifiedDomain.Name);
-                                            }
-                                        }
-                                    }
-                                    if (tenantDetailResults.MorePagesAvailable)
-                                    {
-                                        AzureCPLogging.Log(String.Format("[{0}] DomainQueryTask getting next page of result for tenant '{1}'", ProviderInternalName, coco.TenantName), TraceSeverity.VerboseEx, EventSeverity.Information, AzureCPLogging.Categories.Lookup);
-                                        tenantDetailResults = await tenantDetailResults.GetNextPageAsync().ConfigureAwait(false);
-                                    }
-                                } while (tenantDetailResults != null && tenantDetailResults.MorePagesAvailable);
+                                    allAADResults.AddRange(tenantDetail.VerifiedDomains.Select(x => x.Name));
+                                }
                             }
                             catch (Exception ex)
                             {
@@ -1067,7 +1091,7 @@ namespace azurecp
                         {
                             if (directoryObject is Group)
                             {
-                                AzurecpResult result = new AzurecpResult();
+                                AzurecpResult result = new AzurecpResult(directoryObject,coco.TenantId);
                                 Group group = directoryObject as Group;
                                 result.DirectoryObjectResult = group;
                                 result.TenantId = coco.TenantId;
@@ -1920,5 +1944,11 @@ namespace azurecp
         public string PermissionValue;
         public string QueryMatchValue;
         public string TenantId;
+
+        public AzurecpResult(IDirectoryObject directoryObject, string tenantId)
+        {
+            DirectoryObjectResult = (DirectoryObject)directoryObject;
+            TenantId = tenantId;
+        }
     }
 }
