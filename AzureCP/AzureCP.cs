@@ -731,7 +731,7 @@ namespace azurecp
                 AzureCPLogging.LogException(ProviderInternalName, String.Format("while acquiring access token for tenant '{0}'", coco.TenantName), AzureCPLogging.Categories.Lookup, ex);
                 return null;
             }
-            catch (OperationCanceledException ex)
+            catch (OperationCanceledException)
             {
                 AzureCPLogging.Log(String.Format("[{0}] Getting client context for tenant '{1}' exceeded timeout of {2} ms and was cancelled.", ProviderInternalName, coco.TenantName, Constants.timeout), TraceSeverity.Unexpected, EventSeverity.Error, AzureCPLogging.Categories.Lookup);
                 return null;
@@ -945,7 +945,7 @@ namespace azurecp
                     }
                 }
             }
-            catch (OperationCanceledException ex)
+            catch (OperationCanceledException)
             {
                 AzureCPLogging.Log(String.Format("[{0}] Query on Azure AD tenant '{1}' exceeded timeout of {2} ms and was cancelled.", ProviderInternalName, coco.TenantName, Constants.timeout), TraceSeverity.Unexpected, EventSeverity.Error, AzureCPLogging.Categories.Lookup);
                 //tryAgain = true;
@@ -1133,7 +1133,7 @@ namespace azurecp
                     AzureCPLogging.Log(String.Format("[{0}] groupMembershipTask ending for tenant '{1}'", ProviderInternalName, coco.TenantName), TraceSeverity.VerboseEx, EventSeverity.Information, AzureCPLogging.Categories.Lookup);
                 }
             }
-            catch (OperationCanceledException ex)
+            catch (OperationCanceledException)
             {
                 AzureCPLogging.Log(String.Format("[{0}] Getting group membership of '{1}' exceeded timeout of {2} ms and was cancelled.", ProviderInternalName, userToAugment.UserPrincipalName, Constants.timeout), TraceSeverity.Unexpected, EventSeverity.Error, AzureCPLogging.Categories.Lookup);
             }
