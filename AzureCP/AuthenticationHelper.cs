@@ -44,7 +44,7 @@ namespace azurecp
                 Uri servicePointUri = new Uri(Constants.ResourceUrl);
                 Uri serviceRoot = new Uri(servicePointUri, tenantId);
                 ActiveDirectoryClient activeDirectoryClient = new ActiveDirectoryClient(serviceRoot,
-                    async () => await AcquireTokenAsyncForApplication(tenantName, clientId, clientSecret));
+                    async () => await AcquireTokenAsyncForApplication(tenantName, clientId, clientSecret).ConfigureAwait(false));
                 return activeDirectoryClient;
             }
         }
