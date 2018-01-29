@@ -11,7 +11,7 @@ using System.Security;
 [assembly: AssemblyConfiguration("")]
 [assembly: AssemblyCompany("Yvan Duhamel -  yvandev@outlook.fr")]
 [assembly: AssemblyProduct("AzureCP")]
-[assembly: AssemblyCopyright("Copyright ©  2017, Yvan Duhamel - yvandev@outlook.fr")]
+[assembly: AssemblyCopyright("Copyright ©  2018, Yvan Duhamel - yvandev@outlook.fr")]
 [assembly: AssemblyTrademark("")]
 [assembly: AssemblyCulture("")]
 
@@ -34,5 +34,5 @@ using System.Security;
 // by using the '*' as shown below:
 // [assembly: AssemblyVersion("1.0.*")]
 [assembly: AssemblyVersion("1.0.0.0")]
-[assembly: AssemblyFileVersion("10.Beta4")]
+[assembly: AssemblyFileVersion("10")]
 

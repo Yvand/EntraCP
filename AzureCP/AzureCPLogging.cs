@@ -18,67 +18,35 @@ namespace azurecp
         public enum Categories
         {
             [CategoryName("Core"),
-#if DEBUG
-             DefaultTraceSeverity(TraceSeverity.VerboseEx),
-#else
              DefaultTraceSeverity(TraceSeverity.Medium),
-#endif
             DefaultEventSeverity(EventSeverity.Error)]
             Core,
             [CategoryName("Configuration"),
-#if DEBUG
-             DefaultTraceSeverity(TraceSeverity.VerboseEx),
-#else
              DefaultTraceSeverity(TraceSeverity.Medium),
-#endif
             DefaultEventSeverity(EventSeverity.Error)]
             Configuration,
             [CategoryName("Lookup"),
-#if DEBUG
-             DefaultTraceSeverity(TraceSeverity.VerboseEx),
-#else
              DefaultTraceSeverity(TraceSeverity.Medium),
-#endif
              DefaultEventSeverity(EventSeverity.Error)]
             Lookup,
             [CategoryName("Claims Picking"),
-#if DEBUG
-             DefaultTraceSeverity(TraceSeverity.VerboseEx),
-#else
              DefaultTraceSeverity(TraceSeverity.Medium),
-#endif
              DefaultEventSeverity(EventSeverity.Error)]
             Claims_Picking,
             [CategoryName("Rehydration"),
-#if DEBUG
-             DefaultTraceSeverity(TraceSeverity.VerboseEx),
-#else
              DefaultTraceSeverity(TraceSeverity.Medium),
-#endif
              DefaultEventSeverity(EventSeverity.Error)]
             Rehydration,
-            [CategoryName("Claims Augmentation"),
-#if DEBUG
-             DefaultTraceSeverity(TraceSeverity.VerboseEx),
-#else
+            [CategoryName("Augmentation"),
              DefaultTraceSeverity(TraceSeverity.Medium),
-#endif
              DefaultEventSeverity(EventSeverity.Error)]
-            Claims_Augmentation,
+            Augmentation,
             [CategoryName("Debug"),
-#if DEBUG
-             DefaultTraceSeverity(TraceSeverity.High),
-#else
-             DefaultTraceSeverity(TraceSeverity.VerboseEx),
-#endif
+             DefaultTraceSeverity(TraceSeverity.Medium),
              DefaultEventSeverity(EventSeverity.Error)]
             Debug,
             [CategoryName("Custom"),
-#if DEBUG
-             DefaultTraceSeverity(TraceSeverity.VerboseEx),
-#else
              DefaultTraceSeverity(TraceSeverity.Medium),
-#endif
              DefaultEventSeverity(EventSeverity.Error)]
             Custom,
         }
@@ -154,7 +122,7 @@ namespace azurecp
                     return LogSvc;
 
                 AzureCPLogging svc = null;
-                SPSecurity.RunWithElevatedPrivileges(delegate()
+                SPSecurity.RunWithElevatedPrivileges(delegate ()
                 {
                     // otherwise instantiate and register the new instance, which requires farm administrator privileges
                     svc = new AzureCPLogging();
@@ -216,7 +184,7 @@ namespace azurecp
                         CreateCategory(Categories.Configuration),
                         CreateCategory(Categories.Lookup),
                         CreateCategory(Categories.Core),
-                        CreateCategory(Categories.Claims_Augmentation),
+                        CreateCategory(Categories.Augmentation),
                         CreateCategory(Categories.Rehydration),
                         CreateCategory(Categories.Debug),
                         CreateCategory(Categories.Custom),
