@@ -75,8 +75,7 @@ namespace azurecp
             }
         }
 
-        public AzureCP(string displayName)
-            : base(displayName)
+        public AzureCP(string displayName) : base(displayName)
         {
         }
 
@@ -528,6 +527,7 @@ namespace azurecp
             List<AzureADObject> azureObjects;
             if (exactSearch) azureObjects = azureObjectsToQuery.FindAll(x => !x.CreateAsIdentityClaim);
             else azureObjects = azureObjectsToQuery;
+
             Stopwatch sw = Stopwatch.StartNew();
             foreach (AzurecpResult searchResult in searchResults)
             {
@@ -575,6 +575,7 @@ namespace azurecp
                     currentObject = searchResult.DirectoryObjectResult;
                     claimEntityType = SPClaimEntityTypes.FormsRole;
                 }
+
                 // Start filter
                 foreach (AzureADObject azureObject in azureObjects.Where(x => x.ClaimEntityType == claimEntityType))
                 {
@@ -614,7 +615,7 @@ namespace azurecp
                     // if claim type, GraphProperty and value are identical, then result is already in collection
                     int numberResultFound = results.FindAll(x =>
                         String.Equals(x.AzureObject.ClaimType, objCompare.ClaimType, StringComparison.InvariantCultureIgnoreCase) &&
-                            //x.AzureObject.GraphProperty == objCompare.GraphProperty &&
+                        //x.AzureObject.GraphProperty == objCompare.GraphProperty &&
                         String.Equals(x.PermissionValue, valueToCheck, StringComparison.InvariantCultureIgnoreCase)).Count;
                     if (numberResultFound > 0) continue;
 
@@ -626,8 +627,6 @@ namespace azurecp
                             //GraphPropertyValue = graphPropertyValue,
                             PermissionValue = valueToCheck,
                             QueryMatchValue = queryMatchValue,
-                            //DirectoryObjectResult = currentObject,
-                            //TenantId = searchResult.TenantId,
                         });
                 }
             }
