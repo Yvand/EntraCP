@@ -406,7 +406,7 @@ namespace azurecp
             return null;
         }
 
-        public void BuildFilterAndProcessResultsAsync(string input, List<AzureADObject> azureObjectsToQuery, bool exactSearch, Uri context, string[] entityTypes, ref List<AzurecpResult> results)
+        public void BuildFilterAndProcessResultsAsync(string input, List<AzureADObject> azureObjectsToQuery, bool exactSearch,  Uri context, string[] entityTypes, ref List<AzurecpResult> results)
         {
             // Create named delegate for users and groups
             Expression<Func<IUser, bool>> userDelegate = null;
@@ -536,6 +536,9 @@ namespace azurecp
                 string claimEntityType = null;
                 if (searchResult.DirectoryObjectResult is User)
                 {
+                    AzureCPLogging.Log(
+                        String.Format("[{0}] BuildFilterAndProcess skipped filter known users set.", ProviderInternalName),
+                        TraceSeverity.Medium, EventSeverity.Information, AzureCPLogging.Categories.Lookup);
                     //skip shadow users (type is guest and mail domain in tenants verified domains)
                     string userType = GetGraphPropertyValue(searchResult.DirectoryObjectResult, "UserType");
                     if (String.IsNullOrEmpty(userType))
@@ -768,7 +771,18 @@ namespace azurecp
                             AzureCPLogging.Log(String.Format("[{0}] UserQueryTask starting for tenant '{1}'", ProviderInternalName, coco.TenantName), TraceSeverity.VerboseEx, EventSeverity.Information, AzureCPLogging.Categories.Lookup);
                             try
                             {
-                                IPagedCollection<IUser> userSearchResults = await coco.ADClient.Users.Where(userQuery).ExecuteAsync().ConfigureAwait(false);
+                                // get the user search
+                                IReadOnlyQueryableSet<IUser> userQuerySet =  coco.ADClient.Users.Where(userQuery);
+                                // if need filter out guest users
+                                if (!coco.Federated) 
+                                {
+                                    AzureCPLogging.Log(String.Format("[{0}] UserQueryTask for a non federated tenant '{1}': Guests ignored", ProviderInternalName, coco.TenantName), 
+                                        TraceSeverity.Medium, EventSeverity.Information, AzureCPLogging.Categories.Lookup);
+                                    // "where not" not supported in OData...
+                                    //userQuerySet = userQuerySet.Where(x => !x.UserType.Equals("Guest",StringComparison.InvariantCultureIgnoreCase));
+                                    userQuerySet = userQuerySet.Where(x => x.UserType.Equals("Member",StringComparison.InvariantCultureIgnoreCase));
+                                }
+                                IPagedCollection<IUser> userSearchResults = await userQuerySet.ExecuteAsync().ConfigureAwait(false);
                                 do
                                 {
                                     lock (lockAddResultToCollection)

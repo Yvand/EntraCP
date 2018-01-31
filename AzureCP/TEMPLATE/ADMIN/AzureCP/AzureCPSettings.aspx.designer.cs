@@ -94,6 +94,15 @@ namespace azurecp {
         protected global::Microsoft.SharePoint.WebControls.InputFormTextBox TxtClientSecret;
         
         /// <summary>
+        /// ChkFederated control.
+        /// </summary>
+        /// <remarks>
+        /// Auto-generated field.
+        /// To modify move field declaration from designer file to code-behind file.
+        /// </remarks>
+        protected global::Microsoft.SharePoint.WebControls.InputFormCheckBox ChkFederated;
+        
+        /// <summary>
         /// BtnTestAzureTenantConnection control.
         /// </summary>
         /// <remarks>

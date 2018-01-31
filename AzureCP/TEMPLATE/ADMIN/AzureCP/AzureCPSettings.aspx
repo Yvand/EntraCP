@@ -125,6 +125,7 @@
 						<asp:BoundField DataField="Id" ItemStyle-CssClass="Azurecp-HideCol" HeaderStyle-CssClass="Azurecp-HideCol"/>
 						<asp:BoundField HeaderText="TenantName" DataField="TenantName"/>
 						<asp:BoundField HeaderText="ApplicationID" DataField="ClientID"/>
+                        <asp:BoundField HeaderText="Federated" DataField="Federated" />
 						<asp:CommandField HeaderText="Action" ButtonType="Button" DeleteText="Remove" ShowDeleteButton="True" />
 					</Columns>
 				</wssawc:SPGridView>
@@ -158,6 +159,10 @@
 						<label for="<%= TxtClientSecret.ClientID %>">Application Secret: <em>*</em></label>
 						<wssawc:InputFormTextBox title="Password" class="ms-input" ID="TxtClientSecret" Columns="50" Runat="server" MaxLength="255" TextMode="Password" />
 					</li>
+                    <li>
+                        <label for="<%=ChkFederated.ClientID %>">Federated: <em>*</em></label>
+                        <wssawc:InputFormCheckBox title="Federated" class="ms-input" ID="ChkFederated" runat="server" />
+                    </li>
 				</ol>
 				</fieldset>
 				</div>

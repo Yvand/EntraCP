@@ -373,6 +373,9 @@ namespace azurecp
         [Persisted]
         public string ClientSecret;
 
+        [Persisted]
+        public bool Federated;
+
         /// <summary>
         /// Access token used to connect to AAD. Should not be persisted or accessible outside of the assembly
         /// </summary>
@@ -395,6 +398,7 @@ namespace azurecp
                 TenantId = this.TenantId,
                 ClientId = this.ClientId,
                 ClientSecret = this.ClientSecret,
+                Federated = this.Federated,
             };
             return copy;
         }

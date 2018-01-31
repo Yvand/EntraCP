@@ -93,7 +93,7 @@ namespace azurecp
                 PropertyCollectionBinder pcb = new PropertyCollectionBinder();
                 foreach (AzureTenant tenant in PersistedObject.AzureTenants)
                 {
-                    pcb.AddRow(tenant.Id, tenant.TenantName, tenant.ClientId);
+                    pcb.AddRow(tenant.Id, tenant.TenantName, tenant.ClientId, tenant.Federated);
                 }
                 pcb.BindGrid(grdAzureTenants);
             }
@@ -377,6 +377,7 @@ namespace azurecp
                     TenantId = this.TxtTenantId.Text,
                     ClientId = TxtClientId.Text,
                     ClientSecret = this.TxtClientSecret.Text,
+                    Federated = this.ChkFederated.Checked,
                 });
 
             // Update object in database
@@ -414,14 +415,16 @@ namespace azurecp
             PropertyCollection.Columns.Add("Id", typeof(Guid));
             PropertyCollection.Columns.Add("TenantName", typeof(string));
             PropertyCollection.Columns.Add("ClientID", typeof(string));
+            PropertyCollection.Columns.Add("Federated", typeof(bool));
         }
 
-        public void AddRow(Guid Id, string TenantName, string ClientID)
+        public void AddRow(Guid Id, string TenantName, string ClientID, bool Federated)
         {
             DataRow newRow = PropertyCollection.Rows.Add();
             newRow["Id"] = Id;
             newRow["TenantName"] = TenantName;
             newRow["ClientID"] = ClientID;
+            newRow["Federated"] = Federated;
         }
 
         public void BindGrid(SPGridView grid)
