@@ -93,7 +93,7 @@ namespace azurecp
                 PropertyCollectionBinder pcb = new PropertyCollectionBinder();
                 foreach (AzureTenant tenant in PersistedObject.AzureTenants)
                 {
-                    pcb.AddRow(tenant.Id, tenant.TenantName, tenant.ClientId, tenant.Federated);
+                    pcb.AddRow(tenant.Id, tenant.TenantName, tenant.ClientId, tenant.MemberUserTypeOnly);
                 }
                 pcb.BindGrid(grdAzureTenants);
             }
@@ -377,7 +377,7 @@ namespace azurecp
                     TenantId = this.TxtTenantId.Text,
                     ClientId = TxtClientId.Text,
                     ClientSecret = this.TxtClientSecret.Text,
-                    Federated = this.ChkFederated.Checked,
+                    MemberUserTypeOnly = this.ChkMemberUserTypeOnly.Checked,
                 });
 
             // Update object in database

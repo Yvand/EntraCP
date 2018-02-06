@@ -774,9 +774,9 @@ namespace azurecp
                                 // get the user search
                                 IReadOnlyQueryableSet<IUser> userQuerySet =  coco.ADClient.Users.Where(userQuery);
                                 // if need filter out guest users
-                                if (!coco.Federated) 
+                                if (!coco.MemberUserTypeOnly) 
                                 {
-                                    AzureCPLogging.Log(String.Format("[{0}] UserQueryTask for a non federated tenant '{1}': Guests ignored", ProviderInternalName, coco.TenantName), 
+                                    AzureCPLogging.Log(String.Format("[{0}] UserQueryTask filtering members only for tenant '{1}'", ProviderInternalName, coco.TenantName), 
                                         TraceSeverity.Medium, EventSeverity.Information, AzureCPLogging.Categories.Lookup);
                                     // "where not" not supported in OData...
                                     //userQuerySet = userQuerySet.Where(x => !x.UserType.Equals("Guest",StringComparison.InvariantCultureIgnoreCase));
