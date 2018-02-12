@@ -415,7 +415,7 @@ namespace azurecp
             PropertyCollection.Columns.Add("Id", typeof(Guid));
             PropertyCollection.Columns.Add("TenantName", typeof(string));
             PropertyCollection.Columns.Add("ClientID", typeof(string));
-            PropertyCollection.Columns.Add("Federated", typeof(bool));
+            PropertyCollection.Columns.Add("MemberUserTypeOnly", typeof(bool));
         }
 
         public void AddRow(Guid Id, string TenantName, string ClientID, bool Federated)
@@ -424,7 +424,7 @@ namespace azurecp
             newRow["Id"] = Id;
             newRow["TenantName"] = TenantName;
             newRow["ClientID"] = ClientID;
-            newRow["Federated"] = Federated;
+            newRow["MemberUserTypeOnly"] = Federated;
         }
 
         public void BindGrid(SPGridView grid)

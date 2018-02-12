@@ -774,7 +774,7 @@ namespace azurecp
                                 // get the user search
                                 IReadOnlyQueryableSet<IUser> userQuerySet =  coco.ADClient.Users.Where(userQuery);
                                 // if need filter out guest users
-                                if (!coco.MemberUserTypeOnly) 
+                                if (coco.MemberUserTypeOnly) 
                                 {
                                     AzureCPLogging.Log(String.Format("[{0}] UserQueryTask filtering members only for tenant '{1}'", ProviderInternalName, coco.TenantName), 
                                         TraceSeverity.Medium, EventSeverity.Information, AzureCPLogging.Categories.Lookup);
