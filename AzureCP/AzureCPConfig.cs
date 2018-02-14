@@ -23,6 +23,12 @@ namespace azurecp
 
     public class Constants
     {
+        public class GraphUserType
+        {
+            public const string Guest = "Guest";
+            public const string Member = "Member";
+        }
+
         public const string AZURECPCONFIG_ID = "0E9F8FB6-B314-4CCC-866D-DEC0BE76C237";
         public const string AZURECPCONFIG_NAME = "AzureCPConfig";
         public const string AuthString = "https://login.windows.net/{0}";

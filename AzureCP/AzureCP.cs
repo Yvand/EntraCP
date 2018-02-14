@@ -492,14 +492,18 @@ namespace azurecp
             }
 
             // search users, groups and domains
-            Task<List<object>> searchResultsTask = this.QueryAzureADCollectionAsync(input, userQuery, groupQuery);
+            Task<List<AzurecpTenantResult>> searchResultsTask = this.QueryAzureADCollectionAsync(input, userQuery, groupQuery);
             searchResultsTask.ConfigureAwait(false);
             // wait for task
-            searchResultsTask.Wait();
-            // Separate AzurecpResult from string (domains)
-            IEnumerable<AzurecpResult> searchResults = searchResultsTask.Result.OfType<AzurecpResult>();
-            IEnumerable<string> domains = searchResultsTask.Result.OfType<string>();
-
+            Task.WaitAll(searchResultsTask);
+            // Consolidate AzurecpResult from Domains (domains)
+            List<AzurecpResult> searchResults = new List<AzurecpResult>();
+            List<string> domains = new List<string>();
+            foreach (AzurecpTenantResult tenantResults in searchResultsTask.Result)
+            {
+                searchResults.AddRange(tenantResults.AzurecpResults);
+                domains.AddRange(tenantResults.Domains);
+            }
             // return if no user or groups found
             if (searchResults == null || !searchResults.Any())
             {
@@ -509,7 +513,7 @@ namespace azurecp
                 return;
             };
             AzureCPLogging.Log(
-                String.Format("[{0}] BuildFilterAndProcess recieved {1} AzureCP results.", ProviderInternalName, searchResults.Count()),
+                String.Format("[{0}] BuildFilterAndProcess recieved {1} AzureCP result(s).", ProviderInternalName, searchResults.Count()),
                 TraceSeverity.VerboseEx, EventSeverity.Information, AzureCPLogging.Categories.Lookup);
             // return if no domains found
             if (domains == null || !domains.Any())
@@ -520,7 +524,7 @@ namespace azurecp
                 return;
             };
             AzureCPLogging.Log(
-                String.Format("[{0}] BuildFilterAndProcess recieved {1} Domains.", ProviderInternalName, domains.Count()),
+                String.Format("[{0}] BuildFilterAndProcess recieved {1} Domain(s).", ProviderInternalName, domains.Count()),
                 TraceSeverity.VerboseEx, EventSeverity.Information, AzureCPLogging.Categories.Lookup);
 
             // If exactSearch is true, we don't care about attributes with CreateAsIdentityClaim = true
@@ -548,7 +552,7 @@ namespace azurecp
                             TraceSeverity.Unexpected, EventSeverity.Warning, AzureCPLogging.Categories.Lookup);
                         continue;
                     }
-                    if (String.Equals(userType, "Guest", StringComparison.InvariantCultureIgnoreCase))
+                    if (String.Equals(userType, Constants.GraphUserType.Guest, StringComparison.InvariantCultureIgnoreCase))
                     {
                         string mail = GetGraphPropertyValue(searchResult.DirectoryObjectResult, "Mail");
                         if (String.IsNullOrEmpty(mail))
@@ -667,10 +671,10 @@ namespace azurecp
         /// <param name="groupQuery"></param>
         /// <param name="input"></param>
         /// <returns></returns>
-        private async Task<List<object>> QueryAzureADCollectionAsync(string input, Expression<Func<IUser, bool>> userQuery, Expression<Func<IGroup, bool>> groupQuery)
+        private async Task<List<AzurecpTenantResult>> QueryAzureADCollectionAsync(string input, Expression<Func<IUser, bool>> userQuery, Expression<Func<IGroup, bool>> groupQuery)
         {
             if (userQuery == null && groupQuery == null) return null;
-            List<object> allSearchResults = new List<object>();
+            List<AzurecpTenantResult> allSearchResults = new List<AzurecpTenantResult>();
             var lockResults = new object();
 
             foreach (AzureTenant coco in this.CurrentConfiguration.AzureTenants)
@@ -678,7 +682,7 @@ namespace azurecp
             //var queryTenantTasks = this.CurrentConfiguration.AzureTenants.Select (async coco =>
             {
                 Stopwatch timer = new Stopwatch();
-                List<object> searchResult = null;
+                AzurecpTenantResult searchResult = null;
                 try
                 {
                     timer.Start();
@@ -693,12 +697,12 @@ namespace azurecp
                     timer.Stop();
                 }
 
-                if (searchResult != null && searchResult.Count > 0)
+                if (searchResult != null)
                 {
                     lock (lockResults)
                     {
-                        allSearchResults.AddRange(searchResult);
-                        AzureCPLogging.Log(String.Format("[{0}] Got {1} result(s) in {2} ms from \"{3}\" with input '{4}'", ProviderInternalName, searchResult.Count.ToString(), timer.ElapsedMilliseconds.ToString(), coco.TenantName, input),
+                        allSearchResults.Add(searchResult);
+                        AzureCPLogging.Log(String.Format("[{0}] Got {1} Directory Objects and {2} Domain result(s) in {3} ms from \"{4}\" with input '{5}'", ProviderInternalName, searchResult.AzurecpResults.Count().ToString(), searchResult.Domains.Count().ToString(), timer.ElapsedMilliseconds.ToString(), coco.TenantName, input),
                             TraceSeverity.Medium, EventSeverity.Information, AzureCPLogging.Categories.Lookup);
                     }
                 }
@@ -748,12 +752,12 @@ namespace azurecp
         /// <param name="groupFilter"></param>
         /// <param name="coco"></param>
         /// <returns></returns>
-        private async Task<List<object>> QueryAzureADAsync(AzureTenant coco, Expression<Func<IUser, bool>> userQuery, Expression<Func<IGroup, bool>> groupQuery, bool firstAttempt)
+        private async Task<AzurecpTenantResult> QueryAzureADAsync(AzureTenant coco, Expression<Func<IUser, bool>> userQuery, Expression<Func<IGroup, bool>> groupQuery, bool firstAttempt)
         {
             AzureCPLogging.Log(String.Format("[{0}] Entering QueryAzureADAsync for tenant '{1}'", ProviderInternalName, coco.TenantName), TraceSeverity.VerboseEx, EventSeverity.Information, AzureCPLogging.Categories.Lookup);
             bool tryAgain = false;
             bool resetAADContext = false;
-            List<object> allAADResults = new List<object>();
+            AzurecpTenantResult tenantResults = new AzurecpTenantResult();
             object lockAddResultToCollection = new object();
             CancellationTokenSource cts = new CancellationTokenSource(Constants.timeout);
             try
@@ -780,14 +784,14 @@ namespace azurecp
                                         TraceSeverity.Medium, EventSeverity.Information, AzureCPLogging.Categories.Lookup);
                                     // "where not" not supported in OData...
                                     //userQuerySet = userQuerySet.Where(x => !x.UserType.Equals("Guest",StringComparison.InvariantCultureIgnoreCase));
-                                    userQuerySet = userQuerySet.Where(x => x.UserType.Equals("Member",StringComparison.InvariantCultureIgnoreCase));
+                                    userQuerySet = userQuerySet.Where(x => x.UserType.Equals(Constants.GraphUserType.Member,StringComparison.InvariantCultureIgnoreCase));
                                 }
                                 IPagedCollection<IUser> userSearchResults = await userQuerySet.ExecuteAsync().ConfigureAwait(false);
                                 do
                                 {
                                     lock (lockAddResultToCollection)
                                     {
-                                        allAADResults.AddRange(AzurecpResult.AsList(userSearchResults.CurrentPage, coco.TenantId));
+                                        tenantResults.AzurecpResults.AddRange(AzurecpResult.AsList(userSearchResults.CurrentPage, coco.TenantId));
                                     }
                                     userSearchResults = await userSearchResults.GetNextPageAsync().ConfigureAwait(false);
                                 }
@@ -812,7 +816,7 @@ namespace azurecp
                                     // foreach is simple: only aquire lock once
                                     lock (lockAddResultToCollection)
                                     {
-                                        allAADResults.AddRange(AzurecpResult.AsList(groupSearchResults.CurrentPage, coco.TenantId));
+                                        tenantResults.AzurecpResults.AddRange(AzurecpResult.AsList(groupSearchResults.CurrentPage, coco.TenantId));
                                     }
                                     groupSearchResults = await groupSearchResults.GetNextPageAsync().ConfigureAwait(false);
                                 }
@@ -833,7 +837,7 @@ namespace azurecp
                                 ITenantDetail tenantDetail = await coco.ADClient.TenantDetails.Take(1).ExecuteSingleAsync().ConfigureAwait(false);
                                 lock (lockAddResultToCollection)
                                 {
-                                    allAADResults.AddRange(tenantDetail.VerifiedDomains.Select(x => x.Name));
+                                    tenantResults.Domains.AddRange(tenantDetail.VerifiedDomains.Select(x => x.Name));
                                 }
                             }
                             catch (Exception ex)
@@ -941,11 +945,11 @@ namespace azurecp
                 var result = await QueryAzureADAsync(coco, userQuery, groupQuery, false).ConfigureAwait(false);
                 lock (lockAddResultToCollection)
                 {
-                    allAADResults = result;
+                    tenantResults = result;
                 }
             }
             AzureCPLogging.Log(String.Format("[{0}] Leaving QueryAzureADAsync for tenant '{1}'", ProviderInternalName, coco.TenantName), TraceSeverity.Verbose, EventSeverity.Information, AzureCPLogging.Categories.Lookup);
-            return allAADResults;
+            return tenantResults;
         }
 
         /// <summary>
@@ -1805,6 +1809,18 @@ namespace azurecp
                 this.Lock_Config.ExitReadLock();
             }
             return null;
+        }
+    }
+
+    public class AzurecpTenantResult
+    {
+        public List<AzurecpResult> AzurecpResults;
+        public List<string> Domains;
+
+        public AzurecpTenantResult()
+        {
+            AzurecpResults = new List<AzurecpResult>();
+            Domains = new List<string>();
         }
     }
 
