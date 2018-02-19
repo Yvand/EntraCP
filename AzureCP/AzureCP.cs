@@ -491,12 +491,11 @@ namespace azurecp
                 }
             }
 
-            // search users, groups and domains
+            // Search users, groups and domains and wait for task to complete
             Task<List<AzurecpTenantResult>> searchResultsTask = this.QueryAzureADCollectionAsync(input, userQuery, groupQuery);
             searchResultsTask.ConfigureAwait(false);
-            // wait for task
             Task.WaitAll(searchResultsTask);
-            // Consolidate AzurecpResult from Domains (domains)
+            // Split AzurecpTenantResult results
             List<AzurecpResult> searchResults = new List<AzurecpResult>();
             List<string> domains = new List<string>();
             foreach (AzurecpTenantResult tenantResults in searchResultsTask.Result)
