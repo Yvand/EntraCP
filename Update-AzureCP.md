@@ -1,8 +1,8 @@
 ## How to update AzureCP
 
-> **Important:** Always start a new PowerShell console to ensure it uses up to date persisted objects. This avoids painful update errors.
-
 Run Update-SPSolution cmdlet to start a timer job that that will deploy the update on all servers. You can monitor the progression in farm solutions page in central administration.
+
+> **Important:** Always start a new PowerShell console to ensure it uses up to date persisted objects and avoid concurrency update errors.
 
 ```powershell
 Update-SPSolution -GACDeployment -Identity "AzureCP.wsp" -LiteralPath "PATH TO WSP FILE"

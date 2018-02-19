@@ -3,7 +3,7 @@
 Download [latest release](https://github.com/Yvand/AzureCP/releases/latest).
 Install and deploy the solution (that will automatically activate the "AzureCP" farm feature):
 
-> **Important:** Always start a new PowerShell console to ensure it uses up to date persisted objects. This avoids painful update errors.
+> **Important:** Always start a new PowerShell console to ensure it uses up to date persisted objects and avoid concurrency update errors.
 
 ```powershell
 Add-SPSolution "PATH TO WSP FILE"

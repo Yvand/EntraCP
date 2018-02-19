@@ -1,4 +1,4 @@
-This claims provider for SharePoint 2013 and 2016 leverages [Azure AD Graph Client Library](http://www.nuget.org/packages/Microsoft.Azure.ActiveDirectory.GraphClient/) to query Azure Active Directory from the people picker. It also gets the groups of Azure users to augment their SAML token, so that permission can be granted on Azure groups.
+This claims provider for SharePoint 2013 and 2016 leverages [Azure AD Graph Client Library](http://www.nuget.org/packages/Microsoft.Azure.ActiveDirectory.GraphClient/) to query Azure Active Directory from the people picker. It also gets the group membership of Azure users, so that permissions can be granted on Azure groups.
 
 ![People picker with AzureCP](https://github.com/Yvand/AzureCP/raw/gh-pages/assets/people%20picker%20AzureCP_2.png)
 

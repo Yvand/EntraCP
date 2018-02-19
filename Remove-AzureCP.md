@@ -16,8 +16,9 @@ $trust.Update()
 
 Randomly, SharePoint doesn’t uninstall the solution correctly: it removes the assembly too early and fails to call the feature receiver... When this happens, the claims provider is not removed and that causes issues when you re-install it.
 
+> **Important**: Always start a new PowerShell console to ensure it uses up to date persisted objects and avoid concurrency update errors.
+
 ```powershell
-# Run this on a new PowerShell console (it tends to avoid issues with local cache of persisted objects, that could cause errors on such operations)
 Disable-SPFeature -identity "AzureCP"
 Uninstall-SPSolution -Identity "AzureCP.wsp"
 # Wait for the timer job to complete

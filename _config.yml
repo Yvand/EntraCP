@@ -1,6 +1,6 @@
 #theme: jekyll-theme-cayman
 #title: AzureCP
-tagline: Azure Active Directory claims provider for SharePoint
+tagline: Azure Active Directory claims provider for SharePoint 2013 and 2016
 #paginate: 1
 show_downloads: true
 repository: Yvand/AzureCP
