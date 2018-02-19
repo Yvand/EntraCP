@@ -14,7 +14,7 @@
     <style>
         /* Set the size of the right part with all input controls */
         .ms-inputformcontrols {
-            width: 650px;
+            width: 700px;
         }
 
         /* Set the display of the title of each section */
@@ -125,6 +125,7 @@
 						<asp:BoundField DataField="Id" ItemStyle-CssClass="Azurecp-HideCol" HeaderStyle-CssClass="Azurecp-HideCol"/>
 						<asp:BoundField HeaderText="TenantName" DataField="TenantName"/>
 						<asp:BoundField HeaderText="ApplicationID" DataField="ClientID"/>
+                        <asp:BoundField HeaderText="Member Users Only" DataField="MemberUserTypeOnly" />
 						<asp:CommandField HeaderText="Action" ButtonType="Button" DeleteText="Remove" ShowDeleteButton="True" />
 					</Columns>
 				</wssawc:SPGridView>
@@ -161,7 +162,11 @@
 				</ol>
 				</fieldset>
 				</div>
-					
+                <tr><td colspan='2'>
+					<label for="<%=ChkMemberUserTypeOnly.ClientID %>"><a href="https://docs.microsoft.com/en-us/azure/active-directory/active-directory-b2b-user-properties" target="_blank">"Member" UserType</a> only: <em>*</em></label>
+					<table style="display: inline;"><wssawc:InputFormCheckBox title="MemberUserTypeOnly" class="ms-input" ID="ChkMemberUserTypeOnly" runat="server" /></table>
+				</td></tr>
+
 				<div class="divbuttons">
 					<asp:Button runat="server" ID="BtnTestAzureTenantConnection" Text="Test tenant connection" onclick="BtnTestAzureTenantConnection_Click" class="ms-ButtonHeightWidth" />
 					<asp:Button runat="server" ID="BtnAddLdapConnection" Text="Add tenant" OnClick="BtnAddAzureTenant_Click" class="ms-ButtonHeightWidth" />
