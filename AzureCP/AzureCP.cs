@@ -504,51 +504,30 @@ namespace azurecp
                 searchResults.AddRange(tenantResults.AzurecpResults);
                 domains.AddRange(tenantResults.Domains);
             }
-            // return if no user or groups found
-            if (searchResults == null || !searchResults.Any())
-            {
-                AzureCPLogging.Log(
-                    String.Format("[{0}] BuildFilterAndProcess recieved no AzureCP results.", ProviderInternalName),
-                    TraceSeverity.VerboseEx, EventSeverity.Information, AzureCPLogging.Categories.Lookup);
-                return;
-            };
-            AzureCPLogging.Log(
-                String.Format("[{0}] BuildFilterAndProcess recieved {1} AzureCP result(s).", ProviderInternalName, searchResults.Count()),
-                TraceSeverity.VerboseEx, EventSeverity.Information, AzureCPLogging.Categories.Lookup);
-            // return if no domains found
-            if (domains == null || !domains.Any())
-            {
-                AzureCPLogging.Log(
-                    String.Format("[{0}] BuildFilterAndProcess recieved no Domains.", ProviderInternalName),
-                    TraceSeverity.VerboseEx, EventSeverity.Information, AzureCPLogging.Categories.Lookup);
-                return;
-            };
-            AzureCPLogging.Log(
-                String.Format("[{0}] BuildFilterAndProcess recieved {1} Domain(s).", ProviderInternalName, domains.Count()),
-                TraceSeverity.VerboseEx, EventSeverity.Information, AzureCPLogging.Categories.Lookup);
 
+            // Return if no user / groups is found, or if no domain is found
+            if (searchResults == null || !searchResults.Any() || domains == null || !domains.Any())
+            {
+                return;
+            };
+            
             // If exactSearch is true, we don't care about attributes with CreateAsIdentityClaim = true
             List<AzureADObject> azureObjects;
             if (exactSearch) azureObjects = azureObjectsToQuery.FindAll(x => !x.CreateAsIdentityClaim);
             else azureObjects = azureObjectsToQuery;
 
-            Stopwatch sw = Stopwatch.StartNew();
             foreach (AzurecpResult searchResult in searchResults)
             {
-                Type currentObjectType = null;
                 DirectoryObject currentObject = null;
                 string claimEntityType = null;
                 if (searchResult.DirectoryObjectResult is User)
                 {
-                    AzureCPLogging.Log(
-                        String.Format("[{0}] BuildFilterAndProcess skipped filter known users set.", ProviderInternalName),
-                        TraceSeverity.Medium, EventSeverity.Information, AzureCPLogging.Categories.Lookup);
-                    //skip shadow users (type is guest and mail domain in tenants verified domains)
+                    // Always skip shadow users: UserType is Guest and his mail matches a verified domain in AAD tenant
                     string userType = GetGraphPropertyValue(searchResult.DirectoryObjectResult, "UserType");
                     if (String.IsNullOrEmpty(userType))
                     {
                         AzureCPLogging.Log(
-                            String.Format("[{0}] BuildFilterAndProcess skipped user because usertype is empty.", ProviderInternalName),
+                            String.Format("[{0}] User {1} filtered out because his property UserType is empty.", ProviderInternalName, ((User) searchResult.DirectoryObjectResult).UserPrincipalName),
                             TraceSeverity.Unexpected, EventSeverity.Warning, AzureCPLogging.Categories.Lookup);
                         continue;
                     }
@@ -558,7 +537,7 @@ namespace azurecp
                         if (String.IsNullOrEmpty(mail))
                         {
                             AzureCPLogging.Log(
-                                String.Format("[{0}] BuildFilterAndProcess skipped guest user because mail is empty.", ProviderInternalName),
+                                String.Format("[{0}] Guest user {1} filtered out because his mail is empty.", ProviderInternalName, ((User)searchResult.DirectoryObjectResult).UserPrincipalName),
                                 TraceSeverity.Unexpected, EventSeverity.Warning, AzureCPLogging.Categories.Lookup);
                             continue;
                         }
@@ -567,18 +546,16 @@ namespace azurecp
                         if (domains.Any(x => String.Equals(x, maildomain, StringComparison.InvariantCultureIgnoreCase)))
                         {
                             AzureCPLogging.Log(
-                                String.Format("[{0}] BuildFilterAndProcess skipped guest user {1} because it is in a registered domain.", ProviderInternalName, mail),
+                                String.Format("[{0}] Guest user {1} filtered out because he is in a domain registered in AAD tenant.", ProviderInternalName, mail),
                                 TraceSeverity.Verbose, EventSeverity.Verbose, AzureCPLogging.Categories.Lookup);
                             continue;
                         }
                     }
-                    currentObjectType = typeof(User);
                     currentObject = searchResult.DirectoryObjectResult;
                     claimEntityType = SPClaimEntityTypes.User;
                 }
                 else
                 {
-                    currentObjectType = typeof(Group);
                     currentObject = searchResult.DirectoryObjectResult;
                     claimEntityType = SPClaimEntityTypes.FormsRole;
                 }
@@ -640,8 +617,8 @@ namespace azurecp
 
             AzureCPLogging.Log(
                 String.Format(
-                    "[{0}] {1} permission(s) to create after filtering in {2} ms",
-                    ProviderInternalName, results.Count, sw.ElapsedMilliseconds.ToString()),
+                    "[{0}] {1} permission(s) to create after filtering",
+                    ProviderInternalName, results.Count),
                 TraceSeverity.Verbose, EventSeverity.Information, AzureCPLogging.Categories.Lookup);
             foreach (AzurecpResult result in results)
             {

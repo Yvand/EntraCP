@@ -14,7 +14,7 @@
     <style>
         /* Set the size of the right part with all input controls */
         .ms-inputformcontrols {
-            width: 650px;
+            width: 700px;
         }
 
         /* Set the display of the title of each section */
@@ -159,14 +159,14 @@
 						<label for="<%= TxtClientSecret.ClientID %>">Application Secret: <em>*</em></label>
 						<wssawc:InputFormTextBox title="Password" class="ms-input" ID="TxtClientSecret" Columns="50" Runat="server" MaxLength="255" TextMode="Password" />
 					</li>
-                    <li>
-                        <label for="<%=ChkMemberUserTypeOnly.ClientID %>">Member User Only: <em>*</em></label>
-                        <wssawc:InputFormCheckBox title="MemberUserTypeOnly" class="ms-input" ID="ChkMemberUserTypeOnly" runat="server" />
-                    </li>
 				</ol>
 				</fieldset>
 				</div>
-					
+                <tr><td colspan='2'>
+					<label for="<%=ChkMemberUserTypeOnly.ClientID %>"><a href="https://docs.microsoft.com/en-us/azure/active-directory/active-directory-b2b-user-properties" target="_blank">"Member" UserType</a> only: <em>*</em></label>
+					<table style="display: inline;"><wssawc:InputFormCheckBox title="MemberUserTypeOnly" class="ms-input" ID="ChkMemberUserTypeOnly" runat="server" /></table>
+				</td></tr>
+
 				<div class="divbuttons">
 					<asp:Button runat="server" ID="BtnTestAzureTenantConnection" Text="Test tenant connection" onclick="BtnTestAzureTenantConnection_Click" class="ms-ButtonHeightWidth" />
 					<asp:Button runat="server" ID="BtnAddLdapConnection" Text="Add tenant" OnClick="BtnAddAzureTenant_Click" class="ms-ButtonHeightWidth" />
