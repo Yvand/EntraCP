@@ -14,7 +14,7 @@ namespace GitHubStatistics {
     }
 
     export class RepoStats {
-        url: string = "http://ldapcp-functions.azurewebsites.net/api/GetLatestAzureCPRepoStats";
+        url: string = "https://ldapcp-functions.azurewebsites.net/api/GetLatestAzureCPRepoStats";
         //url: string = "http://jsfiddle.net/echo/jsonp/";
         authZKey: string = "3YWIoBPB2gMnG4bN5WsTF4p14V3Bx7U7ZXqrRX2SWj13Mn2omw3OnQ==";
         getLatestStat() {

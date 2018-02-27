@@ -4,7 +4,7 @@ var GitHubStatistics;
 (function (GitHubStatistics) {
     class RepoStats {
         constructor() {
-            this.url = "http://ldapcp-functions.azurewebsites.net/api/GetLatestAzureCPRepoStats";
+            this.url = "https://ldapcp-functions.azurewebsites.net/api/GetLatestAzureCPRepoStats";
             //url: string = "http://jsfiddle.net/echo/jsonp/";
             this.authZKey = "3YWIoBPB2gMnG4bN5WsTF4p14V3Bx7U7ZXqrRX2SWj13Mn2omw3OnQ==";
         }
