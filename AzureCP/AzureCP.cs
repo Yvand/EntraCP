@@ -408,7 +408,7 @@ namespace azurecp
 
         public void BuildFilterAndProcessResultsAsync(string input, List<AzureADObject> azureObjectsToQuery, bool exactSearch, Uri context, string[] entityTypes, ref List<AzurecpResult> results)
         {
-            
+
 
             // Search users, groups and domains and wait for task to complete
             Task<List<AzurecpTenantResult>> searchResultsTask = this.QueryAzureADCollectionAsync(input, userQuery, groupQuery);
@@ -1634,9 +1634,89 @@ namespace azurecp
 
         protected virtual async Task<AzurecpTenantResult> xQueyAADAsync(RequestInformation requestInfo, AzureTenant coco, string userFilter, string groupFilter, bool firstAttempt)
         {
-            if (coco.GraphService == null)
+            AzureCPLogging.Log(String.Format("[{0}] Entering QueryAzureADAsync for tenant '{1}'", ProviderInternalName, coco.TenantName), TraceSeverity.VerboseEx, EventSeverity.Information, AzureCPLogging.Categories.Lookup);
+            bool tryAgain = false;
+            bool resetAADContext = false;
+            AzurecpTenantResult tenantResults = new AzurecpTenantResult();
+            object lockAddResultToCollection = new object();
+            CancellationTokenSource cts = new CancellationTokenSource(Constants.timeout);
+            try
             {
-                
+                using (new SPMonitoredScope(String.Format("[{0}] Searching users and groups on Azure AD tenant '{1}'", ProviderInternalName, coco.TenantName), 1000))
+                {
+                    using (AADContextLock.Lock())
+                    {
+                        if (coco.GraphService == null) RefreshAzureADContext(coco);
+                        if (coco.GraphService == null) return null;
+
+                        Task userQueryTask = Task.Run(async () =>
+                        {
+                            if (userFilter == null) return;
+                            AzureCPLogging.Log(String.Format("[{0}] UserQueryTask starting for tenant '{1}'", ProviderInternalName, coco.TenantName), TraceSeverity.VerboseEx, EventSeverity.Information, AzureCPLogging.Categories.Lookup);
+                            try
+                            {
+                                IGraphServiceUsersCollectionPage users = await coco.GraphService.Users.Request().Filter(userFilter).GetAsync();
+
+                                if (users?.Count > 0)
+                                {
+                                    //users.cur
+                                }                                    
+                            }
+                            catch (Exception ex)
+                            {
+                                AzureCPLogging.LogException(ProviderInternalName, String.Format("while getting users in tenant {0}", coco.TenantName), AzureCPLogging.Categories.Lookup, ex);
+                                throw ex;
+                            }
+                            AzureCPLogging.Log(String.Format("[{0}] UserQueryTask ending for tenant '{1}'", ProviderInternalName, coco.TenantName), TraceSeverity.VerboseEx, EventSeverity.Information, AzureCPLogging.Categories.Lookup);
+                        }, cts.Token);
+                        Task groupQueryTask = Task.Run(async () =>
+                        {
+                            if (groupFilter == null) return;
+                            AzureCPLogging.Log(String.Format("[{0}] GroupQueryTask starting for tenant '{1}'", ProviderInternalName, coco.TenantName), TraceSeverity.VerboseEx, EventSeverity.Information, AzureCPLogging.Categories.Lookup);
+                            try
+                            {
+                                
+                            }
+                            catch (Exception ex)
+                            {
+                                AzureCPLogging.LogException(ProviderInternalName, String.Format("while getting groups in tenant {0}", coco.TenantName), AzureCPLogging.Categories.Lookup, ex);
+                                throw ex;
+                            }
+                            AzureCPLogging.Log(String.Format("[{0}] GroupQueryTask ending for tenant '{1}'", ProviderInternalName, coco.TenantName), TraceSeverity.VerboseEx, EventSeverity.Information, AzureCPLogging.Categories.Lookup);
+                        }, cts.Token);
+                        Task domainQueryTask = Task.Run(async () =>
+                        {
+                            //AzureCPLogging.Log(String.Format("[{0}] DomainQueryTask starting for tenant '{1}'", ProviderInternalName, coco.TenantName), TraceSeverity.VerboseEx, EventSeverity.Information, AzureCPLogging.Categories.Lookup);
+                            //try
+                            //{
+                            //    ITenantDetail tenantDetail = await coco.ADClient.TenantDetails.Take(1).ExecuteSingleAsync().ConfigureAwait(false);
+                            //    lock (lockAddResultToCollection)
+                            //    {
+                            //        tenantResults.Domains.AddRange(tenantDetail.VerifiedDomains.Select(x => x.Name));
+                            //    }
+                            //}
+                            //catch (Exception ex)
+                            //{
+                            //    AzureCPLogging.LogException(ProviderInternalName, String.Format("while getting domains in tenant {0}", coco.TenantName), AzureCPLogging.Categories.Lookup, ex);
+                            //    throw ex;
+                            //}
+                            //AzureCPLogging.Log(String.Format("[{0}] DomainQueryTask ending for tenant '{1}'", ProviderInternalName, coco.TenantName), TraceSeverity.VerboseEx, EventSeverity.Information, AzureCPLogging.Categories.Lookup);
+                        }, cts.Token);
+                        Task.WaitAll(new Task[3] { userQueryTask, groupQueryTask, domainQueryTask }, Constants.timeout, cts.Token);
+                        //await Task.WhenAll(userQueryTask, groupQueryTask).ConfigureAwait(false);
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                // Unknown exception
+                tryAgain = true;
+                AzureCPLogging.LogException(ProviderInternalName, $"while querying tenant '{coco.TenantName}'", AzureCPLogging.Categories.Lookup, ex);
+            }
+            finally
+            {
+                AzureCPLogging.LogDebug(String.Format("Releasing cancellation token of tenant '{0}'", coco.TenantName));
+                cts.Dispose();
             }
         }
 

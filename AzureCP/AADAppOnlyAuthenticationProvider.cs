@@ -16,11 +16,15 @@ namespace azurecp
         private string tenant;
         private string clientId;
         private string appKey;
+        string authority;
 
-        public AADAppOnlyAuthenticationProvider()
+        public AADAppOnlyAuthenticationProvider(string aadInstance, string tenant, string clientId, string appKey)
         {
-            string authority = String.Format(CultureInfo.InvariantCulture, aadInstance, tenant);
-
+            this.aadInstance = aadInstance;
+            this.tenant = tenant;
+            this.clientId = clientId;
+            this.appKey = appKey;
+            this.authority = String.Format(CultureInfo.InvariantCulture, aadInstance, tenant);
         }
 
         public async Task AuthenticateRequestAsync(HttpRequestMessage request)

@@ -104,14 +104,13 @@
     </Reference>
   </ItemGroup>
   <ItemGroup>
-    <Compile Include="AuthenticationHelper.cs" />
+    <Compile Include="AADAppOnlyAuthenticationProvider.cs" />
     <Compile Include="AzureCP.cs" />
     <Compile Include="AzureCPConfig.cs" />
     <Compile Include="AzureCPLogging.cs" />
     <Compile Include="Features\AzureCP\AzureCP.EventReceiver.cs">
       <DependentUpon>AzureCP.feature</DependentUpon>
     </Compile>
-    <Compile Include="GraphAPIPredicateBuilder.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="TEMPLATE\ADMIN\AzureCP\AzureCPSettings.aspx.cs">
       <DependentUpon>AzureCPSettings.aspx</DependentUpon>
