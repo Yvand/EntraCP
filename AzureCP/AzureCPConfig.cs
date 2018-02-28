@@ -7,8 +7,10 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using WIF = System.Security.Claims;
-using Microsoft.Azure.ActiveDirectory.GraphClient;
-using Microsoft.Azure.ActiveDirectory.GraphClient.ErrorHandling;
+using System.Text.RegularExpressions;
+using System.Web;
+using Microsoft.Graph;
+//using WIF3_5 = Microsoft.IdentityModel.Claims;
 
 namespace azurecp
 {
@@ -385,12 +387,14 @@ namespace azurecp
         /// <summary>
         /// Access token used to connect to AAD. Should not be persisted or accessible outside of the assembly
         /// </summary>
-        internal string AccessToken = String.Empty;
+        public string AccessToken = String.Empty;
 
-        /// <summary>
-        /// Actual connection to AAD. Should not be persisted or accessible outside of the assembly
-        /// </summary>
-        internal ActiveDirectoryClient ADClient;
+        [Persisted]
+        public string AADInstance = "https://login.windows.net/{0}";
+
+        public AADAppOnlyAuthenticationProvider AuthenticationProvider;
+
+        public GraphServiceClient GraphService;
 
         public AzureTenant()
         {
@@ -408,5 +412,181 @@ namespace azurecp
             };
             return copy;
         }
+    }
+
+    /// <summary>
+    /// Contains information about current request
+    /// </summary>
+    public class RequestInformation
+    {
+        public static string RegexAccountFromFullAccountName { get { return ".*\\\\(.*)"; } }
+        //public static string RegexDomainFromFullAccountName { get { return "(.*)\\\\(.*)"; } }
+        public static string RegexDomainFromFullAccountName { get { return "(.*)\\\\.*"; } }
+        public static string RegexFullDomainFromEmail { get { return ".*@(.*)"; } }
+
+        /// <summary>
+        /// Current LDAPCP configuration
+        /// </summary>
+        public IAzureCPConfiguration CurrentConfiguration;
+
+        /// <summary>
+        /// Indicates what kind of operation SharePoint is sending to LDAPCP
+        /// </summary>
+        public RequestType RequestType;
+
+        /// <summary>
+        /// SPClaim sent in parameter to LDAPCP. Can be null
+        /// </summary>
+        public SPClaim IncomingEntity;
+
+        /// <summary>
+        /// User submitting the query in the poeple picker, retrieved from HttpContext. Can be null
+        /// </summary>
+        public SPClaim UserInHttpContext;
+
+        public Uri Context;
+        public string[] EntityTypes;
+        private string OriginalInput;
+        public string HierarchyNodeID;
+        public int MaxCount;
+
+        public string Input;
+        public bool InputHasKeyword;
+        public bool ExactSearch;
+        public AzureADObject Attribute;
+        public List<AzureADObject> Attributes;
+
+        public RequestInformation(IAzureCPConfiguration currentConfiguration, RequestType currentRequestType, List<AzureADObject> processedAttributes, string input, SPClaim incomingEntity, Uri context, string[] entityTypes, string hierarchyNodeID, int maxCount)
+        {
+            this.CurrentConfiguration = currentConfiguration;
+            this.RequestType = currentRequestType;
+            this.OriginalInput = input;
+            this.IncomingEntity = incomingEntity;
+            this.Context = context;
+            this.EntityTypes = entityTypes;
+            this.HierarchyNodeID = hierarchyNodeID;
+            this.MaxCount = maxCount;
+
+            HttpContext httpctx = HttpContext.Current;
+            if (httpctx != null)
+            {
+                WIF.ClaimsPrincipal cp = httpctx.User as WIF.ClaimsPrincipal;
+                // cp is typically null in central administration
+                if (cp != null) this.UserInHttpContext = SPClaimProviderManager.Local.DecodeClaimFromFormsSuffix(cp.Identity.Name);
+            }
+
+            if (currentRequestType == RequestType.Validation)
+            {
+                this.InitializeValidation(processedAttributes);
+            }
+            else if (currentRequestType == RequestType.Search)
+            {
+                this.InitializeSearch(processedAttributes);
+            }
+            else if (currentRequestType == RequestType.Augmentation)
+            {
+                this.InitializeAugmentation(processedAttributes);
+            }
+        }
+
+        /// <summary>
+        /// Validation is when SharePoint asks LDAPCP to return 1 PickerEntity from a given SPClaim
+        /// </summary>
+        /// <param name="ProcessedAttributes"></param>
+        protected void InitializeValidation(List<AzureADObject> ProcessedAttributes)
+        {
+            if (this.IncomingEntity == null) throw new ArgumentNullException("claimToValidate");
+            this.Attribute = FindAttribute(ProcessedAttributes, this.IncomingEntity.ClaimType);
+            if (this.Attribute == null) return;
+            this.Attributes = new List<AzureADObject>() { this.Attribute };
+            this.ExactSearch = true;
+            this.Input = this.IncomingEntity.Value;
+        }
+
+        /// <summary>
+        /// Search is when SharePoint asks LDAPCP to return all PickerEntity that match input provided
+        /// </summary>
+        /// <param name="ProcessedAttributes"></param>
+        protected void InitializeSearch(List<AzureADObject> ProcessedAttributes)
+        {
+            this.ExactSearch = this.CurrentConfiguration.FilterExactMatchOnly;
+            this.Input = this.OriginalInput;
+            if (!String.IsNullOrEmpty(this.HierarchyNodeID))
+            {
+                // Restrict search to attributes currently selected in the hierarchy (may return multiple results if identity claim type)
+                Attributes = ProcessedAttributes.FindAll(x =>
+                    String.Equals(x.ClaimType, this.HierarchyNodeID, StringComparison.InvariantCultureIgnoreCase) &&
+                    this.EntityTypes.Contains(x.ClaimEntityType));
+            }
+            else
+            {
+                // List<T>.FindAll returns an empty list if no result found: http://msdn.microsoft.com/en-us/library/fh1w7y8z(v=vs.110).aspx
+                Attributes = ProcessedAttributes.FindAll(x => this.EntityTypes.Contains(x.ClaimEntityType));
+            }
+        }
+
+        protected void InitializeAugmentation(List<AzureADObject> ProcessedAttributes)
+        {
+            if (this.IncomingEntity == null) throw new ArgumentNullException("claimToValidate");
+            this.Attribute = FindAttribute(ProcessedAttributes, this.IncomingEntity.ClaimType);
+            if (this.Attribute == null) return;
+        }
+
+        public static AzureADObject FindAttribute(List<AzureADObject> processedAttributes, string claimType)
+        {
+            var Attributes = processedAttributes.FindAll(x =>
+                String.Equals(x.ClaimType, claimType, StringComparison.InvariantCultureIgnoreCase)
+                && !x.CreateAsIdentityClaim);
+            if (Attributes.Count != 1)
+            {
+                // Should always find only 1 attribute at this stage
+                AzureCPLogging.Log(String.Format("[{0}] Found {1} attributes that match the claim type \"{2}\", but exactly 1 is expected. Verify that there is no duplicate claim type. Aborting operation.", AzureCP._ProviderInternalName, Attributes.Count.ToString(), claimType), TraceSeverity.Unexpected, EventSeverity.Error, AzureCPLogging.Categories.Claims_Picking);
+                return null;
+            }
+            return Attributes.First();
+        }
+
+        public static string GetAccountFromFullAccountName(string fullAccountName)
+        {
+            return Regex.Replace(fullAccountName, RegexAccountFromFullAccountName, "$1", RegexOptions.None);
+        }
+
+        /// <summary>
+        /// Returns the string before the '\'
+        /// </summary>
+        /// <param name="fullAccountName">e.g. "mylds.local\ldsgroup1"</param>
+        /// <returns>e.g. "mylds.local"</returns>
+        public static string GetDomainFromFullAccountName(string fullAccountName)
+        {
+            return Regex.Replace(fullAccountName, RegexDomainFromFullAccountName, "$1", RegexOptions.None);
+        }
+
+        public static string GetFQDNFromEmail(string email)
+        {
+            return Regex.Replace(email, RegexFullDomainFromEmail, "$1", RegexOptions.None);
+        }
+
+        public static string GetFirstSubString(string value, string separator)
+        {
+            int stop = value.IndexOf(separator);
+            return (stop > -1) ? value.Substring(0, stop) : string.Empty;
+        }        
+    }
+
+    public enum GraphProperty
+    {
+        AccountEnabled,
+        DisplayName,
+        Mail,
+        PreferredName,
+        UserPrincipalName,
+        UserType
+    }
+
+    public enum RequestType
+    {
+        Search,
+        Validation,
+        Augmentation,
     }
 }
