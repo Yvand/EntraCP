@@ -13,6 +13,7 @@ using System.Reflection;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
+using System.Web;
 using WIF = System.Security.Claims;
 
 /*
@@ -1112,8 +1113,9 @@ namespace azurecp
 
             userFilterBuilder.Append(")");
             groupFilterBuilder.Append(")");
-            userFilter = userFilterBuilder.ToString();
-            groupFilter = groupFilterBuilder.ToString();
+
+            userFilter = HttpUtility.UrlEncode(userFilterBuilder.ToString());
+            groupFilter = HttpUtility.UrlEncode(groupFilterBuilder.ToString());
         }
 
         protected virtual async Task<List<AzurecpTenantResult>> xQueyAADCollectionAsync(RequestInformation requestInfo, string userFilter, string groupFilter)

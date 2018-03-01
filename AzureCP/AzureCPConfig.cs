@@ -37,7 +37,7 @@ namespace azurecp
         public const string ResourceUrl = "https://graph.windows.net";
         //public const int timeout
 #if DEBUG
-        public const int timeout = 5000;    // 1000 secs      1000000
+        public const int timeout = 500000;    // 1000 secs      1000000
 #else
         public const int timeout = 10000;    // 10 secs
 #endif
@@ -575,19 +575,20 @@ namespace azurecp
 
     public enum GraphProperty
     {
-        None,
-        AccountEnabled,
-        DisplayName,
-        Mail,
-        PreferredName,
-        UserPrincipalName,
-        UserType,
-        GivenName,
-        Surname,
-        MobilePhone,
-        JobTitle,
-        Department,
-        OfficeLocation
+        // Values are aligned with enum type Microsoft.Azure.ActiveDirectory.GraphClient.GraphProperty in Microsoft.Azure.ActiveDirectory.GraphClient.dll
+        None = 0,
+        AccountEnabled = 1,
+        Department = 20,
+        DisplayName = 28,
+        GivenName = 32,
+        JobTitle = 37,
+        Mail = 41,
+        MobilePhone = 47,
+        OfficeLocation = 54,
+        Surname = 83,
+        UserPrincipalName = 93,
+        UserType = 94,
+        PreferredName
     }
 
     public enum RequestType
