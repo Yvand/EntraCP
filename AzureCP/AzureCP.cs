@@ -701,7 +701,7 @@ namespace azurecp
                     }
                     if (groups.Count != 1)
                     {
-                        AzureCPLogging.Log(String.Format("[{0}] Found \"{1}\" objects configured with ClaimEntityType = SPClaimEntityTypes.FormsRole, instead of 1 expected.", ProviderInternalName),
+                        AzureCPLogging.Log(String.Format("[{0}] Found \"{1}\" objects configured with ClaimEntityType = SPClaimEntityTypes.FormsRole, instead of 1 expected.", ProviderInternalName, groups.Count),
                             TraceSeverity.Unexpected, EventSeverity.Error, AzureCPLogging.Categories.Augmentation);
                         return;
                     }
@@ -725,7 +725,7 @@ namespace azurecp
                     AzureADObject identityObject = identityObjects.First();
 
                     List<AzurecpResult> results = new List<AzurecpResult>();
-                    BuildFilterAndProcessResultsAsync(input, identityObjects, true, context, null, ref results);
+                    //BuildFilterAndProcessResultsAsync(input, identityObjects, true, context, null, ref results);
 
                     if (results.Count == 0)
                     {
@@ -748,7 +748,8 @@ namespace azurecp
                     AzureCPLogging.Log(String.Format("[{0}] Starting augmentation for user \"{1}\" on tenant {2}", ProviderInternalName, input, userTenant.TenantName),
                         TraceSeverity.Verbose, EventSeverity.Information, AzureCPLogging.Categories.Augmentation);
 
-                    List<AzurecpResult> userMembership = GetGroupMembership(result.DirectoryObjectResult as User, userTenant, true);
+                    List<AzurecpResult> userMembership = new List<AzurecpResult>();
+                    //List<AzurecpResult> userMembership = GetGroupMembership(result.DirectoryObjectResult as User, userTenant, true);
                     foreach (AzurecpResult groupResult in userMembership)
                     {
                         Group group = groupResult.DirectoryObjectResult as Group;

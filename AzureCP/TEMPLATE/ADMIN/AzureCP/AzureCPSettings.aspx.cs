@@ -1,6 +1,4 @@
-﻿using Microsoft.Azure.ActiveDirectory.GraphClient;
-//using Microsoft.IdentityModel.Clients.ActiveDirectory;
-using Microsoft.SharePoint;
+﻿using Microsoft.SharePoint;
 using Microsoft.SharePoint.Administration;
 using Microsoft.SharePoint.Administration.Claims;
 using Microsoft.SharePoint.WebControls;
@@ -11,6 +9,7 @@ using System.Diagnostics;
 using System.Reflection;
 using System.Web.UI.WebControls;
 using System.Linq;
+using Microsoft.Graph;
 
 namespace azurecp
 {
@@ -131,7 +130,7 @@ namespace azurecp
                 if (pi == null) continue;
                 if (pi.PropertyType != typeof(System.String)) continue;
 
-                this.DDLGraphPropertyToDisplay.Items.Add(new ListItem(prop.ToString(), ((int)prop).ToString()));
+                this.DDLGraphPropertyToDisplay.Items.Add(new System.Web.UI.WebControls.ListItem(prop.ToString(), ((int)prop).ToString()));
             }
         }
 
@@ -231,54 +230,54 @@ namespace azurecp
                 return;
             }
 
-            ActiveDirectoryClient activeDirectoryClient;
-            try
-            {
-                string tenantName = this.TxtTenantName.Text;
-                string tenantId = this.TxtTenantId.Text;
-                string clientId = this.TxtClientId.Text;
-                string clientSecret = this.TxtClientSecret.Text;
+            //ActiveDirectoryClient activeDirectoryClient;
+            //try
+            //{
+            //    string tenantName = this.TxtTenantName.Text;
+            //    string tenantId = this.TxtTenantId.Text;
+            //    string clientId = this.TxtClientId.Text;
+            //    string clientSecret = this.TxtClientSecret.Text;
 
-                // Get access token
-                activeDirectoryClient = AuthenticationHelper.GetActiveDirectoryClientAsApplication(tenantName, tenantId, clientId, clientSecret);
-                // Get information on tenant
-                ITenantDetail tenant = activeDirectoryClient.TenantDetails
-                    .Where(tDetail => tDetail.ObjectId.Equals(tenantId))
-                    .ExecuteAsync()
-                    .Result.CurrentPage.FirstOrDefault();
-                if (tenant != null)
-                {
-                    this.LabelTestTenantConnectionOK.Text = TextConnectionSuccessful;
-                    this.LabelTestTenantConnectionOK.Text += "<br>" + tenant.DisplayName;
-                }
-                else
-                {
-                    this.LabelErrorTestLdapConnection.Text = TextErrorTestAzureADConnectionTenantNotFound = "Tenant was not found.";
-                }
-                activeDirectoryClient = null;
-            }
-            catch (AuthenticationException ex)
-            {
-                //You should implement retry and back-off logic per the guidance given here:http://msdn.microsoft.com/en-us/library/dn168916.aspx
-                //InnerException Message will contain the HTTP error status codes mentioned in the link above
-                this.LabelErrorTestLdapConnection.Text = String.Format(TextErrorTestAzureADConnection, ex.Message);
-                if (ex.InnerException != null)
-                {
-                    this.LabelErrorTestLdapConnection.Text += String.Format("<br>Error detail: {0}", ex.InnerException.Message);
-                }
-                AzureCPLogging.LogException("AzureCP", "while testing connectivity", AzureCPLogging.Categories.Configuration, ex);
-            }
-            catch (Exception ex)
-            {
-                //You should implement retry and back-off logic per the guidance given here:http://msdn.microsoft.com/en-us/library/dn168916.aspx
-                //InnerException Message will contain the HTTP error status codes mentioned in the link above
-                this.LabelErrorTestLdapConnection.Text = String.Format(TextErrorTestAzureADConnection, ex.Message);
-                if (ex.InnerException != null)
-                {
-                    this.LabelErrorTestLdapConnection.Text += String.Format("<br>Error detail: {0}", ex.InnerException.Message);
-                }
-                AzureCPLogging.LogException("AzureCP", "while testing connectivity", AzureCPLogging.Categories.Configuration, ex);
-            }
+            //    // Get access token
+            //    activeDirectoryClient = AuthenticationHelper.GetActiveDirectoryClientAsApplication(tenantName, tenantId, clientId, clientSecret);
+            //    // Get information on tenant
+            //    ITenantDetail tenant = activeDirectoryClient.TenantDetails
+            //        .Where(tDetail => tDetail.ObjectId.Equals(tenantId))
+            //        .ExecuteAsync()
+            //        .Result.CurrentPage.FirstOrDefault();
+            //    if (tenant != null)
+            //    {
+            //        this.LabelTestTenantConnectionOK.Text = TextConnectionSuccessful;
+            //        this.LabelTestTenantConnectionOK.Text += "<br>" + tenant.DisplayName;
+            //    }
+            //    else
+            //    {
+            //        this.LabelErrorTestLdapConnection.Text = TextErrorTestAzureADConnectionTenantNotFound = "Tenant was not found.";
+            //    }
+            //    activeDirectoryClient = null;
+            //}
+            //catch (AuthenticationException ex)
+            //{
+            //    //You should implement retry and back-off logic per the guidance given here:http://msdn.microsoft.com/en-us/library/dn168916.aspx
+            //    //InnerException Message will contain the HTTP error status codes mentioned in the link above
+            //    this.LabelErrorTestLdapConnection.Text = String.Format(TextErrorTestAzureADConnection, ex.Message);
+            //    if (ex.InnerException != null)
+            //    {
+            //        this.LabelErrorTestLdapConnection.Text += String.Format("<br>Error detail: {0}", ex.InnerException.Message);
+            //    }
+            //    AzureCPLogging.LogException("AzureCP", "while testing connectivity", AzureCPLogging.Categories.Configuration, ex);
+            //}
+            //catch (Exception ex)
+            //{
+            //    //You should implement retry and back-off logic per the guidance given here:http://msdn.microsoft.com/en-us/library/dn168916.aspx
+            //    //InnerException Message will contain the HTTP error status codes mentioned in the link above
+            //    this.LabelErrorTestLdapConnection.Text = String.Format(TextErrorTestAzureADConnection, ex.Message);
+            //    if (ex.InnerException != null)
+            //    {
+            //        this.LabelErrorTestLdapConnection.Text += String.Format("<br>Error detail: {0}", ex.InnerException.Message);
+            //    }
+            //    AzureCPLogging.LogException("AzureCP", "while testing connectivity", AzureCPLogging.Categories.Configuration, ex);
+            //}
 
             //try
             //{

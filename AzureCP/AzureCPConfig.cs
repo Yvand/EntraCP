@@ -196,10 +196,10 @@ namespace azurecp
 
                 // Retrieve additional properties to populate metadata in SharePoint (no claim type and CreateAsIdentityClaim = false)
                 new AzureADObject{GraphProperty=GraphProperty.Mail, ClaimEntityType="User", EntityDataKey=PeopleEditorEntityDataKeys.Email},
-                new AzureADObject{GraphProperty=GraphProperty.Mobile, ClaimEntityType="User", EntityDataKey=PeopleEditorEntityDataKeys.MobilePhone},
+                new AzureADObject{GraphProperty=GraphProperty.MobilePhone, ClaimEntityType="User", EntityDataKey=PeopleEditorEntityDataKeys.MobilePhone},
                 new AzureADObject{GraphProperty=GraphProperty.JobTitle, ClaimEntityType="User", EntityDataKey=PeopleEditorEntityDataKeys.JobTitle},
                 new AzureADObject{GraphProperty=GraphProperty.Department, ClaimEntityType="User", EntityDataKey=PeopleEditorEntityDataKeys.Department},
-                new AzureADObject{GraphProperty=GraphProperty.PhysicalDeliveryOfficeName, ClaimEntityType="User", EntityDataKey=PeopleEditorEntityDataKeys.Location},
+                new AzureADObject{GraphProperty=GraphProperty.OfficeLocation, ClaimEntityType="User", EntityDataKey=PeopleEditorEntityDataKeys.Location},
 
                 // Role
                 new AzureADObject{GraphProperty=GraphProperty.DisplayName, ClaimType=WIF.ClaimTypes.Role, ClaimEntityType=SPClaimEntityTypes.FormsRole},
@@ -575,12 +575,19 @@ namespace azurecp
 
     public enum GraphProperty
     {
+        None,
         AccountEnabled,
         DisplayName,
         Mail,
         PreferredName,
         UserPrincipalName,
-        UserType
+        UserType,
+        GivenName,
+        Surname,
+        MobilePhone,
+        JobTitle,
+        Department,
+        OfficeLocation
     }
 
     public enum RequestType

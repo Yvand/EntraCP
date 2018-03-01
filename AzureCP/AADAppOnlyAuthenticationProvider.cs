@@ -29,8 +29,8 @@ namespace azurecp
 
         public async Task AuthenticateRequestAsync(HttpRequestMessage request)
         {
-            string clientId = clientId;
-            string clientSecret = appKey;
+            string clientId = this.clientId;
+            string clientSecret = this.appKey;
 
             //AuthenticationContext authContext = new AuthenticationContext("https://login.windows.net/yvandev.onmicrosoft.com/oauth2/token");
             AuthenticationContext authContext = new AuthenticationContext(authority);

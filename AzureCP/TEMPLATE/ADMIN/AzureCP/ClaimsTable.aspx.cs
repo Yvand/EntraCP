@@ -1,4 +1,4 @@
-﻿using Microsoft.Azure.ActiveDirectory.GraphClient;
+﻿using Microsoft.Graph;
 using Microsoft.SharePoint;
 using Microsoft.SharePoint.Administration;
 using Microsoft.SharePoint.Administration.Claims;
