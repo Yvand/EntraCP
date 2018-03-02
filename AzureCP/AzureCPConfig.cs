@@ -409,6 +409,10 @@ namespace azurecp
                 ClientId = this.ClientId,
                 ClientSecret = this.ClientSecret,
                 MemberUserTypeOnly = this.MemberUserTypeOnly,
+                AADInstance = this.AADInstance,
+                // This is done in SetAzureADContext
+                //AuthenticationProvider = this.AuthenticationProvider,
+                //GraphService = this.GraphService
             };
             return copy;
         }
@@ -587,8 +591,7 @@ namespace azurecp
         OfficeLocation = 54,
         Surname = 83,
         UserPrincipalName = 93,
-        UserType = 94,
-        PreferredName
+        UserType = 94
     }
 
     public enum RequestType
