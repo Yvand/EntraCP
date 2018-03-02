@@ -416,6 +416,22 @@ namespace azurecp
             };
             return copy;
         }
+
+        /// <summary>
+        /// Set properties AuthenticationProvider and GraphService
+        /// </summary>
+        public void SetAzureADContext()
+        {
+            try
+            {
+                this.AuthenticationProvider = new AADAppOnlyAuthenticationProvider(this.AADInstance, this.TenantName, this.ClientId, this.ClientSecret);
+                this.GraphService = new GraphServiceClient(this.AuthenticationProvider);
+            }
+            catch (Exception ex)
+            {
+                AzureCPLogging.LogException(AzureCP._ProviderInternalName, $"while setting client context for tenant '{this.TenantName}'.", AzureCPLogging.Categories.Core, ex);
+            }
+        }
     }
 
     /// <summary>

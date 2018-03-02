@@ -14,11 +14,16 @@ namespace azurecp
 {
     public class AADAppOnlyAuthenticationProvider : IAuthenticationProvider
     {
+        static string GraphAPIResource = "https://graph.microsoft.com/";
         private string aadInstance;
         private string tenant;
         private string clientId;
         private string appKey;
-        string authority;
+        private string authority;
+
+        AuthenticationContext authContext;
+        ClientCredential creds;
+        private AuthenticationResult authResult;
 
         public AADAppOnlyAuthenticationProvider(string aadInstance, string tenant, string clientId, string appKey)
         {
@@ -39,13 +44,13 @@ namespace azurecp
             timer.Start();
 
             //AuthenticationContext authContext = new AuthenticationContext("https://login.windows.net/yvandev.onmicrosoft.com/oauth2/token");
-            AuthenticationContext authContext = new AuthenticationContext(authority);
-            ClientCredential creds = new ClientCredential(clientId, clientSecret);
-            AuthenticationResult authResult = await authContext.AcquireTokenAsync("https://graph.microsoft.com/", creds);
+            authContext = new AuthenticationContext(authority);
+            creds = new ClientCredential(clientId, clientSecret);
+            authResult = await authContext.AcquireTokenAsync(GraphAPIResource, creds);
             request.Headers.Add("Authorization", "Bearer " + authResult.AccessToken);
 
             timer.Stop();
-            AzureCPLogging.Log($"Got new access token for tenant '{tenant}' in {timer.ElapsedMilliseconds.ToString()} ms", TraceSeverity.Medium, EventSeverity.Information, AzureCPLogging.Categories.Lookup);
-        }
+            AzureCPLogging.Log($"Got new access token for tenant '{tenant}' valid until {authResult.ExpiresOn.ToLocalTime().ToString()} local time, retrieved in {timer.ElapsedMilliseconds.ToString()} ms", TraceSeverity.Medium, EventSeverity.Information, AzureCPLogging.Categories.Lookup);
+        }        
     }
 }
