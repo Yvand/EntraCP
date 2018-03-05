@@ -730,7 +730,7 @@ namespace azurecp
                 {
                     AzureCPLogging.Log($"[{ProviderInternalName}] No group found for user '{infos.IncomingEntity.Value}', search took {timer.ElapsedMilliseconds.ToString()} ms",
                         TraceSeverity.Medium, EventSeverity.Information, AzureCPLogging.Categories.Augmentation);
-                }                
+                }
             }
             catch (Exception ex)
             {
@@ -743,28 +743,35 @@ namespace azurecp
 
         }
 
-        protected virtual Task<List<SPClaim>> GetGroupMembershipAsync(RequestInformation requestInfo, AzureADObject groupAttribute)
+        protected async virtual Task<List<SPClaim>> GetGroupMembershipAsync(RequestInformation requestInfo, AzureADObject groupAttribute)
         {
-            return null;
+            List<SPClaim> claims = new List<SPClaim>();
+            foreach (var tenant in this.CurrentConfiguration.AzureTenants)
+            {
+                // The logic is that there will always be only 1 tenant returning groups, so as soon as 1 returned groups, foreach can stop
+                claims = await GetGroupMembershipFromAzureADAsync(requestInfo, groupAttribute, tenant).ConfigureAwait(false);
+                if (claims?.Count > 0) break;
+            }
+            return claims;
         }
 
-        protected virtual Task<List<SPClaim>> GetGroupMembershipFromAzureADAsync(RequestInformation requestInfo, AzureADObject groupAttribute, AzureTenant coco)
+        protected async virtual Task<List<SPClaim>> GetGroupMembershipFromAzureADAsync(RequestInformation requestInfo, AzureADObject groupAttribute, AzureTenant tenant)
         {
-            //coco.GraphService.Users[requestInfo.IncomingEntity.Value].MemberOf
-            //IGraphServiceUsersCollectionPage users = await coco.GraphService.Users.Request().Select(userSelect).Filter(userFilter).GetAsync();
-            //if (users?.Count > 0)
-            //{
-            //    do
-            //    {
-            //        lock (lockAddResultToCollection)
-            //        {
-            //            tenantResults.AzurecpResults.AddRange(AzurecpResult.AsList(users.CurrentPage, coco.TenantId));
-            //        }
-            //        if (users.NextPageRequest != null) users = await users.NextPageRequest.GetAsync().ConfigureAwait(false);
-            //    }
-            //    while (users?.Count > 0 && users.NextPageRequest != null);
-            //}
-            return null;
+            List<SPClaim> claims = new List<SPClaim>();
+            IUserMemberOfCollectionWithReferencesPage groups = await tenant.GraphService.Users[requestInfo.IncomingEntity.Value].MemberOf.Request().GetAsync().ConfigureAwait(false);
+            if (groups?.Count > 0)
+            {
+                do
+                {
+                    foreach (DirectoryObject group in groups)
+                    {
+                        claims.Add(CreateClaim(groupAttribute.ClaimType, group.Id, groupAttribute.ClaimValueType));
+                    }
+                    if (groups.NextPageRequest != null) groups = await groups.NextPageRequest.GetAsync().ConfigureAwait(false);
+                }
+                while (groups?.Count > 0 && groups.NextPageRequest != null);
+            }
+            return claims;
         }
 
         protected override void FillEntityTypes(List<string> entityTypes)
