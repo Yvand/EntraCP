@@ -700,9 +700,7 @@ namespace azurecp
                 AzureCPLogging.Log(String.Format("[{0}] Starting augmentation for user '{1}'.", ProviderInternalName, input),
                     TraceSeverity.Verbose, EventSeverity.Information, AzureCPLogging.Categories.Augmentation);
 
-                AzureADObject groupAttribute = this.ProcessedAzureObjects.FirstOrDefault(x =>
-                    String.Equals(x.ClaimType, IdentityAzureObject.ClaimType, StringComparison.InvariantCultureIgnoreCase) &&
-                    !x.CreateAsIdentityClaim);
+                AzureADObject groupAttribute = this.ProcessedAzureObjects.FirstOrDefault(x => x.ClaimEntityType == SPClaimEntityTypes.FormsRole);
                 if (groupAttribute == null)
                 {
                     AzureCPLogging.Log(String.Format("[{0}] Settings for claim type \"{1}\" cannot be found, its entry may have been deleted from claims mapping table.", ProviderInternalName, IdentityAzureObject.ClaimType),
@@ -758,19 +756,36 @@ namespace azurecp
         protected async virtual Task<List<SPClaim>> GetGroupMembershipFromAzureADAsync(RequestInformation requestInfo, AzureADObject groupAttribute, AzureTenant tenant)
         {
             List<SPClaim> claims = new List<SPClaim>();
+            var userResult = await tenant.GraphService.Users.Request().Filter($"{requestInfo.Attribute.GraphProperty} eq '{requestInfo.IncomingEntity.Value}'").GetAsync().ConfigureAwait(false);
+            User user = userResult.FirstOrDefault();
+            // This only returns a collection of strings, set with group ID:
+            //IDirectoryObjectGetMemberGroupsCollectionPage groups = await tenant.GraphService.Users[requestInfo.IncomingEntity.Value].GetMemberGroups(true).Request().PostAsync().ConfigureAwait(false);
             IUserMemberOfCollectionWithReferencesPage groups = await tenant.GraphService.Users[requestInfo.IncomingEntity.Value].MemberOf.Request().GetAsync().ConfigureAwait(false);
-            if (groups?.Count > 0)
+            bool continueProcess = groups?.Count > 0;
+            while (continueProcess)
             {
-                do
+                foreach (Group group in groups.OfType<Group>())
                 {
-                    foreach (DirectoryObject group in groups)
-                    {
-                        claims.Add(CreateClaim(groupAttribute.ClaimType, group.Id, groupAttribute.ClaimValueType));
-                    }
-                    if (groups.NextPageRequest != null) groups = await groups.NextPageRequest.GetAsync().ConfigureAwait(false);
+                    string groupClaimValue = GetGraphPropertyValue(group, groupAttribute.GraphProperty.ToString());
+                    claims.Add(CreateClaim(groupAttribute.ClaimType, groupClaimValue, groupAttribute.ClaimValueType));
                 }
-                while (groups?.Count > 0 && groups.NextPageRequest != null);
+                if (groups.NextPageRequest != null) groups = await groups.NextPageRequest.GetAsync().ConfigureAwait(false);
+                else continueProcess = false;
             }
+
+            //if (groups?.Count > 0)
+            //{
+            //    do
+            //    {
+            //        foreach (Group group in groups.OfType<Group>())
+            //        {
+            //            string groupClaimValue = GetGraphPropertyValue(group, groupAttribute.GraphProperty.ToString());
+            //            claims.Add(CreateClaim(groupAttribute.ClaimType, groupClaimValue, groupAttribute.ClaimValueType));
+            //        }
+            //        if (groups.NextPageRequest != null) groups = await groups.NextPageRequest.GetAsync().ConfigureAwait(false);
+            //    }
+            //    while (groups?.Count > 0 && groups.NextPageRequest != null);
+            //}
             return claims;
         }
 
