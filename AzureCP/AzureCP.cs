@@ -445,21 +445,21 @@ namespace azurecp
             return new SPClaim(type, claimValue, valueType, IssuerName);
         }
 
-        protected virtual PickerEntity CreatePickerEntityHelper(AzurecpResult result)
+        protected virtual PickerEntity CreatePickerEntityHelper(AzureCPResult result)
         {
             PickerEntity pe = CreatePickerEntity();
             SPClaim claim;
             string permissionValue = result.PermissionValue;
-            string permissionClaimType = result.AzureObject.ClaimType;
+            string permissionClaimType = result.ClaimTypeConfig.ClaimType;
             bool isIdentityClaimType = false;
 
-            if (String.Equals(result.AzureObject.ClaimType, SPTrust.IdentityClaimTypeInformation.MappedClaimType, StringComparison.InvariantCultureIgnoreCase)
-                || result.AzureObject.CreateAsIdentityClaim)
+            if (String.Equals(result.ClaimTypeConfig.ClaimType, SPTrust.IdentityClaimTypeInformation.MappedClaimType, StringComparison.InvariantCultureIgnoreCase)
+                || result.ClaimTypeConfig.CreateAsIdentityClaim)
             {
                 isIdentityClaimType = true;
             }
 
-            if (result.AzureObject.CreateAsIdentityClaim)
+            if (result.ClaimTypeConfig.CreateAsIdentityClaim)
             {
                 // This azureObject is not directly linked to a claim type, so permission is created with identity claim type
                 permissionClaimType = IdentityClaimTypeConfig.ClaimType;
@@ -476,14 +476,14 @@ namespace azurecp
                 claim = CreateClaim(
                     permissionClaimType,
                     permissionValue,
-                    result.AzureObject.ClaimValueType);
-                pe.EntityType = result.AzureObject.ClaimEntityType;
+                    result.ClaimTypeConfig.ClaimValueType);
+                pe.EntityType = result.ClaimTypeConfig.ClaimEntityType;
             }
 
             pe.DisplayText = FormatPermissionDisplayText(permissionClaimType, permissionValue, isIdentityClaimType, result);
             pe.Description = String.Format(
                 PickerEntityOnMouseOver,
-                result.AzureObject.GraphProperty.ToString(),
+                result.ClaimTypeConfig.GraphProperty.ToString(),
                 result.QueryMatchValue);
             pe.Claim = claim;
             pe.IsResolved = true;
@@ -494,7 +494,7 @@ namespace azurecp
             foreach (var entityAttrib in UserMetadataClaimTypeConfigList)
             {
                 // if there is actally a value in the GraphObject, then it can be set
-                string entityAttribValue = GetGraphPropertyValue(result.DirectoryObjectResult, entityAttrib.GraphProperty.ToString());
+                string entityAttribValue = GetGraphPropertyValue(result.UserOrGroupResult, entityAttrib.GraphProperty.ToString());
                 if (!String.IsNullOrEmpty(entityAttribValue))
                 {
                     pe.EntityData[entityAttrib.EntityDataKey] = entityAttribValue;
@@ -515,7 +515,7 @@ namespace azurecp
         /// <param name="isIdentityClaimType"></param>
         /// <param name="result"></param>
         /// <returns></returns>
-        protected virtual string FormatPermissionValue(string claimType, string claimValue, bool isIdentityClaimType, AzurecpResult result)
+        protected virtual string FormatPermissionValue(string claimType, string claimValue, bool isIdentityClaimType, AzureCPResult result)
         {
             return claimValue;
         }
@@ -529,16 +529,16 @@ namespace azurecp
         /// <param name="isIdentityClaim"></param>
         /// <param name="result"></param>
         /// <returns></returns>
-        protected virtual string FormatPermissionDisplayText(string claimType, string claimValue, bool isIdentityClaimType, AzurecpResult result)
+        protected virtual string FormatPermissionDisplayText(string claimType, string claimValue, bool isIdentityClaimType, AzureCPResult result)
         {
             string permissionDisplayText = String.Empty;
             string valueDisplayedInPermission = String.Empty;
 
-            if (result.AzureObject.GraphPropertyToDisplay != GraphProperty.None)
+            if (result.ClaimTypeConfig.GraphPropertyToDisplay != GraphProperty.None)
             {
-                if (!isIdentityClaimType) permissionDisplayText = "(" + result.AzureObject.ClaimTypeMappingName + ") ";
+                if (!isIdentityClaimType) permissionDisplayText = "(" + result.ClaimTypeConfig.ClaimTypeMappingName + ") ";
 
-                string graphPropertyToDisplayValue = GetGraphPropertyValue(result.DirectoryObjectResult, result.AzureObject.GraphPropertyToDisplay.ToString());
+                string graphPropertyToDisplayValue = GetGraphPropertyValue(result.UserOrGroupResult, result.ClaimTypeConfig.GraphPropertyToDisplay.ToString());
                 if (!String.IsNullOrEmpty(graphPropertyToDisplayValue)) permissionDisplayText += graphPropertyToDisplayValue;
                 else permissionDisplayText += result.PermissionValue;
 
@@ -553,7 +553,7 @@ namespace azurecp
                 {
                     permissionDisplayText = String.Format(
                         PickerEntityDisplayText,
-                        result.AzureObject.ClaimTypeMappingName,
+                        result.ClaimTypeConfig.ClaimTypeMappingName,
                         result.PermissionValue);
                 }
             }
@@ -1053,18 +1053,18 @@ namespace azurecp
             string groupSelect = String.Empty;
             BuildFilter(requestInfo, out userFilter, out groupFilter, out userSelect, out groupSelect);
 
-            List<AzurecpTenantResult> aadResults;
+            List<AzureADResult> aadResults;
             using (new SPMonitoredScope(String.Format("[{0}] Total time spent in all LDAP server(s)", ProviderInternalName), 1000))
             {
 
-                Task<List<AzurecpTenantResult>> taskAadResults = QueryAzureADCollectionAsync(requestInfo, userFilter, groupFilter, userSelect, groupSelect);
+                Task<List<AzureADResult>> taskAadResults = QueryAzureADCollectionAsync(requestInfo, userFilter, groupFilter, userSelect, groupSelect);
                 taskAadResults.Wait();
                 aadResults = taskAadResults.Result;
             }
 
             if (aadResults?.Count > 0)
             {
-                List<AzurecpResult> results = ProcessAzureADResults(requestInfo, aadResults);
+                List<AzureCPResult> results = ProcessAzureADResults(requestInfo, aadResults);
 
                 if (results?.Count > 0)
                 {
@@ -1137,10 +1137,10 @@ namespace azurecp
             groupSelect = HttpUtility.UrlEncode(groupSelectBuilder.ToString());
         }
 
-        protected virtual async Task<List<AzurecpTenantResult>> QueryAzureADCollectionAsync(RequestInformation requestInfo, string userFilter, string groupFilter, string userSelect, string groupSelect)
+        protected virtual async Task<List<AzureADResult>> QueryAzureADCollectionAsync(RequestInformation requestInfo, string userFilter, string groupFilter, string userSelect, string groupSelect)
         {
             if (userFilter == null && groupFilter == null) return null;
-            List<AzurecpTenantResult> allSearchResults = new List<AzurecpTenantResult>();
+            List<AzureADResult> allSearchResults = new List<AzureADResult>();
             var lockResults = new object();
 
             foreach (AzureTenant coco in this.CurrentConfiguration.AzureTenants)
@@ -1148,7 +1148,7 @@ namespace azurecp
             //var queryTenantTasks = this.CurrentConfiguration.AzureTenants.Select (async coco =>
             {
                 Stopwatch timer = new Stopwatch();
-                AzurecpTenantResult searchResult = null;
+                AzureADResult searchResult = null;
                 try
                 {
                     timer.Start();
@@ -1168,21 +1168,21 @@ namespace azurecp
                     lock (lockResults)
                     {
                         allSearchResults.Add(searchResult);
-                        AzureCPLogging.Log($"[{ProviderInternalName}] Got {searchResult.AzurecpResults.Count().ToString()} Directory Objects and {searchResult.Domains.Count().ToString()} Domain result(s) in {timer.ElapsedMilliseconds.ToString()} ms from \"{coco.TenantName}\" with input '{requestInfo.Input}'",
+                        AzureCPLogging.Log($"[{ProviderInternalName}] Got {searchResult.UserOrGroupResultList.Count().ToString()} users/groups and {searchResult.DomainsRegisteredInAzureADTenant.Count().ToString()} registered domains in {timer.ElapsedMilliseconds.ToString()} ms from '{coco.TenantName}' with input '{requestInfo.Input}'",
                             TraceSeverity.Medium, EventSeverity.Information, AzureCPLogging.Categories.Lookup);
                     }
                 }
-                else AzureCPLogging.Log($"[{ProviderInternalName}] Got no result in {timer.ElapsedMilliseconds.ToString()} ms from \"{coco.TenantName}\" with input '{requestInfo.Input}'", TraceSeverity.Medium, EventSeverity.Information, AzureCPLogging.Categories.Lookup);
+                else AzureCPLogging.Log($"[{ProviderInternalName}] Got no result from '{coco.TenantName}' with input '{requestInfo.Input}', search took {timer.ElapsedMilliseconds.ToString()} ms", TraceSeverity.Medium, EventSeverity.Information, AzureCPLogging.Categories.Lookup);
                 //});
             }
             return allSearchResults;
         }
 
-        protected virtual async Task<AzurecpTenantResult> QueryAzureADAsync(RequestInformation requestInfo, AzureTenant coco, string userFilter, string groupFilter, string userSelect, string groupSelect, bool firstAttempt)
+        protected virtual async Task<AzureADResult> QueryAzureADAsync(RequestInformation requestInfo, AzureTenant coco, string userFilter, string groupFilter, string userSelect, string groupSelect, bool firstAttempt)
         {
             AzureCPLogging.Log($"[{ProviderInternalName}] Querying Azure AD tenant '{coco.TenantName}' for users/groups/domains, with input '{requestInfo.Input}'", TraceSeverity.VerboseEx, EventSeverity.Information, AzureCPLogging.Categories.Lookup);
+            AzureADResult tenantResults = new AzureADResult();
             bool tryAgain = false;
-            AzurecpTenantResult tenantResults = new AzurecpTenantResult();
             object lockAddResultToCollection = new object();
             CancellationTokenSource cts = new CancellationTokenSource(Constants.timeout);
             try
@@ -1202,7 +1202,7 @@ namespace azurecp
                                 {
                                     lock (lockAddResultToCollection)
                                     {
-                                        tenantResults.AzurecpResults.AddRange(AzurecpResult.AsList(users.CurrentPage, coco.TenantId));
+                                        tenantResults.UserOrGroupResultList.AddRange(users.CurrentPage);
                                     }
                                     if (users.NextPageRequest != null) users = await users.NextPageRequest.GetAsync().ConfigureAwait(false);
                                 }
@@ -1221,7 +1221,7 @@ namespace azurecp
                                 {
                                     lock (lockAddResultToCollection)
                                     {
-                                        tenantResults.AzurecpResults.AddRange(AzurecpResult.AsList(groups.CurrentPage, coco.TenantId));
+                                        tenantResults.UserOrGroupResultList.AddRange(groups.CurrentPage);
                                     }
                                     if (groups.NextPageRequest != null) groups = await groups.NextPageRequest.GetAsync().ConfigureAwait(false);
                                 }
@@ -1235,7 +1235,7 @@ namespace azurecp
                             IGraphServiceDomainsCollectionPage domains = await coco.GraphService.Domains.Request().GetAsync();
                             lock (lockAddResultToCollection)
                             {
-                                tenantResults.Domains.AddRange(domains.Where(x => x.IsVerified == true).Select(x => x.Id));
+                                tenantResults.DomainsRegisteredInAzureADTenant.AddRange(domains.Where(x => x.IsVerified == true).Select(x => x.Id));
                             }
                             AzureCPLogging.Log(String.Format("[{0}] DomainQueryTask ended for tenant '{1}'", ProviderInternalName, coco.TenantName), TraceSeverity.VerboseEx, EventSeverity.Information, AzureCPLogging.Categories.Lookup);
                         }, cts.Token);
@@ -1272,19 +1272,20 @@ namespace azurecp
             return tenantResults;
         }
 
-        protected virtual List<AzurecpResult> ProcessAzureADResults(RequestInformation requestInfo, List<AzurecpTenantResult> azureADResults)
+        protected virtual List<AzureCPResult> ProcessAzureADResults(RequestInformation requestInfo, List<AzureADResult> azureADResults)
         {
-            // Split AzurecpTenantResult results
-            List<AzurecpResult> searchResults = new List<AzurecpResult>();
+            // Split results between users/groups and list of registered domains in the tenant
+            List<DirectoryObject> usersAndGroupsResults = new List<DirectoryObject>();
             List<string> domains = new List<string>();
-            foreach (AzurecpTenantResult tenantResults in azureADResults)
+            // For each Azure AD tenant
+            foreach (AzureADResult tenantResults in azureADResults)
             {
-                searchResults.AddRange(tenantResults.AzurecpResults);
-                domains.AddRange(tenantResults.Domains);
+                usersAndGroupsResults.AddRange(tenantResults.UserOrGroupResultList);
+                domains.AddRange(tenantResults.DomainsRegisteredInAzureADTenant);
             }
 
-            // Return if no user / groups is found, or if no domain is found
-            if (searchResults == null || !searchResults.Any())// || domains == null || !domains.Any())
+            // Return if no user / groups is found, or if no registered domain is found
+            if (usersAndGroupsResults == null || !usersAndGroupsResults.Any() || domains == null || !domains.Any())
             {
                 return null;
             };
@@ -1294,29 +1295,29 @@ namespace azurecp
             if (requestInfo.RequestType == RequestType.Validation) claimTypeConfigList = requestInfo.ClaimTypeConfigList.FindAll(x => !x.CreateAsIdentityClaim);
             else claimTypeConfigList = requestInfo.ClaimTypeConfigList;
 
-            List<AzurecpResult> results = new List<AzurecpResult>();
-            foreach (AzurecpResult searchResult in searchResults)
+            List<AzureCPResult> processedResults = new List<AzureCPResult>();
+            foreach (DirectoryObject userOrGroup in usersAndGroupsResults)
             {
                 DirectoryObject currentObject = null;
                 string claimEntityType = null;
-                if (searchResult.DirectoryObjectResult is User)
+                if (userOrGroup is User)
                 {
                     // Always skip shadow users: UserType is Guest and his mail matches a verified domain in AAD tenant
-                    string userType = GetGraphPropertyValue(searchResult.DirectoryObjectResult, "UserType");
+                    string userType = GetGraphPropertyValue(userOrGroup, "UserType");
                     if (String.IsNullOrEmpty(userType))
                     {
                         AzureCPLogging.Log(
-                            String.Format("[{0}] User {1} filtered out because his property UserType is empty.", ProviderInternalName, ((User)searchResult.DirectoryObjectResult).UserPrincipalName),
+                            String.Format("[{0}] User {1} filtered out because his property UserType is empty.", ProviderInternalName, ((User)userOrGroup).UserPrincipalName),
                             TraceSeverity.Unexpected, EventSeverity.Warning, AzureCPLogging.Categories.Lookup);
                         continue;
                     }
                     if (String.Equals(userType, Constants.GraphUserType.Guest, StringComparison.InvariantCultureIgnoreCase))
                     {
-                        string mail = GetGraphPropertyValue(searchResult.DirectoryObjectResult, "Mail");
+                        string mail = GetGraphPropertyValue(userOrGroup, "Mail");
                         if (String.IsNullOrEmpty(mail))
                         {
                             AzureCPLogging.Log(
-                                String.Format("[{0}] Guest user {1} filtered out because his mail is empty.", ProviderInternalName, ((User)searchResult.DirectoryObjectResult).UserPrincipalName),
+                                String.Format("[{0}] Guest user {1} filtered out because his mail is empty.", ProviderInternalName, ((User)userOrGroup).UserPrincipalName),
                                 TraceSeverity.Unexpected, EventSeverity.Warning, AzureCPLogging.Categories.Lookup);
                             continue;
                         }
@@ -1330,12 +1331,12 @@ namespace azurecp
                             continue;
                         }
                     }
-                    currentObject = searchResult.DirectoryObjectResult;
+                    currentObject = userOrGroup;
                     claimEntityType = SPClaimEntityTypes.User;
                 }
                 else
                 {
-                    currentObject = searchResult.DirectoryObjectResult;
+                    currentObject = userOrGroup;
                     claimEntityType = SPClaimEntityTypes.FormsRole;
                 }
 
@@ -1376,17 +1377,17 @@ namespace azurecp
                     }
 
                     // if claim type, GraphProperty and value are identical, then result is already in collection
-                    int numberResultFound = results.FindAll(x =>
-                        String.Equals(x.AzureObject.ClaimType, objCompare.ClaimType, StringComparison.InvariantCultureIgnoreCase) &&
+                    int numberResultFound = processedResults.FindAll(x =>
+                        String.Equals(x.ClaimTypeConfig.ClaimType, objCompare.ClaimType, StringComparison.InvariantCultureIgnoreCase) &&
                         //x.AzureObject.GraphProperty == objCompare.GraphProperty &&
                         String.Equals(x.PermissionValue, valueToCheck, StringComparison.InvariantCultureIgnoreCase)).Count;
                     if (numberResultFound > 0) continue;
 
                     // Passed the checks, add it to the searchResults list
-                    results.Add(
-                        new AzurecpResult(currentObject, searchResult.TenantId)
+                    processedResults.Add(
+                        new AzureCPResult(currentObject)
                         {
-                            AzureObject = claimTypeConfig,
+                            ClaimTypeConfig = claimTypeConfig,
                             //GraphPropertyValue = graphPropertyValue,
                             PermissionValue = valueToCheck,
                             QueryMatchValue = queryMatchValue,
@@ -1397,15 +1398,15 @@ namespace azurecp
             AzureCPLogging.Log(
                 String.Format(
                     "[{0}] {1} permission(s) to create after filtering",
-                    ProviderInternalName, results.Count),
+                    ProviderInternalName, processedResults.Count),
                 TraceSeverity.Verbose, EventSeverity.Information, AzureCPLogging.Categories.Lookup);
-            foreach (AzurecpResult result in results)
+            foreach (AzureCPResult result in processedResults)
             {
                 PickerEntity pe = CreatePickerEntityHelper(result);
                 result.PickerEntity = pe;
             }
 
-            return results;
+            return processedResults;
         }
 
         public override string Name { get { return ProviderInternalName; } }
@@ -1478,43 +1479,36 @@ namespace azurecp
         }
     }
 
-    public class AzurecpTenantResult
+    public class AzureADResult
     {
-        public List<AzurecpResult> AzurecpResults;
-        public List<string> Domains;
+        public List<DirectoryObject> UserOrGroupResultList;
+        public List<string> DomainsRegisteredInAzureADTenant;
+        //public string TenantName;
 
-        public AzurecpTenantResult()
+        public AzureADResult()
         {
-            AzurecpResults = new List<AzurecpResult>();
-            Domains = new List<string>();
+            UserOrGroupResultList = new List<DirectoryObject>();
+            DomainsRegisteredInAzureADTenant = new List<string>();
+            //this.TenantName = tenantName;
         }
     }
 
-    public class AzurecpResult
+    /// <summary>
+    /// User / group found in Azure AD, with additional information
+    /// </summary>
+    public class AzureCPResult
     {
-        public DirectoryObject DirectoryObjectResult;
-        public AzureADObject AzureObject;
+        public DirectoryObject UserOrGroupResult;
+        public AzureADObject ClaimTypeConfig;
         public PickerEntity PickerEntity;
-        //public string GraphPropertyName;// Available in azureObject.GraphProperty
         public string PermissionValue;
         public string QueryMatchValue;
-        public string TenantId;
+        //public string TenantName;
 
-        public AzurecpResult(DirectoryObject directoryObject, string tenantId)
+        public AzureCPResult(DirectoryObject directoryObject)
         {
-            DirectoryObjectResult = (DirectoryObject)directoryObject;
-            TenantId = tenantId;
-        }
-
-        public static List<AzurecpResult> AsList(IEnumerable<DirectoryObject> objects, string tenantId)
-        {
-            List<AzurecpResult> results = new List<AzurecpResult>();
-            foreach (DirectoryObject obj in objects)
-            {
-                if (obj == null) continue;
-                results.Add(new AzurecpResult(obj, tenantId));
-            }
-            return results;
+            UserOrGroupResult = directoryObject;
+            //TenantName = tenantName;
         }
     }
 }
