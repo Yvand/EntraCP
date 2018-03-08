@@ -214,7 +214,7 @@ namespace azurecp
     }
 
     /// <summary>
-    /// Defines an azureObject persisted in config database
+    /// Stores configuration associated to a claim type, and its mapping with the Azure AD attribute (GraphProperty)
     /// </summary>
     public class AzureADObject : SPAutoSerializingObject
     {
@@ -226,6 +226,9 @@ namespace azurecp
         [Persisted]
         private string ClaimTypePersisted;
 
+        /// <summary>
+        /// Azure AD attribute mapped to the claim type
+        /// </summary>
         public GraphProperty GraphProperty
         {
             get { return (GraphProperty)Enum.ToObject(typeof(GraphProperty), GraphPropertyPersisted); }
@@ -237,7 +240,6 @@ namespace azurecp
 
         /// <summary>
         /// Microsoft.SharePoint.Administration.Claims.SPClaimEntityTypes
-        /// Class name in namespace Microsoft.Azure.ActiveDirectory.GraphClient that will be retrieved with reflection
         /// </summary>
         public string ClaimEntityType
         {
@@ -259,16 +261,8 @@ namespace azurecp
         [Persisted]
         private string EntityDataKeyPersisted;
 
-        public string QueryPrefix
-        {
-            get { return QueryPrefixPersisted; }
-            set { QueryPrefixPersisted = value; }
-        }
-        [Persisted]
-        private string QueryPrefixPersisted = String.Empty;
-
         /// <summary>
-        /// Every claim value type is a string by default
+        /// Every claim value type is String by default
         /// </summary>
         public string ClaimValueType
         {
@@ -279,7 +273,7 @@ namespace azurecp
         private string ClaimValueTypePersisted = WIF.ClaimValueTypes.String;
 
         /// <summary>
-        /// Set to true if the claim type should always be queried in LDAP even if it is not defined in the SP trust (typically displayName and cn attributes)
+        /// If set to true, property ClaimType should not be set
         /// </summary>
         public bool CreateAsIdentityClaim
         {
@@ -290,7 +284,7 @@ namespace azurecp
         private bool CreateAsIdentityClaimPersisted = false;
 
         /// <summary>
-        /// Set this to tell LDAPCP to validate user input (and create the permission) without LDAP lookup if it contains this keyword at the beginning
+        /// If set, its value can be used as a prefix in the people picker to create a permission without actually quyerying Azure AD
         /// </summary>
         public string PrefixToBypassLookup
         {
@@ -300,9 +294,6 @@ namespace azurecp
         [Persisted]
         private string PrefixToBypassLookupPersisted;
 
-        /// <summary>
-        /// Set this property to customize display text of the permission with a specific LDAP azureObject (different than LDAPAttributeName, that is the actual value of the permission)
-        /// </summary>
         public GraphProperty GraphPropertyToDisplay
         {
             get { return (GraphProperty)Enum.ToObject(typeof(GraphProperty), GraphPropertyToDisplayPersisted); }
@@ -312,7 +303,7 @@ namespace azurecp
         private int GraphPropertyToDisplayPersisted;
 
         /// <summary>
-        /// Set to only return values that exactly match the user input
+        /// Set to only return values that exactly match the input
         /// </summary>
         public bool FilterExactMatchOnly
         {
@@ -467,11 +458,11 @@ namespace azurecp
 
         public string Input;
         public bool InputHasKeyword;
-        public bool ExactSearch;
-        public AzureADObject IdentityClaimTypeSettings;
-        public List<AzureADObject> ClaimTypesSettingsList;
+        //public bool ExactSearch;
+        public AzureADObject IdentityClaimTypeConfig;
+        public List<AzureADObject> ClaimTypeConfigList;
 
-        public RequestInformation(IAzureCPConfiguration currentConfiguration, RequestType currentRequestType, List<AzureADObject> processedClaimTypesSettingsList, string input, SPClaim incomingEntity, Uri context, string[] entityTypes, string hierarchyNodeID, int maxCount)
+        public RequestInformation(IAzureCPConfiguration currentConfiguration, RequestType currentRequestType, List<AzureADObject> processedClaimTypeConfigList, string input, SPClaim incomingEntity, Uri context, string[] entityTypes, string hierarchyNodeID, int maxCount)
         {
             this.CurrentConfiguration = currentConfiguration;
             this.RequestType = currentRequestType;
@@ -492,64 +483,64 @@ namespace azurecp
 
             if (currentRequestType == RequestType.Validation)
             {
-                this.InitializeValidation(processedClaimTypesSettingsList);
+                this.InitializeValidation(processedClaimTypeConfigList);
             }
             else if (currentRequestType == RequestType.Search)
             {
-                this.InitializeSearch(processedClaimTypesSettingsList);
+                this.InitializeSearch(processedClaimTypeConfigList);
             }
             else if (currentRequestType == RequestType.Augmentation)
             {
-                this.InitializeAugmentation(processedClaimTypesSettingsList);
+                this.InitializeAugmentation(processedClaimTypeConfigList);
             }
         }
 
         /// <summary>
         /// Validation is when SharePoint asks LDAPCP to return 1 PickerEntity from a given SPClaim
         /// </summary>
-        /// <param name="processedClaimTypesSettingsList"></param>
-        protected void InitializeValidation(List<AzureADObject> processedClaimTypesSettingsList)
+        /// <param name="processedClaimTypeConfigList"></param>
+        protected void InitializeValidation(List<AzureADObject> processedClaimTypeConfigList)
         {
             if (this.IncomingEntity == null) throw new ArgumentNullException("claimToValidate");
-            this.IdentityClaimTypeSettings = FindClaimsSetting(processedClaimTypesSettingsList, this.IncomingEntity.ClaimType);
-            if (this.IdentityClaimTypeSettings == null) return;
-            this.ClaimTypesSettingsList = new List<AzureADObject>() { this.IdentityClaimTypeSettings };
-            this.ExactSearch = true;
+            this.IdentityClaimTypeConfig = FindClaimsSetting(processedClaimTypeConfigList, this.IncomingEntity.ClaimType);
+            if (this.IdentityClaimTypeConfig == null) return;
+            this.ClaimTypeConfigList = new List<AzureADObject>() { this.IdentityClaimTypeConfig };
+            //this.ExactSearch = true;
             this.Input = this.IncomingEntity.Value;
         }
 
         /// <summary>
         /// Search is when SharePoint asks LDAPCP to return all PickerEntity that match input provided
         /// </summary>
-        /// <param name="processedClaimTypesSettingsList"></param>
-        protected void InitializeSearch(List<AzureADObject> processedClaimTypesSettingsList)
+        /// <param name="processedClaimTypeConfigList"></param>
+        protected void InitializeSearch(List<AzureADObject> processedClaimTypeConfigList)
         {
-            this.ExactSearch = this.CurrentConfiguration.FilterExactMatchOnly;
+            //this.ExactSearch = this.CurrentConfiguration.FilterExactMatchOnly;
             this.Input = this.OriginalInput;
             if (!String.IsNullOrEmpty(this.HierarchyNodeID))
             {
                 // Restrict search to attributes currently selected in the hierarchy (may return multiple results if identity claim type)
-                ClaimTypesSettingsList = processedClaimTypesSettingsList.FindAll(x =>
+                ClaimTypeConfigList = processedClaimTypeConfigList.FindAll(x =>
                     String.Equals(x.ClaimType, this.HierarchyNodeID, StringComparison.InvariantCultureIgnoreCase) &&
                     this.EntityTypes.Contains(x.ClaimEntityType));
             }
             else
             {
                 // List<T>.FindAll returns an empty list if no result found: http://msdn.microsoft.com/en-us/library/fh1w7y8z(v=vs.110).aspx
-                ClaimTypesSettingsList = processedClaimTypesSettingsList.FindAll(x => this.EntityTypes.Contains(x.ClaimEntityType));
+                ClaimTypeConfigList = processedClaimTypeConfigList.FindAll(x => this.EntityTypes.Contains(x.ClaimEntityType));
             }
         }
 
-        protected void InitializeAugmentation(List<AzureADObject> processedClaimTypesSettingsList)
+        protected void InitializeAugmentation(List<AzureADObject> processedClaimTypeConfigList)
         {
             if (this.IncomingEntity == null) throw new ArgumentNullException("claimToValidate");
-            this.IdentityClaimTypeSettings = FindClaimsSetting(processedClaimTypesSettingsList, this.IncomingEntity.ClaimType);
-            if (this.IdentityClaimTypeSettings == null) return;
+            this.IdentityClaimTypeConfig = FindClaimsSetting(processedClaimTypeConfigList, this.IncomingEntity.ClaimType);
+            if (this.IdentityClaimTypeConfig == null) return;
         }
 
-        public static AzureADObject FindClaimsSetting(List<AzureADObject> processedClaimTypesSettingsList, string claimType)
+        public static AzureADObject FindClaimsSetting(List<AzureADObject> processedClaimTypeConfigList, string claimType)
         {
-            var claimsSettings = processedClaimTypesSettingsList.FindAll(x =>
+            var claimsSettings = processedClaimTypeConfigList.FindAll(x =>
                 String.Equals(x.ClaimType, claimType, StringComparison.InvariantCultureIgnoreCase)
                 && !x.CreateAsIdentityClaim);
             if (claimsSettings.Count != 1)
