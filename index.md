@@ -2,6 +2,8 @@ This claims provider for SharePoint 2013 and 2016 leverages [Azure AD Graph Clie
 
 ![People picker with AzureCP](https://github.com/Yvand/AzureCP/raw/gh-pages/assets/people%20picker%20AzureCP_2.png)
 
+[Check this article](https://docs.microsoft.com/en-us/office365/enterprise/using-azure-ad-for-sharepoint-server-authentication) to find out how to configure SharePoint On Premises to trust Azure AD.
+
 ## Features
 
 - Easy to configure with administration pages added in Central administration > Security.
