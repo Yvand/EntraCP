@@ -254,12 +254,12 @@ namespace azurecp
                 //{
                 //    attributesDefinedInTrust.Add(attr);
                 //}
-                foreach (SPTrustedClaimTypeInformation ClaimTypeInformation in SPTrust.ClaimTypeInformation)
+                foreach (SPTrustedClaimTypeInformation claimTypeInformation in SPTrust.ClaimTypeInformation)
                 {
                     // Search if current claim type in trust exists in AzureADObjects
                     // List<T>.FindAll returns an empty list if no result found: http://msdn.microsoft.com/en-us/library/fh1w7y8z(v=vs.110).aspx
                     List<AzureADObject> mappedClaimTypeConfigList = nonProcessedClaimTypeConfigList.FindAll(x =>
-                        String.Equals(x.ClaimType, ClaimTypeInformation.MappedClaimType, StringComparison.InvariantCultureIgnoreCase) &&
+                        String.Equals(x.ClaimType, claimTypeInformation.MappedClaimType, StringComparison.InvariantCultureIgnoreCase) &&
                         !x.CreateAsIdentityClaim &&
                         x.GraphProperty != GraphProperty.None);
                     AzureADObject claimTypeSettings;
@@ -343,7 +343,7 @@ namespace azurecp
             }
             catch (Exception ex)
             {
-                AzureCPLogging.LogException(ProviderInternalName, "while processing AzureADObjects", AzureCPLogging.Categories.Core, ex);
+                AzureCPLogging.LogException(ProviderInternalName, "in InitializeClaimTypeConfigList", AzureCPLogging.Categories.Core, ex);
                 success = false;
             }
             return success;
