@@ -914,8 +914,7 @@ namespace azurecp
             this.Lock_Config.EnterReadLock();
             try
             {
-                RequestType reqType = this.CurrentConfiguration.FilterExactMatchOnly ? RequestType.Validation : RequestType.Search;
-                RequestInformation settings = new RequestInformation(CurrentConfiguration, reqType, ProcessedClaimTypeConfigList, searchPattern, null, context, entityTypes, hierarchyNodeID, maxCount);
+                RequestInformation settings = new RequestInformation(CurrentConfiguration, RequestType.Search, ProcessedClaimTypeConfigList, searchPattern, null, context, entityTypes, hierarchyNodeID, maxCount);
                 List<PickerEntity> permissions = SearchOrValidate(settings);
                 FillPermissions(context, entityTypes, searchPattern, ref permissions);
                 SPProviderHierarchyNode matchNode = null;
@@ -1093,7 +1092,7 @@ namespace azurecp
 
             string searchPattern;
             string input = requestInfo.Input;
-            if (requestInfo.RequestType == RequestType.Validation) searchPattern = "{0} eq '" + input + "'";
+            if (requestInfo.ExactSearch) searchPattern = "{0} eq '" + input + "'";
             else searchPattern = "startswith({0},'" + input + "')";
 
             bool firstUserObject = true;
@@ -1292,7 +1291,7 @@ namespace azurecp
 
             // If exactSearch is true, we don't care about attributes with CreateAsIdentityClaim = true
             List<AzureADObject> claimTypeConfigList;
-            if (requestInfo.RequestType == RequestType.Validation) claimTypeConfigList = requestInfo.ClaimTypeConfigList.FindAll(x => !x.CreateAsIdentityClaim);
+            if (requestInfo.ExactSearch) claimTypeConfigList = requestInfo.ClaimTypeConfigList.FindAll(x => !x.CreateAsIdentityClaim);
             else claimTypeConfigList = requestInfo.ClaimTypeConfigList;
 
             List<AzureCPResult> processedResults = new List<AzureCPResult>();
@@ -1350,7 +1349,7 @@ namespace azurecp
                     if (String.IsNullOrEmpty(graphPropertyValue)) continue;
 
                     // Check if current value mathes input, otherwise go to next GraphProperty to check
-                    if (requestInfo.RequestType == RequestType.Validation)
+                    if (requestInfo.ExactSearch)
                     {
                         if (!String.Equals(graphPropertyValue, requestInfo.Input, StringComparison.InvariantCultureIgnoreCase)) continue;
                     }

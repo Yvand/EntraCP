@@ -433,7 +433,7 @@ namespace azurecp
         /// <summary>
         /// Current LDAPCP configuration
         /// </summary>
-        public IAzureCPConfiguration CurrentConfiguration;
+        //public IAzureCPConfiguration CurrentConfiguration;
 
         /// <summary>
         /// Indicates what kind of operation SharePoint is sending to LDAPCP
@@ -458,13 +458,13 @@ namespace azurecp
 
         public string Input;
         public bool InputHasKeyword;
-        //public bool ExactSearch;
+        public bool ExactSearch;
         public AzureADObject IdentityClaimTypeConfig;
         public List<AzureADObject> ClaimTypeConfigList;
 
         public RequestInformation(IAzureCPConfiguration currentConfiguration, RequestType currentRequestType, List<AzureADObject> processedClaimTypeConfigList, string input, SPClaim incomingEntity, Uri context, string[] entityTypes, string hierarchyNodeID, int maxCount)
         {
-            this.CurrentConfiguration = currentConfiguration;
+            //this.CurrentConfiguration = currentConfiguration;
             this.RequestType = currentRequestType;
             this.OriginalInput = input;
             this.IncomingEntity = incomingEntity;
@@ -487,7 +487,7 @@ namespace azurecp
             }
             else if (currentRequestType == RequestType.Search)
             {
-                this.InitializeSearch(processedClaimTypeConfigList);
+                this.InitializeSearch(processedClaimTypeConfigList, currentConfiguration.FilterExactMatchOnly);
             }
             else if (currentRequestType == RequestType.Augmentation)
             {
@@ -505,7 +505,7 @@ namespace azurecp
             this.IdentityClaimTypeConfig = FindClaimsSetting(processedClaimTypeConfigList, this.IncomingEntity.ClaimType);
             if (this.IdentityClaimTypeConfig == null) return;
             this.ClaimTypeConfigList = new List<AzureADObject>() { this.IdentityClaimTypeConfig };
-            //this.ExactSearch = true;
+            this.ExactSearch = true;
             this.Input = this.IncomingEntity.Value;
         }
 
@@ -513,9 +513,9 @@ namespace azurecp
         /// Search is when SharePoint asks LDAPCP to return all PickerEntity that match input provided
         /// </summary>
         /// <param name="processedClaimTypeConfigList"></param>
-        protected void InitializeSearch(List<AzureADObject> processedClaimTypeConfigList)
+        protected void InitializeSearch(List<AzureADObject> processedClaimTypeConfigList, bool exactSearch)
         {
-            //this.ExactSearch = this.CurrentConfiguration.FilterExactMatchOnly;
+            this.ExactSearch = exactSearch;
             this.Input = this.OriginalInput;
             if (!String.IsNullOrEmpty(this.HierarchyNodeID))
             {
