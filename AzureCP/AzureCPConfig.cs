@@ -85,26 +85,23 @@ namespace azurecp
         [Persisted]
         private bool AugmentAADRolesPersisted = true;
 
-        public AzureCPConfig(SPPersistedObject parent)
-            : base(Constants.AZURECPCONFIG_NAME, parent)
-        {
-        }
+        public AzureCPConfig(string persistedObjectName, SPPersistedObject parent) : base(persistedObjectName, parent)
+        { }
 
         public AzureCPConfig()
-        {
-        }
+        { }
 
         protected override bool HasAdditionalUpdateAccess()
         {
             return false;
         }
 
-        public static AzureCPConfig GetFromConfigDB()
+        public static AzureCPConfig GetConfiguration(string persistedObjectName)
         {
             SPPersistedObject parent = SPFarm.Local;
             try
             {
-                AzureCPConfig persistedObject = parent.GetChild<AzureCPConfig>(Constants.AZURECPCONFIG_NAME);
+                AzureCPConfig persistedObject = parent.GetChild<AzureCPConfig>(persistedObjectName);
                 return persistedObject;
             }
             catch (Exception ex)
@@ -114,24 +111,33 @@ namespace azurecp
             return null;
         }
 
-        public static AzureCPConfig ResetPersistedObject()
+        /// <summary>
+        /// Commit changes in configuration database
+        /// </summary>
+        public override void Update()
         {
-            AzureCPConfig persistedObject = GetFromConfigDB();
+            base.Update();
+            AzureCPLogging.Log($"PersistedObject {base.DisplayName} was updated successfully.",
+                TraceSeverity.Medium, EventSeverity.Information, AzureCPLogging.Categories.Core);
+        }
+
+        public static AzureCPConfig ResetPersistedObject(string persistedObjectName)
+        {
+            AzureCPConfig persistedObject = GetConfiguration(persistedObjectName);
             if (persistedObject != null)
             {
-                AzureCPConfig newPersistedObject = GetDefaultSettings(persistedObject);
+                AzureCPConfig newPersistedObject = GetDefaultConfiguration(persistedObjectName);
                 newPersistedObject.Update();
 
-                AzureCPLogging.Log(
-                    String.Format("Claims list of PersistedObject {0} was successfully reset to default relationship table", Constants.AZURECPCONFIG_NAME),
+                AzureCPLogging.Log($"Claims list of PersistedObject {persistedObjectName} was successfully reset to default relationship table",
                     TraceSeverity.High, EventSeverity.Information, AzureCPLogging.Categories.Core);
             }
             return null;
         }
 
-        public static void ResetClaimsList()
+        public static void ResetClaimsList(string persistedObjectName)
         {
-            AzureCPConfig persistedObject = GetFromConfigDB();
+            AzureCPConfig persistedObject = GetConfiguration(persistedObjectName);
             if (persistedObject != null)
             {
                 persistedObject.AzureADObjects.Clear();
@@ -150,29 +156,30 @@ namespace azurecp
         /// It should be created only in central administration with application pool credentials
         /// because this is the only place where we are sure user has the permission to write in the config database
         /// </summary>
-        public static AzureCPConfig CreatePersistedObject()
+        public static AzureCPConfig CreatePersistedObject(string persistedObjectID, string persistedObjectName)
         {
             // Ensure it doesn't already exists and delete it if so
-            AzureCPConfig existingConfig = AzureCPConfig.GetFromConfigDB();
+            AzureCPConfig existingConfig = AzureCPConfig.GetConfiguration(persistedObjectName);
             if (existingConfig != null)
             {
-                DeleteAzureCPConfig();
+                DeleteAzureCPConfig(persistedObjectName);
             }
 
-            AzureCPConfig PersistedObject = new AzureCPConfig(SPFarm.Local);
-            PersistedObject.Id = new Guid(Constants.AZURECPCONFIG_ID);
+            AzureCPLogging.Log($"Creating persisted object {persistedObjectName} with ID {persistedObjectID}...", TraceSeverity.Medium, EventSeverity.Error, AzureCPLogging.Categories.Core);
+            AzureCPConfig PersistedObject = new AzureCPConfig(persistedObjectName, SPFarm.Local);
+            PersistedObject.Id = new Guid(persistedObjectID);
             PersistedObject.AzureTenants = new List<AzureTenant>();
-            PersistedObject = GetDefaultSettings(PersistedObject);
+            PersistedObject = GetDefaultConfiguration(persistedObjectName);
             PersistedObject.Update();
-            AzureCPLogging.Log(
-                String.Format("Created PersistedObject {0} with Id {1}", PersistedObject.Name, PersistedObject.Id),
+            AzureCPLogging.Log($"Created PersistedObject {PersistedObject.Name} with Id {PersistedObject.Id}",
                 TraceSeverity.Medium, EventSeverity.Information, AzureCPLogging.Categories.Core);
-
             return PersistedObject;
         }
 
-        public static AzureCPConfig GetDefaultSettings(AzureCPConfig persistedObject)
+        public static AzureCPConfig GetDefaultConfiguration(string persistedObjectName)
         {
+            AzureCPConfig persistedObject = new AzureCPConfig(persistedObjectName, SPFarm.Local);
+            persistedObject.AzureTenants = new List<AzureTenant>();
             persistedObject.AzureADObjects = GetDefaultAADClaimTypeList();
             return persistedObject;
         }
@@ -206,10 +213,16 @@ namespace azurecp
             };
         }
 
-        public static void DeleteAzureCPConfig()
+        public static void DeleteAzureCPConfig(string persistedObjectName)
         {
-            AzureCPConfig azureCPConfig = AzureCPConfig.GetFromConfigDB();
-            if (azureCPConfig != null) azureCPConfig.Delete();
+            AzureCPConfig config = AzureCPConfig.GetConfiguration(persistedObjectName);
+            if (config == null)
+            {
+                AzureCPLogging.Log($"Persisted object {persistedObjectName} was not found in configuration database", TraceSeverity.Medium, EventSeverity.Error, AzureCPLogging.Categories.Core);
+                return;
+            }
+            config.Delete();
+            AzureCPLogging.Log($"Persisted object {persistedObjectName} was successfully deleted from configuration database", TraceSeverity.Medium, EventSeverity.Error, AzureCPLogging.Categories.Core);
         }
     }
 

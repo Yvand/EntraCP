@@ -16,6 +16,8 @@ namespace azurecp
 {
     public partial class ClaimsTablePage : LayoutsPageBase
     {
+        public string PersistedObjectName = Constants.AZURECPCONFIG_NAME;
+        public Guid PersistedObjectID = new Guid(Constants.AZURECPCONFIG_ID);
         SPTrustedLoginProvider CurrentTrustedLoginProvider;
         AzureCPConfig PersistedObject;
         List<KeyValuePair<int, AzureADObject>> ClaimsMapping;
@@ -62,11 +64,11 @@ namespace azurecp
             SPSecurity.RunWithElevatedPrivileges(delegate()
             {
                 // Get SPPersisted Object and create it if it doesn't exist
-                PersistedObject = AzureCPConfig.GetFromConfigDB();
+                PersistedObject = AzureCPConfig.GetConfiguration(PersistedObjectName);
                 if (PersistedObject == null)
                 {
                     this.Web.AllowUnsafeUpdates = true;
-                    PersistedObject = AzureCPConfig.CreatePersistedObject();
+                    PersistedObject = AzureCPConfig.CreatePersistedObject(PersistedObjectID.ToString(), PersistedObjectName);
                     this.Web.AllowUnsafeUpdates = false;
                 }
             });
@@ -471,7 +473,7 @@ namespace azurecp
 
         protected void BtnReset_Click(object sender, EventArgs e)
         {
-            AzureCPConfig.ResetClaimsList();
+            AzureCPConfig.ResetClaimsList(PersistedObjectName);
             Response.Redirect(Request.Url.ToString());
         }
 

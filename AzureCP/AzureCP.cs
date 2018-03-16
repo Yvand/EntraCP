@@ -32,7 +32,8 @@ namespace azurecp
     public class AzureCP : SPClaimProvider
     {
         public const string _ProviderInternalName = "AzureCP";
-        public virtual string ProviderInternalName { get { return "AzureCP"; } }
+        public virtual string ProviderInternalName => "AzureCP";
+        public virtual string PersistedObjectName => Constants.AZURECPCONFIG_NAME;
 
         private object Sync_Init = new object();
         private ReaderWriterLockSlim Lock_Config = new ReaderWriterLockSlim();
@@ -89,7 +90,7 @@ namespace azurecp
             lock (Sync_Init)
             {
                 // 1ST PART: GET CONFIGURATION OBJECT
-                AzureCPConfig globalConfiguration = null;
+                IAzureCPConfiguration globalConfiguration = null;
                 bool refreshConfig = false;
                 bool success = true;
                 bool initializeFromPersistedObject = true;
@@ -105,13 +106,14 @@ namespace azurecp
                     // Should not try to get PersistedObject if not OOB AzureCP since with current design it works correctly only for OOB AzureCP
                     if (String.Equals(ProviderInternalName, AzureCP._ProviderInternalName, StringComparison.InvariantCultureIgnoreCase))
                     {
-                        globalConfiguration = AzureCPConfig.GetFromConfigDB();
+                        globalConfiguration = GetConfiguration(context, entityTypes, PersistedObjectName);
                         if (globalConfiguration == null)
                         {
                             AzureCPLogging.Log(String.Format("[{0}] AzureCPConfig PersistedObject not found. Visit AzureCP admin pages in central administration to create it.", ProviderInternalName),
                                 TraceSeverity.Unexpected, EventSeverity.Error, AzureCPLogging.Categories.Core);
-                            // Cannot continue since it's not inherited and no persisted object exists
-                            success = false;
+                            // Create a fake persisted object just to get the default settings, it will not be saved in config database
+                            globalConfiguration = AzureCPConfig.GetDefaultConfiguration(PersistedObjectName);
+                            refreshConfig = true;
                         }
                         else if (globalConfiguration.AzureADObjects == null || globalConfiguration.AzureADObjects.Count == 0)
                         {
@@ -130,12 +132,12 @@ namespace azurecp
                         else
                         {
                             // Persisted object is found and seems valid
-                            AzureCPLogging.Log(String.Format("[{0}] AzureCPConfig PersistedObject found, version: {1}, previous version: {2}", ProviderInternalName, globalConfiguration.Version.ToString(), this.AzureCPConfigVersion.ToString()),
+                            AzureCPLogging.Log(String.Format("[{0}] AzureCPConfig PersistedObject found, version: {1}, previous version: {2}", ProviderInternalName, ((SPPersistedObject)globalConfiguration).Version.ToString(), this.AzureCPConfigVersion.ToString()),
                                 TraceSeverity.VerboseEx, EventSeverity.Information, AzureCPLogging.Categories.Core);
-                            if (this.AzureCPConfigVersion != globalConfiguration.Version)
+                            if (this.AzureCPConfigVersion != ((SPPersistedObject)globalConfiguration).Version)
                             {
                                 refreshConfig = true;
-                                this.AzureCPConfigVersion = globalConfiguration.Version;
+                                this.AzureCPConfigVersion = ((SPPersistedObject)globalConfiguration).Version;
                                 AzureCPLogging.Log(String.Format("[{0}] AzureCPConfig PersistedObject changed, refreshing configuration", ProviderInternalName),
                                     TraceSeverity.Medium, EventSeverity.Information, AzureCPLogging.Categories.Core);
                             }
@@ -350,6 +352,20 @@ namespace azurecp
         }
 
         /// <summary>
+        /// DO NOT Override this method if you use a custom persisted object to hold your configuration.
+        /// To get you custom persisted object, you must override property LDAPCP.PersistedObjectName and set its name
+        /// </summary>
+        /// <returns></returns>
+        protected virtual IAzureCPConfiguration GetConfiguration(Uri context, string[] entityTypes, string persistedObjectName)
+        {
+            return AzureCPConfig.GetConfiguration(persistedObjectName);
+            //if (String.Equals(ProviderInternalName, LDAPCP._ProviderInternalName, StringComparison.InvariantCultureIgnoreCase))
+            //    return LDAPCPConfig.GetFromConfigDB(persistedObjectName);
+            //else
+            //    return null;
+        }
+
+        /// <summary>
         /// Override this method to customize configuration of AzureCP
         /// </summary> 
         /// <param name="context">The context, as a URI</param>
@@ -437,9 +453,7 @@ namespace azurecp
         /// <returns></returns>
         protected virtual new SPClaim CreateClaim(string type, string value, string valueType)
         {
-            string claimValue = String.Empty;
-            var obj = ProcessedClaimTypeConfigList.FirstOrDefault(x => String.Equals(x.ClaimType, type, StringComparison.InvariantCultureIgnoreCase));
-            claimValue = value;
+            string claimValue = value;
             // SPClaimProvider.CreateClaim issues with SPOriginalIssuerType.ClaimProvider
             //return CreateClaim(type, claimValue, valueType);
             return new SPClaim(type, claimValue, valueType, IssuerName);

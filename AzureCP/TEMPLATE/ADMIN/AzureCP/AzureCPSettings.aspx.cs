@@ -15,10 +15,12 @@ namespace azurecp
 {
     public partial class AzureCPSettings : LayoutsPageBase
     {
+        public string PersistedObjectName = Constants.AZURECPCONFIG_NAME;
+        public Guid PersistedObjectID = new Guid(Constants.AZURECPCONFIG_ID);
         SPTrustedLoginProvider CurrentTrustedLoginProvider;
         AzureCPConfig PersistedObject;
         AzureADObject IdentityClaim;
-        bool AllowPersistedObjectUpdate = true;
+        bool AllowPersistedObjectUpdate = true;        
 
         string TextErrorNoTrustAssociation = "AzureCP is currently not associated with any TrustedLoginProvider. It is mandatory because it cannot create permission for a trust if it is not associated to it.<br/>Visit <a href=\"https://github.com/Yvand/AzureCP\" target=\"_blank\">https://github.com/Yvand/AzureCP</a> for documentation.<br/>Settings on this page will not be available as long as AzureCP will not associated to a trut.";
         string TextErrorAzureTenantFieldsMissing = "Some mandatory fields are missing.";
@@ -51,11 +53,11 @@ namespace azurecp
             SPSecurity.RunWithElevatedPrivileges(delegate ()
             {
                 // Get SPPersisted Object and create it if it doesn't exist
-                PersistedObject = AzureCPConfig.GetFromConfigDB();
+                PersistedObject = AzureCPConfig.GetConfiguration(PersistedObjectName);
                 if (PersistedObject == null)
                 {
                     this.Web.AllowUnsafeUpdates = true;
-                    PersistedObject = AzureCPConfig.CreatePersistedObject();
+                    PersistedObject = AzureCPConfig.CreatePersistedObject(PersistedObjectID.ToString(), PersistedObjectName);
                     this.Web.AllowUnsafeUpdates = false;
                 }
             });
@@ -320,7 +322,7 @@ namespace azurecp
 
         protected void BtnResetAzureCPConfig_Click(Object sender, EventArgs e)
         {
-            AzureCPConfig.DeleteAzureCPConfig();
+            AzureCPConfig.DeleteAzureCPConfig(PersistedObjectName);
             Response.Redirect(Request.RawUrl, false);
         }
 
