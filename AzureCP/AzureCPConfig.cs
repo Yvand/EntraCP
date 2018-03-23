@@ -10,6 +10,7 @@ using WIF = System.Security.Claims;
 using System.Text.RegularExpressions;
 using System.Web;
 using Microsoft.Graph;
+using System.Net.Http.Headers;
 //using WIF3_5 = Microsoft.IdentityModel.Claims;
 
 namespace azurecp

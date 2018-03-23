@@ -94,18 +94,23 @@ namespace azurecp
             }
         }
 
+        /// <summary>
+        /// Record message (in VerboseEx) only if assembly is compiled in debug mode
+        /// </summary>
+        /// <param name="message"></param>
         public static void LogDebug(string message)
         {
             try
             {
                 TraceSeverity severity;
 #if DEBUG
-                severity = TraceSeverity.High;
+                severity = TraceSeverity.VerboseEx;
+                WriteTrace(AzureCPLogging.Categories.Debug, severity, message);
+                Debug.WriteLine(message);
 #else
                 severity = TraceSeverity.VerboseEx;
 #endif
-                WriteTrace(AzureCPLogging.Categories.Debug, severity, message);
-                Debug.WriteLine(message);
+
             }
             catch
             {   // Don't want to do anything if logging goes wrong, just ignore and continue

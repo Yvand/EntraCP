@@ -1,6 +1,7 @@
 ﻿using Microsoft.Graph;
 using Microsoft.IdentityModel.Clients.ActiveDirectory;
 using Microsoft.SharePoint.Administration;
+using Nito.AsyncEx;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
@@ -15,42 +16,63 @@ namespace azurecp
     public class AADAppOnlyAuthenticationProvider : IAuthenticationProvider
     {
         static string GraphAPIResource = "https://graph.microsoft.com/";
-        private string aadInstance;
-        private string tenant;
-        private string clientId;
-        private string appKey;
-        private string authority;
+        private string AzureADInstance;
+        private string Tenant;
+        private string ClientId;
+        private string ClientSecret;
+        private string Authority;
 
-        AuthenticationContext authContext;
-        ClientCredential creds;
-        private AuthenticationResult authResult;
+        AuthenticationContext AuthContext;
+        ClientCredential Creds;
+        private AuthenticationResult AuthResult;
+
+        private AsyncLock GetAccessTokenLock = new AsyncLock();
 
         public AADAppOnlyAuthenticationProvider(string aadInstance, string tenant, string clientId, string appKey)
         {
-            this.aadInstance = aadInstance;
-            this.tenant = tenant;
-            this.clientId = clientId;
-            this.appKey = appKey;
-            this.authority = String.Format(CultureInfo.InvariantCulture, aadInstance, tenant);
+            this.AzureADInstance = aadInstance;
+            this.Tenant = tenant;
+            this.ClientId = clientId;
+            this.ClientSecret = appKey;
+            this.Authority = String.Format(CultureInfo.InvariantCulture, aadInstance, tenant);
         }
 
         public async Task AuthenticateRequestAsync(HttpRequestMessage request)
         {
-            string clientId = this.clientId;
-            string clientSecret = this.appKey;
+            using (GetAccessTokenLock.Lock())
+            {
+                bool getAccessToken = false;
 
-            AzureCPLogging.Log($"Getting new access token for tenant '{tenant}'", TraceSeverity.Medium, EventSeverity.Information, AzureCPLogging.Categories.Lookup);
+                if (AuthResult == null)
+                {
+                    getAccessToken = true;
+                }
+                else if (DateTime.Now.ToUniversalTime().Ticks > AuthResult.ExpiresOn.UtcDateTime.Subtract(TimeSpan.FromMinutes(1)).Ticks)
+                {
+                    // Access token will expire within 1 min, let's renew it
+                    getAccessToken = true;
+                }
+
+                if (getAccessToken) await GetAccessToken();
+
+                request.Headers.Add("Authorization", "Bearer " + AuthResult.AccessToken);
+            }
+        }
+
+        private async Task GetAccessToken()
+        {
+            AzureCPLogging.Log($"Getting new access token for tenant '{Tenant}'", TraceSeverity.Verbose, EventSeverity.Information, AzureCPLogging.Categories.Core);
             Stopwatch timer = new Stopwatch();
             timer.Start();
 
             //AuthenticationContext authContext = new AuthenticationContext("https://login.windows.net/yvandev.onmicrosoft.com/oauth2/token");
-            authContext = new AuthenticationContext(authority);
-            creds = new ClientCredential(clientId, clientSecret);
-            authResult = await authContext.AcquireTokenAsync(GraphAPIResource, creds);
-            request.Headers.Add("Authorization", "Bearer " + authResult.AccessToken);
+            AuthContext = new AuthenticationContext(Authority);
+            Creds = new ClientCredential(ClientId, ClientSecret);
+            AuthResult = await AuthContext.AcquireTokenAsync(GraphAPIResource, Creds);
 
             timer.Stop();
-            AzureCPLogging.Log($"Got new access token for tenant '{tenant}' valid until {authResult.ExpiresOn.ToLocalTime().ToString()} local time, retrieved in {timer.ElapsedMilliseconds.ToString()} ms", TraceSeverity.Medium, EventSeverity.Information, AzureCPLogging.Categories.Lookup);
-        }        
+            TimeSpan duration = new TimeSpan(AuthResult.ExpiresOn.UtcTicks - DateTime.Now.ToUniversalTime().Ticks);
+            AzureCPLogging.Log($"Got new access token for tenant '{Tenant}', valid for {Math.Round((duration.TotalHours), 1)} hour(s) and retrieved in {timer.ElapsedMilliseconds.ToString()} ms", TraceSeverity.Medium, EventSeverity.Information, AzureCPLogging.Categories.Core);
+        }
     }
 }
