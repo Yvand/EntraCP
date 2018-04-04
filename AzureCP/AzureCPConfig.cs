@@ -11,6 +11,7 @@ using System.Text.RegularExpressions;
 using System.Web;
 using Microsoft.Graph;
 using System.Net.Http.Headers;
+using static azurecp.AzureCPLogging;
 //using WIF3_5 = Microsoft.IdentityModel.Claims;
 
 namespace azurecp
@@ -107,7 +108,7 @@ namespace azurecp
             }
             catch (Exception ex)
             {
-                AzureCPLogging.Log(String.Format("Error while retrieving SPPersistedObject {0}: {1}", Constants.AZURECPCONFIG_NAME, ex.Message), TraceSeverity.Unexpected, EventSeverity.Error, AzureCPLogging.Categories.Core);
+                AzureCPLogging.Log(String.Format("Error while retrieving SPPersistedObject {0}: {1}", Constants.AZURECPCONFIG_NAME, ex.Message), TraceSeverity.Unexpected, EventSeverity.Error, TraceCategory.Core);
             }
             return null;
         }
@@ -119,7 +120,7 @@ namespace azurecp
         {
             base.Update();
             AzureCPLogging.Log($"PersistedObject {base.DisplayName} was updated successfully.",
-                TraceSeverity.Medium, EventSeverity.Information, AzureCPLogging.Categories.Core);
+                TraceSeverity.Medium, EventSeverity.Information, TraceCategory.Core);
         }
 
         public static AzureCPConfig ResetPersistedObject(string persistedObjectName)
@@ -131,7 +132,7 @@ namespace azurecp
                 newPersistedObject.Update();
 
                 AzureCPLogging.Log($"Claims list of PersistedObject {persistedObjectName} was successfully reset to default relationship table",
-                    TraceSeverity.High, EventSeverity.Information, AzureCPLogging.Categories.Core);
+                    TraceSeverity.High, EventSeverity.Information, TraceCategory.Core);
             }
             return null;
         }
@@ -147,7 +148,7 @@ namespace azurecp
 
                 AzureCPLogging.Log(
                     String.Format("Claims list of PersistedObject {0} was successfully reset to default relationship table", Constants.AZURECPCONFIG_NAME),
-                    TraceSeverity.High, EventSeverity.Information, AzureCPLogging.Categories.Core);
+                    TraceSeverity.High, EventSeverity.Information, TraceCategory.Core);
             }
             return;
         }
@@ -166,14 +167,14 @@ namespace azurecp
                 DeleteAzureCPConfig(persistedObjectName);
             }
 
-            AzureCPLogging.Log($"Creating persisted object {persistedObjectName} with ID {persistedObjectID}...", TraceSeverity.Medium, EventSeverity.Error, AzureCPLogging.Categories.Core);
+            AzureCPLogging.Log($"Creating persisted object {persistedObjectName} with ID {persistedObjectID}...", TraceSeverity.Medium, EventSeverity.Error, TraceCategory.Core);
             AzureCPConfig PersistedObject = new AzureCPConfig(persistedObjectName, SPFarm.Local);
             PersistedObject.Id = new Guid(persistedObjectID);
             PersistedObject.AzureTenants = new List<AzureTenant>();
             PersistedObject = GetDefaultConfiguration(persistedObjectName);
             PersistedObject.Update();
             AzureCPLogging.Log($"Created PersistedObject {PersistedObject.Name} with Id {PersistedObject.Id}",
-                TraceSeverity.Medium, EventSeverity.Information, AzureCPLogging.Categories.Core);
+                TraceSeverity.Medium, EventSeverity.Information, TraceCategory.Core);
             return PersistedObject;
         }
 
@@ -219,11 +220,11 @@ namespace azurecp
             AzureCPConfig config = AzureCPConfig.GetConfiguration(persistedObjectName);
             if (config == null)
             {
-                AzureCPLogging.Log($"Persisted object {persistedObjectName} was not found in configuration database", TraceSeverity.Medium, EventSeverity.Error, AzureCPLogging.Categories.Core);
+                AzureCPLogging.Log($"Persisted object {persistedObjectName} was not found in configuration database", TraceSeverity.Medium, EventSeverity.Error, TraceCategory.Core);
                 return;
             }
             config.Delete();
-            AzureCPLogging.Log($"Persisted object {persistedObjectName} was successfully deleted from configuration database", TraceSeverity.Medium, EventSeverity.Error, AzureCPLogging.Categories.Core);
+            AzureCPLogging.Log($"Persisted object {persistedObjectName} was successfully deleted from configuration database", TraceSeverity.Medium, EventSeverity.Error, TraceCategory.Core);
         }
     }
 
@@ -434,7 +435,7 @@ namespace azurecp
             }
             catch (Exception ex)
             {
-                AzureCPLogging.LogException(AzureCP._ProviderInternalName, $"while setting client context for tenant '{this.TenantName}'.", AzureCPLogging.Categories.Core, ex);
+                AzureCPLogging.LogException(AzureCP._ProviderInternalName, $"while setting client context for tenant '{this.TenantName}'.", TraceCategory.Core, ex);
             }
         }
     }
@@ -560,7 +561,7 @@ namespace azurecp
             if (claimsSettings.Count != 1)
             {
                 // Should always find only 1 attribute at this stage
-                AzureCPLogging.Log(String.Format("[{0}] Found {1} attributes that match the claim type \"{2}\", but exactly 1 is expected. Verify that there is no duplicate claim type. Aborting operation.", AzureCP._ProviderInternalName, claimsSettings.Count.ToString(), claimType), TraceSeverity.Unexpected, EventSeverity.Error, AzureCPLogging.Categories.Claims_Picking);
+                AzureCPLogging.Log(String.Format("[{0}] Found {1} attributes that match the claim type \"{2}\", but exactly 1 is expected. Verify that there is no duplicate claim type. Aborting operation.", AzureCP._ProviderInternalName, claimsSettings.Count.ToString(), claimType), TraceSeverity.Unexpected, EventSeverity.Error, TraceCategory.Claims_Picking);
                 return null;
             }
             return claimsSettings.First();

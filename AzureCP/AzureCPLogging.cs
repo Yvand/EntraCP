@@ -15,7 +15,7 @@ namespace azurecp
     {
         public static string DiagnosticsAreaName = "AzureCP";
 
-        public enum Categories
+        public enum TraceCategory
         {
             [CategoryName("Core"),
              DefaultTraceSeverity(TraceSeverity.Medium),
@@ -51,7 +51,7 @@ namespace azurecp
             Custom,
         }
 
-        public static void Log(string message, TraceSeverity traceSeverity, EventSeverity eventSeverity, AzureCPLogging.Categories category)
+        public static void Log(string message, TraceSeverity traceSeverity, EventSeverity eventSeverity, TraceCategory category)
         {
             try
             {
@@ -63,7 +63,7 @@ namespace azurecp
             }
         }
 
-        public static void LogException(string ProviderInternalName, string faultyAction, AzureCPLogging.Categories category, Exception ex)
+        public static void LogException(string ProviderInternalName, string faultyAction, TraceCategory category, Exception ex)
         {
             try
             {
@@ -105,7 +105,7 @@ namespace azurecp
                 TraceSeverity severity;
 #if DEBUG
                 severity = TraceSeverity.VerboseEx;
-                WriteTrace(AzureCPLogging.Categories.Debug, severity, message);
+                WriteTrace(TraceCategory.Debug, severity, message);
                 Debug.WriteLine(message);
 #else
                 severity = TraceSeverity.VerboseEx;
@@ -143,17 +143,17 @@ namespace azurecp
         protected override IEnumerable<SPDiagnosticsArea> ProvideAreas() { yield return Area; }
         public override string DisplayName { get { return DiagnosticsAreaName; } }
 
-        public SPDiagnosticsCategory this[Categories id]
+        public SPDiagnosticsCategory this[TraceCategory id]
         {
             get { return Areas[DiagnosticsAreaName].Categories[id.ToString()]; }
         }
 
-        public static void WriteTrace(Categories Category, TraceSeverity Severity, string message)
+        public static void WriteTrace(TraceCategory Category, TraceSeverity Severity, string message)
         {
             Local.WriteTrace(1337, Local.GetCategory(Category), Severity, message);
         }
 
-        public static void WriteEvent(Categories Category, EventSeverity Severity, string message)
+        public static void WriteEvent(TraceCategory Category, EventSeverity Severity, string message)
         {
             Local.WriteEvent(1337, Local.GetCategory(Category), Severity, message);
         }
@@ -185,20 +185,20 @@ namespace azurecp
                     DiagnosticsAreaName,
                     new List<SPDiagnosticsCategory>()
                     {
-                        CreateCategory(Categories.Claims_Picking),
-                        CreateCategory(Categories.Configuration),
-                        CreateCategory(Categories.Lookup),
-                        CreateCategory(Categories.Core),
-                        CreateCategory(Categories.Augmentation),
-                        CreateCategory(Categories.Rehydration),
-                        CreateCategory(Categories.Debug),
-                        CreateCategory(Categories.Custom),
+                        CreateCategory(TraceCategory.Claims_Picking),
+                        CreateCategory(TraceCategory.Configuration),
+                        CreateCategory(TraceCategory.Lookup),
+                        CreateCategory(TraceCategory.Core),
+                        CreateCategory(TraceCategory.Augmentation),
+                        CreateCategory(TraceCategory.Rehydration),
+                        CreateCategory(TraceCategory.Debug),
+                        CreateCategory(TraceCategory.Custom),
                     }
                 );
             }
         }
 
-        private static SPDiagnosticsCategory CreateCategory(Categories category)
+        private static SPDiagnosticsCategory CreateCategory(TraceCategory category)
         {
             return new SPDiagnosticsCategory(
                         GetCategoryName(category),
@@ -207,12 +207,12 @@ namespace azurecp
                     );
         }
 
-        private SPDiagnosticsCategory GetCategory(Categories cat)
+        private SPDiagnosticsCategory GetCategory(TraceCategory cat)
         {
             return base.Areas[DiagnosticsAreaName].Categories[GetCategoryName(cat)];
         }
 
-        private static string GetCategoryName(Categories cat)
+        private static string GetCategoryName(TraceCategory cat)
         {
             // Get the type
             Type type = cat.GetType();
@@ -224,7 +224,7 @@ namespace azurecp
             return attribs.Length > 0 ? attribs[0].Name : null;
         }
 
-        private static TraceSeverity GetCategoryDefaultTraceSeverity(Categories cat)
+        private static TraceSeverity GetCategoryDefaultTraceSeverity(TraceCategory cat)
         {
             // Get the type
             Type type = cat.GetType();
@@ -236,7 +236,7 @@ namespace azurecp
             return attribs.Length > 0 ? attribs[0].Severity : TraceSeverity.Unexpected;
         }
 
-        private static EventSeverity GetCategoryDefaultEventSeverity(Categories cat)
+        private static EventSeverity GetCategoryDefaultEventSeverity(TraceCategory cat)
         {
             // Get the type
             Type type = cat.GetType();

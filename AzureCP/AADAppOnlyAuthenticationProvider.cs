@@ -10,6 +10,7 @@ using System.Linq;
 using System.Net.Http;
 using System.Text;
 using System.Threading.Tasks;
+using static azurecp.AzureCPLogging;
 
 namespace azurecp
 {
@@ -50,6 +51,7 @@ namespace azurecp
                 else if (DateTime.Now.ToUniversalTime().Ticks > AuthResult.ExpiresOn.UtcDateTime.Subtract(TimeSpan.FromMinutes(1)).Ticks)
                 {
                     // Access token will expire within 1 min, let's renew it
+                    AzureCPLogging.Log($"Access token for tenant '{Tenant}' expired, renewing it...", TraceSeverity.Verbose, EventSeverity.Information, TraceCategory.Core);
                     getAccessToken = true;
                 }
 
@@ -61,7 +63,7 @@ namespace azurecp
 
         private async Task GetAccessToken()
         {
-            AzureCPLogging.Log($"Getting new access token for tenant '{Tenant}'", TraceSeverity.Verbose, EventSeverity.Information, AzureCPLogging.Categories.Core);
+            AzureCPLogging.Log($"Getting new access token for tenant '{Tenant}'", TraceSeverity.Verbose, EventSeverity.Information, TraceCategory.Core);
             Stopwatch timer = new Stopwatch();
             timer.Start();
 
@@ -72,7 +74,7 @@ namespace azurecp
 
             timer.Stop();
             TimeSpan duration = new TimeSpan(AuthResult.ExpiresOn.UtcTicks - DateTime.Now.ToUniversalTime().Ticks);
-            AzureCPLogging.Log($"Got new access token for tenant '{Tenant}', valid for {Math.Round((duration.TotalHours), 1)} hour(s) and retrieved in {timer.ElapsedMilliseconds.ToString()} ms", TraceSeverity.Medium, EventSeverity.Information, AzureCPLogging.Categories.Core);
+            AzureCPLogging.Log($"Got new access token for tenant '{Tenant}', valid for {Math.Round((duration.TotalHours), 1)} hour(s) and retrieved in {timer.ElapsedMilliseconds.ToString()} ms", TraceSeverity.Medium, EventSeverity.Information, TraceCategory.Core);
         }
     }
 }

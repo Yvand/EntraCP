@@ -11,6 +11,7 @@ using System.Reflection;
 using System.Text;
 using System.Web.UI;
 using System.Web.UI.WebControls;
+using static azurecp.AzureCPLogging;
 
 namespace azurecp
 {
@@ -342,7 +343,7 @@ namespace azurecp
                     String.Format("PersistedObject {0} should not be null.", Constants.AZURECPCONFIG_NAME),
                     TraceSeverity.Unexpected,
                     EventSeverity.Error,
-                    AzureCPLogging.Categories.Configuration);
+                    TraceCategory.Configuration);
                 return;
             }
 
@@ -352,7 +353,7 @@ namespace azurecp
                     "Trust associated with AzureCP could not be found.",
                     TraceSeverity.Unexpected,
                     EventSeverity.Error,
-                    AzureCPLogging.Categories.Configuration);
+                    TraceCategory.Configuration);
                 return;
             }
 
@@ -367,7 +368,7 @@ namespace azurecp
                     String.Format("Objects list of AzureCP was successfully updated in PersistedObject {0}.", Constants.AZURECPCONFIG_NAME),
                     TraceSeverity.Medium,
                     EventSeverity.Information,
-                    AzureCPLogging.Categories.Configuration);
+                    TraceCategory.Configuration);
             });
             ViewState["PersistedObjectVersion"] = PersistedObject.Version;
         }

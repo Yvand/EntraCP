@@ -10,6 +10,7 @@ using System.Reflection;
 using System.Web.UI.WebControls;
 using System.Linq;
 using Microsoft.Graph;
+using static azurecp.AzureCPLogging;
 
 namespace azurecp
 {
@@ -151,7 +152,7 @@ namespace azurecp
                     String.Format("Removed an Azure tenant in PersistedObject {0}", Constants.AZURECPCONFIG_NAME),
                     TraceSeverity.Medium,
                     EventSeverity.Information,
-                    AzureCPLogging.Categories.Configuration);
+                    TraceCategory.Configuration);
 
             PopulateLdapConnectionGrid();
         }
@@ -168,7 +169,7 @@ namespace azurecp
                     String.Format("PersistedObject {0} should not be null.", Constants.AZURECPCONFIG_NAME),
                     TraceSeverity.Unexpected,
                     EventSeverity.Error,
-                    AzureCPLogging.Categories.Configuration);
+                    TraceCategory.Configuration);
                 return;
             }
 
@@ -178,7 +179,7 @@ namespace azurecp
                     "Trust associated with AzureCP could not be found.",
                     TraceSeverity.Unexpected,
                     EventSeverity.Error,
-                    AzureCPLogging.Categories.Configuration);
+                    TraceCategory.Configuration);
                 return;
             }
 
@@ -201,7 +202,7 @@ namespace azurecp
                 String.Format("Updated PersistedObject {0}", Constants.AZURECPCONFIG_NAME),
                 TraceSeverity.Medium,
                 EventSeverity.Information,
-                AzureCPLogging.Categories.Configuration);
+                TraceCategory.Configuration);
         }
 
         /// <summary>
@@ -350,7 +351,7 @@ namespace azurecp
                     String.Format("PersistedObject {0} should not be null.", Constants.AZURECPCONFIG_NAME),
                     TraceSeverity.Unexpected,
                     EventSeverity.Error,
-                    AzureCPLogging.Categories.Configuration);
+                    TraceCategory.Configuration);
                 return;
             }
 
@@ -360,7 +361,7 @@ namespace azurecp
                     "Trust associated with AzureCP could not be found.",
                     TraceSeverity.Unexpected,
                     EventSeverity.Error,
-                    AzureCPLogging.Categories.Configuration);
+                    TraceCategory.Configuration);
                 return;
             }
 
@@ -387,7 +388,7 @@ namespace azurecp
                    String.Format("Added a new Azure tenant in PersistedObject {0}", Constants.AZURECPCONFIG_NAME),
                    TraceSeverity.Medium,
                    EventSeverity.Information,
-                   AzureCPLogging.Categories.Configuration);
+                   TraceCategory.Configuration);
 
             PopulateLdapConnectionGrid();
             this.TxtTenantId.Text = this.TxtClientId.Text = this.TxtClientSecret.Text = String.Empty;
