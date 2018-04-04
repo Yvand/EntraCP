@@ -7,10 +7,10 @@
 // </auto-generated>
 //------------------------------------------------------------------------------
 
-namespace azurecp {
+namespace azurecp.ControlTemplates {
     
     
-    public partial class ClaimsTablePage {
+    public partial class AzureCPClaimsList {
         
         /// <summary>
         /// LabelMessage control.

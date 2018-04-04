@@ -13,17 +13,17 @@ using System.Web.UI;
 using System.Web.UI.WebControls;
 using static azurecp.AzureCPLogging;
 
-namespace azurecp
+namespace azurecp.ControlTemplates
 {
-    public partial class ClaimsTablePage : LayoutsPageBase
+    public partial class AzureCPClaimsList : AzureCPUserControl
     {
-        public string PersistedObjectName = Constants.AZURECPCONFIG_NAME;
-        public Guid PersistedObjectID = new Guid(Constants.AZURECPCONFIG_ID);
-        SPTrustedLoginProvider CurrentTrustedLoginProvider;
-        AzureCPConfig PersistedObject;
+        //public string PersistedObjectName = Constants.AZURECPCONFIG_NAME;
+        //public Guid PersistedObjectID = new Guid(Constants.AZURECPCONFIG_ID);
+        //SPTrustedLoginProvider CurrentTrustedLoginProvider;
+        //AzureCPConfig PersistedObject;
         List<KeyValuePair<int, AzureADObject>> ClaimsMapping;
-        bool AllowPersistedObjectUpdate = true;
-        public bool ShowNewItemForm = false;
+        //bool AllowPersistedObjectUpdate = true;
+        protected bool ShowNewItemForm = false;
         public bool HideAllContent = false;
         public string TrustName = String.Empty;
 
@@ -34,8 +34,8 @@ namespace azurecp
         string TextErrorUpdateItemDuplicate = "You tried to update item {0} with a {1} that already exists ({2}). Duplicates are not allowed.";
         string TextErrorUpdateIdentityClaimTypeChanged = "You cannot change claim type of identity claim.";
         string TextErrorUpdateIdentityClaimEntityTypeNotUser = "Identity claim must be set to SPClaimEntityTypes.User.";
-        string TextErrorPersistedObjectStale = "Modification is cancelled because persisted object was modified since page was loaded. Please refresh the page and try again.";
-        string TextErrorNoIdentityClaimType = "The TrustedLoginProvider {0} is set with identity claim type \"{1}\" but it is not in the claims list below. AzureCP will not work until you add this claim type in this list.";
+        //string TextErrorPersistedObjectStale = "Modification is cancelled because persisted object was modified since page was loaded. Please refresh the page and try again.";
+        //string TextErrorNoIdentityClaimType = "The TrustedLoginProvider {0} is set with identity claim type \"{1}\" but it is not in the claims list below. AzureCP will not work until you add this claim type in this list.";
         string TextErrorNewMetadataAlreadyUsed = "Metadata {0} is already used. Duplicates are not allowed.";
 
         string HtmlCellClaimType = "<span name=\"span_claimtype_{1}\" id=\"span_claimtype_{1}\">{0}</span><input name=\"input_claimtype_{1}\" id=\"input_claimtype_{1}\" style=\"display: none; width: 90%;\" value=\"{0}\"></input>";
@@ -62,28 +62,28 @@ namespace azurecp
                 return;
             }
 
-            SPSecurity.RunWithElevatedPrivileges(delegate()
-            {
-                // Get SPPersisted Object and create it if it doesn't exist
-                PersistedObject = AzureCPConfig.GetConfiguration(PersistedObjectName);
-                if (PersistedObject == null)
-                {
-                    this.Web.AllowUnsafeUpdates = true;
-                    PersistedObject = AzureCPConfig.CreatePersistedObject(PersistedObjectID.ToString(), PersistedObjectName);
-                    this.Web.AllowUnsafeUpdates = false;
-                }
-            });
+            //SPSecurity.RunWithElevatedPrivileges(delegate ()
+            //{
+            //    // Get SPPersisted Object and create it if it doesn't exist
+            //    PersistedObject = AzureCPConfig.GetConfiguration(PersistedObjectName);
+            //    if (PersistedObject == null)
+            //    {
+            //        this.Web.AllowUnsafeUpdates = true;
+            //        PersistedObject = AzureCPConfig.CreatePersistedObject(PersistedObjectID.ToString(), PersistedObjectName);
+            //        this.Web.AllowUnsafeUpdates = false;
+            //    }
+            //});
 
-            if (ViewState["PersistedObjectVersion"] == null)
-                ViewState.Add("PersistedObjectVersion", PersistedObject.Version);
-            if ((long)ViewState["PersistedObjectVersion"] != PersistedObject.Version)
-            {
-                // PersistedObject changed since last time. Should not allow any update
-                this.LabelErrorMessage.Text = TextErrorPersistedObjectStale;
-                this.AllowPersistedObjectUpdate = false;
-                return;
-            }
-            TrustName = CurrentTrustedLoginProvider.Name;
+            //if (ViewState["PersistedObjectVersion"] == null)
+            //    ViewState.Add("PersistedObjectVersion", PersistedObject.Version);
+            //if ((long)ViewState["PersistedObjectVersion"] != PersistedObject.Version)
+            //{
+            //    // PersistedObject changed since last time. Should not allow any update
+            //    this.LabelErrorMessage.Text = TextErrorPersistedObjectStale;
+            //    this.AllowPersistedObjectUpdate = false;
+            //    return;
+            //}
+            //TrustName = CurrentTrustedLoginProvider.Name;
 
             if (!this.IsPostBack)
             {
@@ -238,7 +238,7 @@ namespace azurecp
 
             if (!identityClaimPresent && !pendingUpdate)
             {
-                LabelErrorMessage.Text = String.Format(this.TextErrorNoIdentityClaimType, CurrentTrustedLoginProvider.DisplayName, CurrentTrustedLoginProvider.IdentityClaimTypeInformation.MappedClaimType);
+                LabelErrorMessage.Text = String.Format(TextErrorNoIdentityClaimType, CurrentTrustedLoginProvider.DisplayName, CurrentTrustedLoginProvider.IdentityClaimTypeInformation.MappedClaimType);
             }
         }
 
@@ -335,58 +335,63 @@ namespace azurecp
             return tc;
         }
 
-        protected void UpdatePersistedObject()
+        protected override bool UpdatePersistedObjectProperties(bool commitChanges)
         {
-            if (null == PersistedObject)
-            {
-                AzureCPLogging.Log(
-                    String.Format("PersistedObject {0} should not be null.", Constants.AZURECPCONFIG_NAME),
-                    TraceSeverity.Unexpected,
-                    EventSeverity.Error,
-                    TraceCategory.Configuration);
-                return;
-            }
-
-            if (null == CurrentTrustedLoginProvider)
-            {
-                AzureCPLogging.Log(
-                    "Trust associated with AzureCP could not be found.",
-                    TraceSeverity.Unexpected,
-                    EventSeverity.Error,
-                    TraceCategory.Configuration);
-                return;
-            }
-
-            // Update object in database
-            SPSecurity.RunWithElevatedPrivileges(delegate()
-            {
-                this.Web.AllowUnsafeUpdates = true;
-                PersistedObject.Update();
-                this.Web.AllowUnsafeUpdates = false;
-
-                AzureCPLogging.Log(
-                    String.Format("Objects list of AzureCP was successfully updated in PersistedObject {0}.", Constants.AZURECPCONFIG_NAME),
-                    TraceSeverity.Medium,
-                    EventSeverity.Information,
-                    TraceCategory.Configuration);
-            });
-            ViewState["PersistedObjectVersion"] = PersistedObject.Version;
+            throw new NotImplementedException();
         }
+
+        //protected void UpdatePersistedObject()
+        //{
+        //    if (null == PersistedObject)
+        //    {
+        //        AzureCPLogging.Log(
+        //            String.Format("PersistedObject {0} should not be null.", Constants.AZURECPCONFIG_NAME),
+        //            TraceSeverity.Unexpected,
+        //            EventSeverity.Error,
+        //            TraceCategory.Configuration);
+        //        return;
+        //    }
+
+        //    if (null == CurrentTrustedLoginProvider)
+        //    {
+        //        AzureCPLogging.Log(
+        //            "Trust associated with AzureCP could not be found.",
+        //            TraceSeverity.Unexpected,
+        //            EventSeverity.Error,
+        //            TraceCategory.Configuration);
+        //        return;
+        //    }
+
+        //    //// Update object in database
+        //    //SPSecurity.RunWithElevatedPrivileges(delegate ()
+        //    //{
+        //    //    this.Web.AllowUnsafeUpdates = true;
+        //    //    PersistedObject.Update();
+        //    //    this.Web.AllowUnsafeUpdates = false;
+
+        //    //    AzureCPLogging.Log(
+        //    //        String.Format("Objects list of AzureCP was successfully updated in PersistedObject {0}.", Constants.AZURECPCONFIG_NAME),
+        //    //        TraceSeverity.Medium,
+        //    //        EventSeverity.Information,
+        //    //        TraceCategory.Configuration);
+        //    //});
+        //    //ViewState["PersistedObjectVersion"] = PersistedObject.Version;
+        //}
 
         void LnkDeleteItem_Command(object sender, CommandEventArgs e)
         {
-            if (!this.AllowPersistedObjectUpdate) return;
+            if (ValidatePrerequisite() != ConfigStatus.AllGood && Status != ConfigStatus.NoIdentityClaimType) return;
 
             string itemId = e.CommandArgument.ToString();
             AzureADObject attr = ClaimsMapping.Find(x => x.Key == Convert.ToInt32(itemId)).Value;
             PersistedObject.AzureADObjects.Remove(attr);
-            this.UpdatePersistedObject();
+            CommitChanges();
             this.BuildAttributesListTable(false);
         }
 
         void LnkUpdateItem_Command(object sender, CommandEventArgs e)
         {
-            if (!this.AllowPersistedObjectUpdate) return;
+            if (ValidatePrerequisite() != ConfigStatus.AllGood && Status != ConfigStatus.NoIdentityClaimType) return;
 
             string itemId = e.CommandArgument.ToString();
 
@@ -468,7 +473,7 @@ namespace azurecp
             convertSuccess = Enum.TryParse<GraphProperty>(formData["list_GraphPropertyToDisplay_" + itemId], out prop);
             azureObject.GraphPropertyToDisplay = convertSuccess ? prop : azureObject.GraphPropertyToDisplay;
 
-            this.UpdatePersistedObject();
+            CommitChanges();
             this.BuildAttributesListTable(false);
         }
 
@@ -537,7 +542,7 @@ namespace azurecp
             azureObject.EntityDataKey = New_DdlPermissionMetadata.SelectedValue;
 
             PersistedObject.AzureADObjects.Add(azureObject);
-            UpdatePersistedObject();
+            CommitChanges();
             BuildAttributesListTable(false);
         }
     }

@@ -111,24 +111,27 @@
     <Compile Include="AzureCP.cs" />
     <Compile Include="AzureCPConfig.cs" />
     <Compile Include="AzureCPLogging.cs" />
+    <Compile Include="AzureCPUserControl.cs">
+      <SubType>ASPXCodeBehind</SubType>
+    </Compile>
+    <Compile Include="TEMPLATE\ADMIN\AzureCP\AzureCPClaimsList.ascx.cs">
+      <DependentUpon>AzureCPClaimsList.ascx</DependentUpon>
+      <SubType>ASPXCodeBehind</SubType>
+    </Compile>
+    <Compile Include="TEMPLATE\ADMIN\AzureCP\AzureCPClaimsList.ascx.designer.cs">
+      <DependentUpon>AzureCPClaimsList.ascx.cs</DependentUpon>
+    </Compile>
+    <Compile Include="TEMPLATE\ADMIN\AzureCP\AzureCPGlobalSettings.ascx.cs">
+      <DependentUpon>AzureCPGlobalSettings.ascx</DependentUpon>
+      <SubType>ASPXCodeBehind</SubType>
+    </Compile>
+    <Compile Include="TEMPLATE\ADMIN\AzureCP\AzureCPGlobalSettings.ascx.designer.cs">
+      <DependentUpon>AzureCPGlobalSettings.ascx.cs</DependentUpon>
+    </Compile>
     <Compile Include="Features\AzureCP\AzureCP.EventReceiver.cs">
       <DependentUpon>AzureCP.feature</DependentUpon>
     </Compile>
     <Compile Include="Properties\AssemblyInfo.cs" />
-    <Compile Include="TEMPLATE\ADMIN\AzureCP\AzureCPSettings.aspx.cs">
-      <DependentUpon>AzureCPSettings.aspx</DependentUpon>
-      <SubType>ASPXCodeBehind</SubType>
-    </Compile>
-    <Compile Include="TEMPLATE\ADMIN\AzureCP\AzureCPSettings.aspx.designer.cs">
-      <DependentUpon>AzureCPSettings.aspx.cs</DependentUpon>
-    </Compile>
-    <Compile Include="TEMPLATE\ADMIN\AzureCP\ClaimsTable.aspx.cs">
-      <DependentUpon>ClaimsTable.aspx</DependentUpon>
-      <SubType>ASPXCodeBehind</SubType>
-    </Compile>
-    <Compile Include="TEMPLATE\ADMIN\AzureCP\ClaimsTable.aspx.designer.cs">
-      <DependentUpon>ClaimsTable.aspx.cs</DependentUpon>
-    </Compile>
   </ItemGroup>
   <ItemGroup>
     <None Include="app.config">
@@ -161,6 +164,8 @@
   <ItemGroup />
   <ItemGroup>
     <Content Include="AzureCP.AdminLinks\Elements.xml" />
+    <Content Include="TEMPLATE\ADMIN\AzureCP\AzureCPClaimsList.ascx" />
+    <Content Include="TEMPLATE\ADMIN\AzureCP\AzureCPGlobalSettings.ascx" />
     <Content Include="Features\AzureCP\AzureCP.Template.xml">
       <DependentUpon>AzureCP.feature</DependentUpon>
     </Content>

@@ -7,10 +7,10 @@
 // </auto-generated>
 //------------------------------------------------------------------------------
 
-namespace azurecp {
+namespace azurecp.ControlTemplates {
     
     
-    public partial class AzureCPSettings {
+    public partial class AzureCPGlobalSettings {
         
         /// <summary>
         /// LabelMessage control.
@@ -209,14 +209,5 @@ namespace azurecp {
         /// To modify move field declaration from designer file to code-behind file.
         /// </remarks>
         protected global::System.Web.UI.WebControls.Button BtnOK;
-        
-        /// <summary>
-        /// LblTitle control.
-        /// </summary>
-        /// <remarks>
-        /// Auto-generated field.
-        /// To modify move field declaration from designer file to code-behind file.
-        /// </remarks>
-        protected global::System.Web.UI.WebControls.Label LblTitle;
     }
 }
