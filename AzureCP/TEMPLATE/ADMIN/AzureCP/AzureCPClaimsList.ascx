@@ -128,13 +128,13 @@
         $('#editLink_' + ItemId).hide('fast');
         $('#<%= DeleteItemLink_.ClientID %>' + ItemId).hide('fast');
 
-            $('#input_claimtype_' + ItemId).show('fast');
-            $('#list_graphproperty_' + ItemId).show('fast');
-            $('#list_GraphPropertyToDisplay_' + ItemId).show('fast');
-            $('#list_Metadata_' + ItemId).show('fast');
-            $('#list_ClaimEntityType_' + ItemId).show('fast');
-            $('#input_PrefixToBypassLookup_' + ItemId).show('fast');
-            $('#<%= UpdateItemLink_.ClientID %>' + ItemId).show('fast');
+        $('#input_claimtype_' + ItemId).show('fast');
+        $('#list_graphproperty_' + ItemId).show('fast');
+        $('#list_GraphPropertyToDisplay_' + ItemId).show('fast');
+        $('#list_Metadata_' + ItemId).show('fast');
+        $('#list_ClaimEntityType_' + ItemId).show('fast');
+        $('#input_PrefixToBypassLookup_' + ItemId).show('fast');
+        $('#<%= UpdateItemLink_.ClientID %>' + ItemId).show('fast');
         $('#cancelLink_' + ItemId).show('fast');
     }
 
@@ -149,13 +149,13 @@
         $('#editLink_' + ItemId).show('fast');
         $('#<%= DeleteItemLink_.ClientID %>' + ItemId).show('fast');
 
-            $('#input_claimtype_' + ItemId).hide('fast');
-            $('#list_graphproperty_' + ItemId).hide('fast');
-            $('#list_GraphPropertyToDisplay_' + ItemId).hide('fast');
-            $('#list_Metadata_' + ItemId).hide('fast');
-            $('#list_ClaimEntityType_' + ItemId).hide('fast');
-            $('#input_PrefixToBypassLookup_' + ItemId).hide('fast');
-            $('#<%= UpdateItemLink_.ClientID %>' + ItemId).hide('fast');
+        $('#input_claimtype_' + ItemId).hide('fast');
+        $('#list_graphproperty_' + ItemId).hide('fast');
+        $('#list_GraphPropertyToDisplay_' + ItemId).hide('fast');
+        $('#list_Metadata_' + ItemId).hide('fast');
+        $('#list_ClaimEntityType_' + ItemId).hide('fast');
+        $('#input_PrefixToBypassLookup_' + ItemId).hide('fast');
+        $('#<%= UpdateItemLink_.ClientID %>' + ItemId).hide('fast');
         $('#cancelLink_' + ItemId).hide('fast');
     }
 
@@ -168,26 +168,26 @@
     window.Azurecp.ClaimsTablePage.Init = function () {
         // Variables initialized from server side code
         window.Azurecp.ClaimsTablePage.ShowNewItemForm = <%= ShowNewItemForm.ToString().ToLower() %>;
-            window.Azurecp.ClaimsTablePage.HideAllContent = <%= HideAllContent.ToString().ToLower() %>;
-            window.Azurecp.ClaimsTablePage.TrustName = "<%= TrustName.ToString().ToLower() %>";
+        window.Azurecp.ClaimsTablePage.HideAllContent = <%= HideAllContent.ToString().ToLower() %>;
+        window.Azurecp.ClaimsTablePage.TrustName = "<%= TrustName.ToString().ToLower() %>";
 
-            // Check if all content should be hidden (most probably because AzureCP is not associated with any SPTrustedLoginProvider)
-            if (window.Azurecp.ClaimsTablePage.HideAllContent) {
-                $('#divMainContent').hide();
-                return;
-            }
+        // Check if all content should be hidden (most probably because AzureCP is not associated with any SPTrustedLoginProvider)
+        if (window.Azurecp.ClaimsTablePage.HideAllContent) {
+            $('#divMainContent').hide();
+            return;
+        }
 
-            // Replace placeholder with actual SPTrustedIdentityTokenIssuer name
-            $('#divMainContent').find("span").each(function (ev) {
-                $(this).text($(this).text().replace("{trustname}", window.Azurecp.ClaimsTablePage.TrustName));
-            });
+        // Replace placeholder with actual SPTrustedIdentityTokenIssuer name
+        $('#divMainContent').find("span").each(function (ev) {
+            $(this).text($(this).text().replace("{trustname}", window.Azurecp.ClaimsTablePage.TrustName));
+        });
 
-            // ONLY FOR SP 2013
-            // Display only current page in full screen mode
-            window.Azurecp.ClaimsTablePage.SetFullScreenModeInCurPageOnly();
+        // ONLY FOR SP 2013
+        // Display only current page in full screen mode
+        window.Azurecp.ClaimsTablePage.SetFullScreenModeInCurPageOnly();
 
-            // Initialize display
-            var rdbGroupName = $('#<%= RdbNewItemClassicClaimType.ClientID %>').attr('name');
+        // Initialize display
+        var rdbGroupName = $('#<%= RdbNewItemClassicClaimType.ClientID %>').attr('name');
         if (Azurecp.ClaimsTablePage.ShowNewItemForm) {
             $('#divTblClaims').hide('fast');
             $('#divNewItem').show('fast');

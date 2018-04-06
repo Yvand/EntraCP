@@ -340,44 +340,6 @@ namespace azurecp.ControlTemplates
             throw new NotImplementedException();
         }
 
-        //protected void UpdatePersistedObject()
-        //{
-        //    if (null == PersistedObject)
-        //    {
-        //        AzureCPLogging.Log(
-        //            String.Format("PersistedObject {0} should not be null.", Constants.AZURECPCONFIG_NAME),
-        //            TraceSeverity.Unexpected,
-        //            EventSeverity.Error,
-        //            TraceCategory.Configuration);
-        //        return;
-        //    }
-
-        //    if (null == CurrentTrustedLoginProvider)
-        //    {
-        //        AzureCPLogging.Log(
-        //            "Trust associated with AzureCP could not be found.",
-        //            TraceSeverity.Unexpected,
-        //            EventSeverity.Error,
-        //            TraceCategory.Configuration);
-        //        return;
-        //    }
-
-        //    //// Update object in database
-        //    //SPSecurity.RunWithElevatedPrivileges(delegate ()
-        //    //{
-        //    //    this.Web.AllowUnsafeUpdates = true;
-        //    //    PersistedObject.Update();
-        //    //    this.Web.AllowUnsafeUpdates = false;
-
-        //    //    AzureCPLogging.Log(
-        //    //        String.Format("Objects list of AzureCP was successfully updated in PersistedObject {0}.", Constants.AZURECPCONFIG_NAME),
-        //    //        TraceSeverity.Medium,
-        //    //        EventSeverity.Information,
-        //    //        TraceCategory.Configuration);
-        //    //});
-        //    //ViewState["PersistedObjectVersion"] = PersistedObject.Version;
-        //}
-
         void LnkDeleteItem_Command(object sender, CommandEventArgs e)
         {
             if (ValidatePrerequisite() != ConfigStatus.AllGood && Status != ConfigStatus.NoIdentityClaimType) return;

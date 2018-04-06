@@ -1087,6 +1087,97 @@ namespace azurecp
             }
         }
 
+        ///// <summary>
+        ///// Build filter and select statements sent to Azure AD
+        ///// $filter and $select must be URL encoded as documented in https://developer.microsoft.com/en-us/graph/docs/concepts/query_parameters#encoding-query-parameters
+        ///// </summary>
+        ///// <param name="requestInfo"></param>
+        ///// <param name="userFilter">User filter</param>
+        ///// <param name="groupFilter">Group filter</param>
+        ///// <param name="userSelect">User properties to get from AAD</param>
+        ///// <param name="groupSelect">Group properties to get from AAD</param>
+        //protected virtual void BuildFilter(RequestInformation requestInfo, out string userFilter, out string groupFilter, out string userSelect, out string groupSelect)
+        //{
+        //    // TODO: Move this outside of this method
+        //    /////
+        //    List<GraphPropertyQuery> propertyQueries = new List<GraphPropertyQuery>();
+        //    foreach (GraphProperty prop in Enum.GetValues(typeof(GraphProperty)))
+        //    {
+        //        GraphPropertyQuery querySyntax = new GraphPropertyQuery(prop);
+        //        //if (prop == GraphProperty.Id) querySyntax.SearchQuery = querySyntax.ValidationQuery;    // ID does not support 'startswith'
+        //        if (prop == GraphProperty.Id) querySyntax.FieldType = typeof(Guid);
+        //        propertyQueries.Add(querySyntax);
+        //    }
+        //    //propertyQueries.FirstOrDefault(x => x.PropertyName == )
+        //    /////
+
+        //    StringBuilder userFilterBuilder = new StringBuilder("accountEnabled eq true and (");
+        //    StringBuilder groupFilterBuilder = new StringBuilder();
+        //    StringBuilder userSelectBuilder = new StringBuilder("UserType, Mail, ");    // UserType and Mail are always needed to deal with Guest users
+        //    StringBuilder groupSelectBuilder = new StringBuilder();
+
+        //    string searchPattern;
+        //    string input = requestInfo.Input;
+        //    if (requestInfo.ExactSearch) searchPattern = "{0} eq '" + input + "'";
+        //    else searchPattern = "startswith({0},'" + input + "')";
+
+        //    bool firstUserObject = true;
+        //    bool firstGroupObject = true;
+        //    foreach (AzureADObject adObject in requestInfo.ClaimTypeConfigList)
+        //    {
+        //        GraphPropertyQuery querySyntax = propertyQueries.FirstOrDefault(x => x.PropertyName == adObject.GraphProperty);
+        //        //if (requestInfo.ExactSearch) searchPattern = String.Format(querySyntax.ValidationQuery, "{0}", input);
+        //        //else searchPattern = String.Format(querySyntax.SearchQuery, "{0}", input);
+
+        //        string property = adObject.GraphProperty.ToString();
+        //        string objectFilter = String.Format(searchPattern, property);
+        //        string objectSelect = property;
+        //        if (adObject.ClaimEntityType == SPClaimEntityTypes.User)
+        //        {
+        //            if (firstUserObject) firstUserObject = false;
+        //            else
+        //            {
+        //                objectFilter = " or " + objectFilter;
+        //                objectSelect = ", " + objectSelect;
+        //            }
+        //            userFilterBuilder.Append(objectFilter);
+        //            userSelectBuilder.Append(objectSelect);
+        //        }
+        //        else
+        //        {
+        //            // else with no further test assumes everything that is not a User is a Group
+        //            if (firstGroupObject) firstGroupObject = false;
+        //            else
+        //            {
+        //                objectFilter = objectFilter + " or ";
+        //                objectSelect = ", " + objectSelect;
+        //            }
+        //            groupFilterBuilder.Append(objectFilter);
+        //            groupSelectBuilder.Append(objectSelect);
+        //        }
+        //    }
+
+        //    // Also add properties in user metadata list to $select
+        //    foreach (AzureADObject adObject in UserMetadataClaimTypeConfigList)
+        //    {
+        //        string property = adObject.GraphProperty.ToString();
+        //        string objectSelect = property;
+        //        if (firstUserObject) firstUserObject = false;
+        //        else
+        //        {
+        //            objectSelect = ", " + objectSelect;
+        //        }
+        //        userSelectBuilder.Append(objectSelect);
+        //    }
+
+        //    userFilterBuilder.Append(")");
+
+        //    userFilter = HttpUtility.UrlEncode(userFilterBuilder.ToString());
+        //    groupFilter = HttpUtility.UrlEncode(groupFilterBuilder.ToString());
+        //    userSelect = HttpUtility.UrlEncode(userSelectBuilder.ToString());
+        //    groupSelect = HttpUtility.UrlEncode(groupSelectBuilder.ToString());
+        //}
+
         /// <summary>
         /// Build filter and select statements sent to Azure AD
         /// $filter and $select must be URL encoded as documented in https://developer.microsoft.com/en-us/graph/docs/concepts/query_parameters#encoding-query-parameters
@@ -1114,6 +1205,13 @@ namespace azurecp
             {
                 string property = adObject.GraphProperty.ToString();
                 string objectFilter = String.Format(searchPattern, property);
+                if (adObject.GraphProperty == GraphProperty.Id)
+                {
+                    Guid idGuid = new Guid();
+                    if (!Guid.TryParse(input, out idGuid)) continue;
+                    else objectFilter = String.Format("{0} eq '{1}'", property, idGuid.ToString());
+                }
+
                 string objectSelect = property;
                 if (adObject.ClaimEntityType == SPClaimEntityTypes.User)
                 {

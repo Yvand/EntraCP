@@ -8,7 +8,7 @@
 <asp:Content ID="PageHead" ContentPlaceHolderID="PlaceHolderAdditionalPageHead" runat="server">
 </asp:Content>
 <asp:Content ID="PageTitle" ContentPlaceHolderID="PlaceHolderPageTitle" runat="server">
-    Claim types configuration for <a href="https://yvand.github.io/AzureCP/index.html" target="_blank">AzureCP</a>
+    Claim types configuration for AzureCP
 </asp:Content>
 <asp:Content ID="PageTitleInTitleArea" ContentPlaceHolderID="PlaceHolderPageTitleInTitleArea" runat="server">
     <asp:Literal runat="server" ID="TitleInTitleText" />

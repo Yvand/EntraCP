@@ -211,7 +211,8 @@ namespace azurecp
                 new AzureADObject{GraphProperty=GraphProperty.OfficeLocation, ClaimEntityType="User", EntityDataKey=PeopleEditorEntityDataKeys.Location},
 
                 // Role
-                new AzureADObject{GraphProperty=GraphProperty.DisplayName, ClaimType=WIF.ClaimTypes.Role, ClaimEntityType=SPClaimEntityTypes.FormsRole},
+                //new AzureADObject{GraphProperty=GraphProperty.DisplayName, ClaimType=WIF.ClaimTypes.Role, ClaimEntityType=SPClaimEntityTypes.FormsRole},
+                new AzureADObject{GraphProperty=GraphProperty.Id, ClaimType=WIF.ClaimTypes.Role, ClaimEntityType=SPClaimEntityTypes.FormsRole, GraphPropertyToDisplay=GraphProperty.DisplayName},
             };
         }
 
@@ -573,6 +574,7 @@ namespace azurecp
         // Values are aligned with enum type Microsoft.Azure.ActiveDirectory.GraphClient.GraphProperty in Microsoft.Azure.ActiveDirectory.GraphClient.dll
         None = 0,
         AccountEnabled = 1,
+        Id = 2,
         Department = 20,
         DisplayName = 28,
         GivenName = 32,
@@ -584,6 +586,19 @@ namespace azurecp
         UserPrincipalName = 93,
         UserType = 94
     }
+
+    //public class GraphPropertyQuery
+    //{
+    //    public GraphProperty PropertyName;
+    //    //public string SearchQuery = "startswith({0},'{1}')";
+    //    //public string ValidationQuery = "{0} eq '{1}'";
+    //    public Type FieldType = typeof(String);
+
+    //    public GraphPropertyQuery(GraphProperty PropertyName)
+    //    {
+    //        this.PropertyName = PropertyName;
+    //    }
+    //}
 
     public enum RequestType
     {
