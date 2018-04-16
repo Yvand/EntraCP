@@ -109,23 +109,23 @@ namespace azurecp.ControlTemplates
 
         private void PopulateFields()
         {
-            if (IdentityClaim.GraphPropertyToDisplay == GraphProperty.None)
+            if (IdentityClaim.DirectoryObjectPropertyToShowAsDisplayText == AzureADObjectProperty.None)
             {
                 this.RbIdentityDefault.Checked = true;
             }
             else
             {
                 this.RbIdentityCustomGraphProperty.Checked = true;
-                this.DDLGraphPropertyToDisplay.Items.FindByValue(((int)IdentityClaim.GraphPropertyToDisplay).ToString()).Selected = true;
+                this.DDLGraphPropertyToDisplay.Items.FindByValue(((int)IdentityClaim.DirectoryObjectPropertyToShowAsDisplayText).ToString()).Selected = true;
             }
             this.ChkAlwaysResolveUserInput.Checked = PersistedObject.AlwaysResolveUserInput;
             this.ChkFilterExactMatchOnly.Checked = PersistedObject.FilterExactMatchOnly;
-            this.ChkAugmentAADRoles.Checked = PersistedObject.AugmentAADRoles;
+            this.ChkAugmentAADRoles.Checked = PersistedObject.EnableAugmentation;
         }
 
         private void BuildGraphPropertyDDL()
         {
-            foreach (GraphProperty prop in Enum.GetValues(typeof(GraphProperty)))
+            foreach (AzureADObjectProperty prop in Enum.GetValues(typeof(AzureADObjectProperty)))
             {
                 // Ensure property exists for the User object type
                 if (AzureCP.GetGraphPropertyValue(new User(), prop.ToString()) == null) continue;
@@ -189,16 +189,16 @@ namespace azurecp.ControlTemplates
             // Handle identity claim type
             if (this.RbIdentityCustomGraphProperty.Checked)
             {
-                IdentityClaim.GraphPropertyToDisplay = (GraphProperty)Convert.ToInt32(this.DDLGraphPropertyToDisplay.SelectedValue);
+                IdentityClaim.DirectoryObjectPropertyToShowAsDisplayText = (AzureADObjectProperty)Convert.ToInt32(this.DDLGraphPropertyToDisplay.SelectedValue);
             }
             else
             {
-                IdentityClaim.GraphPropertyToDisplay = GraphProperty.None;
+                IdentityClaim.DirectoryObjectPropertyToShowAsDisplayText = AzureADObjectProperty.None;
             }
 
             PersistedObject.AlwaysResolveUserInput = this.ChkAlwaysResolveUserInput.Checked;
             PersistedObject.FilterExactMatchOnly = this.ChkFilterExactMatchOnly.Checked;
-            PersistedObject.AugmentAADRoles = this.ChkAugmentAADRoles.Checked;
+            PersistedObject.EnableAugmentation = this.ChkAugmentAADRoles.Checked;
 
             //UpdatePersistedObject();
             //AzureCPLogging.Log(

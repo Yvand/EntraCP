@@ -114,6 +114,7 @@
     <Compile Include="AzureCPUserControl.cs">
       <SubType>ASPXCodeBehind</SubType>
     </Compile>
+    <Compile Include="ClaimTypeConfig.cs" />
     <Compile Include="TEMPLATE\ADMIN\AzureCP\AzureCPClaimsList.ascx.cs">
       <DependentUpon>AzureCPClaimsList.ascx</DependentUpon>
       <SubType>ASPXCodeBehind</SubType>

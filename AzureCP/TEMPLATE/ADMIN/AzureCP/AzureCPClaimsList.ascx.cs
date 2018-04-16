@@ -21,7 +21,7 @@ namespace azurecp.ControlTemplates
         //public Guid PersistedObjectID = new Guid(Constants.AZURECPCONFIG_ID);
         //SPTrustedLoginProvider CurrentTrustedLoginProvider;
         //AzureCPConfig PersistedObject;
-        List<KeyValuePair<int, AzureADObject>> ClaimsMapping;
+        List<KeyValuePair<int, ClaimTypeConfig>> ClaimsMapping;
         //bool AllowPersistedObjectUpdate = true;
         protected bool ShowNewItemForm = false;
         public bool HideAllContent = false;
@@ -50,40 +50,13 @@ namespace azurecp.ControlTemplates
 
         protected void Page_Load(object sender, EventArgs e)
         {
-            // Get trust currently associated with AzureCP, if any
-            CurrentTrustedLoginProvider = AzureCP.GetSPTrustAssociatedWithCP(AzureCP._ProviderInternalName);
-            if (null == CurrentTrustedLoginProvider)
+            if (ValidatePrerequisite() != ConfigStatus.AllGood)
             {
-                // Claim provider is currently not associated with any trust.
-                // Display a message in the page and disable controls
-                this.LabelErrorMessage.Text = TextErrorNoTrustAssociation;
+                this.LabelErrorMessage.Text = base.MostImportantError;
                 this.HideAllContent = true;
                 this.BtnCreateNewItem.Visible = false;
                 return;
             }
-
-            //SPSecurity.RunWithElevatedPrivileges(delegate ()
-            //{
-            //    // Get SPPersisted Object and create it if it doesn't exist
-            //    PersistedObject = AzureCPConfig.GetConfiguration(PersistedObjectName);
-            //    if (PersistedObject == null)
-            //    {
-            //        this.Web.AllowUnsafeUpdates = true;
-            //        PersistedObject = AzureCPConfig.CreatePersistedObject(PersistedObjectID.ToString(), PersistedObjectName);
-            //        this.Web.AllowUnsafeUpdates = false;
-            //    }
-            //});
-
-            //if (ViewState["PersistedObjectVersion"] == null)
-            //    ViewState.Add("PersistedObjectVersion", PersistedObject.Version);
-            //if ((long)ViewState["PersistedObjectVersion"] != PersistedObject.Version)
-            //{
-            //    // PersistedObject changed since last time. Should not allow any update
-            //    this.LabelErrorMessage.Text = TextErrorPersistedObjectStale;
-            //    this.AllowPersistedObjectUpdate = false;
-            //    return;
-            //}
-            //TrustName = CurrentTrustedLoginProvider.Name;
 
             if (!this.IsPostBack)
             {
@@ -95,7 +68,7 @@ namespace azurecp.ControlTemplates
 
                 New_DdlGraphProperty.Items.Add(String.Empty);
                 New_DdlGraphPropertyToDisplay.Items.Add(String.Empty);
-                foreach (object field in typeof(GraphProperty).GetFields())
+                foreach (object field in typeof(AzureADObjectProperty).GetFields())
                 {
                     string prop = ((System.Reflection.FieldInfo)field).Name;
                     if (AzureCP.GetGraphPropertyValue(new User(), prop) == null) continue;
@@ -106,7 +79,6 @@ namespace azurecp.ControlTemplates
                     New_DdlGraphPropertyToDisplay.Items.Add(prop);
                 }
             }
-
             BuildAttributesListTable(this.IsPostBack);
         }
 
@@ -117,11 +89,11 @@ namespace azurecp.ControlTemplates
         private void BuildAttributesListTable(bool pendingUpdate)
         {
             // Copy claims list in a key value pair so that each item has a unique ID that can be used later for update/delete operations
-            ClaimsMapping = new List<KeyValuePair<int, AzureADObject>>();
+            ClaimsMapping = new List<KeyValuePair<int, ClaimTypeConfig>>();
             int i = 0;
-            foreach (AzureADObject attr in this.PersistedObject.AzureADObjects)
+            foreach (ClaimTypeConfig attr in this.PersistedObject.ClaimTypes)
             {
-                ClaimsMapping.Add(new KeyValuePair<int, AzureADObject>(i++, attr));
+                ClaimsMapping.Add(new KeyValuePair<int, ClaimTypeConfig>(i++, attr));
             }
 
             bool identityClaimPresent = false;
@@ -135,12 +107,14 @@ namespace azurecp.ControlTemplates
             tr.Cells.Add(th);
             th = GetTableHeaderCell("Property to query");
             tr.Cells.Add(th);
+            th = GetTableHeaderCell("Directory object type");
+            tr.Cells.Add(th);
             th = GetTableHeaderCell("Property to display");
             tr.Cells.Add(th);
             th = GetTableHeaderCell("<a href='http://msdn.microsoft.com/en-us/library/office/microsoft.sharepoint.webcontrols.peopleeditorentitydatakeys_members(v=office.15).aspx' target='_blank'>Metadata</a>");
             tr.Cells.Add(th);
-            th = GetTableHeaderCell("<a href='http://msdn.microsoft.com/en-us/library/office/microsoft.sharepoint.administration.claims.spclaimentitytypes_members(v=office.15).aspx' target='_blank'>Claim entity type</a>");
-            tr.Cells.Add(th);
+            //th = GetTableHeaderCell("<a href='http://msdn.microsoft.com/en-us/library/office/microsoft.sharepoint.administration.claims.spclaimentitytypes_members(v=office.15).aspx' target='_blank'>Claim entity type</a>");
+            
             th = GetTableHeaderCell("Prefix to bypass lookup");
             tr.Cells.Add(th);
             this.TblClaimsMapping.Rows.Add(tr);
@@ -196,7 +170,8 @@ namespace azurecp.ControlTemplates
                         {
                             tr.CssClass = "azurecp-rowClaimTypeNotUsedInTrust";
                         }
-                        else if (attr.Value.ClaimEntityType != SPClaimEntityTypes.User)
+                        //else if (attr.Value.ClaimEntityType != SPClaimEntityTypes.User)
+                        else if (attr.Value.DirectoryObjectType != AzureADObjectType.User)
                         {
                             tr.CssClass = "azurecp-rowRoleClaimType";
                         }
@@ -213,10 +188,18 @@ namespace azurecp.ControlTemplates
 
                     string htmlCellGraphProperty;
                     string htmlCellGraphPropertyToDisplay;
-                    BuildGraphPropertyDDLs(attr, out htmlCellGraphProperty, out htmlCellGraphPropertyToDisplay);
+                    string htmlCellDirectoryObjectType;
+                    BuildGraphPropertyDDLs(attr, out htmlCellGraphProperty, out htmlCellGraphPropertyToDisplay, out htmlCellDirectoryObjectType);
 
                     html = htmlCellGraphProperty;
                     tr.Cells.Add(GetTableCell(html));
+
+                    //members = typeof(SPClaimEntityTypes).GetProperties(BindingFlags.Static | BindingFlags.Public);
+                    //members = typeof(AzureADObjectType).GetFields(BindingFlags.Static | BindingFlags.Public);
+                    //html = BuildDDLFromTypeMembers(HtmlCellClaimEntityType, attr, "ClaimEntityType", members, false);
+                    //html = BuildDDLFromTypeMembers(HtmlCellClaimEntityType, attr, "DirectoryObjectType", members, false);
+                    //tr.Cells.Add(GetTableCell(html));
+                    tr.Cells.Add(GetTableCell(htmlCellDirectoryObjectType));
 
                     html = htmlCellGraphPropertyToDisplay;
                     tr.Cells.Add(GetTableCell(html));
@@ -224,10 +207,6 @@ namespace azurecp.ControlTemplates
                     MemberInfo[] members;
                     members = typeof(PeopleEditorEntityDataKeys).GetFields(BindingFlags.Static | BindingFlags.Public);
                     html = BuildDDLFromTypeMembers(HtmlCellMetadata, attr, "EntityDataKey", members, true);
-                    tr.Cells.Add(GetTableCell(html));
-
-                    members = typeof(SPClaimEntityTypes).GetProperties(BindingFlags.Static | BindingFlags.Public);
-                    html = BuildDDLFromTypeMembers(HtmlCellClaimEntityType, attr, "ClaimEntityType", members, false);
                     tr.Cells.Add(GetTableCell(html));
 
                     html = String.Format(HtmlCellPrefixToBypassLookup, attr.Value.PrefixToBypassLookup, attr.Key);
@@ -242,7 +221,7 @@ namespace azurecp.ControlTemplates
             }
         }
 
-        private string BuildDDLFromTypeMembers(string htmlCell, KeyValuePair<int, AzureADObject> attr, string propertyToCheck, MemberInfo[] members, bool addEmptyChoice)
+        private string BuildDDLFromTypeMembers(string htmlCell, KeyValuePair<int, ClaimTypeConfig> attr, string propertyToCheck, MemberInfo[] members, bool addEmptyChoice)
         {
             string option = "<option value=\"{0}\" {1}>{2}</option>";
             string selected = String.Empty;
@@ -250,7 +229,7 @@ namespace azurecp.ControlTemplates
             StringBuilder options = new StringBuilder();
 
             // GetValue returns null if object doesn't have a value on this property, using "as string" avoids to throw a NullReference in this case.
-            string attrValue = typeof(AzureADObject).GetProperty(propertyToCheck).GetValue(attr.Value) as string;
+            string attrValue = typeof(ClaimTypeConfig).GetProperty(propertyToCheck).GetValue(attr.Value) as string;
 
             // Build DDL based on members retrieved from the supplied type
             foreach (MemberInfo member in members)
@@ -272,31 +251,35 @@ namespace azurecp.ControlTemplates
             return String.Format(htmlCell, attrValue, attr.Key, options.ToString());
         }
 
-        private void BuildGraphPropertyDDLs(KeyValuePair<int, AzureADObject> azureObject, out string htmlCellGraphProperty, out string htmlCellGraphPropertyToDisplay)
+        private void BuildGraphPropertyDDLs(KeyValuePair<int, ClaimTypeConfig> azureObject, out string htmlCellGraphProperty, out string htmlCellGraphPropertyToDisplay, out string htmlCellDirectoryObjectType)
         {
             string option = "<option value=\"{0}\" {1}>{2}</option>";
             string graphPropertySelected = String.Empty;
             string graphPropertyToDisplaySelected = String.Empty;
             StringBuilder graphPropertyOptions = new StringBuilder();
             StringBuilder graphPropertyToDisplayOptions = new StringBuilder();
+            StringBuilder directoryObjectTypeOptions = new StringBuilder();
             bool graphPropertyToDisplayFound = false;
 
-            foreach (GraphProperty prop in Enum.GetValues(typeof(GraphProperty)))
+            foreach (AzureADObjectProperty prop in Enum.GetValues(typeof(AzureADObjectProperty)))
             {
                 // Ensure property exists for the current object type
-                if (azureObject.Value.ClaimEntityType == SPClaimEntityTypes.User)
+                //if (azureObject.Value.ClaimEntityType == SPClaimEntityTypes.User)
+                if (azureObject.Value.DirectoryObjectType == AzureADObjectType.User)
                 {
                     if (AzureCP.GetGraphPropertyValue(new User(), prop.ToString()) == null) continue;
+                    directoryObjectTypeOptions.Append(String.Format(option, azureObject.Value.DirectoryObjectType.ToString(), "selected", azureObject.Value.DirectoryObjectType.ToString()));
                 }
                 else
                 {
                     if (AzureCP.GetGraphPropertyValue(new Group(), prop.ToString()) == null) continue;
                     //if (AzureCP.GetGraphPropertyValue(new Role(), prop.ToString()) == null) continue;
+                    directoryObjectTypeOptions.Append(String.Format(option, azureObject.Value.DirectoryObjectType.ToString(), "selected", azureObject.Value.DirectoryObjectType.ToString()));
                 }
 
-                graphPropertySelected = azureObject.Value.GraphProperty == prop ? "selected" : String.Empty;
+                graphPropertySelected = azureObject.Value.DirectoryObjectProperty == prop ? "selected" : String.Empty;
 
-                if (azureObject.Value.GraphPropertyToDisplay == prop)
+                if (azureObject.Value.DirectoryObjectPropertyToShowAsDisplayText == prop)
                 {
                     graphPropertyToDisplaySelected = "selected";
                     graphPropertyToDisplayFound = true;
@@ -315,11 +298,12 @@ namespace azurecp.ControlTemplates
 
             // Insert at 1st position GraphProperty.None in GraphPropertyToDisplay DDL and select it if needed
             string selectNone = graphPropertyToDisplayFound ? String.Empty : "selected";
-            graphPropertyToDisplayOptions = graphPropertyToDisplayOptions.Insert(0, String.Format(option, GraphProperty.None, selectNone, GraphProperty.None));
+            graphPropertyToDisplayOptions = graphPropertyToDisplayOptions.Insert(0, String.Format(option, AzureADObjectProperty.None, selectNone, AzureADObjectProperty.None));
 
-            htmlCellGraphProperty = String.Format(HtmlCellGraphProperty, azureObject.Value.GraphProperty, azureObject.Key, graphPropertyOptions.ToString());
+            htmlCellGraphProperty = String.Format(HtmlCellGraphProperty, azureObject.Value.DirectoryObjectProperty, azureObject.Key, graphPropertyOptions.ToString());
             //string graphPropertyToDisplaySpanDisplay = azureObject.Value.GraphPropertyToDisplay == GraphProperty.None ? String.Empty : azureObject.Value.GraphPropertyToDisplay.ToString();
-            htmlCellGraphPropertyToDisplay = String.Format(HtmlCellGraphPropertyToDisplay, azureObject.Value.GraphPropertyToDisplay, azureObject.Key, graphPropertyToDisplayOptions.ToString());
+            htmlCellGraphPropertyToDisplay = String.Format(HtmlCellGraphPropertyToDisplay, azureObject.Value.DirectoryObjectPropertyToShowAsDisplayText, azureObject.Key, graphPropertyToDisplayOptions.ToString());
+            htmlCellDirectoryObjectType = String.Format(HtmlCellClaimEntityType, azureObject.Value.DirectoryObjectType, azureObject.Key, directoryObjectTypeOptions.ToString());
         }
 
         private TableHeaderCell GetTableHeaderCell(string Value)
@@ -345,8 +329,8 @@ namespace azurecp.ControlTemplates
             if (ValidatePrerequisite() != ConfigStatus.AllGood && Status != ConfigStatus.NoIdentityClaimType) return;
 
             string itemId = e.CommandArgument.ToString();
-            AzureADObject attr = ClaimsMapping.Find(x => x.Key == Convert.ToInt32(itemId)).Value;
-            PersistedObject.AzureADObjects.Remove(attr);
+            ClaimTypeConfig attr = ClaimsMapping.Find(x => x.Key == Convert.ToInt32(itemId)).Value;
+            PersistedObject.ClaimTypes.Remove(attr);
             CommitChanges();
             this.BuildAttributesListTable(false);
         }
@@ -366,7 +350,7 @@ namespace azurecp.ControlTemplates
 
             // Get object to update
             int azureObjectId = Convert.ToInt32(itemId);
-            AzureADObject azureObject = ClaimsMapping.Find(x => x.Key == azureObjectId).Value;
+            ClaimTypeConfig azureObject = ClaimsMapping.Find(x => x.Key == azureObjectId).Value;
 
             // Check if changes are OK
             // Check if claim type is not empty and not already used
@@ -377,12 +361,12 @@ namespace azurecp.ControlTemplates
                 BuildAttributesListTable(false);
                 return;
             }
-            List<KeyValuePair<int, AzureADObject>> otherAzureObjects = ClaimsMapping.FindAll(x => x.Key != azureObjectId);
-            KeyValuePair<int, AzureADObject> matchFound;
+            List<KeyValuePair<int, ClaimTypeConfig>> otherAzureObjects = ClaimsMapping.FindAll(x => x.Key != azureObjectId);
+            KeyValuePair<int, ClaimTypeConfig> matchFound;
             matchFound = otherAzureObjects.FirstOrDefault(x => String.Equals(x.Value.ClaimType, newClaimType, StringComparison.InvariantCultureIgnoreCase));
 
             // Check if new claim type is not already used
-            if (!matchFound.Equals(default(KeyValuePair<int, AzureADObject>)))
+            if (!matchFound.Equals(default(KeyValuePair<int, ClaimTypeConfig>)))
             {
                 this.LabelErrorMessage.Text = String.Format(TextErrorUpdateItemDuplicate, azureObject.ClaimType, "claim type", newClaimType);
                 BuildAttributesListTable(false);
@@ -394,7 +378,7 @@ namespace azurecp.ControlTemplates
             if (newEntityDataKey != String.Empty)
             {
                 matchFound = otherAzureObjects.FirstOrDefault(x => String.Equals(x.Value.EntityDataKey, newEntityDataKey, StringComparison.InvariantCultureIgnoreCase));
-                if (!matchFound.Equals(default(KeyValuePair<int, AzureADObject>)))
+                if (!matchFound.Equals(default(KeyValuePair<int, ClaimTypeConfig>)))
                 {
                     this.LabelErrorMessage.Text = String.Format(TextErrorUpdateItemDuplicate, azureObject.ClaimType, "permission metadata", newEntityDataKey);
                     BuildAttributesListTable(false);
@@ -402,7 +386,8 @@ namespace azurecp.ControlTemplates
                 }
             }
 
-            string newClaimEntityType = formData["list_ClaimEntityType_" + itemId];
+            string newDirectoryObjectType = formData["list_ClaimEntityType_" + itemId];
+            Enum.TryParse(newDirectoryObjectType, out AzureADObjectType typeSelected);
             // Specific checks if current claim type is identity claim type
             if (String.Equals(azureObject.ClaimType, CurrentTrustedLoginProvider.IdentityClaimTypeInformation.MappedClaimType, StringComparison.InvariantCultureIgnoreCase))
             {
@@ -415,7 +400,9 @@ namespace azurecp.ControlTemplates
                 }
 
                 // ClaimEntityType must be "SPClaimEntityTypes.User"
-                if (!String.Equals(SPClaimEntityTypes.User, newClaimEntityType, StringComparison.InvariantCultureIgnoreCase))
+                //AzureADObjectType typeSelected;
+                //if (!String.Equals(SPClaimEntityTypes.User, newDirectoryObjectType, StringComparison.InvariantCultureIgnoreCase))
+                if (typeSelected != AzureADObjectType.User)
                 {
                     this.LabelErrorMessage.Text = TextErrorUpdateIdentityClaimEntityTypeNotUser;
                     BuildAttributesListTable(false);
@@ -424,16 +411,16 @@ namespace azurecp.ControlTemplates
             }
 
             azureObject.ClaimType = newClaimType;
-            azureObject.ClaimEntityType = newClaimEntityType;
+            azureObject.DirectoryObjectType = typeSelected;
             azureObject.PrefixToBypassLookup = formData["input_PrefixToBypassLookup_" + itemId];
             azureObject.EntityDataKey = newEntityDataKey;
 
-            GraphProperty prop;
-            bool convertSuccess = Enum.TryParse<GraphProperty>(formData["list_graphproperty_" + itemId], out prop);
-            azureObject.GraphProperty = convertSuccess ? prop : azureObject.GraphProperty;
+            AzureADObjectProperty prop;
+            bool convertSuccess = Enum.TryParse<AzureADObjectProperty>(formData["list_graphproperty_" + itemId], out prop);
+            azureObject.DirectoryObjectProperty = convertSuccess ? prop : azureObject.DirectoryObjectProperty;
 
-            convertSuccess = Enum.TryParse<GraphProperty>(formData["list_GraphPropertyToDisplay_" + itemId], out prop);
-            azureObject.GraphPropertyToDisplay = convertSuccess ? prop : azureObject.GraphPropertyToDisplay;
+            convertSuccess = Enum.TryParse<AzureADObjectProperty>(formData["list_GraphPropertyToDisplay_" + itemId], out prop);
+            azureObject.DirectoryObjectPropertyToShowAsDisplayText = convertSuccess ? prop : azureObject.DirectoryObjectPropertyToShowAsDisplayText;
 
             CommitChanges();
             this.BuildAttributesListTable(false);
@@ -441,13 +428,14 @@ namespace azurecp.ControlTemplates
 
         protected void BtnReset_Click(object sender, EventArgs e)
         {
-            AzureCPConfig.ResetClaimsList(PersistedObjectName);
+            PersistedObject.ResetClaimTypesList();
+            PersistedObject.Update();
             Response.Redirect(Request.Url.ToString());
         }
 
         protected void BtnCreateNewItem_Click(object sender, EventArgs e)
         {
-            AzureADObject azureObject = new AzureADObject();
+            ClaimTypeConfig azureObject = new ClaimTypeConfig();
             if (RdbNewItemClassicClaimType.Checked)
             {
                 if (String.IsNullOrEmpty(New_TxtClaimType.Text))
@@ -460,7 +448,7 @@ namespace azurecp.ControlTemplates
 
                 azureObject.ClaimType = New_TxtClaimType.Text;
 
-                if (PersistedObject.AzureADObjects.FirstOrDefault(x => String.Equals(x.ClaimType, azureObject.ClaimType, StringComparison.InvariantCultureIgnoreCase)) != null)
+                if (PersistedObject.ClaimTypes.FirstOrDefault(x => String.Equals(x.ClaimType, azureObject.ClaimType, StringComparison.InvariantCultureIgnoreCase)) != null)
                 {
                     this.LabelErrorMessage.Text = TextErrorDuplicateClaimType;
                     ShowNewItemForm = true;
@@ -480,7 +468,7 @@ namespace azurecp.ControlTemplates
             }
             else azureObject.CreateAsIdentityClaim = true;
 
-            if (!String.IsNullOrEmpty(New_DdlPermissionMetadata.SelectedValue) && !ClaimsMapping.FirstOrDefault(x => String.Equals(x.Value.EntityDataKey, New_DdlPermissionMetadata.SelectedValue, StringComparison.InvariantCultureIgnoreCase)).Equals(default(KeyValuePair<int, AzureADObject>)))
+            if (!String.IsNullOrEmpty(New_DdlPermissionMetadata.SelectedValue) && !ClaimsMapping.FirstOrDefault(x => String.Equals(x.Value.EntityDataKey, New_DdlPermissionMetadata.SelectedValue, StringComparison.InvariantCultureIgnoreCase)).Equals(default(KeyValuePair<int, ClaimTypeConfig>)))
             {
                 this.LabelErrorMessage.Text = String.Format(TextErrorNewMetadataAlreadyUsed, New_DdlPermissionMetadata.SelectedValue);
                 ShowNewItemForm = true;
@@ -488,22 +476,23 @@ namespace azurecp.ControlTemplates
                 return;
             }
 
-            GraphProperty prop;
-            bool convertSuccess = Enum.TryParse<GraphProperty>(New_DdlGraphProperty.SelectedValue, out prop);
-            if (!convertSuccess || prop == GraphProperty.None)
+            AzureADObjectProperty prop;
+            bool convertSuccess = Enum.TryParse<AzureADObjectProperty>(New_DdlGraphProperty.SelectedValue, out prop);
+            if (!convertSuccess || prop == AzureADObjectProperty.None)
             {
                 this.LabelErrorMessage.Text = TextErrorFieldsMissing;
                 ShowNewItemForm = true;
                 BuildAttributesListTable(false);
                 return;
             }
-            azureObject.GraphProperty = prop;
-            convertSuccess = Enum.TryParse<GraphProperty>(New_DdlGraphPropertyToDisplay.SelectedValue, out prop);
-            azureObject.GraphPropertyToDisplay = convertSuccess ? prop : GraphProperty.None;
-            azureObject.ClaimEntityType = SPClaimEntityTypes.User;
+            azureObject.DirectoryObjectProperty = prop;
+            convertSuccess = Enum.TryParse<AzureADObjectProperty>(New_DdlGraphPropertyToDisplay.SelectedValue, out prop);
+            azureObject.DirectoryObjectPropertyToShowAsDisplayText = convertSuccess ? prop : AzureADObjectProperty.None;
+            //azureObject.ClaimEntityType = SPClaimEntityTypes.User;
+            azureObject.DirectoryObjectType = AzureADObjectType.User;
             azureObject.EntityDataKey = New_DdlPermissionMetadata.SelectedValue;
 
-            PersistedObject.AzureADObjects.Add(azureObject);
+            PersistedObject.ClaimTypes.Add(azureObject);
             CommitChanges();
             BuildAttributesListTable(false);
         }
