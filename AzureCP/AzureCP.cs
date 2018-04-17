@@ -1049,7 +1049,7 @@ namespace azurecp
                         {
                             permissions.Add(entity);
                             AzureCPLogging.Log(String.Format("[{0}] Added permission without LDAP lookup because corresponding claim type has a keyword associated. Claim value: \"{1}\", Claim type: \"{2}\"", ProviderInternalName, entity.Claim.Value, entity.Claim.ClaimType),
-                                TraceSeverity.Verbose, EventSeverity.Information, TraceCategory.Claims_Picking);
+                                TraceSeverity.VerboseEx, EventSeverity.Information, TraceCategory.Claims_Picking);
                         }
                         return permissions;
                     }
@@ -1095,7 +1095,7 @@ namespace azurecp
                     {
                         permissions.Add(result.PickerEntity);
                         AzureCPLogging.Log(String.Format("[{0}] Added permission created with LDAP lookup: claim value: \"{1}\", claim type: \"{2}\"", ProviderInternalName, result.PickerEntity.Claim.Value, result.PickerEntity.Claim.ClaimType),
-                            TraceSeverity.Verbose, EventSeverity.Information, TraceCategory.Claims_Picking);
+                            TraceSeverity.VerboseEx, EventSeverity.Information, TraceCategory.Claims_Picking);
                     }
                 }
             }

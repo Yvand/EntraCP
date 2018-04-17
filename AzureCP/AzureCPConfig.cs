@@ -314,8 +314,8 @@ namespace azurecp
         [Persisted]
         public string TenantName;
 
-        [Persisted]
-        public string TenantId;
+        //[Persisted]
+        //public string TenantId;
 
         [Persisted]
         public string ClientId;
@@ -347,7 +347,7 @@ namespace azurecp
             AzureTenant copy = new AzureTenant()
             {
                 TenantName = this.TenantName,
-                TenantId = this.TenantId,
+                //TenantId = this.TenantId,
                 ClientId = this.ClientId,
                 ClientSecret = this.ClientSecret,
                 MemberUserTypeOnly = this.MemberUserTypeOnly,

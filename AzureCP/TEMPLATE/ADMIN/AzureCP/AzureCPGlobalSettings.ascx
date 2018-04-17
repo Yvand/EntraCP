@@ -142,10 +142,10 @@
 						<label for="<%= TxtTenantName.ClientID %>">Tenant <a href="http://msdn.microsoft.com/en-us/library/system.directoryservices.directoryentry.path(v=vs.110).aspx" target="_blank">name</a>: <em>*</em></label>
 						<wssawc:InputFormTextBox title="Azure tenant name" class="ms-input" ID="TxtTenantName" Columns="50" Runat="server" MaxLength="255" Text="TENANTNAME.onMicrosoft.com" />
 					</li>
-					<li>
+					<%--<li>
 						<label for="<%= TxtTenantId.ClientID %>">Tenant ID: <em>*</em></label>
 						<wssawc:InputFormTextBox title="Username" class="ms-input" ID="TxtTenantId" Columns="50" Runat="server" MaxLength="255" />
-					</li>
+					</li>--%>
 					<li>
 						<label for="<%= TxtClientId.ClientID %>">Application ID: <em>*</em></label>
 						<wssawc:InputFormTextBox title="Password" class="ms-input" ID="TxtClientId" Columns="50" Runat="server" MaxLength="255" />
@@ -158,14 +158,15 @@
 				</fieldset>
 				</div>
                 <tr><td colspan='2'>
-					<label for="<%=ChkMemberUserTypeOnly.ClientID %>"><a href="https://docs.microsoft.com/en-us/azure/active-directory/active-directory-b2b-user-properties" target="_blank">"Member" UserType</a> only: <em>*</em></label>
+					<label for="<%=ChkMemberUserTypeOnly.ClientID %>">Query <a href="https://docs.microsoft.com/en-us/azure/active-directory/active-directory-b2b-user-properties" target="_blank">"Member" UserType</a> only: <em>*</em></label>
 					<table style="display: inline;"><wssawc:InputFormCheckBox title="MemberUserTypeOnly" class="ms-input" ID="ChkMemberUserTypeOnly" runat="server" /></table>
 				</td></tr>
-
+                <tr><td colspan='2'>
 				<div class="divbuttons">
 					<asp:Button runat="server" ID="BtnTestAzureTenantConnection" Text="Test tenant connection" onclick="BtnTestAzureTenantConnection_Click" class="ms-ButtonHeightWidth" />
 					<asp:Button runat="server" ID="BtnAddLdapConnection" Text="Add tenant" OnClick="BtnAddAzureTenant_Click" class="ms-ButtonHeightWidth" />
 				</div>
+                </td></tr>
 				<p>
 					<asp:Label ID="LabelErrorTestLdapConnection" Runat="server" EnableViewState="False" class="ms-error" />
 					<asp:Label ID="LabelTestTenantConnectionOK" Runat="server" EnableViewState="False" />
