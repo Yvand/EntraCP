@@ -152,7 +152,7 @@ namespace azurecp.ControlTemplates
             //UpdatePersistedObject();
             CommitChanges();
             AzureCPLogging.Log(
-                    String.Format("Removed an Azure tenant in PersistedObject {0}", Constants.AZURECPCONFIG_NAME),
+                    String.Format("Removed an Azure tenant in PersistedObject {0}", ClaimsProviderConstants.AZURECPCONFIG_NAME),
                     TraceSeverity.Medium,
                     EventSeverity.Information,
                     TraceCategory.Configuration);
@@ -240,7 +240,7 @@ namespace azurecp.ControlTemplates
 
         protected void ValidateAzureTenantConnection()
         {
-            if (this.TxtTenantName.Text == String.Empty || /*this.TxtTenantId.Text == String.Empty || */this.TxtClientId.Text == String.Empty || this.TxtClientSecret.Text == String.Empty)
+            if (this.TxtTenantName.Text == String.Empty || this.TxtClientId.Text == String.Empty || this.TxtClientSecret.Text == String.Empty)
             {
                 this.LabelErrorTestLdapConnection.Text = TextErrorAzureTenantFieldsMissing;
                 return;
@@ -362,27 +362,7 @@ namespace azurecp.ControlTemplates
         void AddTenantConnection()
         {
             if (ValidatePrerequisite() != ConfigStatus.AllGood) return;
-            //if (null == PersistedObject)
-            //{
-            //    AzureCPLogging.Log(
-            //        String.Format("PersistedObject {0} should not be null.", Constants.AZURECPCONFIG_NAME),
-            //        TraceSeverity.Unexpected,
-            //        EventSeverity.Error,
-            //        TraceCategory.Configuration);
-            //    return;
-            //}
-
-            //if (null == CurrentTrustedLoginProvider)
-            //{
-            //    AzureCPLogging.Log(
-            //        "Trust associated with AzureCP could not be found.",
-            //        TraceSeverity.Unexpected,
-            //        EventSeverity.Error,
-            //        TraceCategory.Configuration);
-            //    return;
-            //}
-
-            if (this.TxtTenantName.Text == String.Empty /*|| this.TxtTenantId.Text == String.Empty*/ || this.TxtClientId.Text == String.Empty || this.TxtClientSecret.Text == String.Empty)
+            if (this.TxtTenantName.Text == String.Empty || this.TxtClientId.Text == String.Empty || this.TxtClientSecret.Text == String.Empty)
             {
                 this.LabelErrorTestLdapConnection.Text = TextErrorAzureTenantFieldsMissing;
                 return;
@@ -393,7 +373,6 @@ namespace azurecp.ControlTemplates
                 new AzureTenant
                 {
                     TenantName = this.TxtTenantName.Text,
-                    //TenantId = this.TxtTenantId.Text,
                     ClientId = TxtClientId.Text,
                     ClientSecret = this.TxtClientSecret.Text,
                     MemberUserTypeOnly = this.ChkMemberUserTypeOnly.Checked,
@@ -403,13 +382,13 @@ namespace azurecp.ControlTemplates
             //UpdatePersistedObject();
             CommitChanges();
             AzureCPLogging.Log(
-                   String.Format("Added a new Azure tenant in PersistedObject {0}", Constants.AZURECPCONFIG_NAME),
+                   String.Format("Added a new Azure tenant in PersistedObject {0}", ClaimsProviderConstants.AZURECPCONFIG_NAME),
                    TraceSeverity.Medium,
                    EventSeverity.Information,
                    TraceCategory.Configuration);
 
             PopulateLdapConnectionGrid();
-            /*this.TxtTenantId.Text = */this.TxtClientId.Text = this.TxtClientSecret.Text = String.Empty;
+            this.TxtClientId.Text = this.TxtClientSecret.Text = String.Empty;
             this.TxtTenantName.Text = "TENANTNAME.onMicrosoft.com";
         }
 

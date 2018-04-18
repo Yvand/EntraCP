@@ -44,6 +44,21 @@ namespace azurecp
         [Persisted]
         private string _ClaimType;
 
+        internal bool SupportsWildcard
+        {
+            get
+            {
+                if (this.DirectoryObjectProperty == AzureADObjectProperty.Id)
+                {
+                    return false;
+                }
+                else
+                {
+                    return true;
+                }
+            }
+        }
+
         /// <summary>
         /// If set to true, property ClaimType should not be set
         /// </summary>

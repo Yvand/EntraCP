@@ -34,7 +34,7 @@ namespace azurecp
     {
         public const string _ProviderInternalName = "AzureCP";
         public virtual string ProviderInternalName => "AzureCP";
-        public virtual string PersistedObjectName => Constants.AZURECPCONFIG_NAME;
+        public virtual string PersistedObjectName => ClaimsProviderConstants.AZURECPCONFIG_NAME;
 
         private object Sync_Init = new object();
         private ReaderWriterLockSlim Lock_Config = new ReaderWriterLockSlim();
@@ -489,11 +489,11 @@ namespace azurecp
                 {
                     pe.EntityData[entityAttrib.EntityDataKey] = entityAttribValue;
                     nbMetadata++;
-                    AzureCPLogging.Log(String.Format("[{0}] Added metadata \"{1}\" with value \"{2}\" to permission", ProviderInternalName, entityAttrib.EntityDataKey, entityAttribValue), TraceSeverity.Verbose, EventSeverity.Information, TraceCategory.Claims_Picking);
+                    AzureCPLogging.Log(String.Format("[{0}] Added metadata \"{1}\" with value \"{2}\" to permission", ProviderInternalName, entityAttrib.EntityDataKey, entityAttribValue), TraceSeverity.VerboseEx, EventSeverity.Information, TraceCategory.Claims_Picking);
                 }
             }
 
-            AzureCPLogging.Log(String.Format("[{0}] Created permission: display text: \"{1}\", value: \"{2}\", claim type: \"{3}\", and filled with {4} metadata.", ProviderInternalName, pe.DisplayText, pe.Claim.Value, pe.Claim.ClaimType, nbMetadata.ToString()), TraceSeverity.Verbose, EventSeverity.Information, TraceCategory.Claims_Picking);
+            AzureCPLogging.Log($"[{ProviderInternalName}] Created entity: display text: \"{pe.DisplayText}\", value: \"{pe.Claim.Value}\", claim type: \"{pe.Claim.ClaimType}\", and filled with {nbMetadata.ToString()} metadata.", TraceSeverity.VerboseEx, EventSeverity.Information, TraceCategory.Claims_Picking);
             return pe;
         }
 
@@ -896,10 +896,10 @@ namespace azurecp
                 RequestInformation settings = new RequestInformation(CurrentConfiguration, RequestType.Search, ProcessedClaimTypesList, resolveInput, null, context, aadEntityTypes.ToArray(), null, Int32.MaxValue);
                 List<PickerEntity> permissions = SearchOrValidate(settings);
                 FillPermissions(context, entityTypes, resolveInput, ref permissions);
-                foreach (PickerEntity permission in permissions)
+                foreach (PickerEntity entity in permissions)
                 {
-                    resolved.Add(permission);
-                    AzureCPLogging.Log(String.Format("[{0}] Added permission: claim value: \"{1}\", claim type: \"{2}\"", ProviderInternalName, permission.Claim.Value, permission.Claim.ClaimType),
+                    resolved.Add(entity);
+                    AzureCPLogging.Log(String.Format("[{0}] Added entity: claim value: \"{1}\", claim type: \"{2}\"", ProviderInternalName, entity.Claim.Value, entity.Claim.ClaimType),
                         TraceSeverity.Verbose, EventSeverity.Information, TraceCategory.Claims_Picking);
                 }
             }
@@ -936,25 +936,25 @@ namespace azurecp
                 List<PickerEntity> permissions = SearchOrValidate(settings);
                 FillPermissions(context, entityTypes, searchPattern, ref permissions);
                 SPProviderHierarchyNode matchNode = null;
-                foreach (PickerEntity permission in permissions)
+                foreach (PickerEntity entity in permissions)
                 {
                     // Add current PickerEntity to the corresponding attribute in the hierarchy
-                    if (searchTree.HasChild(permission.Claim.ClaimType))
+                    if (searchTree.HasChild(entity.Claim.ClaimType))
                     {
-                        matchNode = searchTree.Children.First(x => x.HierarchyNodeID == permission.Claim.ClaimType);
+                        matchNode = searchTree.Children.First(x => x.HierarchyNodeID == entity.Claim.ClaimType);
                     }
                     else
                     {
                         ClaimTypeConfig attrHelper = ProcessedClaimTypesList.FirstOrDefault(x =>
                             !x.CreateAsIdentityClaim &&
-                            String.Equals(x.ClaimType, permission.Claim.ClaimType, StringComparison.InvariantCultureIgnoreCase));
+                            String.Equals(x.ClaimType, entity.Claim.ClaimType, StringComparison.InvariantCultureIgnoreCase));
 
-                        string nodeName = attrHelper != null ? attrHelper.ClaimTypeDisplayName : permission.Claim.ClaimType;
-                        matchNode = new SPProviderHierarchyNode(_ProviderInternalName, nodeName, permission.Claim.ClaimType, true);
+                        string nodeName = attrHelper != null ? attrHelper.ClaimTypeDisplayName : entity.Claim.ClaimType;
+                        matchNode = new SPProviderHierarchyNode(_ProviderInternalName, nodeName, entity.Claim.ClaimType, true);
                         searchTree.AddChild(matchNode);
                     }
-                    matchNode.AddEntity(permission);
-                    AzureCPLogging.Log(String.Format("[{0}] Added permission: claim value: \"{1}\", claim type: \"{2}\"", ProviderInternalName, permission.Claim.Value, permission.Claim.ClaimType),
+                    matchNode.AddEntity(entity);
+                    AzureCPLogging.Log(String.Format("[{0}] Added entity: claim value: \"{1}\", claim type: \"{2}\"", ProviderInternalName, entity.Claim.Value, entity.Claim.ClaimType),
                         TraceSeverity.Verbose, EventSeverity.Information, TraceCategory.Claims_Picking);
                 }
             }
@@ -1206,24 +1206,27 @@ namespace azurecp
             StringBuilder userFilterBuilder = new StringBuilder("accountEnabled eq true and (");
             StringBuilder groupFilterBuilder = new StringBuilder();
             StringBuilder userSelectBuilder = new StringBuilder("UserType, Mail, ");    // UserType and Mail are always needed to deal with Guest users
-            StringBuilder groupSelectBuilder = new StringBuilder();
+            StringBuilder groupSelectBuilder = new StringBuilder("Id, ");               // Id is always required for groups
 
-            string searchPattern;
+            string preferredSearchPattern;
             string input = requestInfo.Input;
-            if (requestInfo.ExactSearch) searchPattern = "{0} eq '" + input + "'";
-            else searchPattern = "startswith({0},'" + input + "')";
+            //if (requestInfo.ExactSearch) preferredSearchPattern = "{0} eq '" + input + "'";
+            //else preferredSearchPattern = "startswith({0},'" + input + "')";
+
+            if (requestInfo.ExactSearch) preferredSearchPattern = String.Format(ClaimsProviderConstants.SearchPatternEquals, "{0}", input);
+            else preferredSearchPattern = String.Format(ClaimsProviderConstants.SearchPatternStartsWith, "{0}", input);
 
             bool firstUserObject = true;
             bool firstGroupObject = true;
             foreach (ClaimTypeConfig adObject in requestInfo.ClaimTypeConfigList)
             {
                 string property = adObject.DirectoryObjectProperty.ToString();
-                string objectFilter = String.Format(searchPattern, property);
+                string objectFilter = String.Format(preferredSearchPattern, property);
                 if (adObject.DirectoryObjectProperty == AzureADObjectProperty.Id)
                 {
                     Guid idGuid = new Guid();
                     if (!Guid.TryParse(input, out idGuid)) continue;
-                    else objectFilter = String.Format("{0} eq '{1}'", property, idGuid.ToString());
+                    else objectFilter = String.Format(ClaimsProviderConstants.SearchPatternEquals, property, idGuid.ToString());
                 }
 
                 string objectSelect = property;
@@ -1325,7 +1328,7 @@ namespace azurecp
             AzureADResult tenantResults = new AzureADResult();
             bool tryAgain = false;
             object lockAddResultToCollection = new object();
-            CancellationTokenSource cts = new CancellationTokenSource(Constants.timeout);
+            CancellationTokenSource cts = new CancellationTokenSource(ClaimsProviderConstants.timeout);
             try
             {
                 using (new SPMonitoredScope($"[{ProviderInternalName}] Querying Azure AD tenant '{coco.TenantName}' for users/groups/domains, with input '{requestInfo.Input}'", 1000))
@@ -1381,13 +1384,13 @@ namespace azurecp
                         AzureCPLogging.LogDebug($"[{ProviderInternalName}] DomainQueryTask ended for tenant '{coco.TenantName}'");
                     }, cts.Token);
 
-                    Task.WaitAll(new Task[3] { userQueryTask, groupQueryTask, domainQueryTask }, Constants.timeout, cts.Token);
+                    Task.WaitAll(new Task[3] { userQueryTask, groupQueryTask, domainQueryTask }, ClaimsProviderConstants.timeout, cts.Token);
                     //await Task.WhenAll(userQueryTask, groupQueryTask).ConfigureAwait(false);
                 }
             }
             catch (OperationCanceledException)
             {
-                AzureCPLogging.Log($"[{ProviderInternalName}] Query on Azure AD tenant '{coco.TenantName}' exceeded timeout of {Constants.timeout} ms and was cancelled.", TraceSeverity.Unexpected, EventSeverity.Error, TraceCategory.Lookup);
+                AzureCPLogging.Log($"[{ProviderInternalName}] Query on Azure AD tenant '{coco.TenantName}' exceeded timeout of {ClaimsProviderConstants.timeout} ms and was cancelled.", TraceSeverity.Unexpected, EventSeverity.Error, TraceCategory.Lookup);
                 tryAgain = true;
             }
             catch (AggregateException ex)
@@ -1451,7 +1454,7 @@ namespace azurecp
                             TraceSeverity.Unexpected, EventSeverity.Warning, TraceCategory.Lookup);
                         continue;
                     }
-                    if (String.Equals(userType, Constants.GraphUserType.Guest, StringComparison.InvariantCultureIgnoreCase))
+                    if (String.Equals(userType, ClaimsProviderConstants.GraphUserType.Guest, StringComparison.InvariantCultureIgnoreCase))
                     {
                         string mail = GetGraphPropertyValue(userOrGroup, "Mail");
                         if (String.IsNullOrEmpty(mail))

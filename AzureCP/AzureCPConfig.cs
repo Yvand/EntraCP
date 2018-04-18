@@ -26,7 +26,7 @@ namespace azurecp
         bool EnableAugmentation { get; set; }
     }
 
-    public class Constants
+    public class ClaimsProviderConstants
     {
         public class GraphUserType
         {
@@ -44,6 +44,9 @@ namespace azurecp
 #else
         public const int timeout = 10000;    // 10 secs
 #endif
+
+        public static string SearchPatternEquals = "{0} eq '{1}'";
+        public static string SearchPatternStartsWith = "startswith({0},'{1}')";
     }
 
     public class AzureCPConfig : SPPersistedObject, IAzureCPConfiguration
@@ -137,7 +140,7 @@ namespace azurecp
             }
             catch (Exception ex)
             {
-                AzureCPLogging.Log(String.Format("Error while retrieving SPPersistedObject {0}: {1}", Constants.AZURECPCONFIG_NAME, ex.Message), TraceSeverity.Unexpected, EventSeverity.Error, TraceCategory.Core);
+                AzureCPLogging.Log(String.Format("Error while retrieving SPPersistedObject {0}: {1}", ClaimsProviderConstants.AZURECPCONFIG_NAME, ex.Message), TraceSeverity.Unexpected, EventSeverity.Error, TraceCategory.Core);
             }
             return null;
         }
@@ -314,9 +317,6 @@ namespace azurecp
         [Persisted]
         public string TenantName;
 
-        //[Persisted]
-        //public string TenantId;
-
         [Persisted]
         public string ClientId;
 
@@ -347,7 +347,6 @@ namespace azurecp
             AzureTenant copy = new AzureTenant()
             {
                 TenantName = this.TenantName,
-                //TenantId = this.TenantId,
                 ClientId = this.ClientId,
                 ClientSecret = this.ClientSecret,
                 MemberUserTypeOnly = this.MemberUserTypeOnly,
