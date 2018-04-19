@@ -93,7 +93,7 @@ namespace azurecp
         [Persisted]
         private string _EntityDataKey;
 
-        
+
 
         /// <summary>
         /// Stores property SPTrustedClaimTypeInformation.DisplayName of current claim type.
@@ -117,7 +117,7 @@ namespace azurecp
         [Persisted]
         private string _ClaimValueType = WIF.ClaimValueTypes.String;
 
-        
+
 
         /// <summary>
         /// If set, its value can be used as a prefix in the people picker to create a permission without actually quyerying Azure AD
@@ -147,7 +147,7 @@ namespace azurecp
             set { _FilterExactMatchOnly = value; }
         }
         [Persisted]
-        private bool _FilterExactMatchOnly = false;        
+        private bool _FilterExactMatchOnly = false;
 
         /// <summary>
         /// This azureObject is not intended to be used or modified in your code
@@ -224,7 +224,7 @@ namespace azurecp
 
         public void Add(ClaimTypeConfig item)
         {
-            if (item.DirectoryObjectProperty == AzureADObjectProperty.None /*|| item.DirectoryObjectType == null*/)
+            if (item.DirectoryObjectProperty == AzureADObjectProperty.None)
             {
                 throw new InvalidOperationException($"Properties LDAPAttribute and LDAPClass are required");
             }
@@ -255,6 +255,14 @@ namespace azurecp
                     throw new InvalidOperationException($"This configuration with LDAP attribute '{item.DirectoryObjectProperty}' and class '{item.DirectoryObjectType}' already exists in the collection");
                 else
                     throw new InvalidOperationException($"This configuration with claim type '{item.ClaimType}' already exists in the collection");
+            }
+
+            if (ClaimsProviderConstants.EnforceOnly1ClaimTypeForGroup && item.DirectoryObjectType == AzureADObjectType.Group)
+            {
+                if (Contains(item, new ClaimTypeConfigEnforeOnly1ClaimTypePerObjectType()))
+                {
+                    throw new InvalidOperationException($"A claim type for DirectoryObjectType '{AzureADObjectType.Group.ToString()}' already exists in the collection");
+                }
             }
 
             innerCol.Add(item);
@@ -498,6 +506,32 @@ namespace azurecp
         public override int GetHashCode(ClaimTypeConfig ct)
         {
             string hCode = ct.ClaimType + ct.DirectoryObjectProperty + ct.DirectoryObjectType;
+            return hCode.GetHashCode();
+        }
+    }
+
+    /// <summary>
+    /// Only used to allow only 1 claim type per DirectoryObjectType
+    /// </summary>
+    internal class ClaimTypeConfigEnforeOnly1ClaimTypePerObjectType : EqualityComparer<ClaimTypeConfig>
+    {
+        public override bool Equals(ClaimTypeConfig ct1, ClaimTypeConfig ct2)
+        {
+            if (ct1.DirectoryObjectType == ct2.DirectoryObjectType &&
+                ct1.UseMainClaimTypeOfDirectoryObject == ct2.UseMainClaimTypeOfDirectoryObject &&
+                ct2.UseMainClaimTypeOfDirectoryObject == false)
+            {
+                return true;
+            }
+            else
+            {
+                return false;
+            }
+        }
+
+        public override int GetHashCode(ClaimTypeConfig ct)
+        {
+            string hCode = ct.DirectoryObjectType + ct.UseMainClaimTypeOfDirectoryObject.ToString();
             return hCode.GetHashCode();
         }
     }

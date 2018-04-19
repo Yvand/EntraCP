@@ -263,42 +263,10 @@ namespace azurecp
                     return false;
                 }
 
-                // This check is to find if there is a duplicate of the identity claim type that uses the same GraphProperty
-                //AzureADObject objectToDelete = claimTypesSetInTrust.Find(x =>
-                //    !String.Equals(x.ClaimType, SPTrust.IdentityClaimTypeInformation.MappedClaimType, StringComparison.InvariantCultureIgnoreCase) &&
-                //    !x.UseMainClaimTypeOfDirectoryObject &&
-                //    x.GraphProperty == GraphProperty.UserPrincipalName);
-                //if (objectToDelete != null) claimTypesSetInTrust.Remove(objectToDelete);
-
                 // Check if there are objects that should be always queried (UseMainClaimTypeOfDirectoryObject) to add in the list
                 List<ClaimTypeConfig> additionalClaimTypeConfigList = new List<ClaimTypeConfig>();
                 foreach (ClaimTypeConfig claimTypeConfig in nonProcessedClaimTypes.Where(x => x.UseMainClaimTypeOfDirectoryObject))
                 {
-                    //// Check if identity claim type is already using same GraphProperty, and ignore current object if so
-                    //if (IdentityClaimTypeConfig.DirectoryObjectProperty == claimTypeConfig.DirectoryObjectProperty) continue;
-
-                    //// Normally ClaimType should be null if UseMainClaimTypeOfDirectoryObject is set to true, but we check here it and handle this scenario
-                    //if (!String.IsNullOrEmpty(claimTypeConfig.ClaimType))
-                    //{
-                    //    if (String.Equals(SPTrust.IdentityClaimTypeInformation.MappedClaimType, claimTypeConfig.ClaimType))
-                    //    {
-                    //        // Not a big deal since it's set with identity claim type, so no inconsistent behavior to expect, just record an information
-                    //        AzureCPLogging.Log(String.Format("[{0}] Object with GraphProperty {1} is set with UseMainClaimTypeOfDirectoryObject to true and ClaimType {2}. Remove ClaimType property as it is useless.", ProviderInternalName, claimTypeConfig.DirectoryObjectProperty, claimTypeConfig.ClaimType), TraceSeverity.Monitorable, EventSeverity.Information, TraceCategory.Core);
-                    //    }
-                    //    else if (claimTypesSetInTrust.Count(x => String.Equals(x.ClaimType, claimTypeConfig.ClaimType)) > 0)
-                    //    {
-                    //        // Same claim type already exists with UseMainClaimTypeOfDirectoryObject == false. 
-                    //        // Current object is a bad one and shouldn't be added. Don't add it but continue to build objects list
-                    //        AzureCPLogging.Log(String.Format("[{0}] Claim type {1} is defined twice with UseMainClaimTypeOfDirectoryObject set to true and false, which is invalid. Remove entry with UseMainClaimTypeOfDirectoryObject set to true.", ProviderInternalName, claimTypeConfig.ClaimType), TraceSeverity.Monitorable, EventSeverity.Information, TraceCategory.Core);
-                    //        continue;
-                    //    }
-                    //}
-
-                    //claimTypeConfig.ClaimType = SPTrust.IdentityClaimTypeInformation.MappedClaimType;    // Give those objects the identity claim type
-                    ////claimTypeConfig.ClaimEntityType = SPClaimEntityTypes.User;
-                    //claimTypeConfig.DirectoryObjectPropertyToShowAsDisplayText = IdentityClaimTypeConfig.DirectoryObjectPropertyToShowAsDisplayText; // Must be set otherwise display text of permissions will be inconsistent
-                    //additionalClaimTypeConfigList.Add(claimTypeConfig);
-
                     if (claimTypeConfig.DirectoryObjectType == AzureADObjectType.User)
                     {
                         claimTypeConfig.ClaimType = IdentityClaimTypeConfig.ClaimType;

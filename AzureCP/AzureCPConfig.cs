@@ -48,6 +48,7 @@ namespace azurecp
         public const string SearchPatternEquals = "{0} eq '{1}'";
         public const string SearchPatternStartsWith = "startswith({0},'{1}')";
         public static string GroupClaimEntityType = SPClaimEntityTypes.FormsRole;
+        public const bool EnforceOnly1ClaimTypeForGroup = true;
     }
 
     public class AzureCPConfig : SPPersistedObject, IAzureCPConfiguration
@@ -272,7 +273,6 @@ namespace azurecp
             {
                 // By default ACS issues those 3 claim types: ClaimTypes.Name ClaimTypes.GivenName and ClaimTypes.Surname.
                 // But ClaimTypes.Name (http://schemas.xmlsoap.org/ws/2005/05/identity/claims/name) is a reserved claim type in SharePoint that cannot be used in the SPTrust.
-                //new AzureADObject{GraphProperty=GraphProperty.UserPrincipalName, ClaimType=WIF.ClaimTypes.Name, ClaimEntityType=SPClaimEntityTypes.User},//yvand@TENANTNAME.onmicrosoft.com
 
                 // Alternatives claim types to ClaimTypes.Name that might be used as identity claim types:
                 new ClaimTypeConfig{DirectoryObjectProperty=AzureADObjectProperty.UserPrincipalName, ClaimType=WIF.ClaimTypes.Upn, DirectoryObjectType = AzureADObjectType.User},
@@ -290,9 +290,9 @@ namespace azurecp
                 new ClaimTypeConfig{DirectoryObjectProperty=AzureADObjectProperty.Department, DirectoryObjectType = AzureADObjectType.User, EntityDataKey=PeopleEditorEntityDataKeys.Department},
                 new ClaimTypeConfig{DirectoryObjectProperty=AzureADObjectProperty.OfficeLocation, DirectoryObjectType = AzureADObjectType.User, EntityDataKey=PeopleEditorEntityDataKeys.Location},
 
-                // Role
-                //new ClaimTypeConfig{DirectoryObjectProperty=AzureADObjectProperty.Id, ClaimType=WIF.ClaimTypes.Role, DirectoryObjectType = AzureADObjectType.Group, DirectoryObjectPropertyToShowAsDisplayText=AzureADObjectProperty.DisplayName},
-                new ClaimTypeConfig{DirectoryObjectProperty=AzureADObjectProperty.DisplayName, ClaimType=WIF.ClaimTypes.Role, DirectoryObjectType = AzureADObjectType.Group, DirectoryObjectPropertyToShowAsDisplayText=AzureADObjectProperty.DisplayName},
+                // Group
+                new ClaimTypeConfig{DirectoryObjectProperty=AzureADObjectProperty.Id, ClaimType=WIF.ClaimTypes.Role, DirectoryObjectType = AzureADObjectType.Group, DirectoryObjectPropertyToShowAsDisplayText=AzureADObjectProperty.DisplayName},
+                new ClaimTypeConfig{DirectoryObjectProperty=AzureADObjectProperty.DisplayName, DirectoryObjectType = AzureADObjectType.Group, UseMainClaimTypeOfDirectoryObject = true},
             };
         }
 
