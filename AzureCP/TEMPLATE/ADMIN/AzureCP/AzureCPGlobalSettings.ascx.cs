@@ -65,7 +65,7 @@ namespace azurecp.ControlTemplates
                 return;
             }
 
-            //this.IdentityClaim = PersistedObject.AzureADObjects.Find(x => String.Equals(CurrentTrustedLoginProvider.IdentityClaimTypeInformation.MappedClaimType, x.ClaimType, StringComparison.InvariantCultureIgnoreCase) && !x.CreateAsIdentityClaim);
+            //this.IdentityClaim = PersistedObject.AzureADObjects.Find(x => String.Equals(CurrentTrustedLoginProvider.IdentityClaimTypeInformation.MappedClaimType, x.ClaimType, StringComparison.InvariantCultureIgnoreCase) && !x.UseMainClaimTypeOfDirectoryObject);
             //if (null == this.IdentityClaim)
             //{
             //    // Identity claim type is missing in the attributes list

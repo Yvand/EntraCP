@@ -62,7 +62,7 @@ namespace azurecp
         /// <summary>
         /// If set to true, property ClaimType should not be set
         /// </summary>
-        public bool CreateAsIdentityClaim
+        public bool UseMainClaimTypeOfDirectoryObject
         {
             get { return _CreateAsIdentityClaim; }
             set { _CreateAsIdentityClaim = value; }
@@ -229,14 +229,14 @@ namespace azurecp
                 throw new InvalidOperationException($"Properties LDAPAttribute and LDAPClass are required");
             }
 
-            if (item.CreateAsIdentityClaim && !String.IsNullOrEmpty(item.ClaimType))
+            if (item.UseMainClaimTypeOfDirectoryObject && !String.IsNullOrEmpty(item.ClaimType))
             {
-                throw new InvalidOperationException($"No claim type should be set if CreateAsIdentityClaim is set to true");
+                throw new InvalidOperationException($"No claim type should be set if UseMainClaimTypeOfDirectoryObject is set to true");
             }
 
-            if (!item.CreateAsIdentityClaim && String.IsNullOrEmpty(item.ClaimType) && String.IsNullOrEmpty(item.EntityDataKey))
+            if (!item.UseMainClaimTypeOfDirectoryObject && String.IsNullOrEmpty(item.ClaimType) && String.IsNullOrEmpty(item.EntityDataKey))
             {
-                throw new InvalidOperationException($"EntityDataKey is required if ClaimType is empty and CreateAsIdentityClaim is set to false");
+                throw new InvalidOperationException($"EntityDataKey is required if ClaimType is empty and UseMainClaimTypeOfDirectoryObject is set to false");
             }
 
             if (Contains(item, new ClaimTypeConfigSamePermissionMetadata()))

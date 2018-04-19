@@ -161,7 +161,7 @@ namespace azurecp.ControlTemplates
                         html = String.Format(HtmlCellClaimType, attr.Value.ClaimType, attr.Key);
                         c = GetTableCell(html);
                         allowEditItem = true;
-                        if (String.Equals(CurrentTrustedLoginProvider.IdentityClaimTypeInformation.MappedClaimType, attr.Value.ClaimType, StringComparison.InvariantCultureIgnoreCase) && !attr.Value.CreateAsIdentityClaim)
+                        if (String.Equals(CurrentTrustedLoginProvider.IdentityClaimTypeInformation.MappedClaimType, attr.Value.ClaimType, StringComparison.InvariantCultureIgnoreCase) && !attr.Value.UseMainClaimTypeOfDirectoryObject)
                         {
                             tr.CssClass = "azurecp-rowidentityclaim";
                             identityClaimPresent = true;
@@ -182,7 +182,7 @@ namespace azurecp.ControlTemplates
                     }
                     else
                     {
-                        c = GetTableCell(attr.Value.CreateAsIdentityClaim ? "linked to identity claim" : "Used as metadata for the permission created");
+                        c = GetTableCell(attr.Value.UseMainClaimTypeOfDirectoryObject ? "linked to identity claim" : "Used as metadata for the permission created");
                     }
                     tr.Cells.Add(c);
 
@@ -466,7 +466,7 @@ namespace azurecp.ControlTemplates
                     return;
                 }
             }
-            else azureObject.CreateAsIdentityClaim = true;
+            else azureObject.UseMainClaimTypeOfDirectoryObject = true;
 
             if (!String.IsNullOrEmpty(New_DdlPermissionMetadata.SelectedValue) && !ClaimsMapping.FirstOrDefault(x => String.Equals(x.Value.EntityDataKey, New_DdlPermissionMetadata.SelectedValue, StringComparison.InvariantCultureIgnoreCase)).Equals(default(KeyValuePair<int, ClaimTypeConfig>)))
             {

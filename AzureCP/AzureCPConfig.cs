@@ -45,8 +45,9 @@ namespace azurecp
         public const int timeout = 10000;    // 10 secs
 #endif
 
-        public static string SearchPatternEquals = "{0} eq '{1}'";
-        public static string SearchPatternStartsWith = "startswith({0},'{1}')";
+        public const string SearchPatternEquals = "{0} eq '{1}'";
+        public const string SearchPatternStartsWith = "startswith({0},'{1}')";
+        public static string GroupClaimEntityType = SPClaimEntityTypes.FormsRole;
     }
 
     public class AzureCPConfig : SPPersistedObject, IAzureCPConfiguration
@@ -278,11 +279,11 @@ namespace azurecp
                 new ClaimTypeConfig{DirectoryObjectProperty=AzureADObjectProperty.UserPrincipalName, ClaimType=WIF.ClaimTypes.Email, DirectoryObjectType = AzureADObjectType.User},
 
                 // Additional properties to find user
-                new ClaimTypeConfig{DirectoryObjectProperty=AzureADObjectProperty.DisplayName, CreateAsIdentityClaim=true, DirectoryObjectType = AzureADObjectType.User, EntityDataKey=PeopleEditorEntityDataKeys.DisplayName},
-                new ClaimTypeConfig{DirectoryObjectProperty=AzureADObjectProperty.GivenName, CreateAsIdentityClaim=true, DirectoryObjectType = AzureADObjectType.User},//Yvan
-                new ClaimTypeConfig{DirectoryObjectProperty=AzureADObjectProperty.Surname, CreateAsIdentityClaim=true, DirectoryObjectType = AzureADObjectType.User},//Duhamel
+                new ClaimTypeConfig{DirectoryObjectProperty=AzureADObjectProperty.DisplayName, UseMainClaimTypeOfDirectoryObject=true, DirectoryObjectType = AzureADObjectType.User, EntityDataKey=PeopleEditorEntityDataKeys.DisplayName},
+                new ClaimTypeConfig{DirectoryObjectProperty=AzureADObjectProperty.GivenName, UseMainClaimTypeOfDirectoryObject=true, DirectoryObjectType = AzureADObjectType.User},//Yvan
+                new ClaimTypeConfig{DirectoryObjectProperty=AzureADObjectProperty.Surname, UseMainClaimTypeOfDirectoryObject=true, DirectoryObjectType = AzureADObjectType.User},//Duhamel
 
-                // Retrieve additional properties to populate metadata in SharePoint (no claim type and CreateAsIdentityClaim = false)
+                // Retrieve additional properties to populate metadata in SharePoint (no claim type and UseMainClaimTypeOfDirectoryObject = false)
                 new ClaimTypeConfig{DirectoryObjectProperty=AzureADObjectProperty.Mail, DirectoryObjectType = AzureADObjectType.User, EntityDataKey=PeopleEditorEntityDataKeys.Email},
                 new ClaimTypeConfig{DirectoryObjectProperty=AzureADObjectProperty.MobilePhone, DirectoryObjectType = AzureADObjectType.User, EntityDataKey=PeopleEditorEntityDataKeys.MobilePhone},
                 new ClaimTypeConfig{DirectoryObjectProperty=AzureADObjectProperty.JobTitle, DirectoryObjectType = AzureADObjectType.User, EntityDataKey=PeopleEditorEntityDataKeys.JobTitle},
@@ -456,7 +457,10 @@ namespace azurecp
             if (this.IncomingEntity == null) throw new ArgumentNullException("claimToValidate");
             this.IdentityClaimTypeConfig = FindClaimsSetting(processedClaimTypeConfigList, this.IncomingEntity.ClaimType);
             if (this.IdentityClaimTypeConfig == null) return;
-            this.ClaimTypeConfigList = new List<ClaimTypeConfig>() { this.IdentityClaimTypeConfig };
+            //this.ClaimTypeConfigList = new List<ClaimTypeConfig>() { this.IdentityClaimTypeConfig };
+            this.ClaimTypeConfigList = processedClaimTypeConfigList.Where(x =>
+                String.Equals(x.ClaimType, this.IncomingEntity.ClaimType, StringComparison.InvariantCultureIgnoreCase)
+                && !x.UseMainClaimTypeOfDirectoryObject).ToList();
             this.ExactSearch = true;
             this.Input = this.IncomingEntity.Value;
         }
@@ -496,7 +500,7 @@ namespace azurecp
         {
             var claimsSettings = processedClaimTypeConfigList.FindAll(x =>
                 String.Equals(x.ClaimType, claimType, StringComparison.InvariantCultureIgnoreCase)
-                && !x.CreateAsIdentityClaim);
+                && !x.UseMainClaimTypeOfDirectoryObject);
             if (claimsSettings.Count != 1)
             {
                 // Should always find only 1 attribute at this stage

@@ -55,6 +55,8 @@ namespace azurecp
         /// </summary>
         ClaimTypeConfig IdentityClaimTypeConfig;
 
+        ClaimTypeConfig MainGroupClaimTypeConfig;
+
         /// <summary>
         /// Processed list to use. It is guarranted to never contain an empty ClaimType
         /// </summary>
@@ -226,20 +228,17 @@ namespace azurecp
             try
             {
                 bool identityClaimTypeFound = false;
-                // Get attributes defined in trust based on their claim type (unique way to map them)
+                bool groupClaimTypeFound = false;
+                //ClaimTypeConfig MainGroupClaimTypeConfig = null;
+                // Get claim types defined in SPTrustedLoginProvider based on their claim type (unique way to map them)
                 List<ClaimTypeConfig> claimTypesSetInTrust = new List<ClaimTypeConfig>();
-                // There is a bug in the SharePoint API: SPTrustedLoginProvider.ClaimTypes should retrieve SPTrustedClaimTypeInformation.MappedClaimType, but it returns SPTrustedClaimTypeInformation.InputClaimType instead, so we cannot rely on it
-                //foreach (var attr in _AttributesDefinitionList.Where(x => AssociatedSPTrustedLoginProvider.ClaimTypes.Contains(x.claimType)))
-                //{
-                //    attributesDefinedInTrust.Add(attr);
-                //}
                 foreach (SPTrustedClaimTypeInformation claimTypeInformation in SPTrust.ClaimTypeInformation)
                 {
                     // Search if current claim type in trust exists in AzureADObjects
                     // List<T>.FindAll returns an empty list if no result found: http://msdn.microsoft.com/en-us/library/fh1w7y8z(v=vs.110).aspx
                     ClaimTypeConfig claimTypeConfig = nonProcessedClaimTypes.FirstOrDefault(x =>
                         String.Equals(x.ClaimType, claimTypeInformation.MappedClaimType, StringComparison.InvariantCultureIgnoreCase) &&
-                        !x.CreateAsIdentityClaim &&
+                        !x.UseMainClaimTypeOfDirectoryObject &&
                         x.DirectoryObjectProperty != AzureADObjectProperty.None);
 
                     if (claimTypeConfig == null) continue;
@@ -249,6 +248,11 @@ namespace azurecp
                         // Identity claim type found, set IdentityAzureADObject property
                         identityClaimTypeFound = true;
                         IdentityClaimTypeConfig = claimTypeConfig;
+                    }
+                    else if (claimTypeConfig.DirectoryObjectType == AzureADObjectType.Group && !groupClaimTypeFound)
+                    {
+                        groupClaimTypeFound = true;
+                        MainGroupClaimTypeConfig = claimTypeConfig;
                     }
                 }
 
@@ -262,37 +266,50 @@ namespace azurecp
                 // This check is to find if there is a duplicate of the identity claim type that uses the same GraphProperty
                 //AzureADObject objectToDelete = claimTypesSetInTrust.Find(x =>
                 //    !String.Equals(x.ClaimType, SPTrust.IdentityClaimTypeInformation.MappedClaimType, StringComparison.InvariantCultureIgnoreCase) &&
-                //    !x.CreateAsIdentityClaim &&
+                //    !x.UseMainClaimTypeOfDirectoryObject &&
                 //    x.GraphProperty == GraphProperty.UserPrincipalName);
                 //if (objectToDelete != null) claimTypesSetInTrust.Remove(objectToDelete);
 
-                // Check if there are objects that should be always queried (CreateAsIdentityClaim) to add in the list
+                // Check if there are objects that should be always queried (UseMainClaimTypeOfDirectoryObject) to add in the list
                 List<ClaimTypeConfig> additionalClaimTypeConfigList = new List<ClaimTypeConfig>();
-                foreach (ClaimTypeConfig claimTypeConfig in nonProcessedClaimTypes.Where(x => x.CreateAsIdentityClaim))// && !claimTypesSetInTrust.Contains(x, new LDAPPropertiesComparer())))
+                foreach (ClaimTypeConfig claimTypeConfig in nonProcessedClaimTypes.Where(x => x.UseMainClaimTypeOfDirectoryObject))
                 {
-                    // Check if identity claim type is already using same GraphProperty, and ignore current object if so
-                    if (IdentityClaimTypeConfig.DirectoryObjectProperty == claimTypeConfig.DirectoryObjectProperty) continue;
+                    //// Check if identity claim type is already using same GraphProperty, and ignore current object if so
+                    //if (IdentityClaimTypeConfig.DirectoryObjectProperty == claimTypeConfig.DirectoryObjectProperty) continue;
 
-                    // Normally ClaimType should be null if CreateAsIdentityClaim is set to true, but we check here it and handle this scenario
-                    if (!String.IsNullOrEmpty(claimTypeConfig.ClaimType))
+                    //// Normally ClaimType should be null if UseMainClaimTypeOfDirectoryObject is set to true, but we check here it and handle this scenario
+                    //if (!String.IsNullOrEmpty(claimTypeConfig.ClaimType))
+                    //{
+                    //    if (String.Equals(SPTrust.IdentityClaimTypeInformation.MappedClaimType, claimTypeConfig.ClaimType))
+                    //    {
+                    //        // Not a big deal since it's set with identity claim type, so no inconsistent behavior to expect, just record an information
+                    //        AzureCPLogging.Log(String.Format("[{0}] Object with GraphProperty {1} is set with UseMainClaimTypeOfDirectoryObject to true and ClaimType {2}. Remove ClaimType property as it is useless.", ProviderInternalName, claimTypeConfig.DirectoryObjectProperty, claimTypeConfig.ClaimType), TraceSeverity.Monitorable, EventSeverity.Information, TraceCategory.Core);
+                    //    }
+                    //    else if (claimTypesSetInTrust.Count(x => String.Equals(x.ClaimType, claimTypeConfig.ClaimType)) > 0)
+                    //    {
+                    //        // Same claim type already exists with UseMainClaimTypeOfDirectoryObject == false. 
+                    //        // Current object is a bad one and shouldn't be added. Don't add it but continue to build objects list
+                    //        AzureCPLogging.Log(String.Format("[{0}] Claim type {1} is defined twice with UseMainClaimTypeOfDirectoryObject set to true and false, which is invalid. Remove entry with UseMainClaimTypeOfDirectoryObject set to true.", ProviderInternalName, claimTypeConfig.ClaimType), TraceSeverity.Monitorable, EventSeverity.Information, TraceCategory.Core);
+                    //        continue;
+                    //    }
+                    //}
+
+                    //claimTypeConfig.ClaimType = SPTrust.IdentityClaimTypeInformation.MappedClaimType;    // Give those objects the identity claim type
+                    ////claimTypeConfig.ClaimEntityType = SPClaimEntityTypes.User;
+                    //claimTypeConfig.DirectoryObjectPropertyToShowAsDisplayText = IdentityClaimTypeConfig.DirectoryObjectPropertyToShowAsDisplayText; // Must be set otherwise display text of permissions will be inconsistent
+                    //additionalClaimTypeConfigList.Add(claimTypeConfig);
+
+                    if (claimTypeConfig.DirectoryObjectType == AzureADObjectType.User)
                     {
-                        if (String.Equals(SPTrust.IdentityClaimTypeInformation.MappedClaimType, claimTypeConfig.ClaimType))
-                        {
-                            // Not a big deal since it's set with identity claim type, so no inconsistent behavior to expect, just record an information
-                            AzureCPLogging.Log(String.Format("[{0}] Object with GraphProperty {1} is set with CreateAsIdentityClaim to true and ClaimType {2}. Remove ClaimType property as it is useless.", ProviderInternalName, claimTypeConfig.DirectoryObjectProperty, claimTypeConfig.ClaimType), TraceSeverity.Monitorable, EventSeverity.Information, TraceCategory.Core);
-                        }
-                        else if (claimTypesSetInTrust.Count(x => String.Equals(x.ClaimType, claimTypeConfig.ClaimType)) > 0)
-                        {
-                            // Same claim type already exists with CreateAsIdentityClaim == false. 
-                            // Current object is a bad one and shouldn't be added. Don't add it but continue to build objects list
-                            AzureCPLogging.Log(String.Format("[{0}] Claim type {1} is defined twice with CreateAsIdentityClaim set to true and false, which is invalid. Remove entry with CreateAsIdentityClaim set to true.", ProviderInternalName, claimTypeConfig.ClaimType), TraceSeverity.Monitorable, EventSeverity.Information, TraceCategory.Core);
-                            continue;
-                        }
+                        claimTypeConfig.ClaimType = IdentityClaimTypeConfig.ClaimType;
+                        claimTypeConfig.DirectoryObjectPropertyToShowAsDisplayText = IdentityClaimTypeConfig.DirectoryObjectPropertyToShowAsDisplayText;
                     }
-
-                    claimTypeConfig.ClaimType = SPTrust.IdentityClaimTypeInformation.MappedClaimType;    // Give those objects the identity claim type
-                    //claimTypeConfig.ClaimEntityType = SPClaimEntityTypes.User;
-                    claimTypeConfig.DirectoryObjectPropertyToShowAsDisplayText = IdentityClaimTypeConfig.DirectoryObjectPropertyToShowAsDisplayText; // Must be set otherwise display text of permissions will be inconsistent
+                    else
+                    {
+                        // If not a user, it must be a group
+                        claimTypeConfig.ClaimType = MainGroupClaimTypeConfig.ClaimType;
+                        claimTypeConfig.DirectoryObjectPropertyToShowAsDisplayText = MainGroupClaimTypeConfig.DirectoryObjectPropertyToShowAsDisplayText;
+                    }
                     additionalClaimTypeConfigList.Add(claimTypeConfig);
                 }
 
@@ -439,38 +456,46 @@ namespace azurecp
             SPClaim claim;
             string permissionValue = result.PermissionValue;
             string permissionClaimType = result.ClaimTypeConfig.ClaimType;
-            bool isIdentityClaimType = false;
+            bool isMappedClaimTypeConfig = false;
 
-            if (String.Equals(result.ClaimTypeConfig.ClaimType, SPTrust.IdentityClaimTypeInformation.MappedClaimType, StringComparison.InvariantCultureIgnoreCase)
-                || result.ClaimTypeConfig.CreateAsIdentityClaim)
+            if (String.Equals(result.ClaimTypeConfig.ClaimType, IdentityClaimTypeConfig.ClaimType, StringComparison.InvariantCultureIgnoreCase)
+                || result.ClaimTypeConfig.UseMainClaimTypeOfDirectoryObject)
             {
-                isIdentityClaimType = true;
+                isMappedClaimTypeConfig = true;
             }
 
-            if (result.ClaimTypeConfig.CreateAsIdentityClaim)
+            if (result.ClaimTypeConfig.UseMainClaimTypeOfDirectoryObject)
             {
-                // This azureObject is not directly linked to a claim type, so permission is created with identity claim type
-                permissionClaimType = IdentityClaimTypeConfig.ClaimType;
-                permissionValue = FormatPermissionValue(permissionClaimType, permissionValue, isIdentityClaimType, result);
+                string claimValueType;
+                if (result.ClaimTypeConfig.DirectoryObjectType == AzureADObjectType.User)
+                {
+                    permissionClaimType = IdentityClaimTypeConfig.ClaimType;
+                    pe.EntityType = SPClaimEntityTypes.User;
+                    claimValueType = IdentityClaimTypeConfig.ClaimValueType;
+                }
+                else
+                {
+                    permissionClaimType = MainGroupClaimTypeConfig.ClaimType;
+                    pe.EntityType = ClaimsProviderConstants.GroupClaimEntityType;
+                    claimValueType = MainGroupClaimTypeConfig.ClaimValueType;
+                }
+                permissionValue = FormatPermissionValue(permissionClaimType, permissionValue, isMappedClaimTypeConfig, result);
                 claim = CreateClaim(
                     permissionClaimType,
                     permissionValue,
-                    IdentityClaimTypeConfig.ClaimValueType);
-                //pe.EntityType = IdentityClaimTypeConfig.ClaimEntityType;
-                pe.EntityType = SPClaimEntityTypes.User;
+                    claimValueType);
             }
             else
             {
-                permissionValue = FormatPermissionValue(permissionClaimType, permissionValue, isIdentityClaimType, result);
+                permissionValue = FormatPermissionValue(permissionClaimType, permissionValue, isMappedClaimTypeConfig, result);
                 claim = CreateClaim(
                     permissionClaimType,
                     permissionValue,
                     result.ClaimTypeConfig.ClaimValueType);
-                //pe.EntityType = result.ClaimTypeConfig.ClaimEntityType;
-                pe.EntityType = result.ClaimTypeConfig.DirectoryObjectType == AzureADObjectType.User ? SPClaimEntityTypes.User : SPClaimEntityTypes.FormsRole;
+                pe.EntityType = result.ClaimTypeConfig.DirectoryObjectType == AzureADObjectType.User ? SPClaimEntityTypes.User : ClaimsProviderConstants.GroupClaimEntityType;
             }
 
-            pe.DisplayText = FormatPermissionDisplayText(permissionClaimType, permissionValue, isIdentityClaimType, result);
+            pe.DisplayText = FormatPermissionDisplayText(permissionClaimType, permissionValue, isMappedClaimTypeConfig, result);
             pe.Description = String.Format(
                 PickerEntityOnMouseOver,
                 result.ClaimTypeConfig.DirectoryObjectProperty.ToString(),
@@ -571,7 +596,7 @@ namespace azurecp
                 PickerEntity pe = CreatePickerEntity();
                 SPClaim claim = CreateClaim(claimTypeToResolve.ClaimType, input, claimTypeToResolve.ClaimValueType);
 
-                if (String.Equals(claim.ClaimType, SPTrust.IdentityClaimTypeInformation.MappedClaimType, StringComparison.InvariantCultureIgnoreCase))
+                if (String.Equals(claim.ClaimType, IdentityClaimTypeConfig.ClaimType, StringComparison.InvariantCultureIgnoreCase))
                 {
                     pe.DisplayText = input;
                 }
@@ -583,8 +608,7 @@ namespace azurecp
                         input);
                 }
 
-                //pe.EntityType = claimTypeToResolve.ClaimEntityType;
-                pe.EntityType = claimTypeToResolve.DirectoryObjectType == AzureADObjectType.User ? SPClaimEntityTypes.User : SPClaimEntityTypes.FormsRole;
+                pe.EntityType = claimTypeToResolve.DirectoryObjectType == AzureADObjectType.User ? SPClaimEntityTypes.User : ClaimsProviderConstants.GroupClaimEntityType;
                 pe.Description = String.Format(
                     PickerEntityOnMouseOver,
                     claimTypeToResolve.DirectoryObjectProperty.ToString(),
@@ -594,14 +618,13 @@ namespace azurecp
                 pe.IsResolved = true;
                 //pe.EntityGroupName = "";
 
-                //if (claimTypeToResolve.ClaimEntityType == SPClaimEntityTypes.User && !String.IsNullOrEmpty(claimTypeToResolve.EntityDataKey))
                 if (claimTypeToResolve.DirectoryObjectType == AzureADObjectType.User && !String.IsNullOrEmpty(claimTypeToResolve.EntityDataKey))
                 {
                     pe.EntityData[claimTypeToResolve.EntityDataKey] = pe.Claim.Value;
-                    AzureCPLogging.Log(String.Format("[{0}] Added metadata \"{1}\" with value \"{2}\" to permission", ProviderInternalName, claimTypeToResolve.EntityDataKey, pe.EntityData[claimTypeToResolve.EntityDataKey]), TraceSeverity.Verbose, EventSeverity.Information, TraceCategory.Claims_Picking);
+                    AzureCPLogging.Log($"[{ProviderInternalName}] Added metadata '{claimTypeToResolve.EntityDataKey}' with value '{pe.EntityData[claimTypeToResolve.EntityDataKey]}' to permission", TraceSeverity.Verbose, EventSeverity.Information, TraceCategory.Claims_Picking);
                 }
                 entities.Add(pe);
-                AzureCPLogging.Log(String.Format("[{0}] Created permission: display text: \"{1}\", value: \"{2}\", claim type: \"{3}\".", ProviderInternalName, pe.DisplayText, pe.Claim.Value, pe.Claim.ClaimType), TraceSeverity.Verbose, EventSeverity.Information, TraceCategory.Claims_Picking);
+                AzureCPLogging.Log($"[{ProviderInternalName}] Created permission: display text: '{pe.DisplayText}', value: '{pe.Claim.Value}', claim type: '{pe.Claim.ClaimType}'.", TraceSeverity.Verbose, EventSeverity.Information, TraceCategory.Claims_Picking);
             }
             return entities.Count > 0 ? entities : null;
         }
@@ -689,7 +712,6 @@ namespace azurecp
                     return;
 
                 AzureCPLogging.Log($"[{ProviderInternalName}] Starting augmentation for user '{decodedEntity.Value}'.", TraceSeverity.Verbose, EventSeverity.Information, TraceCategory.Augmentation);
-                //ClaimTypeConfig groupClaimTypeSettings = this.ProcessedClaimTypesList.FirstOrDefault(x => x.ClaimEntityType == SPClaimEntityTypes.FormsRole);
                 ClaimTypeConfig groupClaimTypeSettings = this.ProcessedClaimTypesList.FirstOrDefault(x => x.DirectoryObjectType == AzureADObjectType.Group);
                 if (groupClaimTypeSettings == null)
                 {
@@ -763,27 +785,13 @@ namespace azurecp
                 if (groups.NextPageRequest != null) groups = await groups.NextPageRequest.GetAsync().ConfigureAwait(false);
                 else continueProcess = false;
             }
-
-            //if (groups?.Count > 0)
-            //{
-            //    do
-            //    {
-            //        foreach (Group group in groups.OfType<Group>())
-            //        {
-            //            string groupClaimValue = GetGraphPropertyValue(group, groupAttribute.GraphProperty.ToString());
-            //            claims.Add(CreateClaim(groupAttribute.ClaimType, groupClaimValue, groupAttribute.ClaimValueType));
-            //        }
-            //        if (groups.NextPageRequest != null) groups = await groups.NextPageRequest.GetAsync().ConfigureAwait(false);
-            //    }
-            //    while (groups?.Count > 0 && groups.NextPageRequest != null);
-            //}
             return claims;
         }
 
         protected override void FillEntityTypes(List<string> entityTypes)
         {
             entityTypes.Add(SPClaimEntityTypes.User);
-            entityTypes.Add(SPClaimEntityTypes.FormsRole);
+            entityTypes.Add(ClaimsProviderConstants.GroupClaimEntityType);
         }
 
         protected override void FillHierarchy(Uri context, string[] entityTypes, string hierarchyNodeID, int numberOfLevels, Microsoft.SharePoint.WebControls.SPProviderHierarchyTree hierarchy)
@@ -791,7 +799,7 @@ namespace azurecp
             List<AzureADObjectType> aadEntityTypes = new List<AzureADObjectType>();
             if (entityTypes.Contains(SPClaimEntityTypes.User))
                 aadEntityTypes.Add(AzureADObjectType.User);
-            if (entityTypes.Contains(SPClaimEntityTypes.FormsRole))
+            if (entityTypes.Contains(ClaimsProviderConstants.GroupClaimEntityType))
                 aadEntityTypes.Add(AzureADObjectType.Group);
 
             if (!Initialize(context, entityTypes))
@@ -803,8 +811,8 @@ namespace azurecp
                 if (hierarchyNodeID == null)
                 {
                     // Root level
-                    //foreach (var azureObject in FinalAttributeList.Where(x => !String.IsNullOrEmpty(x.peoplePickerAttributeHierarchyNodeId) && !x.CreateAsIdentityClaim && entityTypes.Contains(x.ClaimEntityType)))
-                    foreach (var azureObject in this.ProcessedClaimTypesList.FindAll(x => !x.CreateAsIdentityClaim && aadEntityTypes.Contains(x.DirectoryObjectType)))
+                    //foreach (var azureObject in FinalAttributeList.Where(x => !String.IsNullOrEmpty(x.peoplePickerAttributeHierarchyNodeId) && !x.UseMainClaimTypeOfDirectoryObject && entityTypes.Contains(x.ClaimEntityType)))
+                    foreach (var azureObject in this.ProcessedClaimTypesList.FindAll(x => !x.UseMainClaimTypeOfDirectoryObject && aadEntityTypes.Contains(x.DirectoryObjectType)))
                     {
                         hierarchy.AddChild(
                             new Microsoft.SharePoint.WebControls.SPProviderHierarchyNode(
@@ -842,7 +850,7 @@ namespace azurecp
             List<AzureADObjectType> aadEntityTypes = new List<AzureADObjectType>();
             if (entityTypes.Contains(SPClaimEntityTypes.User))
                 aadEntityTypes.Add(AzureADObjectType.User);
-            if (entityTypes.Contains(SPClaimEntityTypes.FormsRole))
+            if (entityTypes.Contains(ClaimsProviderConstants.GroupClaimEntityType))
                 aadEntityTypes.Add(AzureADObjectType.Group);
 
             if (!Initialize(context, entityTypes))
@@ -884,7 +892,7 @@ namespace azurecp
             List<AzureADObjectType> aadEntityTypes = new List<AzureADObjectType>();
             if (entityTypes.Contains(SPClaimEntityTypes.User))
                 aadEntityTypes.Add(AzureADObjectType.User);
-            if (entityTypes.Contains(SPClaimEntityTypes.FormsRole))
+            if (entityTypes.Contains(ClaimsProviderConstants.GroupClaimEntityType))
                 aadEntityTypes.Add(AzureADObjectType.Group);
 
             if (!Initialize(context, entityTypes))
@@ -923,7 +931,7 @@ namespace azurecp
             List<AzureADObjectType> aadEntityTypes = new List<AzureADObjectType>();
             if (entityTypes.Contains(SPClaimEntityTypes.User))
                 aadEntityTypes.Add(AzureADObjectType.User);
-            if (entityTypes.Contains(SPClaimEntityTypes.FormsRole))
+            if (entityTypes.Contains(ClaimsProviderConstants.GroupClaimEntityType))
                 aadEntityTypes.Add(AzureADObjectType.Group);
 
             if (!Initialize(context, entityTypes))
@@ -946,7 +954,7 @@ namespace azurecp
                     else
                     {
                         ClaimTypeConfig attrHelper = ProcessedClaimTypesList.FirstOrDefault(x =>
-                            !x.CreateAsIdentityClaim &&
+                            !x.UseMainClaimTypeOfDirectoryObject &&
                             String.Equals(x.ClaimType, entity.Claim.ClaimType, StringComparison.InvariantCultureIgnoreCase));
 
                         string nodeName = attrHelper != null ? attrHelper.ClaimTypeDisplayName : entity.Claim.ClaimType;
@@ -983,7 +991,7 @@ namespace azurecp
                     // Completely bypass LDAP lookp
                     List<PickerEntity> entities = CreatePickerEntityForSpecificClaimTypes(
                         requestInfo.Input,
-                        requestInfo.ClaimTypeConfigList.FindAll(x => !x.CreateAsIdentityClaim),
+                        requestInfo.ClaimTypeConfigList.FindAll(x => !x.UseMainClaimTypeOfDirectoryObject),
                         false);
                     if (entities != null)
                     {
@@ -1077,11 +1085,7 @@ namespace azurecp
                 // More info on the error: https://stackoverflow.com/questions/672237/running-an-asynchronous-operation-triggered-by-an-asp-net-web-page-request
                 Task azureADQueryTask = Task.Run(async () =>
                 {
-                    //Task<List<AzureADResult>> taskAadResults = QueryAzureADTenantsAsync(requestInfo, userFilter, groupFilter, userSelect, groupSelect);
-                    //taskAadResults.ConfigureAwait(false);
-                    //taskAadResults.Wait();
-                    //aadResults = taskAadResults.Result;
-                    aadResults = await QueryAzureADTenantsAsync(requestInfo, userFilter, groupFilter, userSelect, groupSelect);
+                    aadResults = await QueryAzureADTenantsAsync(requestInfo, userFilter, groupFilter, userSelect, groupSelect).ConfigureAwait(false);
                 });
                 azureADQueryTask.Wait();
             }
@@ -1101,97 +1105,6 @@ namespace azurecp
             }
         }
 
-        ///// <summary>
-        ///// Build filter and select statements sent to Azure AD
-        ///// $filter and $select must be URL encoded as documented in https://developer.microsoft.com/en-us/graph/docs/concepts/query_parameters#encoding-query-parameters
-        ///// </summary>
-        ///// <param name="requestInfo"></param>
-        ///// <param name="userFilter">User filter</param>
-        ///// <param name="groupFilter">Group filter</param>
-        ///// <param name="userSelect">User properties to get from AAD</param>
-        ///// <param name="groupSelect">Group properties to get from AAD</param>
-        //protected virtual void BuildFilter(RequestInformation requestInfo, out string userFilter, out string groupFilter, out string userSelect, out string groupSelect)
-        //{
-        //    // TODO: Move this outside of this method
-        //    /////
-        //    List<GraphPropertyQuery> propertyQueries = new List<GraphPropertyQuery>();
-        //    foreach (GraphProperty prop in Enum.GetValues(typeof(GraphProperty)))
-        //    {
-        //        GraphPropertyQuery querySyntax = new GraphPropertyQuery(prop);
-        //        //if (prop == GraphProperty.Id) querySyntax.SearchQuery = querySyntax.ValidationQuery;    // ID does not support 'startswith'
-        //        if (prop == GraphProperty.Id) querySyntax.FieldType = typeof(Guid);
-        //        propertyQueries.Add(querySyntax);
-        //    }
-        //    //propertyQueries.FirstOrDefault(x => x.PropertyName == )
-        //    /////
-
-        //    StringBuilder userFilterBuilder = new StringBuilder("accountEnabled eq true and (");
-        //    StringBuilder groupFilterBuilder = new StringBuilder();
-        //    StringBuilder userSelectBuilder = new StringBuilder("UserType, Mail, ");    // UserType and Mail are always needed to deal with Guest users
-        //    StringBuilder groupSelectBuilder = new StringBuilder();
-
-        //    string searchPattern;
-        //    string input = requestInfo.Input;
-        //    if (requestInfo.ExactSearch) searchPattern = "{0} eq '" + input + "'";
-        //    else searchPattern = "startswith({0},'" + input + "')";
-
-        //    bool firstUserObject = true;
-        //    bool firstGroupObject = true;
-        //    foreach (AzureADObject adObject in requestInfo.ClaimTypeConfigList)
-        //    {
-        //        GraphPropertyQuery querySyntax = propertyQueries.FirstOrDefault(x => x.PropertyName == adObject.GraphProperty);
-        //        //if (requestInfo.ExactSearch) searchPattern = String.Format(querySyntax.ValidationQuery, "{0}", input);
-        //        //else searchPattern = String.Format(querySyntax.SearchQuery, "{0}", input);
-
-        //        string property = adObject.GraphProperty.ToString();
-        //        string objectFilter = String.Format(searchPattern, property);
-        //        string objectSelect = property;
-        //        if (adObject.ClaimEntityType == SPClaimEntityTypes.User)
-        //        {
-        //            if (firstUserObject) firstUserObject = false;
-        //            else
-        //            {
-        //                objectFilter = " or " + objectFilter;
-        //                objectSelect = ", " + objectSelect;
-        //            }
-        //            userFilterBuilder.Append(objectFilter);
-        //            userSelectBuilder.Append(objectSelect);
-        //        }
-        //        else
-        //        {
-        //            // else with no further test assumes everything that is not a User is a Group
-        //            if (firstGroupObject) firstGroupObject = false;
-        //            else
-        //            {
-        //                objectFilter = objectFilter + " or ";
-        //                objectSelect = ", " + objectSelect;
-        //            }
-        //            groupFilterBuilder.Append(objectFilter);
-        //            groupSelectBuilder.Append(objectSelect);
-        //        }
-        //    }
-
-        //    // Also add properties in user metadata list to $select
-        //    foreach (AzureADObject adObject in UserMetadataClaimTypeConfigList)
-        //    {
-        //        string property = adObject.GraphProperty.ToString();
-        //        string objectSelect = property;
-        //        if (firstUserObject) firstUserObject = false;
-        //        else
-        //        {
-        //            objectSelect = ", " + objectSelect;
-        //        }
-        //        userSelectBuilder.Append(objectSelect);
-        //    }
-
-        //    userFilterBuilder.Append(")");
-
-        //    userFilter = HttpUtility.UrlEncode(userFilterBuilder.ToString());
-        //    groupFilter = HttpUtility.UrlEncode(groupFilterBuilder.ToString());
-        //    userSelect = HttpUtility.UrlEncode(userSelectBuilder.ToString());
-        //    groupSelect = HttpUtility.UrlEncode(groupSelectBuilder.ToString());
-        //}
-
         /// <summary>
         /// Build filter and select statements sent to Azure AD
         /// $filter and $select must be URL encoded as documented in https://developer.microsoft.com/en-us/graph/docs/concepts/query_parameters#encoding-query-parameters
@@ -1208,39 +1121,40 @@ namespace azurecp
             StringBuilder userSelectBuilder = new StringBuilder("UserType, Mail, ");    // UserType and Mail are always needed to deal with Guest users
             StringBuilder groupSelectBuilder = new StringBuilder("Id, ");               // Id is always required for groups
 
-            string preferredSearchPattern;
+            string preferredFilterPattern;
             string input = requestInfo.Input;
-            //if (requestInfo.ExactSearch) preferredSearchPattern = "{0} eq '" + input + "'";
-            //else preferredSearchPattern = "startswith({0},'" + input + "')";
-
-            if (requestInfo.ExactSearch) preferredSearchPattern = String.Format(ClaimsProviderConstants.SearchPatternEquals, "{0}", input);
-            else preferredSearchPattern = String.Format(ClaimsProviderConstants.SearchPatternStartsWith, "{0}", input);
+            if (requestInfo.ExactSearch) preferredFilterPattern = String.Format(ClaimsProviderConstants.SearchPatternEquals, "{0}", input);
+            else preferredFilterPattern = String.Format(ClaimsProviderConstants.SearchPatternStartsWith, "{0}", input);
 
             bool firstUserObject = true;
             bool firstGroupObject = true;
-            foreach (ClaimTypeConfig adObject in requestInfo.ClaimTypeConfigList)
+            foreach (ClaimTypeConfig claimConfig in requestInfo.ClaimTypeConfigList)
             {
-                string property = adObject.DirectoryObjectProperty.ToString();
-                string objectFilter = String.Format(preferredSearchPattern, property);
-                if (adObject.DirectoryObjectProperty == AzureADObjectProperty.Id)
+                string currentPropertyString = claimConfig.DirectoryObjectProperty.ToString();
+                string currentFilter;
+                if (!claimConfig.SupportsWildcard)
+                    currentFilter = String.Format(ClaimsProviderConstants.SearchPatternEquals, currentPropertyString, input);
+                else
+                    currentFilter = String.Format(preferredFilterPattern, currentPropertyString);
+
+                // Id needs a specific check: input must be a valid GUID AND equals filter must be used, otherwise Azure AD will throw an error
+                if (claimConfig.DirectoryObjectProperty == AzureADObjectProperty.Id)
                 {
                     Guid idGuid = new Guid();
                     if (!Guid.TryParse(input, out idGuid)) continue;
-                    else objectFilter = String.Format(ClaimsProviderConstants.SearchPatternEquals, property, idGuid.ToString());
+                    else currentFilter = String.Format(ClaimsProviderConstants.SearchPatternEquals, currentPropertyString, idGuid.ToString());
                 }
 
-                string objectSelect = property;
-                //if (adObject.ClaimEntityType == SPClaimEntityTypes.User)
-                if (adObject.DirectoryObjectType == AzureADObjectType.User)
+                if (claimConfig.DirectoryObjectType == AzureADObjectType.User)
                 {
                     if (firstUserObject) firstUserObject = false;
                     else
                     {
-                        objectFilter = " or " + objectFilter;
-                        objectSelect = ", " + objectSelect;
+                        currentFilter = " or " + currentFilter;
+                        currentPropertyString = ", " + currentPropertyString;
                     }
-                    userFilterBuilder.Append(objectFilter);
-                    userSelectBuilder.Append(objectSelect);
+                    userFilterBuilder.Append(currentFilter);
+                    userSelectBuilder.Append(currentPropertyString);
                 }
                 else
                 {
@@ -1248,30 +1162,26 @@ namespace azurecp
                     if (firstGroupObject) firstGroupObject = false;
                     else
                     {
-                        objectFilter = objectFilter + " or ";
-                        objectSelect = ", " + objectSelect;
+                        currentFilter = currentFilter + " or ";
+                        currentPropertyString = ", " + currentPropertyString;
                     }
-                    groupFilterBuilder.Append(objectFilter);
-                    groupSelectBuilder.Append(objectSelect);
+                    groupFilterBuilder.Append(currentFilter);
+                    groupSelectBuilder.Append(currentPropertyString);
                 }
             }
 
             // Also add properties in user metadata list to $select
-            foreach (ClaimTypeConfig adObject in ClaimTypesWithUserMetadata)
+            if (!firstUserObject)
             {
-                string property = adObject.DirectoryObjectProperty.ToString();
-                string objectSelect = property;
-                if (firstUserObject) firstUserObject = false;
-                else
+                foreach (ClaimTypeConfig claimConfig in ClaimTypesWithUserMetadata)
                 {
-                    objectSelect = ", " + objectSelect;
+                    userSelectBuilder.Append($", {claimConfig.DirectoryObjectProperty.ToString()}");
                 }
-                userSelectBuilder.Append(objectSelect);
             }
 
             userFilterBuilder.Append(")");
 
-            // Detect if some properties were actually found for each object type, if not, return an empty filter
+            // Clear user/group filters if no corresponding object was found in requestInfo.ClaimTypeConfigList
             if (firstUserObject) userFilterBuilder.Clear();
             if (firstGroupObject) groupFilterBuilder.Clear();
 
@@ -1432,9 +1342,9 @@ namespace azurecp
                 return null;
             };
 
-            // If exactSearch is true, we don't care about attributes with CreateAsIdentityClaim = true
+            // If exactSearch is true, we don't care about attributes with UseMainClaimTypeOfDirectoryObject = true
             List<ClaimTypeConfig> claimTypeConfigList;
-            if (requestInfo.ExactSearch) claimTypeConfigList = requestInfo.ClaimTypeConfigList.FindAll(x => !x.CreateAsIdentityClaim);
+            if (requestInfo.ExactSearch) claimTypeConfigList = requestInfo.ClaimTypeConfigList.FindAll(x => !x.UseMainClaimTypeOfDirectoryObject);
             else claimTypeConfigList = requestInfo.ClaimTypeConfigList;
 
             List<AzureCPResult> processedResults = new List<AzureCPResult>();
@@ -1475,83 +1385,80 @@ namespace azurecp
                         }
                     }
                     currentObject = userOrGroup;
-                    //claimEntityType = SPClaimEntityTypes.User;
                     objectType = AzureADObjectType.User;
                 }
                 else
                 {
                     currentObject = userOrGroup;
-                    //claimEntityType = SPClaimEntityTypes.FormsRole;
                     objectType = AzureADObjectType.Group;
                 }
 
                 // Start filter
                 //foreach (ClaimTypeConfig claimTypeConfig in claimTypeConfigList.Where(x => x.ClaimEntityType == claimEntityType))
-                foreach (ClaimTypeConfig claimTypeConfig in claimTypeConfigList.Where(x => x.DirectoryObjectType == objectType))
+                foreach (ClaimTypeConfig currentClaimTypeConfig in claimTypeConfigList.Where(x => x.DirectoryObjectType == objectType))
                 {
                     // Get value with of current GraphProperty
-                    string graphPropertyValue = GetGraphPropertyValue(currentObject, claimTypeConfig.DirectoryObjectProperty.ToString());
+                    string directoryObjectPropertyValue = GetGraphPropertyValue(currentObject, currentClaimTypeConfig.DirectoryObjectProperty.ToString());
 
                     // Check if property exists (no null) and has a value (not String.Empty)
-                    if (String.IsNullOrEmpty(graphPropertyValue)) continue;
+                    if (String.IsNullOrEmpty(directoryObjectPropertyValue)) continue;
 
                     // Check if current value mathes input, otherwise go to next GraphProperty to check
                     if (requestInfo.ExactSearch)
                     {
-                        if (!String.Equals(graphPropertyValue, requestInfo.Input, StringComparison.InvariantCultureIgnoreCase)) continue;
+                        if (!String.Equals(directoryObjectPropertyValue, requestInfo.Input, StringComparison.InvariantCultureIgnoreCase)) continue;
                     }
                     else
                     {
-                        if (!graphPropertyValue.StartsWith(requestInfo.Input, StringComparison.InvariantCultureIgnoreCase)) continue;
+                        if (!directoryObjectPropertyValue.StartsWith(requestInfo.Input, StringComparison.InvariantCultureIgnoreCase)) continue;
                     }
 
-                    // Current GraphProperty value matches user input. Add current object in search results if it passes following checks
-                    string queryMatchValue = graphPropertyValue;
-                    string valueToCheck = queryMatchValue;
-                    // Check if current object is not already in the collection
-                    ClaimTypeConfig objCompare;
-                    if (claimTypeConfig.CreateAsIdentityClaim)
+                    // Current DirectoryObjectProperty value matches user input. Add current result to search results if it is not already present
+                    string queryMatchValue = directoryObjectPropertyValue;
+                    string valueToUseInClaimValue = directoryObjectPropertyValue;
+                    ClaimTypeConfig claimTypeConfigToCompare;
+                    if (currentClaimTypeConfig.UseMainClaimTypeOfDirectoryObject)
                     {
-                        objCompare = IdentityClaimTypeConfig;
-                        // Get the value of the GraphProperty linked to IdentityAzureObject
-                        valueToCheck = GetGraphPropertyValue(currentObject, IdentityClaimTypeConfig.DirectoryObjectProperty.ToString());
-                        if (String.IsNullOrEmpty(valueToCheck)) continue;
+                        if (objectType == AzureADObjectType.User)
+                        {
+                            claimTypeConfigToCompare = IdentityClaimTypeConfig;
+                        }
+                        else
+                        {
+                            claimTypeConfigToCompare = MainGroupClaimTypeConfig;                            
+                        }
+                        // Get the value of the DirectoryObjectProperty linked to current directory object
+                        valueToUseInClaimValue = GetGraphPropertyValue(currentObject, claimTypeConfigToCompare.DirectoryObjectProperty.ToString());
+                        if (String.IsNullOrEmpty(valueToUseInClaimValue)) continue;
                     }
                     else
                     {
-                        objCompare = claimTypeConfig;
+                        claimTypeConfigToCompare = currentClaimTypeConfig;
                     }
 
-                    // if claim type, GraphProperty and value are identical, then result is already in collection
-                    int numberResultFound = processedResults.FindAll(x =>
-                        String.Equals(x.ClaimTypeConfig.ClaimType, objCompare.ClaimType, StringComparison.InvariantCultureIgnoreCase) &&
-                        //x.AzureObject.GraphProperty == objCompare.GraphProperty &&
-                        String.Equals(x.PermissionValue, valueToCheck, StringComparison.InvariantCultureIgnoreCase)).Count;
-                    if (numberResultFound > 0) continue;
+                    // if claim type and claim value already exists, skip
+                    bool resultAlreadyExists = processedResults.Exists(x =>
+                        String.Equals(x.ClaimTypeConfig.ClaimType, claimTypeConfigToCompare.ClaimType, StringComparison.InvariantCultureIgnoreCase) &&
+                        String.Equals(x.PermissionValue, valueToUseInClaimValue, StringComparison.InvariantCultureIgnoreCase));
+                    if (resultAlreadyExists) continue;
 
-                    // Passed the checks, add it to the searchResults list
+                    // Passed the checks, add it to the processedResults list
                     processedResults.Add(
                         new AzureCPResult(currentObject)
                         {
-                            ClaimTypeConfig = claimTypeConfig,
-                            //GraphPropertyValue = graphPropertyValue,
-                            PermissionValue = valueToCheck,
+                            ClaimTypeConfig = currentClaimTypeConfig,
+                            PermissionValue = valueToUseInClaimValue,
                             QueryMatchValue = queryMatchValue,
                         });
                 }
             }
 
-            AzureCPLogging.Log(
-                String.Format(
-                    "[{0}] {1} permission(s) to create after filtering",
-                    ProviderInternalName, processedResults.Count),
-                TraceSeverity.Verbose, EventSeverity.Information, TraceCategory.Lookup);
+            AzureCPLogging.Log($"[{ProviderInternalName}] {processedResults.Count} permission(s) to create after filtering", TraceSeverity.Verbose, EventSeverity.Information, TraceCategory.Lookup);
             foreach (AzureCPResult result in processedResults)
             {
                 PickerEntity pe = CreatePickerEntityHelper(result);
                 result.PickerEntity = pe;
             }
-
             return processedResults;
         }
 
