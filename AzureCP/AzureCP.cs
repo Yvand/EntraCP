@@ -36,9 +36,9 @@ namespace azurecp
         public virtual string ProviderInternalName => "AzureCP";
         public virtual string PersistedObjectName => ClaimsProviderConstants.AZURECPCONFIG_NAME;
 
-        private object Sync_Init = new object();
+        private object Lock_Init = new object();
         private ReaderWriterLockSlim Lock_Config = new ReaderWriterLockSlim();
-        private long AzureCPConfigVersion = 0;
+        private long CurrentConfigurationVersion = 0;
 
         /// <summary>
         /// Contains configuration currently used by claims provider
@@ -51,10 +51,13 @@ namespace azurecp
         protected SPTrustedLoginProvider SPTrust;
 
         /// <summary>
-        /// object mapped to the identity claim in the SPTrustedIdentityTokenIssuer
+        /// ClaimTypeConfig mapped to the identity claim in the SPTrustedIdentityTokenIssuer
         /// </summary>
         ClaimTypeConfig IdentityClaimTypeConfig;
 
+        /// <summary>
+        /// Group ClaimTypeConfig used to set the claim type for other group ClaimTypeConfig that have UseMainClaimTypeOfDirectoryObject set to true
+        /// </summary>
         ClaimTypeConfig MainGroupClaimTypeConfig;
 
         /// <summary>
@@ -85,7 +88,7 @@ namespace azurecp
         public bool Initialize(Uri context, string[] entityTypes)
         {
             // Ensures thread safety to initialize class variables
-            lock (Sync_Init)
+            lock (Lock_Init)
             {
                 // 1ST PART: GET CONFIGURATION OBJECT
                 IAzureCPConfiguration globalConfiguration = null;
@@ -126,12 +129,12 @@ namespace azurecp
                     else
                     {
                         // Persisted object is found and seems valid
-                        AzureCPLogging.Log(String.Format("[{0}] AzureCPConfig PersistedObject found, version: {1}, previous version: {2}", ProviderInternalName, ((SPPersistedObject)globalConfiguration).Version.ToString(), this.AzureCPConfigVersion.ToString()),
+                        AzureCPLogging.Log(String.Format("[{0}] AzureCPConfig PersistedObject found, version: {1}, previous version: {2}", ProviderInternalName, ((SPPersistedObject)globalConfiguration).Version.ToString(), this.CurrentConfigurationVersion.ToString()),
                             TraceSeverity.VerboseEx, EventSeverity.Information, TraceCategory.Core);
-                        if (this.AzureCPConfigVersion != ((SPPersistedObject)globalConfiguration).Version)
+                        if (this.CurrentConfigurationVersion != ((SPPersistedObject)globalConfiguration).Version)
                         {
                             refreshConfig = true;
-                            this.AzureCPConfigVersion = ((SPPersistedObject)globalConfiguration).Version;
+                            this.CurrentConfigurationVersion = ((SPPersistedObject)globalConfiguration).Version;
                             AzureCPLogging.Log(String.Format("[{0}] AzureCPConfig PersistedObject changed, refreshing configuration", ProviderInternalName),
                                 TraceSeverity.Medium, EventSeverity.Information, TraceCategory.Core);
                         }
@@ -159,29 +162,6 @@ namespace azurecp
                     // Create local persisted object that will never be saved in config DB, it's just a local copy
                     // This copy is unique to current object instance to avoid thread safety issues
                     this.CurrentConfiguration = ((AzureCPConfig)globalConfiguration).CloneInReadOnlyObject();
-                    //// All settings come from persisted object
-                    //this.CurrentConfiguration.AlwaysResolveUserInput = globalConfiguration.AlwaysResolveUserInput;
-                    //this.CurrentConfiguration.FilterExactMatchOnly = globalConfiguration.FilterExactMatchOnly;
-                    //this.CurrentConfiguration.EnableAugmentation = globalConfiguration.EnableAugmentation;
-
-                    //// Retrieve AzureADObjects
-                    //// A copy of collection AzureADObjects must be created because SetActualAADObjectCollection() may change it and it should be made in a copy totally independant from the persisted object
-                    //this.CurrentConfiguration.ClaimTypes = new List<ClaimTypeConfig>();
-                    //foreach (ClaimTypeConfig currentObject in globalConfiguration.ClaimTypes)
-                    //{
-                    //    // Create a new AzureADObject
-                    //    this.CurrentConfiguration.ClaimTypes.Add(currentObject.CopyPersistedProperties());
-                    //}
-
-                    //// Retrieve AzureTenants
-                    //// Create a copy of the collection to work in an copy separated from persisted object
-                    //this.CurrentConfiguration.AzureTenants = new List<AzureTenant>();
-                    //foreach (AzureTenant currentObject in globalConfiguration.AzureTenants)
-                    //{
-                    //    // Create a copy from persisted object
-                    //    this.CurrentConfiguration.AzureTenants.Add(currentObject.CopyPersistedProperties());
-                    //}
-
 
                     SetCustomConfiguration(context, entityTypes);
                     if (this.CurrentConfiguration.ClaimTypes == null)
@@ -229,7 +209,6 @@ namespace azurecp
             {
                 bool identityClaimTypeFound = false;
                 bool groupClaimTypeFound = false;
-                //ClaimTypeConfig MainGroupClaimTypeConfig = null;
                 // Get claim types defined in SPTrustedLoginProvider based on their claim type (unique way to map them)
                 List<ClaimTypeConfig> claimTypesSetInTrust = new List<ClaimTypeConfig>();
                 foreach (SPTrustedClaimTypeInformation claimTypeInformation in SPTrust.ClaimTypeInformation)
@@ -299,7 +278,6 @@ namespace azurecp
                 this.ClaimTypesWithUserMetadata = nonProcessedClaimTypes.Where(x =>
                     !String.IsNullOrEmpty(x.EntityDataKey) &&
                     x.DirectoryObjectProperty != AzureADObjectProperty.None &&
-                    //x.ClaimEntityType == SPClaimEntityTypes.User);
                     x.DirectoryObjectType == AzureADObjectType.User);
             }
             catch (Exception ex)
@@ -318,10 +296,6 @@ namespace azurecp
         protected virtual IAzureCPConfiguration GetConfiguration(Uri context, string[] entityTypes, string persistedObjectName)
         {
             return AzureCPConfig.GetConfiguration(persistedObjectName);
-            //if (String.Equals(ProviderInternalName, LDAPCP._ProviderInternalName, StringComparison.InvariantCultureIgnoreCase))
-            //    return LDAPCPConfig.GetFromConfigDB(persistedObjectName);
-            //else
-            //    return null;
         }
 
         /// <summary>
@@ -524,7 +498,6 @@ namespace azurecp
                 string graphPropertyToDisplayValue = GetGraphPropertyValue(result.UserOrGroupResult, result.ClaimTypeConfig.DirectoryObjectPropertyToShowAsDisplayText.ToString());
                 if (!String.IsNullOrEmpty(graphPropertyToDisplayValue)) permissionDisplayText += graphPropertyToDisplayValue;
                 else permissionDisplayText += result.PermissionValue;
-
             }
             else
             {
@@ -718,7 +691,6 @@ namespace azurecp
             {
                 this.Lock_Config.ExitReadLock();
             }
-
         }
 
         protected async virtual Task<List<SPClaim>> GetGroupMembershipAsync(RequestInformation requestInfo, ClaimTypeConfig groupClaimTypeSettings)
@@ -779,7 +751,6 @@ namespace azurecp
                 if (hierarchyNodeID == null)
                 {
                     // Root level
-                    //foreach (var azureObject in FinalAttributeList.Where(x => !String.IsNullOrEmpty(x.peoplePickerAttributeHierarchyNodeId) && !x.UseMainClaimTypeOfDirectoryObject && entityTypes.Contains(x.ClaimEntityType)))
                     foreach (var azureObject in this.ProcessedClaimTypesList.FindAll(x => !x.UseMainClaimTypeOfDirectoryObject && aadEntityTypes.Contains(x.DirectoryObjectType)))
                     {
                         hierarchy.AddChild(
@@ -1319,7 +1290,6 @@ namespace azurecp
             foreach (DirectoryObject userOrGroup in usersAndGroupsResults)
             {
                 DirectoryObject currentObject = null;
-                //string claimEntityType = null;
                 AzureADObjectType objectType;
                 if (userOrGroup is User)
                 {
@@ -1361,8 +1331,6 @@ namespace azurecp
                     objectType = AzureADObjectType.Group;
                 }
 
-                // Start filter
-                //foreach (ClaimTypeConfig claimTypeConfig in claimTypeConfigList.Where(x => x.ClaimEntityType == claimEntityType))
                 foreach (ClaimTypeConfig currentClaimTypeConfig in claimTypeConfigList.Where(x => x.DirectoryObjectType == objectType))
                 {
                     // Get value with of current GraphProperty

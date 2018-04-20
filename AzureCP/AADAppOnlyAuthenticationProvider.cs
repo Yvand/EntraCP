@@ -55,26 +55,49 @@ namespace azurecp
                     getAccessToken = true;
                 }
 
-                if (getAccessToken) await GetAccessToken();
+                if (getAccessToken)
+                {
+                    bool success = await GetAccessToken();
+                }
 
-                request.Headers.Add("Authorization", "Bearer " + AuthResult.AccessToken);
+                if (!String.IsNullOrEmpty(AuthResult.AccessToken))
+                {
+                    request.Headers.Add("Authorization", $"Bearer {AuthResult.AccessToken}");
+                }
             }
         }
 
-        private async Task GetAccessToken()
+        private async Task<bool> GetAccessToken()
         {
+            bool success = true;
             AzureCPLogging.Log($"Getting new access token for tenant '{Tenant}'", TraceSeverity.Verbose, EventSeverity.Information, TraceCategory.Core);
             Stopwatch timer = new Stopwatch();
             timer.Start();
+            try
+            {
+                //AuthenticationContext authContext = new AuthenticationContext("https://login.windows.net/yvandev.onmicrosoft.com/oauth2/token");
+                AuthContext = new AuthenticationContext(Authority);
+                Creds = new ClientCredential(ClientId, ClientSecret);
+                AuthResult = await AuthContext.AcquireTokenAsync(GraphAPIResource, Creds);
 
-            //AuthenticationContext authContext = new AuthenticationContext("https://login.windows.net/yvandev.onmicrosoft.com/oauth2/token");
-            AuthContext = new AuthenticationContext(Authority);
-            Creds = new ClientCredential(ClientId, ClientSecret);
-            AuthResult = await AuthContext.AcquireTokenAsync(GraphAPIResource, Creds);
-
-            timer.Stop();
-            TimeSpan duration = new TimeSpan(AuthResult.ExpiresOn.UtcTicks - DateTime.Now.ToUniversalTime().Ticks);
-            AzureCPLogging.Log($"Got new access token for tenant '{Tenant}', valid for {Math.Round((duration.TotalHours), 1)} hour(s) and retrieved in {timer.ElapsedMilliseconds.ToString()} ms", TraceSeverity.Medium, EventSeverity.Information, TraceCategory.Core);
+                TimeSpan duration = new TimeSpan(AuthResult.ExpiresOn.UtcTicks - DateTime.Now.ToUniversalTime().Ticks);
+                AzureCPLogging.Log($"Got new access token for tenant '{Tenant}', valid for {Math.Round((duration.TotalHours), 1)} hour(s) and retrieved in {timer.ElapsedMilliseconds.ToString()} ms", TraceSeverity.Medium, EventSeverity.Information, TraceCategory.Core);
+            }
+            catch (AdalServiceException ex)
+            {
+                AzureCPLogging.Log($"Unable to get access token for tenant '{Tenant}': {ex.Message}", TraceSeverity.Unexpected, EventSeverity.Error, TraceCategory.Core);
+                success = false;
+            }
+            catch (Exception ex)
+            {
+                // Task.WaitAll throws an AggregateException, which contains all exceptions thrown by tasks it waited on
+                AzureCPLogging.LogException(String.Empty, $"while getting access token for tenant '{Tenant}'", TraceCategory.Lookup, ex);
+            }
+            finally
+            {
+                timer.Stop();
+            }
+            return success;
         }
     }
 }

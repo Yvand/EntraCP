@@ -72,10 +72,6 @@ namespace azurecp
                 {
                     _ClaimTypes = new ClaimTypeConfigCollection(ref this._ClaimTypesCollection);
                 }
-                //else
-                //{
-                //    _ClaimTypesCollection = _ClaimTypes.innerCol;
-                //}
                 return _ClaimTypes;
             }
             set
@@ -148,12 +144,12 @@ namespace azurecp
         }
 
         /// <summary>
-        /// Commit changes in configuration database
+        /// Commit changes to configuration database
         /// </summary>
         public override void Update()
         {
             base.Update();
-            AzureCPLogging.Log($"PersistedObject {base.DisplayName} was updated successfully.",
+            AzureCPLogging.Log($"PersistedObject {base.DisplayName} was updated successfully in configuration database.",
                 TraceSeverity.Medium, EventSeverity.Information, TraceCategory.Core);
         }
 
@@ -167,25 +163,7 @@ namespace azurecp
             AzureCPLogging.Log($"PersistedObject {persistedObjectName} was successfully reset to its default configuration",
                 TraceSeverity.High, EventSeverity.Information, TraceCategory.Core);
             return newConfig;
-
-            //AzureCPConfig persistedObject = GetConfiguration(persistedObjectName);
-            //if (persistedObject != null)
-            //{
-            //    AzureCPConfig newPersistedObject = GetDefaultConfiguration(persistedObjectName);
-            //    newPersistedObject.Update();
-
-            //    AzureCPLogging.Log($"PersistedObject {persistedObjectName} was successfully reset to its default configuration",
-            //        TraceSeverity.High, EventSeverity.Information, TraceCategory.Core);
-            //}
         }
-
-        //public void ResetCurrentConfiguration()
-        //{
-        //    AzureCPConfig defaultConfiguration = SetDefaultConfiguration() as AzureCPConfig;
-        //    this.ApplyConfiguration(defaultConfiguration);
-        //    AzureCPLogging.Log($"PersistedObject {this.Name} was successfully reset to its default configuration",
-        //        TraceSeverity.High, EventSeverity.Information, TraceCategory.Core);
-        //}
 
         public void ApplyConfiguration(AzureCPConfig configToApply)
         {
@@ -198,7 +176,7 @@ namespace azurecp
 
         public AzureCPConfig CloneInReadOnlyObject()
         {
-            //return this.Clone() as LDAPCPConfig;
+            //return this.Clone() as LDAPCPConfig;  // DOES NOT work
             AzureCPConfig readOnlyCopy = new AzureCPConfig(true);
             readOnlyCopy.AlwaysResolveUserInput = this.AlwaysResolveUserInput;
             readOnlyCopy.FilterExactMatchOnly = this.FilterExactMatchOnly;
@@ -253,12 +231,6 @@ namespace azurecp
         {
             AzureCPConfig defaultConfig = new AzureCPConfig(true);
             ApplyConfiguration(defaultConfig);
-            //this.AlwaysResolveUserInput = defaultConfig.AlwaysResolveUserInput;
-            //this.EnableAugmentation = defaultConfig.EnableAugmentation;
-            //this.FilterExactMatchOnly = defaultConfig.FilterExactMatchOnly;
-
-            //this.AzureTenants = new List<AzureTenant>();
-            //this.ClaimTypes = GetDefaultClaimTypesConfig();
         }
 
         public static IAzureCPConfiguration GetDefaultConfiguration()
@@ -315,27 +287,34 @@ namespace azurecp
         [Persisted]
         public Guid Id = Guid.NewGuid();
 
+        /// <summary>
+        /// Name of the tenant, e.g. TENANTNAME.onMicrosoft.com
+        /// </summary>
         [Persisted]
         public string TenantName;
 
+        /// <summary>
+        /// Application ID of the application created in Azure AD tenant to authorize AzureCP
+        /// </summary>
         [Persisted]
         public string ClientId;
 
+        /// <summary>
+        /// Password of the application
+        /// </summary>
         [Persisted]
         public string ClientSecret;
 
         [Persisted]
         public bool MemberUserTypeOnly;
 
-        /// <summary>
-        /// Access token used to connect to AAD. Should not be persisted or accessible outside of the assembly
-        /// </summary>
-        public string AccessToken = String.Empty;
-
         [Persisted]
         public string AADInstance = "https://login.windows.net/{0}";
 
-        public AADAppOnlyAuthenticationProvider AuthenticationProvider;
+        /// <summary>
+        /// Instance of the IAuthenticationProvider class for this specific Azure AD tenant
+        /// </summary>
+        private AADAppOnlyAuthenticationProvider AuthenticationProvider;
 
         public GraphServiceClient GraphService;
 
@@ -402,7 +381,6 @@ namespace azurecp
         public SPClaim UserInHttpContext;
 
         public Uri Context;
-        //public string[] EntityTypes;
         public AzureADObjectType[] DirectoryObjectTypes;
         private string OriginalInput;
         public string HierarchyNodeID;
@@ -416,12 +394,10 @@ namespace azurecp
 
         public RequestInformation(IAzureCPConfiguration currentConfiguration, RequestType currentRequestType, List<ClaimTypeConfig> processedClaimTypeConfigList, string input, SPClaim incomingEntity, Uri context, AzureADObjectType[] directoryObjectTypes, string hierarchyNodeID, int maxCount)
         {
-            //this.CurrentConfiguration = currentConfiguration;
             this.RequestType = currentRequestType;
             this.OriginalInput = input;
             this.IncomingEntity = incomingEntity;
             this.Context = context;
-            //this.EntityTypes = entityTypes;
             this.DirectoryObjectTypes = directoryObjectTypes;
             this.HierarchyNodeID = hierarchyNodeID;
             this.MaxCount = maxCount;
@@ -457,7 +433,6 @@ namespace azurecp
             if (this.IncomingEntity == null) throw new ArgumentNullException("claimToValidate");
             this.IdentityClaimTypeConfig = FindClaimsSetting(processedClaimTypeConfigList, this.IncomingEntity.ClaimType);
             if (this.IdentityClaimTypeConfig == null) return;
-            //this.ClaimTypeConfigList = new List<ClaimTypeConfig>() { this.IdentityClaimTypeConfig };
             this.ClaimTypeConfigList = processedClaimTypeConfigList.Where(x =>
                 String.Equals(x.ClaimType, this.IncomingEntity.ClaimType, StringComparison.InvariantCultureIgnoreCase)
                 && !x.UseMainClaimTypeOfDirectoryObject).ToList();
@@ -478,13 +453,11 @@ namespace azurecp
                 // Restrict search to attributes currently selected in the hierarchy (may return multiple results if identity claim type)
                 ClaimTypeConfigList = processedClaimTypeConfigList.FindAll(x =>
                     String.Equals(x.ClaimType, this.HierarchyNodeID, StringComparison.InvariantCultureIgnoreCase) &&
-                    //this.EntityTypes.Contains(x.ClaimEntityType));
                     this.DirectoryObjectTypes.Contains(x.DirectoryObjectType));
             }
             else
             {
                 // List<T>.FindAll returns an empty list if no result found: http://msdn.microsoft.com/en-us/library/fh1w7y8z(v=vs.110).aspx
-                //ClaimTypeConfigList = processedClaimTypeConfigList.FindAll(x => this.EntityTypes.Contains(x.ClaimEntityType));
                 ClaimTypeConfigList = processedClaimTypeConfigList.FindAll(x => this.DirectoryObjectTypes.Contains(x.DirectoryObjectType));
             }
         }
@@ -516,7 +489,7 @@ namespace azurecp
         // Values are aligned with enum type Microsoft.Azure.ActiveDirectory.GraphClient.GraphProperty in Microsoft.Azure.ActiveDirectory.GraphClient.dll
         None = 0,
         AccountEnabled = 1,
-        Id = 2,
+        Id = 2, // Id was not part of enum type Microsoft.Azure.ActiveDirectory.GraphClient.GraphProperty
         Department = 20,
         DisplayName = 28,
         GivenName = 32,
@@ -534,19 +507,6 @@ namespace azurecp
         User,
         Group
     }
-
-    //public class GraphPropertyQuery
-    //{
-    //    public GraphProperty PropertyName;
-    //    //public string SearchQuery = "startswith({0},'{1}')";
-    //    //public string ValidationQuery = "{0} eq '{1}'";
-    //    public Type FieldType = typeof(String);
-
-    //    public GraphPropertyQuery(GraphProperty PropertyName)
-    //    {
-    //        this.PropertyName = PropertyName;
-    //    }
-    //}
 
     public enum RequestType
     {
