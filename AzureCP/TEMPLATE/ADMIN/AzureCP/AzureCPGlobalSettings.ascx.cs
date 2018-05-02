@@ -10,54 +10,25 @@ using System.Reflection;
 using System.Web.UI.WebControls;
 using System.Linq;
 using Microsoft.Graph;
-using static azurecp.AzureCPLogging;
+using static azurecp.ClaimsProviderLogging;
 using System.Web.UI;
 
 namespace azurecp.ControlTemplates
 {
     public partial class AzureCPGlobalSettings : AzureCPUserControl
     {
-        //public string PersistedObjectName = Constants.AZURECPCONFIG_NAME;
-        //public Guid PersistedObjectID = new Guid(Constants.AZURECPCONFIG_ID);
-        //SPTrustedLoginProvider CurrentTrustedLoginProvider;
-        //AzureCPConfig PersistedObject;
-        //AzureADObject IdentityClaim;
-        //bool AllowPersistedObjectUpdate = true;
-
-        string TextErrorNoTrustAssociation = "AzureCP is currently not associated with any TrustedLoginProvider. It is mandatory because it cannot create permission for a trust if it is not associated to it.<br/>Visit <a href=\"https://github.com/Yvand/AzureCP\" target=\"_blank\">https://github.com/Yvand/AzureCP</a> for documentation.<br/>Settings on this page will not be available as long as AzureCP will not associated to a trut.";
         string TextErrorAzureTenantFieldsMissing = "Some mandatory fields are missing.";
-        //string TextErrorTestAzureADConnection = "Unable to connect to Azure tenant<br/>It may be expected if w3wp process of central admin has intentionally no access to Azure.<br/>{0}";
-        //string TextErrorTestAzureADConnectionTenantNotFound = "Tenant was not found.";
-        //string TextConnectionSuccessful = "Connection successful.";
-        //string TextErrorNoIdentityClaimType = "The TrustedLoginProvider {0} is set with identity claim type \"{1}\" but it is not in the claims list of AzureCP.<br/>Please visit AzureCP page \"claims mapping\" in Security tab to set it and return to this page afterwards.";
-        //string TextErrorPersistedObjectStale = "Modification is cancelled because persisted object was modified since last load of the page. Please refresh the page and try again.";
 
         protected void Page_Load(object sender, EventArgs e)
+        {            
+            Initialize();
+        }
+
+        /// <summary>
+        /// Initialize controls as needed if prerequisites are ok, otherwise deactivate controls and show error message
+        /// </summary>
+        protected void Initialize()
         {
-            // Get trust currently associated with AzureCP, if any
-            //CurrentTrustedLoginProvider = AzureCP.GetSPTrustAssociatedWithCP(AzureCP._ProviderInternalName);
-            //if (null == CurrentTrustedLoginProvider)
-            //{
-            //    // Claim provider is currently not associated with any trust.
-            //    // Display a message in the page and disable controls
-            //    this.LabelErrorMessage.Text = TextErrorNoTrustAssociation;
-            //    this.BtnOK.Enabled = this.BtnOKTop.Enabled = this.BtnAddLdapConnection.Enabled = this.BtnTestAzureTenantConnection.Enabled = false;
-            //    this.AllowPersistedObjectUpdate = false;
-            //    return;
-            //}
-
-            //SPSecurity.RunWithElevatedPrivileges(delegate ()
-            //{
-            //    // Get SPPersisted Object and create it if it doesn't exist
-            //    PersistedObject = AzureCPConfig.GetConfiguration(PersistedObjectName);
-            //    if (PersistedObject == null)
-            //    {
-            //        this.Web.AllowUnsafeUpdates = true;
-            //        PersistedObject = AzureCPConfig.CreatePersistedObject(PersistedObjectID.ToString(), PersistedObjectName);
-            //        this.Web.AllowUnsafeUpdates = false;
-            //    }
-            //});
-
             if (ValidatePrerequisite() != ConfigStatus.AllGood)
             {
                 this.LabelErrorMessage.Text = base.MostImportantError;
@@ -65,36 +36,15 @@ namespace azurecp.ControlTemplates
                 return;
             }
 
-            //this.IdentityClaim = PersistedObject.AzureADObjects.Find(x => String.Equals(CurrentTrustedLoginProvider.IdentityClaimTypeInformation.MappedClaimType, x.ClaimType, StringComparison.InvariantCultureIgnoreCase) && !x.UseMainClaimTypeOfDirectoryObject);
-            //if (null == this.IdentityClaim)
-            //{
-            //    // Identity claim type is missing in the attributes list
-            //    this.LabelErrorMessage.Text = String.Format(TextErrorNoIdentityClaimType, CurrentTrustedLoginProvider.DisplayName, CurrentTrustedLoginProvider.IdentityClaimTypeInformation.MappedClaimType);
-            //    this.BtnOK.Enabled = this.BtnOKTop.Enabled = this.BtnAddLdapConnection.Enabled = this.BtnTestAzureTenantConnection.Enabled = false;
-            //    return;
-            //}
-
-            //if (ViewState["PersistedObjectVersion"] == null)
-            //    ViewState.Add("PersistedObjectVersion", PersistedObject.Version);
-            //if ((long)ViewState["PersistedObjectVersion"] != PersistedObject.Version)
-            //{
-            //    // PersistedObject changed since last time. Should not allow any update
-            //    this.LabelErrorMessage.Text = TextErrorPersistedObjectStale;
-            //    this.AllowPersistedObjectUpdate = false;
-            //    return;
-            //}
-
-            if (!this.IsPostBack) Initialize();
+            PopulateConnectionsGrid();
+            if (!this.IsPostBack)
+            {
+                BuildGraphPropertyDDL();
+                PopulateFields();
+            }
         }
 
-        protected void Initialize()
-        {
-            BuildGraphPropertyDDL();
-            PopulateLdapConnectionGrid();
-            PopulateFields();
-        }
-
-        void PopulateLdapConnectionGrid()
+        void PopulateConnectionsGrid()
         {
             if (PersistedObject.AzureTenants != null)
             {
@@ -151,13 +101,13 @@ namespace azurecp.ControlTemplates
             // Update object in database
             //UpdatePersistedObject();
             CommitChanges();
-            AzureCPLogging.Log(
+            ClaimsProviderLogging.Log(
                     String.Format("Removed an Azure tenant in PersistedObject {0}", ClaimsProviderConstants.AZURECPCONFIG_NAME),
                     TraceSeverity.Medium,
                     EventSeverity.Information,
                     TraceCategory.Configuration);
 
-            PopulateLdapConnectionGrid();
+            PopulateConnectionsGrid();
         }
 
         /// <summary>
@@ -381,13 +331,13 @@ namespace azurecp.ControlTemplates
             // Update object in database
             //UpdatePersistedObject();
             CommitChanges();
-            AzureCPLogging.Log(
+            ClaimsProviderLogging.Log(
                    String.Format("Added a new Azure tenant in PersistedObject {0}", ClaimsProviderConstants.AZURECPCONFIG_NAME),
                    TraceSeverity.Medium,
                    EventSeverity.Information,
                    TraceCategory.Configuration);
 
-            PopulateLdapConnectionGrid();
+            PopulateConnectionsGrid();
             this.TxtClientId.Text = this.TxtClientSecret.Text = String.Empty;
             this.TxtTenantName.Text = "TENANTNAME.onMicrosoft.com";
         }

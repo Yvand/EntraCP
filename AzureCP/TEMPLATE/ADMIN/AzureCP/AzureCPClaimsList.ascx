@@ -31,13 +31,19 @@
     .azurecp-rowClaimTypeNotUsedInTrust {
         color: red;
         font-style: italic;
+        text-decoration: line-through;
     }
 
-    .azurecp-rowClaimTypeOk {
+    .azurecp-rowUserProperty {
         color: green;
     }
 
-    .azurecp-rowRoleClaimType {
+    .azurecp-rowMainGroupClaimType {
+		font-weight: bold;
+        color: #0072c6;
+    }
+
+    .azurecp-rowGroupProperty {
         color: #0072c6;
     }
 
@@ -255,17 +261,16 @@
         <input id="btnEnableFullScreenMode" type="button" value="Maximize content" onclick="window.Azurecp.ClaimsTablePage.SetFullScreenModeInCurPageOnly(); $('#btnEnableFullScreenMode').hide(); $('#btnDisableFullScreenMode').show(); return false;" style="display: none;" class="ms-ButtonHeightWidth" />
     </div>
     <div id="divTblClaims">
-        <span style="display: block; margin-bottom: 10px;">This table is used by AzureCP to link claim types with Azure objects. Claim types should match those set in SPTrustedIdentityTokenIssuer &quot;{trustname}&quot;.</span>
+        <span style="display: block; margin-bottom: 10px;">This table is used by AzureCP to map claim types set in SPTrustedIdentityTokenIssuer &quot;{trustname}&quot; with Azure AD objects and properties.</span>
         <asp:Table ID="TblClaimsMapping" runat="server"></asp:Table>
         <div id="divLegend">
             <fieldset>
                 <legend>Color legend:</legend>
                 <ol>
-                    <li><span class="azurecp-rowidentityclaim">This color</span><span> shows the identity claim type set in SPTrust {trustname}. It must always be present and unique, otherwise AzureCP won&#39;t work.</span></li>
-                    <li><span class="azurecp-rowClaimTypeOk">This color</span><span> shows a claim type set in SPTrust {trustname}.</span></li>
-                    <li><span class="azurecp-rowClaimTypeNotUsedInTrust">This color</span><span> shows a claim type missing in SPTrust {trustname}, thus it won&#39;t be used by AzureCP.</span></li>
-                    <li><span class="azurecp-rowRoleClaimType">This color</span><span> shows role claim type set in SPTrust {trustname}. There must be only 1 and AzureCP can use it to augment SAML token of user with his group membership. Augmentation can be disabled in global settings page.</span></li>
-                    <li><span>This color shows an optional entry.</span></li>
+                    <li><span class="azurecp-rowidentityclaim">This formatting</span><span> shows the identity claim type set in SPTrust &quot;{trustname}&quot;. It is required for AzureCP to work.</span></li>
+                    <li><span class="azurecp-rowUserClaimType">This formatting</span><span> shows a claim type set in SPTrust &quot;{trustname}&quot;.</span></li>
+                    <li><span class="azurecp-rowClaimTypeNotUsedInTrust">This formatting</span><span> shows a claim type not set in SPTrust &quot;{trustname}&quot;, it will be ignored by AzureCP and may be deleted.</span></li>
+                    <li><span class="azurecp-rowRoleClaimType">This formatting</span><span> shows the claim type mapped to directory object &quot;Group&quot;. AzureCP supports only 1 claim type for this object.</span></li>
                 </ol>
             </fieldset>
         </div>

@@ -14,7 +14,7 @@ using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 using System.Web;
-using static azurecp.AzureCPLogging;
+using static azurecp.ClaimsProviderLogging;
 using WIF = System.Security.Claims;
 
 /*
@@ -106,7 +106,7 @@ namespace azurecp
                     globalConfiguration = GetConfiguration(context, entityTypes, PersistedObjectName);
                     if (globalConfiguration == null)
                     {
-                        AzureCPLogging.Log(String.Format("[{0}] AzureCPConfig PersistedObject not found. Visit AzureCP admin pages in central administration to create it.", ProviderInternalName),
+                        ClaimsProviderLogging.Log(String.Format("[{0}] AzureCPConfig PersistedObject not found. Visit AzureCP admin pages in central administration to create it.", ProviderInternalName),
                             TraceSeverity.Unexpected, EventSeverity.Error, TraceCategory.Core);
                         // Create a fake persisted object just to get the default settings, it will not be saved in config database
                         globalConfiguration = AzureCPConfig.GetDefaultConfiguration();
@@ -114,14 +114,14 @@ namespace azurecp
                     }
                     else if (globalConfiguration.ClaimTypes == null || globalConfiguration.ClaimTypes.Count == 0)
                     {
-                        AzureCPLogging.Log(String.Format("[{0}] AzureCPConfig PersistedObject was found but there are no AzureADObject set. Visit AzureCP admin pages in central administration to create it.", ProviderInternalName),
+                        ClaimsProviderLogging.Log(String.Format("[{0}] AzureCPConfig PersistedObject was found but there are no AzureADObject set. Visit AzureCP admin pages in central administration to create it.", ProviderInternalName),
                             TraceSeverity.Unexpected, EventSeverity.Error, TraceCategory.Core);
                         // Cannot continue 
                         success = false;
                     }
                     else if (globalConfiguration.AzureTenants == null || globalConfiguration.AzureTenants.Count == 0)
                     {
-                        AzureCPLogging.Log(String.Format("[{0}] AzureCPConfig PersistedObject was found but there are no Azure tenant set. Visit AzureCP admin pages in central administration to add one.", ProviderInternalName),
+                        ClaimsProviderLogging.Log(String.Format("[{0}] AzureCPConfig PersistedObject was found but there are no Azure tenant set. Visit AzureCP admin pages in central administration to add one.", ProviderInternalName),
                             TraceSeverity.Unexpected, EventSeverity.Error, TraceCategory.Core);
                         // Cannot continue 
                         success = false;
@@ -129,13 +129,13 @@ namespace azurecp
                     else
                     {
                         // Persisted object is found and seems valid
-                        AzureCPLogging.Log(String.Format("[{0}] AzureCPConfig PersistedObject found, version: {1}, previous version: {2}", ProviderInternalName, ((SPPersistedObject)globalConfiguration).Version.ToString(), this.CurrentConfigurationVersion.ToString()),
+                        ClaimsProviderLogging.Log(String.Format("[{0}] AzureCPConfig PersistedObject found, version: {1}, previous version: {2}", ProviderInternalName, ((SPPersistedObject)globalConfiguration).Version.ToString(), this.CurrentConfigurationVersion.ToString()),
                             TraceSeverity.VerboseEx, EventSeverity.Information, TraceCategory.Core);
                         if (this.CurrentConfigurationVersion != ((SPPersistedObject)globalConfiguration).Version)
                         {
                             refreshConfig = true;
                             this.CurrentConfigurationVersion = ((SPPersistedObject)globalConfiguration).Version;
-                            AzureCPLogging.Log(String.Format("[{0}] AzureCPConfig PersistedObject changed, refreshing configuration", ProviderInternalName),
+                            ClaimsProviderLogging.Log(String.Format("[{0}] AzureCPConfig PersistedObject changed, refreshing configuration", ProviderInternalName),
                                 TraceSeverity.Medium, EventSeverity.Information, TraceCategory.Core);
                         }
                     }
@@ -143,7 +143,7 @@ namespace azurecp
                 catch (Exception ex)
                 {
                     success = false;
-                    AzureCPLogging.LogException(ProviderInternalName, "in Initialize", TraceCategory.Core, ex);
+                    ClaimsProviderLogging.LogException(ProviderInternalName, "in Initialize", TraceCategory.Core, ex);
                 }
                 finally
                 { }
@@ -156,7 +156,7 @@ namespace azurecp
                 Lock_Config.EnterWriteLock();
                 try
                 {
-                    AzureCPLogging.Log(String.Format("[{0}] Refreshing configuration", ProviderInternalName),
+                    ClaimsProviderLogging.Log(String.Format("[{0}] Refreshing configuration", ProviderInternalName),
                         TraceSeverity.Verbose, EventSeverity.Information, TraceCategory.Core);
 
                     // Create local persisted object that will never be saved in config DB, it's just a local copy
@@ -167,13 +167,13 @@ namespace azurecp
                     if (this.CurrentConfiguration.ClaimTypes == null)
                     {
                         // this.CurrentConfiguration.ClaimTypes was set to null in SetCustomConfiguration, which is bad
-                        AzureCPLogging.Log(String.Format("[{0}] ClaimTypes was set to null in SetCustomConfiguration, don't set it or set it with actual entries.", ProviderInternalName), TraceSeverity.Unexpected, EventSeverity.Error, TraceCategory.Core);
+                        ClaimsProviderLogging.Log(String.Format("[{0}] ClaimTypes was set to null in SetCustomConfiguration, don't set it or set it with actual entries.", ProviderInternalName), TraceSeverity.Unexpected, EventSeverity.Error, TraceCategory.Core);
                         return false;
                     }
 
                     if (this.CurrentConfiguration.AzureTenants == null || this.CurrentConfiguration.AzureTenants.Count == 0)
                     {
-                        AzureCPLogging.Log(String.Format("[{0}] AzureTenants was not set. Override method SetCustomConfiguration to set it.", ProviderInternalName), TraceSeverity.Unexpected, EventSeverity.Error, TraceCategory.Core);
+                        ClaimsProviderLogging.Log(String.Format("[{0}] AzureTenants was not set. Override method SetCustomConfiguration to set it.", ProviderInternalName), TraceSeverity.Unexpected, EventSeverity.Error, TraceCategory.Core);
                         return false;
                     }
 
@@ -187,7 +187,7 @@ namespace azurecp
                 catch (Exception ex)
                 {
                     success = false;
-                    AzureCPLogging.LogException(ProviderInternalName, "in Initialize, while refreshing configuration", TraceCategory.Core, ex);
+                    ClaimsProviderLogging.LogException(ProviderInternalName, "in Initialize, while refreshing configuration", TraceCategory.Core, ex);
                 }
                 finally
                 {
@@ -238,7 +238,7 @@ namespace azurecp
                 // Check if identity claim is there. Should always check property SPTrustedClaimTypeInformation.MappedClaimType: http://msdn.microsoft.com/en-us/library/microsoft.sharepoint.administration.claims.sptrustedclaimtypeinformation.mappedclaimtype.aspx
                 if (!identityClaimTypeFound)
                 {
-                    AzureCPLogging.Log(String.Format("[{0}] Impossible to continue because identity claim type \"{1}\" set in the SPTrustedIdentityTokenIssuer \"{2}\" is missing in AzureADObjects.", ProviderInternalName, SPTrust.IdentityClaimTypeInformation.MappedClaimType, SPTrust.Name), TraceSeverity.Unexpected, EventSeverity.ErrorCritical, TraceCategory.Core);
+                    ClaimsProviderLogging.Log(String.Format("[{0}] Impossible to continue because identity claim type \"{1}\" set in the SPTrustedIdentityTokenIssuer \"{2}\" is missing in AzureADObjects.", ProviderInternalName, SPTrust.IdentityClaimTypeInformation.MappedClaimType, SPTrust.Name), TraceSeverity.Unexpected, EventSeverity.ErrorCritical, TraceCategory.Core);
                     return false;
                 }
 
@@ -282,7 +282,7 @@ namespace azurecp
             }
             catch (Exception ex)
             {
-                AzureCPLogging.LogException(ProviderInternalName, "in InitializeClaimTypeConfigList", TraceCategory.Core, ex);
+                ClaimsProviderLogging.LogException(ProviderInternalName, "in InitializeClaimTypeConfigList", TraceCategory.Core, ex);
                 success = false;
             }
             return success;
@@ -356,9 +356,9 @@ namespace azurecp
                 return lp.First();
 
             if (lp != null && lp.Count() > 1)
-                AzureCPLogging.Log(String.Format("[{0}] Claims provider {0} is associated to multiple SPTrustedIdentityTokenIssuer, which is not supported because at runtime there is no way to determine what TrustedLoginProvider is currently calling", providerInternalName), TraceSeverity.Unexpected, EventSeverity.Error, TraceCategory.Core);
+                ClaimsProviderLogging.Log(String.Format("[{0}] Claims provider {0} is associated to multiple SPTrustedIdentityTokenIssuer, which is not supported because at runtime there is no way to determine what TrustedLoginProvider is currently calling", providerInternalName), TraceSeverity.Unexpected, EventSeverity.Error, TraceCategory.Core);
 
-            AzureCPLogging.Log(String.Format("[{0}] Claims provider {0} is not associated with any SPTrustedIdentityTokenIssuer so it cannot create permissions.\r\nVisit http://ldapcp.codeplex.com for installation procedure or set property ClaimProviderName with PowerShell cmdlet Get-SPTrustedIdentityTokenIssuer to create association.", providerInternalName), TraceSeverity.High, EventSeverity.Warning, TraceCategory.Core);
+            ClaimsProviderLogging.Log(String.Format("[{0}] Claims provider {0} is not associated with any SPTrustedIdentityTokenIssuer so it cannot create permissions.\r\nVisit http://ldapcp.codeplex.com for installation procedure or set property ClaimProviderName with PowerShell cmdlet Get-SPTrustedIdentityTokenIssuer to create association.", providerInternalName), TraceSeverity.High, EventSeverity.Warning, TraceCategory.Core);
             return null;
         }
 
@@ -456,11 +456,11 @@ namespace azurecp
                 {
                     pe.EntityData[entityAttrib.EntityDataKey] = entityAttribValue;
                     nbMetadata++;
-                    AzureCPLogging.Log(String.Format("[{0}] Added metadata \"{1}\" with value \"{2}\" to permission", ProviderInternalName, entityAttrib.EntityDataKey, entityAttribValue), TraceSeverity.VerboseEx, EventSeverity.Information, TraceCategory.Claims_Picking);
+                    ClaimsProviderLogging.Log(String.Format("[{0}] Added metadata \"{1}\" with value \"{2}\" to permission", ProviderInternalName, entityAttrib.EntityDataKey, entityAttribValue), TraceSeverity.VerboseEx, EventSeverity.Information, TraceCategory.Claims_Picking);
                 }
             }
 
-            AzureCPLogging.Log($"[{ProviderInternalName}] Created entity: display text: \"{pe.DisplayText}\", value: \"{pe.Claim.Value}\", claim type: \"{pe.Claim.ClaimType}\", and filled with {nbMetadata.ToString()} metadata.", TraceSeverity.VerboseEx, EventSeverity.Information, TraceCategory.Claims_Picking);
+            ClaimsProviderLogging.Log($"[{ProviderInternalName}] Created entity: display text: \"{pe.DisplayText}\", value: \"{pe.Claim.Value}\", claim type: \"{pe.Claim.ClaimType}\", and filled with {nbMetadata.ToString()} metadata.", TraceSeverity.VerboseEx, EventSeverity.Information, TraceCategory.Claims_Picking);
             return pe;
         }
 
@@ -562,10 +562,10 @@ namespace azurecp
                 if (claimTypeToResolve.DirectoryObjectType == AzureADObjectType.User && !String.IsNullOrEmpty(claimTypeToResolve.EntityDataKey))
                 {
                     pe.EntityData[claimTypeToResolve.EntityDataKey] = pe.Claim.Value;
-                    AzureCPLogging.Log($"[{ProviderInternalName}] Added metadata '{claimTypeToResolve.EntityDataKey}' with value '{pe.EntityData[claimTypeToResolve.EntityDataKey]}' to permission", TraceSeverity.Verbose, EventSeverity.Information, TraceCategory.Claims_Picking);
+                    ClaimsProviderLogging.Log($"[{ProviderInternalName}] Added metadata '{claimTypeToResolve.EntityDataKey}' with value '{pe.EntityData[claimTypeToResolve.EntityDataKey]}' to permission", TraceSeverity.Verbose, EventSeverity.Information, TraceCategory.Claims_Picking);
                 }
                 entities.Add(pe);
-                AzureCPLogging.Log($"[{ProviderInternalName}] Created permission: display text: '{pe.DisplayText}', value: '{pe.Claim.Value}', claim type: '{pe.Claim.ClaimType}'.", TraceSeverity.Verbose, EventSeverity.Information, TraceCategory.Claims_Picking);
+                ClaimsProviderLogging.Log($"[{ProviderInternalName}] Created permission: display text: '{pe.DisplayText}', value: '{pe.Claim.Value}', claim type: '{pe.Claim.ClaimType}'.", TraceSeverity.Verbose, EventSeverity.Information, TraceCategory.Claims_Picking);
             }
             return entities.Count > 0 ? entities : null;
         }
@@ -590,7 +590,7 @@ namespace azurecp
             }
             catch (Exception ex)
             {
-                AzureCPLogging.LogException(ProviderInternalName, "in FillClaimTypes", TraceCategory.Core, ex);
+                ClaimsProviderLogging.LogException(ProviderInternalName, "in FillClaimTypes", TraceCategory.Core, ex);
             }
             finally
             {
@@ -638,7 +638,7 @@ namespace azurecp
             SPOriginalIssuerType loginType = SPOriginalIssuers.GetIssuerType(decodedEntity.OriginalIssuer);
             if (loginType != SPOriginalIssuerType.TrustedProvider && loginType != SPOriginalIssuerType.ClaimProvider)
             {
-                AzureCPLogging.Log($"[{ProviderInternalName}] Not trying to augment '{decodedEntity.Value}' because OriginalIssuer is '{decodedEntity.OriginalIssuer}'.",
+                ClaimsProviderLogging.Log($"[{ProviderInternalName}] Not trying to augment '{decodedEntity.Value}' because OriginalIssuer is '{decodedEntity.OriginalIssuer}'.",
                     TraceSeverity.VerboseEx, EventSeverity.Information, TraceCategory.Augmentation);
                 return;
             }
@@ -652,11 +652,11 @@ namespace azurecp
                 if (!this.CurrentConfiguration.EnableAugmentation)
                     return;
 
-                AzureCPLogging.Log($"[{ProviderInternalName}] Starting augmentation for user '{decodedEntity.Value}'.", TraceSeverity.Verbose, EventSeverity.Information, TraceCategory.Augmentation);
+                ClaimsProviderLogging.Log($"[{ProviderInternalName}] Starting augmentation for user '{decodedEntity.Value}'.", TraceSeverity.Verbose, EventSeverity.Information, TraceCategory.Augmentation);
                 ClaimTypeConfig groupClaimTypeSettings = this.ProcessedClaimTypesList.FirstOrDefault(x => x.DirectoryObjectType == AzureADObjectType.Group);
                 if (groupClaimTypeSettings == null)
                 {
-                    AzureCPLogging.Log($"[{ProviderInternalName}] No role claim type with SPClaimEntityTypes set to 'FormsRole' was found, please check claims mapping table.",
+                    ClaimsProviderLogging.Log($"[{ProviderInternalName}] No role claim type with SPClaimEntityTypes set to 'FormsRole' was found, please check claims mapping table.",
                         TraceSeverity.High, EventSeverity.Error, TraceCategory.Augmentation);
                     return;
                 }
@@ -671,21 +671,21 @@ namespace azurecp
                     foreach (SPClaim group in groups)
                     {
                         claims.Add(group);
-                        AzureCPLogging.Log($"[{ProviderInternalName}] Added group '{group.Value}' to user '{infos.IncomingEntity.Value}'",
+                        ClaimsProviderLogging.Log($"[{ProviderInternalName}] Added group '{group.Value}' to user '{infos.IncomingEntity.Value}'",
                             TraceSeverity.Verbose, EventSeverity.Information, TraceCategory.Augmentation);
                     }
-                    AzureCPLogging.Log($"[{ProviderInternalName}] User '{infos.IncomingEntity.Value}' was augmented with {groups.Count.ToString()} groups in {timer.ElapsedMilliseconds.ToString()} ms",
+                    ClaimsProviderLogging.Log($"[{ProviderInternalName}] User '{infos.IncomingEntity.Value}' was augmented with {groups.Count.ToString()} groups in {timer.ElapsedMilliseconds.ToString()} ms",
                         TraceSeverity.Medium, EventSeverity.Information, TraceCategory.Augmentation);
                 }
                 else
                 {
-                    AzureCPLogging.Log($"[{ProviderInternalName}] No group found for user '{infos.IncomingEntity.Value}', search took {timer.ElapsedMilliseconds.ToString()} ms",
+                    ClaimsProviderLogging.Log($"[{ProviderInternalName}] No group found for user '{infos.IncomingEntity.Value}', search took {timer.ElapsedMilliseconds.ToString()} ms",
                         TraceSeverity.Medium, EventSeverity.Information, TraceCategory.Augmentation);
                 }
             }
             catch (Exception ex)
             {
-                AzureCPLogging.LogException(ProviderInternalName, "in AugmentEntity", TraceCategory.Augmentation, ex);
+                ClaimsProviderLogging.LogException(ProviderInternalName, "in AugmentEntity", TraceCategory.Augmentation, ex);
             }
             finally
             {
@@ -764,7 +764,7 @@ namespace azurecp
             }
             catch (Exception ex)
             {
-                AzureCPLogging.LogException(ProviderInternalName, "in FillHierarchy", TraceCategory.Claims_Picking, ex);
+                ClaimsProviderLogging.LogException(ProviderInternalName, "in FillHierarchy", TraceCategory.Claims_Picking, ex);
             }
             finally
             {
@@ -785,7 +785,7 @@ namespace azurecp
 
         protected override void FillResolve(Uri context, string[] entityTypes, SPClaim resolveInput, List<Microsoft.SharePoint.WebControls.PickerEntity> resolved)
         {
-            AzureCPLogging.LogDebug($"context passed to FillResolve (SPClaim): {context.ToString()}");
+            ClaimsProviderLogging.LogDebug($"context passed to FillResolve (SPClaim): {context.ToString()}");
             List<AzureADObjectType> aadEntityTypes = new List<AzureADObjectType>();
             if (entityTypes.Contains(SPClaimEntityTypes.User))
                 aadEntityTypes.Add(AzureADObjectType.User);
@@ -808,17 +808,17 @@ namespace azurecp
                 if (permissions.Count == 1)
                 {
                     resolved.Add(permissions[0]);
-                    AzureCPLogging.Log(String.Format("[{0}] Validated permission: claim value: \"{1}\", claim type: \"{2}\"", ProviderInternalName, permissions[0].Claim.Value, permissions[0].Claim.ClaimType),
+                    ClaimsProviderLogging.Log(String.Format("[{0}] Validated permission: claim value: \"{1}\", claim type: \"{2}\"", ProviderInternalName, permissions[0].Claim.Value, permissions[0].Claim.ClaimType),
                         TraceSeverity.Medium, EventSeverity.Information, TraceCategory.Claims_Picking);
                 }
                 else
                 {
-                    AzureCPLogging.Log(String.Format("[{0}] Validation of incoming claim returned {1} permissions instead of 1 expected. Aborting operation", ProviderInternalName, permissions.Count.ToString()), TraceSeverity.Unexpected, EventSeverity.Error, TraceCategory.Claims_Picking);
+                    ClaimsProviderLogging.Log(String.Format("[{0}] Validation of incoming claim returned {1} permissions instead of 1 expected. Aborting operation", ProviderInternalName, permissions.Count.ToString()), TraceSeverity.Unexpected, EventSeverity.Error, TraceCategory.Claims_Picking);
                 }
             }
             catch (Exception ex)
             {
-                AzureCPLogging.LogException(ProviderInternalName, "in FillResolve(SPClaim)", TraceCategory.Claims_Picking, ex);
+                ClaimsProviderLogging.LogException(ProviderInternalName, "in FillResolve(SPClaim)", TraceCategory.Claims_Picking, ex);
             }
             finally
             {
@@ -846,13 +846,13 @@ namespace azurecp
                 foreach (PickerEntity entity in permissions)
                 {
                     resolved.Add(entity);
-                    AzureCPLogging.Log(String.Format("[{0}] Added entity: claim value: \"{1}\", claim type: \"{2}\"", ProviderInternalName, entity.Claim.Value, entity.Claim.ClaimType),
+                    ClaimsProviderLogging.Log(String.Format("[{0}] Added entity: claim value: \"{1}\", claim type: \"{2}\"", ProviderInternalName, entity.Claim.Value, entity.Claim.ClaimType),
                         TraceSeverity.Verbose, EventSeverity.Information, TraceCategory.Claims_Picking);
                 }
             }
             catch (Exception ex)
             {
-                AzureCPLogging.LogException(ProviderInternalName, "in FillResolve(string)", TraceCategory.Claims_Picking, ex);
+                ClaimsProviderLogging.LogException(ProviderInternalName, "in FillResolve(string)", TraceCategory.Claims_Picking, ex);
             }
             finally
             {
@@ -901,13 +901,13 @@ namespace azurecp
                         searchTree.AddChild(matchNode);
                     }
                     matchNode.AddEntity(entity);
-                    AzureCPLogging.Log(String.Format("[{0}] Added entity: claim value: \"{1}\", claim type: \"{2}\"", ProviderInternalName, entity.Claim.Value, entity.Claim.ClaimType),
+                    ClaimsProviderLogging.Log(String.Format("[{0}] Added entity: claim value: \"{1}\", claim type: \"{2}\"", ProviderInternalName, entity.Claim.Value, entity.Claim.ClaimType),
                         TraceSeverity.Verbose, EventSeverity.Information, TraceCategory.Claims_Picking);
                 }
             }
             catch (Exception ex)
             {
-                AzureCPLogging.LogException(ProviderInternalName, "in FillSearch", TraceCategory.Claims_Picking, ex);
+                ClaimsProviderLogging.LogException(ProviderInternalName, "in FillSearch", TraceCategory.Claims_Picking, ex);
             }
             finally
             {
@@ -937,7 +937,7 @@ namespace azurecp
                         foreach (var entity in entities)
                         {
                             permissions.Add(entity);
-                            AzureCPLogging.Log(String.Format("[{0}] Added permission created without LDAP lookup because LDAPCP configured to always resolve input: claim value: {1}, claim type: \"{2}\"", ProviderInternalName, entity.Claim.Value, entity.Claim.ClaimType),
+                            ClaimsProviderLogging.Log(String.Format("[{0}] Added permission created without LDAP lookup because LDAPCP configured to always resolve input: claim value: {1}, claim type: \"{2}\"", ProviderInternalName, entity.Claim.Value, entity.Claim.ClaimType),
                                 TraceSeverity.VerboseEx, EventSeverity.Information, TraceCategory.Claims_Picking);
                         }
                     }
@@ -956,7 +956,7 @@ namespace azurecp
                         if (attribsMatchInputPrefix.Count > 1)
                         {
                             // Multiple attributes have same prefix, which is not allowed
-                            AzureCPLogging.Log(String.Format("[{0}] Multiple attributes have same prefix ({1}), which is not allowed.", ProviderInternalName, attribMatchInputPrefix.PrefixToBypassLookup), TraceSeverity.Unexpected, EventSeverity.Error, TraceCategory.Claims_Picking);
+                            ClaimsProviderLogging.Log(String.Format("[{0}] Multiple attributes have same prefix ({1}), which is not allowed.", ProviderInternalName, attribMatchInputPrefix.PrefixToBypassLookup), TraceSeverity.Unexpected, EventSeverity.Error, TraceCategory.Claims_Picking);
                             return permissions;
                         }
 
@@ -970,7 +970,7 @@ namespace azurecp
                         if (entity != null)
                         {
                             permissions.Add(entity);
-                            AzureCPLogging.Log(String.Format("[{0}] Added permission created without LDAP lookup because input matches a keyword: claim value: \"{1}\", claim type: \"{2}\"", ProviderInternalName, entity.Claim.Value, entity.Claim.ClaimType),
+                            ClaimsProviderLogging.Log(String.Format("[{0}] Added permission created without LDAP lookup because input matches a keyword: claim value: \"{1}\", claim type: \"{2}\"", ProviderInternalName, entity.Claim.Value, entity.Claim.ClaimType),
                                 TraceSeverity.VerboseEx, EventSeverity.Information, TraceCategory.Claims_Picking);
                             return permissions;
                         }
@@ -995,7 +995,7 @@ namespace azurecp
                         if (entity != null)
                         {
                             permissions.Add(entity);
-                            AzureCPLogging.Log(String.Format("[{0}] Added permission without LDAP lookup because corresponding claim type has a keyword associated. Claim value: \"{1}\", Claim type: \"{2}\"", ProviderInternalName, entity.Claim.Value, entity.Claim.ClaimType),
+                            ClaimsProviderLogging.Log(String.Format("[{0}] Added permission without LDAP lookup because corresponding claim type has a keyword associated. Claim value: \"{1}\", Claim type: \"{2}\"", ProviderInternalName, entity.Claim.Value, entity.Claim.ClaimType),
                                 TraceSeverity.VerboseEx, EventSeverity.Information, TraceCategory.Claims_Picking);
                         }
                         return permissions;
@@ -1004,7 +1004,7 @@ namespace azurecp
             }
             catch (Exception ex)
             {
-                AzureCPLogging.LogException(ProviderInternalName, "in SearchOrValidate", TraceCategory.Claims_Picking, ex);
+                ClaimsProviderLogging.LogException(ProviderInternalName, "in SearchOrValidate", TraceCategory.Claims_Picking, ex);
             }
             return permissions;
         }
@@ -1037,7 +1037,7 @@ namespace azurecp
                     foreach (var result in results)
                     {
                         permissions.Add(result.PickerEntity);
-                        AzureCPLogging.Log(String.Format("[{0}] Added permission created with LDAP lookup: claim value: \"{1}\", claim type: \"{2}\"", ProviderInternalName, result.PickerEntity.Claim.Value, result.PickerEntity.Claim.ClaimType),
+                        ClaimsProviderLogging.Log(String.Format("[{0}] Added permission created with LDAP lookup: claim value: \"{1}\", claim type: \"{2}\"", ProviderInternalName, result.PickerEntity.Claim.Value, result.PickerEntity.Claim.ClaimType),
                             TraceSeverity.VerboseEx, EventSeverity.Information, TraceCategory.Claims_Picking);
                     }
                 }
@@ -1149,7 +1149,7 @@ namespace azurecp
                 }
                 catch (Exception ex)
                 {
-                    AzureCPLogging.LogException(ProviderInternalName, String.Format("in QueryAzureADTenantsAsync while querying tenant {0}", coco.TenantName), TraceCategory.Lookup, ex);
+                    ClaimsProviderLogging.LogException(ProviderInternalName, String.Format("in QueryAzureADTenantsAsync while querying tenant {0}", coco.TenantName), TraceCategory.Lookup, ex);
                 }
                 finally
                 {
@@ -1162,10 +1162,10 @@ namespace azurecp
                     {
                         allSearchResults.Add(searchResult);
                     }
-                    AzureCPLogging.Log($"[{ProviderInternalName}] Got {searchResult.UserOrGroupResultList.Count().ToString()} users/groups and {searchResult.DomainsRegisteredInAzureADTenant.Count().ToString()} registered domains in {timer.ElapsedMilliseconds.ToString()} ms from '{coco.TenantName}' with input '{requestInfo.Input}'",
+                    ClaimsProviderLogging.Log($"[{ProviderInternalName}] Got {searchResult.UserOrGroupResultList.Count().ToString()} users/groups and {searchResult.DomainsRegisteredInAzureADTenant.Count().ToString()} registered domains in {timer.ElapsedMilliseconds.ToString()} ms from '{coco.TenantName}' with input '{requestInfo.Input}'",
                         TraceSeverity.Medium, EventSeverity.Information, TraceCategory.Lookup);
                 }
-                else AzureCPLogging.Log($"[{ProviderInternalName}] Got no result from '{coco.TenantName}' with input '{requestInfo.Input}', search took {timer.ElapsedMilliseconds.ToString()} ms", TraceSeverity.Medium, EventSeverity.Information, TraceCategory.Lookup);
+                else ClaimsProviderLogging.Log($"[{ProviderInternalName}] Got no result from '{coco.TenantName}' with input '{requestInfo.Input}', search took {timer.ElapsedMilliseconds.ToString()} ms", TraceSeverity.Medium, EventSeverity.Information, TraceCategory.Lookup);
             });
             //}
             return allSearchResults;
@@ -1173,7 +1173,7 @@ namespace azurecp
 
         protected virtual async Task<AzureADResult> QueryAzureADTenantAsync(RequestInformation requestInfo, AzureTenant coco, string userFilter, string groupFilter, string userSelect, string groupSelect, bool firstAttempt)
         {
-            AzureCPLogging.Log($"[{ProviderInternalName}] Querying Azure AD tenant '{coco.TenantName}' for users/groups/domains, with input '{requestInfo.Input}'", TraceSeverity.VerboseEx, EventSeverity.Information, TraceCategory.Lookup);
+            ClaimsProviderLogging.Log($"[{ProviderInternalName}] Querying Azure AD tenant '{coco.TenantName}' for users/groups/domains, with input '{requestInfo.Input}'", TraceSeverity.VerboseEx, EventSeverity.Information, TraceCategory.Lookup);
             AzureADResult tenantResults = new AzureADResult();
             bool tryAgain = false;
             object lockAddResultToCollection = new object();
@@ -1186,7 +1186,7 @@ namespace azurecp
                     // The Graph client object is thread-safe and re-entrant
                     Task userQueryTask = Task.Run(async () =>
                     {
-                        AzureCPLogging.LogDebug($"[{ProviderInternalName}] UserQueryTask starting for tenant '{coco.TenantName}'");
+                        ClaimsProviderLogging.LogDebug($"[{ProviderInternalName}] UserQueryTask starting for tenant '{coco.TenantName}'");
                         if (String.IsNullOrEmpty(userFilter)) return;
                         IGraphServiceUsersCollectionPage users = await coco.GraphService.Users.Request().Select(userSelect).Filter(userFilter).GetAsync();
                         if (users?.Count > 0)
@@ -1201,11 +1201,11 @@ namespace azurecp
                             }
                             while (users?.Count > 0 && users.NextPageRequest != null);
                         }
-                        AzureCPLogging.LogDebug($"[{ProviderInternalName}] UserQueryTask ended for tenant '{coco.TenantName}'");
+                        ClaimsProviderLogging.LogDebug($"[{ProviderInternalName}] UserQueryTask ended for tenant '{coco.TenantName}'");
                     }, cts.Token);
                     Task groupQueryTask = Task.Run(async () =>
                     {
-                        AzureCPLogging.LogDebug($"[{ProviderInternalName}] GroupQueryTask starting for tenant '{coco.TenantName}'");
+                        ClaimsProviderLogging.LogDebug($"[{ProviderInternalName}] GroupQueryTask starting for tenant '{coco.TenantName}'");
                         if (String.IsNullOrEmpty(groupFilter)) return;
                         IGraphServiceGroupsCollectionPage groups = await coco.GraphService.Groups.Request().Select(groupSelect).Filter(groupFilter).GetAsync();
                         if (groups?.Count > 0)
@@ -1220,17 +1220,17 @@ namespace azurecp
                             }
                             while (groups?.Count > 0 && groups.NextPageRequest != null);
                         }
-                        AzureCPLogging.LogDebug($"[{ProviderInternalName}] GroupQueryTask ended for tenant '{coco.TenantName}'");
+                        ClaimsProviderLogging.LogDebug($"[{ProviderInternalName}] GroupQueryTask ended for tenant '{coco.TenantName}'");
                     }, cts.Token);
                     Task domainQueryTask = Task.Run(async () =>
                     {
-                        AzureCPLogging.LogDebug($"[{ProviderInternalName}] DomainQueryTask starting for tenant '{coco.TenantName}'");
+                        ClaimsProviderLogging.LogDebug($"[{ProviderInternalName}] DomainQueryTask starting for tenant '{coco.TenantName}'");
                         IGraphServiceDomainsCollectionPage domains = await coco.GraphService.Domains.Request().GetAsync();
                         lock (lockAddResultToCollection)
                         {
                             tenantResults.DomainsRegisteredInAzureADTenant.AddRange(domains.Where(x => x.IsVerified == true).Select(x => x.Id));
                         }
-                        AzureCPLogging.LogDebug($"[{ProviderInternalName}] DomainQueryTask ended for tenant '{coco.TenantName}'");
+                        ClaimsProviderLogging.LogDebug($"[{ProviderInternalName}] DomainQueryTask ended for tenant '{coco.TenantName}'");
                     }, cts.Token);
 
                     Task.WaitAll(new Task[3] { userQueryTask, groupQueryTask, domainQueryTask }, ClaimsProviderConstants.timeout, cts.Token);
@@ -1239,24 +1239,24 @@ namespace azurecp
             }
             catch (OperationCanceledException)
             {
-                AzureCPLogging.Log($"[{ProviderInternalName}] Query on Azure AD tenant '{coco.TenantName}' exceeded timeout of {ClaimsProviderConstants.timeout} ms and was cancelled.", TraceSeverity.Unexpected, EventSeverity.Error, TraceCategory.Lookup);
+                ClaimsProviderLogging.Log($"[{ProviderInternalName}] Query on Azure AD tenant '{coco.TenantName}' exceeded timeout of {ClaimsProviderConstants.timeout} ms and was cancelled.", TraceSeverity.Unexpected, EventSeverity.Error, TraceCategory.Lookup);
                 tryAgain = true;
             }
             catch (AggregateException ex)
             {
                 // Task.WaitAll throws an AggregateException, which contains all exceptions thrown by tasks it waited on
-                AzureCPLogging.LogException(ProviderInternalName, $"while querying tenant '{coco.TenantName}'", TraceCategory.Lookup, ex);
+                ClaimsProviderLogging.LogException(ProviderInternalName, $"while querying tenant '{coco.TenantName}'", TraceCategory.Lookup, ex);
                 tryAgain = true;
             }
             finally
             {
-                AzureCPLogging.LogDebug($"[{ProviderInternalName}] Releasing cancellation token of tenant '{coco.TenantName}'");
+                ClaimsProviderLogging.LogDebug($"[{ProviderInternalName}] Releasing cancellation token of tenant '{coco.TenantName}'");
                 cts.Dispose();
             }
 
             if (firstAttempt && tryAgain)
             {
-                AzureCPLogging.Log($"[{ProviderInternalName}] Doing new attempt to query tenant '{coco.TenantName}'...",
+                ClaimsProviderLogging.Log($"[{ProviderInternalName}] Doing new attempt to query tenant '{coco.TenantName}'...",
                     TraceSeverity.Medium, EventSeverity.Information, TraceCategory.Lookup);
                 tenantResults = await QueryAzureADTenantAsync(requestInfo, coco, userFilter, groupFilter, userSelect, groupSelect, false).ConfigureAwait(false);
             }
@@ -1294,20 +1294,20 @@ namespace azurecp
                 if (userOrGroup is User)
                 {
                     // Always skip shadow users: UserType is Guest and his mail matches a verified domain in AAD tenant
-                    string userType = GetGraphPropertyValue(userOrGroup, "UserType");
+                    string userType = GetGraphPropertyValue(userOrGroup, AzureADUserTypeHelper.PropertyNameContainingUserType);
                     if (String.IsNullOrEmpty(userType))
                     {
-                        AzureCPLogging.Log(
+                        ClaimsProviderLogging.Log(
                             String.Format("[{0}] User {1} filtered out because his property UserType is empty.", ProviderInternalName, ((User)userOrGroup).UserPrincipalName),
                             TraceSeverity.Unexpected, EventSeverity.Warning, TraceCategory.Lookup);
                         continue;
                     }
-                    if (String.Equals(userType, ClaimsProviderConstants.GraphUserType.Guest, StringComparison.InvariantCultureIgnoreCase))
+                    if (String.Equals(userType, AzureADUserTypeHelper.GuestUserType, StringComparison.InvariantCultureIgnoreCase))
                     {
                         string mail = GetGraphPropertyValue(userOrGroup, "Mail");
                         if (String.IsNullOrEmpty(mail))
                         {
-                            AzureCPLogging.Log(
+                            ClaimsProviderLogging.Log(
                                 String.Format("[{0}] Guest user {1} filtered out because his mail is empty.", ProviderInternalName, ((User)userOrGroup).UserPrincipalName),
                                 TraceSeverity.Unexpected, EventSeverity.Warning, TraceCategory.Lookup);
                             continue;
@@ -1316,7 +1316,7 @@ namespace azurecp
                         string maildomain = mail.Split('@')[1];
                         if (domains.Any(x => String.Equals(x, maildomain, StringComparison.InvariantCultureIgnoreCase)))
                         {
-                            AzureCPLogging.Log(
+                            ClaimsProviderLogging.Log(
                                 String.Format("[{0}] Guest user {1} filtered out because he is in a domain registered in AAD tenant.", ProviderInternalName, mail),
                                 TraceSeverity.Verbose, EventSeverity.Verbose, TraceCategory.Lookup);
                             continue;
@@ -1389,7 +1389,7 @@ namespace azurecp
                 }
             }
 
-            AzureCPLogging.Log($"[{ProviderInternalName}] {processedResults.Count} permission(s) to create after filtering", TraceSeverity.Verbose, EventSeverity.Information, TraceCategory.Lookup);
+            ClaimsProviderLogging.Log($"[{ProviderInternalName}] {processedResults.Count} permission(s) to create after filtering", TraceSeverity.Verbose, EventSeverity.Information, TraceCategory.Lookup);
             foreach (AzureCPResult result in processedResults)
             {
                 PickerEntity pe = CreatePickerEntityHelper(result);
@@ -1421,7 +1421,7 @@ namespace azurecp
             }
             catch (Exception ex)
             {
-                AzureCPLogging.LogException(ProviderInternalName, "in GetClaimTypeForUserKey", TraceCategory.Rehydration, ex);
+                ClaimsProviderLogging.LogException(ProviderInternalName, "in GetClaimTypeForUserKey", TraceCategory.Rehydration, ex);
             }
             finally
             {
@@ -1452,13 +1452,13 @@ namespace azurecp
             this.Lock_Config.EnterReadLock();
             try
             {
-                AzureCPLogging.Log($"[{ProviderInternalName}] Returning user key for '{entity.Value}'",
+                ClaimsProviderLogging.Log($"[{ProviderInternalName}] Returning user key for '{entity.Value}'",
                     TraceSeverity.VerboseEx, EventSeverity.Information, TraceCategory.Rehydration);
                 return CreateClaim(IdentityClaimTypeConfig.ClaimType, curUser.Value, curUser.ValueType);
             }
             catch (Exception ex)
             {
-                AzureCPLogging.LogException(ProviderInternalName, "in GetUserKeyForEntity", TraceCategory.Rehydration, ex);
+                ClaimsProviderLogging.LogException(ProviderInternalName, "in GetUserKeyForEntity", TraceCategory.Rehydration, ex);
             }
             finally
             {

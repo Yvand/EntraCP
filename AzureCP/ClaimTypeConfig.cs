@@ -6,7 +6,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using WIF = System.Security.Claims;
-using static azurecp.AzureCPLogging;
+using static azurecp.ClaimsProviderLogging;
 using System.Collections.ObjectModel;
 using System.Collections;
 

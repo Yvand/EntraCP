@@ -36,7 +36,7 @@ namespace azurecp
             base.FeatureActivated(properties);
             SPSecurity.RunWithElevatedPrivileges(delegate()
             {
-                AzureCPLogging svc = AzureCPLogging.Local;
+                ClaimsProviderLogging svc = ClaimsProviderLogging.Local;
             });
         }        
 
@@ -44,7 +44,7 @@ namespace azurecp
         {
             SPSecurity.RunWithElevatedPrivileges(delegate()
             {
-                AzureCPLogging.Unregister();
+                ClaimsProviderLogging.Unregister();
             });
         }
 
@@ -61,7 +61,7 @@ namespace azurecp
         {
             SPSecurity.RunWithElevatedPrivileges(delegate()
             {
-                AzureCPLogging svc = AzureCPLogging.Local;
+                ClaimsProviderLogging svc = ClaimsProviderLogging.Local;
             });
         }
     }

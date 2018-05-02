@@ -6,7 +6,7 @@ using Microsoft.SharePoint.WebControls;
 using System;
 using System.Linq;
 using System.Web.UI;
-using static azurecp.AzureCPLogging;
+using static azurecp.ClaimsProviderLogging;
 
 namespace azurecp.ControlTemplates
 {
@@ -122,14 +122,14 @@ namespace azurecp.ControlTemplates
         public virtual ConfigStatus ValidatePrerequisite()
         {
             Status = ConfigStatus.AllGood;
-            // DataBind() must be called to bind attributes set in UserControl if they are set as "<%# #>"
+            // DataBind() must be called to bind attributes that are set as "<%# #>"in .aspx
             DataBind();
             if (String.IsNullOrEmpty(ClaimsProviderName)) Status |= ConfigStatus.ClaimsProviderNamePropNotSet;
             if (String.IsNullOrEmpty(PersistedObjectName)) Status |= ConfigStatus.PersistedObjectNamePropNotSet;
             if (String.IsNullOrEmpty(PersistedObjectID)) Status |= ConfigStatus.PersistedObjectIDPropNotSet;
             if (Status != ConfigStatus.AllGood)
             {
-                AzureCPLogging.Log($"[{ClaimsProviderName}] {MostImportantError}", TraceSeverity.Unexpected, EventSeverity.Error, TraceCategory.Configuration);
+                ClaimsProviderLogging.Log($"[{ClaimsProviderName}] {MostImportantError}", TraceSeverity.Unexpected, EventSeverity.Error, TraceCategory.Configuration);
                 // Should not go further if those requirements are not met
                 return Status;
             }
@@ -145,7 +145,6 @@ namespace azurecp.ControlTemplates
             }
             if (IdentityClaim == null && Status == ConfigStatus.AllGood)
             {
-                //FINDTOFIRSTORDEFAULT
                 IdentityClaim = this.IdentityClaim = PersistedObject.ClaimTypes.FirstOrDefault(x => String.Equals(CurrentTrustedLoginProvider.IdentityClaimTypeInformation.MappedClaimType, x.ClaimType, StringComparison.InvariantCultureIgnoreCase) && !x.UseMainClaimTypeOfDirectoryObject);
                 if (IdentityClaim == null) Status |= ConfigStatus.NoIdentityClaimType;
             }
@@ -154,7 +153,7 @@ namespace azurecp.ControlTemplates
                 Status |= ConfigStatus.PersistedObjectStale;
             }
 
-            if (Status != ConfigStatus.AllGood) AzureCPLogging.Log($"[{ClaimsProviderName}] {MostImportantError}", TraceSeverity.Unexpected, EventSeverity.Error, TraceCategory.Configuration);
+            if (Status != ConfigStatus.AllGood) ClaimsProviderLogging.Log($"[{ClaimsProviderName}] {MostImportantError}", TraceSeverity.Unexpected, EventSeverity.Error, TraceCategory.Configuration);
             return Status;
         }
 
@@ -162,8 +161,8 @@ namespace azurecp.ControlTemplates
         {
             PersistedObject.Update();
             PersistedObjectVersion = PersistedObject.Version;
-            AzureCPLogging.Log(
-               $"[{ClaimsProviderName}] Updated PersistedObject {PersistedObjectName} to version {PersistedObject.Version}", 
+            ClaimsProviderLogging.Log(
+               $"[{ClaimsProviderName}] Updated configuration {PersistedObjectName} to version {PersistedObject.Version}", 
                TraceSeverity.Medium,
                EventSeverity.Information,
                TraceCategory.Configuration);

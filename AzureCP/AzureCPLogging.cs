@@ -11,7 +11,7 @@ namespace azurecp
     /// Implemented as documented in http://www.sbrickey.com/Tech/Blog/Post/Custom_Logging_in_SharePoint_2010
     /// </summary>
     [System.Runtime.InteropServices.GuidAttribute("3DD2C709-C860-4A20-8AF2-0FDDAA9C406B")]
-    public class AzureCPLogging : SPDiagnosticsServiceBase
+    public class ClaimsProviderLogging : SPDiagnosticsServiceBase
     {
         public static string DiagnosticsAreaName = "AzureCP";
 
@@ -117,28 +117,28 @@ namespace azurecp
             }
         }
 
-        public static AzureCPLogging Local
+        public static ClaimsProviderLogging Local
         {
             get
             {
-                var LogSvc = SPDiagnosticsServiceBase.GetLocal<AzureCPLogging>();
+                var LogSvc = SPDiagnosticsServiceBase.GetLocal<ClaimsProviderLogging>();
                 // if the Logging Service is registered, just return it.
                 if (LogSvc != null)
                     return LogSvc;
 
-                AzureCPLogging svc = null;
+                ClaimsProviderLogging svc = null;
                 SPSecurity.RunWithElevatedPrivileges(delegate ()
                 {
                     // otherwise instantiate and register the new instance, which requires farm administrator privileges
-                    svc = new AzureCPLogging();
+                    svc = new ClaimsProviderLogging();
                     //svc.Update();
                 });
                 return svc;
             }
         }
 
-        public AzureCPLogging() : base(DiagnosticsAreaName, SPFarm.Local) { }
-        public AzureCPLogging(string name, SPFarm farm) : base(name, farm) { }
+        public ClaimsProviderLogging() : base(DiagnosticsAreaName, SPFarm.Local) { }
+        public ClaimsProviderLogging(string name, SPFarm farm) : base(name, farm) { }
 
         protected override IEnumerable<SPDiagnosticsArea> ProvideAreas() { yield return Area; }
         public override string DisplayName { get { return DiagnosticsAreaName; } }
@@ -166,7 +166,7 @@ namespace azurecp
         public static void Unregister()
         {
             SPFarm.Local.Services
-                        .OfType<AzureCPLogging>()
+                        .OfType<ClaimsProviderLogging>()
                         .ToList()
                         .ForEach(s =>
                         {
