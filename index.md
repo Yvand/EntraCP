@@ -2,7 +2,11 @@ This claims provider for SharePoint 2013 and 2016 leverages [Azure AD Graph Clie
 
 ![People picker with AzureCP](https://github.com/Yvand/AzureCP/raw/gh-pages/assets/people%20picker%20AzureCP_2.png)
 
-[Check this article](https://docs.microsoft.com/en-us/office365/enterprise/using-azure-ad-for-sharepoint-server-authentication) to find out how to configure SharePoint 2013 / 2016 to trust Azure AD.
+[Read this article](https://docs.microsoft.com/en-us/office365/enterprise/using-azure-ad-for-sharepoint-server-authentication) to learn how to federate SharePoint 2013 / 2016 with Azure AD.
+
+> **Note:**  
+> If you are starting a new project or testing AzureCP for the first time, I strongly recommend to test [the new version v12](https://github.com/Yvand/AzureCP/releases/tag/v12), which uses Microsoft Graph API and brings significant improvements in performance, customization capabilities and reliability.  
+> It's under active development but is sufficiently stable for testing. Note that it has breaking changes which may impact environments that update from a previous version.
 
 ## Features
 
