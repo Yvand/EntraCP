@@ -249,6 +249,11 @@ namespace azurecp
                 throw new InvalidOperationException($"Claim type '{item.ClaimType}' already exists in the collection");
             }
 
+            if (Contains(item, new ClaimTypeConfigEnsureUniquePrefixToBypassLookup()))
+            {
+                throw new InvalidOperationException($"Prefix '{item.PrefixToBypassLookup}' is already set with another claim type and must be unique");
+            }
+
             if (Contains(item))
             {
                 if (String.IsNullOrEmpty(item.ClaimType))
@@ -438,62 +443,18 @@ namespace azurecp
         {
             get { return Current; }
         }
-
     }
 
-
+    /// <summary>
+    /// Ensure that properties ClaimType, DirectoryObjectProperty and DirectoryObjectType are unique
+    /// </summary>
     public class ClaimTypeConfigSameConfig : EqualityComparer<ClaimTypeConfig>
     {
-        public override bool Equals(ClaimTypeConfig ct1, ClaimTypeConfig ct2)
+        public override bool Equals(ClaimTypeConfig existingCTConfig, ClaimTypeConfig newCTConfig)
         {
-            if (String.Equals(ct1.ClaimType, ct2.ClaimType, StringComparison.InvariantCultureIgnoreCase) &&
-                ct1.DirectoryObjectProperty == ct2.DirectoryObjectProperty &&
-                ct1.DirectoryObjectType == ct2.DirectoryObjectType)
-            {
-                return true;
-            }
-            else
-            {
-                return false;
-            }
-        }
-
-        public override int GetHashCode(ClaimTypeConfig ct)
-        {
-            string hCode = ct.ClaimType + ct.DirectoryObjectProperty + ct.DirectoryObjectType;
-            return hCode.GetHashCode();
-        }
-    }
-
-    public class ClaimTypeConfigSameClaimType : EqualityComparer<ClaimTypeConfig>
-    {
-        public override bool Equals(ClaimTypeConfig ct1, ClaimTypeConfig ct2)
-        {
-            if (String.Equals(ct1.ClaimType, ct2.ClaimType, StringComparison.InvariantCultureIgnoreCase) &&
-                !String.IsNullOrEmpty(ct2.ClaimType))
-            {
-                return true;
-            }
-            else
-            {
-                return false;
-            }
-        }
-
-        public override int GetHashCode(ClaimTypeConfig ct)
-        {
-            string hCode = ct.ClaimType + ct.DirectoryObjectProperty + ct.DirectoryObjectType;
-            return hCode.GetHashCode();
-        }
-    }
-
-    public class ClaimTypeConfigSamePermissionMetadata : EqualityComparer<ClaimTypeConfig>
-    {
-        public override bool Equals(ClaimTypeConfig ct1, ClaimTypeConfig ct2)
-        {
-            if (!String.IsNullOrEmpty(ct2.EntityDataKey) &&
-                String.Equals(ct1.EntityDataKey, ct2.EntityDataKey, StringComparison.InvariantCultureIgnoreCase) &&
-                ct1.DirectoryObjectType == ct2.DirectoryObjectType)
+            if (String.Equals(existingCTConfig.ClaimType, newCTConfig.ClaimType, StringComparison.InvariantCultureIgnoreCase) &&
+                existingCTConfig.DirectoryObjectProperty == newCTConfig.DirectoryObjectProperty &&
+                existingCTConfig.DirectoryObjectType == newCTConfig.DirectoryObjectType)
             {
                 return true;
             }
@@ -511,15 +472,14 @@ namespace azurecp
     }
 
     /// <summary>
-    /// Only used to allow only 1 claim type per DirectoryObjectType
+    /// Ensure that property ClaimType is unique
     /// </summary>
-    internal class ClaimTypeConfigEnforeOnly1ClaimTypePerObjectType : EqualityComparer<ClaimTypeConfig>
+    public class ClaimTypeConfigSameClaimType : EqualityComparer<ClaimTypeConfig>
     {
-        public override bool Equals(ClaimTypeConfig ct1, ClaimTypeConfig ct2)
+        public override bool Equals(ClaimTypeConfig existingCTConfig, ClaimTypeConfig newCTConfig)
         {
-            if (ct1.DirectoryObjectType == ct2.DirectoryObjectType &&
-                ct1.UseMainClaimTypeOfDirectoryObject == ct2.UseMainClaimTypeOfDirectoryObject &&
-                ct2.UseMainClaimTypeOfDirectoryObject == false)
+            if (String.Equals(existingCTConfig.ClaimType, newCTConfig.ClaimType, StringComparison.InvariantCultureIgnoreCase) &&
+                !String.IsNullOrEmpty(newCTConfig.ClaimType))
             {
                 return true;
             }
@@ -531,7 +491,85 @@ namespace azurecp
 
         public override int GetHashCode(ClaimTypeConfig ct)
         {
-            string hCode = ct.DirectoryObjectType + ct.UseMainClaimTypeOfDirectoryObject.ToString();
+            string hCode = ct.ClaimType + ct.DirectoryObjectProperty + ct.DirectoryObjectType;
+            return hCode.GetHashCode();
+        }
+    }
+
+    /// <summary>
+    /// Ensure that property EntityDataKey is unique for the DirectoryObjectType
+    /// </summary>
+    public class ClaimTypeConfigSamePermissionMetadata : EqualityComparer<ClaimTypeConfig>
+    {
+        public override bool Equals(ClaimTypeConfig existingCTConfig, ClaimTypeConfig newCTConfig)
+        {
+            if (!String.IsNullOrEmpty(newCTConfig.EntityDataKey) &&
+                String.Equals(existingCTConfig.EntityDataKey, newCTConfig.EntityDataKey, StringComparison.InvariantCultureIgnoreCase) &&
+                existingCTConfig.DirectoryObjectType == newCTConfig.DirectoryObjectType)
+            {
+                return true;
+            }
+            else
+            {
+                return false;
+            }
+        }
+
+        public override int GetHashCode(ClaimTypeConfig ct)
+        {
+            string hCode = ct.ClaimType + ct.DirectoryObjectProperty + ct.DirectoryObjectType;
+            return hCode.GetHashCode();
+        }
+    }
+
+    /// <summary>
+    /// Ensure that there is no duplicate of "PrefixToBypassLookup" property
+    /// </summary>
+    internal class ClaimTypeConfigEnsureUniquePrefixToBypassLookup : EqualityComparer<ClaimTypeConfig>
+    {
+        public override bool Equals(ClaimTypeConfig existingCTConfig, ClaimTypeConfig newCTConfig)
+        {
+            if (!String.IsNullOrEmpty(newCTConfig.PrefixToBypassLookup) &&
+                String.Equals(newCTConfig.PrefixToBypassLookup, existingCTConfig.PrefixToBypassLookup, StringComparison.InvariantCultureIgnoreCase))
+            {
+                return true;
+            }
+            else
+            {
+                return false;
+            }
+        }
+
+        public override int GetHashCode(ClaimTypeConfig ct)
+        {
+            string hCode = ct.PrefixToBypassLookup;
+            return hCode.GetHashCode();
+        }
+    }
+
+    /// <summary>
+    /// Should be used only used to ensure that only 1 claim type is used per DirectoryObjectType
+    /// </summary>
+    internal class ClaimTypeConfigEnforeOnly1ClaimTypePerObjectType : EqualityComparer<ClaimTypeConfig>
+    {
+        public override bool Equals(ClaimTypeConfig existingCTConfig, ClaimTypeConfig newCTConfig)
+        {
+            if ((!String.IsNullOrEmpty(newCTConfig.ClaimType) && !String.IsNullOrEmpty(existingCTConfig.ClaimType)) &&
+                existingCTConfig.DirectoryObjectType == newCTConfig.DirectoryObjectType &&
+                existingCTConfig.UseMainClaimTypeOfDirectoryObject == newCTConfig.UseMainClaimTypeOfDirectoryObject &&
+                newCTConfig.UseMainClaimTypeOfDirectoryObject == false)
+            {
+                return true;
+            }
+            else
+            {
+                return false;
+            }
+        }
+
+        public override int GetHashCode(ClaimTypeConfig ct)
+        {
+            string hCode = ct.ClaimType + ct.DirectoryObjectType + ct.UseMainClaimTypeOfDirectoryObject.ToString();
             return hCode.GetHashCode();
         }
     }

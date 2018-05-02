@@ -112,13 +112,13 @@ namespace azurecp.ControlTemplates {
         protected global::System.Web.UI.WebControls.TextBox New_TxtClaimType;
         
         /// <summary>
-        /// New_DdlPermissionMetadata control.
+        /// New_DdlDirectoryObjectType control.
         /// </summary>
         /// <remarks>
         /// Auto-generated field.
         /// To modify move field declaration from designer file to code-behind file.
         /// </remarks>
-        protected global::System.Web.UI.WebControls.DropDownList New_DdlPermissionMetadata;
+        protected global::System.Web.UI.WebControls.DropDownList New_DdlDirectoryObjectType;
         
         /// <summary>
         /// New_DdlGraphProperty control.
@@ -137,6 +137,15 @@ namespace azurecp.ControlTemplates {
         /// To modify move field declaration from designer file to code-behind file.
         /// </remarks>
         protected global::System.Web.UI.WebControls.DropDownList New_DdlGraphPropertyToDisplay;
+        
+        /// <summary>
+        /// New_DdlPermissionMetadata control.
+        /// </summary>
+        /// <remarks>
+        /// Auto-generated field.
+        /// To modify move field declaration from designer file to code-behind file.
+        /// </remarks>
+        protected global::System.Web.UI.WebControls.DropDownList New_DdlPermissionMetadata;
         
         /// <summary>
         /// BtnCreateNewItem control.

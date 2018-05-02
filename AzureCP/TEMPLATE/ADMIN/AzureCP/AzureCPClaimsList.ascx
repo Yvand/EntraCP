@@ -31,14 +31,14 @@
     .azurecp-rowClaimTypeNotUsedInTrust {
         color: red;
         font-style: italic;
-        text-decoration: line-through;
+		text-decoration: line-through;
     }
 
     .azurecp-rowUserProperty {
         color: green;
     }
-
-    .azurecp-rowMainGroupClaimType {
+	
+	.azurecp-rowMainGroupClaimType {
 		font-weight: bold;
         color: #0072c6;
     }
@@ -265,12 +265,13 @@
         <asp:Table ID="TblClaimsMapping" runat="server"></asp:Table>
         <div id="divLegend">
             <fieldset>
-                <legend>Color legend:</legend>
+                <legend>Formatting legend:</legend>
                 <ol>
                     <li><span class="azurecp-rowidentityclaim">This formatting</span><span> shows the identity claim type set in SPTrust &quot;{trustname}&quot;. It is required for AzureCP to work.</span></li>
-                    <li><span class="azurecp-rowUserClaimType">This formatting</span><span> shows a claim type set in SPTrust &quot;{trustname}&quot;.</span></li>
-                    <li><span class="azurecp-rowClaimTypeNotUsedInTrust">This formatting</span><span> shows a claim type not set in SPTrust &quot;{trustname}&quot;, it will be ignored by AzureCP and may be deleted.</span></li>
-                    <li><span class="azurecp-rowRoleClaimType">This formatting</span><span> shows the claim type mapped to directory object &quot;Group&quot;. AzureCP supports only 1 claim type for this object.</span></li>
+                    <li><span class="azurecp-rowUserProperty">This formatting</span><span> shows an additional property used to search a User. Permission will be created using identity claim type configuration.</span></li>
+                    <li><span class="azurecp-rowMainGroupClaimType">This formatting</span><span> shows the claim type mapped to object &quot;Group&quot;. AzureCP supports only 1 claim type for this object and may use it for augmentation (this can be enabled or disabled in AzureCP global settings page).</span></li>
+					<li><span class="azurecp-rowGroupProperty">This formatting</span><span> shows an additional property used to search a Group. Permission will be created using Group claim type configuration.</span></li>
+					<li><span class="azurecp-rowClaimTypeNotUsedInTrust">This formatting</span><span> shows a claim type not set in SPTrust &quot;{trustname}&quot;, it will be ignored by AzureCP and may be deleted.</span></li>
                 </ol>
             </fieldset>
         </div>
@@ -286,13 +287,13 @@
                 <li>
                     <label>Select which type of entry to create: <em>*</em></label>
                     <div>
-                        <asp:RadioButton ID="RdbNewItemClassicClaimType" runat="server" GroupName="RdgGroupNewItem" Text="Query Azure AD with specified property and create permission with specified claim type" AutoPostBack="false" OnClick="$('#divNewItemControls').show('slow'); $('#rowClaimType').show('slow'); $('#rowGraphPropertyToDisplay').show('slow'); $('#emPermissionMetadata').hide('slow');" />
+                        <asp:RadioButton ID="RdbNewItemClassicClaimType" runat="server" GroupName="RdgGroupNewItem" Text="Add a new claim type configuration" AutoPostBack="false" OnClick="$('#divNewItemControls').show('slow'); $('#rowClaimType').show('slow'); $('#rowGraphPropertyToDisplay').show('slow'); $('#emPermissionMetadata').hide('slow');" />
                     </div>
                     <div>
-                        <asp:RadioButton ID="RdbNewItemLinkdedToIdClaim" runat="server" GroupName="RdgGroupNewItem" Text="Query Azure AD with specified property and create permission with the property linked to identity claim" AutoPostBack="false" OnClick="$('#divNewItemControls').show('slow'); $('#rowClaimType').hide('slow'); $('#rowGraphPropertyToDisplay').hide('slow'); $('#emPermissionMetadata').hide('slow');" />
+                        <asp:RadioButton ID="RdbNewItemLinkdedToIdClaim" runat="server" GroupName="RdgGroupNewItem" Text="Specify only a directory property and create permission using the configuration of the corresponding directory object type" AutoPostBack="false" OnClick="$('#divNewItemControls').show('slow'); $('#rowClaimType').hide('slow'); $('#rowGraphPropertyToDisplay').hide('slow'); $('#emPermissionMetadata').hide('slow');" />
                     </div>
                     <div>
-                        <asp:RadioButton ID="RdbNewItemPermissionMetadata" runat="server" GroupName="RdgGroupNewItem" Text="Does not Azure AD with specified property, but use it as a <a href='http://msdn.microsoft.com/en-us/library/microsoft.sharepoint.webcontrols.peopleeditorentitydatakeys_members.aspx' target='_blank'>metadata</a> of the new permission" AutoPostBack="false" OnClick="$('#divNewItemControls').show('slow'); $('#rowClaimType').hide('slow'); $('#rowGraphPropertyToDisplay').hide('slow'); $('#emPermissionMetadata').show('slow');" />
+                        <asp:RadioButton ID="RdbNewItemPermissionMetadata" runat="server" GroupName="RdgGroupNewItem" Text="Create a mapping between a directory object property and a <a href='http://msdn.microsoft.com/en-us/library/microsoft.sharepoint.webcontrols.peopleeditorentitydatakeys_members.aspx' target='_blank'>PickerEntity metadata</a>" AutoPostBack="false" OnClick="$('#divNewItemControls').show('slow'); $('#rowClaimType').hide('slow'); $('#rowGraphPropertyToDisplay').hide('slow'); $('#emPermissionMetadata').show('slow');" />
                     </div>
                 </li>
                 <div id="divNewItemControls" style="display: none;">
@@ -300,17 +301,21 @@
                         <label for="<%= New_TxtClaimType.ClientID %>">Claim type: <em>*</em></label>
                         <asp:TextBox ID="New_TxtClaimType" runat="server" CssClass="ms-inputformcontrols"></asp:TextBox>
                     </li>
-                    <li id="rowPermissionMetadata">
-                        <label for="<%= New_DdlPermissionMetadata.ClientID %>">Type of <a href="http://msdn.microsoft.com/en-us/library/microsoft.sharepoint.webcontrols.peopleeditorentitydatakeys_members.aspx" target="_blank">permission metadata: </a><em id="emPermissionMetadata" style="display: none;">*</em></label>
-                        <asp:DropDownList ID="New_DdlPermissionMetadata" runat="server" CssClass="ms-inputformcontrols"></asp:DropDownList>
+					<li>
+                        <label for="<%= New_DdlDirectoryObjectType.ClientID %>">Directory object type: <em>*</em></label>
+                        <asp:DropDownList ID="New_DdlDirectoryObjectType" runat="server" CssClass="ms-inputformcontrols"></asp:DropDownList>
                     </li>
                     <li>
-                        <label for="<%= New_DdlGraphProperty.ClientID %>">Property to query: <em>*</em></label>
+                        <label for="<%= New_DdlGraphProperty.ClientID %>">Directory property to query: <em>*</em></label>
                         <asp:DropDownList ID="New_DdlGraphProperty" runat="server" CssClass="ms-inputformcontrols"></asp:DropDownList>
                     </li>
                     <li id="rowGraphPropertyToDisplay" style="display: none;">
-                        <label for="<%= New_DdlGraphPropertyToDisplay.ClientID %>">Property to display:</label>
+                        <label for="<%= New_DdlGraphPropertyToDisplay.ClientID %>">Directory property to display:</label>
                         <asp:DropDownList ID="New_DdlGraphPropertyToDisplay" runat="server" CssClass="ms-inputformcontrols"></asp:DropDownList>
+                    </li>
+					<li id="rowPermissionMetadata">
+                        <label for="<%= New_DdlPermissionMetadata.ClientID %>"><a href="http://msdn.microsoft.com/en-us/library/microsoft.sharepoint.webcontrols.peopleeditorentitydatakeys_members.aspx" target="_blank">PickerEntity metadata</a>:&nbsp;<em id="emPermissionMetadata" style="display: none;">*</em></label>
+                        <asp:DropDownList ID="New_DdlPermissionMetadata" runat="server" CssClass="ms-inputformcontrols"></asp:DropDownList>
                     </li>
                 </div>
             </ol>

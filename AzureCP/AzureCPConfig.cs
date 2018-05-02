@@ -383,7 +383,12 @@ namespace azurecp
         public string Input;
         public bool InputHasKeyword;
         public bool ExactSearch;
-        public ClaimTypeConfig IdentityClaimTypeConfig;
+
+        /// <summary>
+        /// If request is a validation or an augmentation, CurrentClaimTypeConfig will be set to the ClaimTypeConfig that matches the ClaimType of the incoming entity
+        /// </summary>
+        public ClaimTypeConfig CurrentClaimTypeConfig;
+
         public List<ClaimTypeConfig> ClaimTypeConfigList;
 
         public RequestInformation(IAzureCPConfiguration currentConfiguration, RequestType currentRequestType, List<ClaimTypeConfig> processedClaimTypeConfigList, string input, SPClaim incomingEntity, Uri context, AzureADObjectType[] directoryObjectTypes, string hierarchyNodeID, int maxCount)
@@ -425,8 +430,8 @@ namespace azurecp
         protected void InitializeValidation(List<ClaimTypeConfig> processedClaimTypeConfigList)
         {
             if (this.IncomingEntity == null) throw new ArgumentNullException("claimToValidate");
-            this.IdentityClaimTypeConfig = FindClaimsSetting(processedClaimTypeConfigList, this.IncomingEntity.ClaimType);
-            if (this.IdentityClaimTypeConfig == null) return;
+            this.CurrentClaimTypeConfig = FindClaimsSetting(processedClaimTypeConfigList, this.IncomingEntity.ClaimType);
+            if (this.CurrentClaimTypeConfig == null) return;
             this.ClaimTypeConfigList = processedClaimTypeConfigList.Where(x =>
                 String.Equals(x.ClaimType, this.IncomingEntity.ClaimType, StringComparison.InvariantCultureIgnoreCase)
                 && !x.UseMainClaimTypeOfDirectoryObject).ToList();
@@ -459,8 +464,8 @@ namespace azurecp
         protected void InitializeAugmentation(List<ClaimTypeConfig> processedClaimTypeConfigList)
         {
             if (this.IncomingEntity == null) throw new ArgumentNullException("claimToValidate");
-            this.IdentityClaimTypeConfig = FindClaimsSetting(processedClaimTypeConfigList, this.IncomingEntity.ClaimType);
-            if (this.IdentityClaimTypeConfig == null) return;
+            this.CurrentClaimTypeConfig = FindClaimsSetting(processedClaimTypeConfigList, this.IncomingEntity.ClaimType);
+            if (this.CurrentClaimTypeConfig == null) return;
         }
 
         public static ClaimTypeConfig FindClaimsSetting(List<ClaimTypeConfig> processedClaimTypeConfigList, string claimType)

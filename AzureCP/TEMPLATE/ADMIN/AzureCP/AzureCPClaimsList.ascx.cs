@@ -61,6 +61,12 @@ namespace azurecp.ControlTemplates
             TrustName = CurrentTrustedLoginProvider.Name;
             if (!this.IsPostBack)
             {
+                // Initialize new item form
+                foreach (var value in Enum.GetValues(typeof(AzureADObjectType)))
+                {
+                    New_DdlDirectoryObjectType.Items.Add(value.ToString());
+                }
+
                 New_DdlPermissionMetadata.Items.Add(String.Empty);
                 foreach (object field in typeof(PeopleEditorEntityDataKeys).GetFields())
                 {
@@ -452,9 +458,30 @@ namespace azurecp.ControlTemplates
             Response.Redirect(Request.Url.ToString());
         }
 
+        /// <summary>
+        /// Adding a new claim type configuration
+        /// </summary>
+        /// <param name="sender"></param>
+        /// <param name="e"></param>
         protected void BtnCreateNewItem_Click(object sender, EventArgs e)
         {
-            ClaimTypeConfig azureObject = new ClaimTypeConfig();
+            ClaimTypeConfig ctConfig = new ClaimTypeConfig();
+
+            AzureADObjectProperty newDirectoryObjectProp;
+            bool convertSuccess = Enum.TryParse<AzureADObjectProperty>(New_DdlGraphProperty.SelectedValue, out newDirectoryObjectProp);
+            if (!convertSuccess || newDirectoryObjectProp == AzureADObjectProperty.None)
+            {
+                this.LabelErrorMessage.Text = TextErrorFieldsMissing;
+                ShowNewItemForm = true;
+                BuildAttributesListTable(false);
+                return;
+            }
+            ctConfig.DirectoryObjectProperty = newDirectoryObjectProp;
+
+            AzureADObjectType newDirectoryObjectType;
+            Enum.TryParse<AzureADObjectType>(New_DdlDirectoryObjectType.SelectedValue, out newDirectoryObjectType);
+            ctConfig.DirectoryObjectType = newDirectoryObjectType;
+
             if (RdbNewItemClassicClaimType.Checked)
             {
                 if (String.IsNullOrEmpty(New_TxtClaimType.Text))
@@ -465,9 +492,9 @@ namespace azurecp.ControlTemplates
                     return;
                 }
 
-                azureObject.ClaimType = New_TxtClaimType.Text;
+                ctConfig.ClaimType = New_TxtClaimType.Text;
 
-                if (PersistedObject.ClaimTypes.FirstOrDefault(x => String.Equals(x.ClaimType, azureObject.ClaimType, StringComparison.InvariantCultureIgnoreCase)) != null)
+                if (PersistedObject.ClaimTypes.FirstOrDefault(x => String.Equals(x.ClaimType, ctConfig.ClaimType, StringComparison.InvariantCultureIgnoreCase)) != null)
                 {
                     this.LabelErrorMessage.Text = TextErrorDuplicateClaimType;
                     ShowNewItemForm = true;
@@ -485,33 +512,35 @@ namespace azurecp.ControlTemplates
                     return;
                 }
             }
-            else azureObject.UseMainClaimTypeOfDirectoryObject = true;
+            else ctConfig.UseMainClaimTypeOfDirectoryObject = true;
 
-            if (!String.IsNullOrEmpty(New_DdlPermissionMetadata.SelectedValue) && !ClaimsMapping.FirstOrDefault(x => String.Equals(x.Value.EntityDataKey, New_DdlPermissionMetadata.SelectedValue, StringComparison.InvariantCultureIgnoreCase)).Equals(default(KeyValuePair<int, ClaimTypeConfig>)))
+            // If new PickerEntity metadata is not null && if ClaimsMapping.FirstOrDefault does not match nothing, then new PickerEntity metadata is a duplicate
+            if (!String.IsNullOrEmpty(New_DdlPermissionMetadata.SelectedValue) && !ClaimsMapping.FirstOrDefault(x => x.Value.DirectoryObjectType == newDirectoryObjectType && String.Equals(x.Value.EntityDataKey, New_DdlPermissionMetadata.SelectedValue, StringComparison.InvariantCultureIgnoreCase)).Equals(default(KeyValuePair<int, ClaimTypeConfig>)))
             {
                 this.LabelErrorMessage.Text = String.Format(TextErrorNewMetadataAlreadyUsed, New_DdlPermissionMetadata.SelectedValue);
                 ShowNewItemForm = true;
                 BuildAttributesListTable(false);
                 return;
             }
+            ctConfig.EntityDataKey = New_DdlPermissionMetadata.SelectedValue;
 
-            AzureADObjectProperty prop;
-            bool convertSuccess = Enum.TryParse<AzureADObjectProperty>(New_DdlGraphProperty.SelectedValue, out prop);
-            if (!convertSuccess || prop == AzureADObjectProperty.None)
+            convertSuccess = Enum.TryParse<AzureADObjectProperty>(New_DdlGraphPropertyToDisplay.SelectedValue, out newDirectoryObjectProp);
+            ctConfig.DirectoryObjectPropertyToShowAsDisplayText = convertSuccess ? newDirectoryObjectProp : AzureADObjectProperty.None;
+
+            try
             {
-                this.LabelErrorMessage.Text = TextErrorFieldsMissing;
+                // ClaimTypeConfigCollection.Add() may thrown an exception if new ClaimTypeConfig is not valid for any reason
+                PersistedObject.ClaimTypes.Add(ctConfig);
+            }
+            catch (Exception ex)
+            {
+                this.LabelErrorMessage.Text = ex.Message;
                 ShowNewItemForm = true;
                 BuildAttributesListTable(false);
                 return;
             }
-            azureObject.DirectoryObjectProperty = prop;
-            convertSuccess = Enum.TryParse<AzureADObjectProperty>(New_DdlGraphPropertyToDisplay.SelectedValue, out prop);
-            azureObject.DirectoryObjectPropertyToShowAsDisplayText = convertSuccess ? prop : AzureADObjectProperty.None;
-            //azureObject.ClaimEntityType = SPClaimEntityTypes.User;
-            azureObject.DirectoryObjectType = AzureADObjectType.User;
-            azureObject.EntityDataKey = New_DdlPermissionMetadata.SelectedValue;
 
-            PersistedObject.ClaimTypes.Add(azureObject);
+            // Update configuration and rebuild table with new configuration
             CommitChanges();
             BuildAttributesListTable(false);
         }
