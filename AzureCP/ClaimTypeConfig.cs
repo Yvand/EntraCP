@@ -70,17 +70,6 @@ namespace azurecp
         [Persisted]
         private bool _CreateAsIdentityClaim = false;
 
-        ///// <summary>
-        ///// Microsoft.SharePoint.Administration.Claims.SPClaimEntityTypes
-        ///// </summary>
-        //public string ClaimEntityType
-        //{
-        //    get { return ClaimEntityTypePersisted; }
-        //    set { ClaimEntityTypePersisted = value; }
-        //}
-        //[Persisted]
-        //private string ClaimEntityTypePersisted = SPClaimEntityTypes.User;
-
         /// <summary>
         /// Can contain a member of class PeopleEditorEntityDataKey http://msdn.microsoft.com/en-us/library/office/microsoft.sharepoint.webcontrols.peopleeditorentitydatakeys_members(v=office.15).aspx
         /// to populate additional metadata in permission created
@@ -92,8 +81,6 @@ namespace azurecp
         }
         [Persisted]
         private string _EntityDataKey;
-
-
 
         /// <summary>
         /// Stores property SPTrustedClaimTypeInformation.DisplayName of current claim type.
@@ -160,7 +147,7 @@ namespace azurecp
         [Persisted]
         private string _PeoplePickerAttributeHierarchyNodeId;
 
-        internal ClaimTypeConfig CopyPersistedProperties()
+        internal ClaimTypeConfig CopyCurrentObject()
         {
             ClaimTypeConfig copy = new ClaimTypeConfig()
             {
@@ -177,6 +164,21 @@ namespace azurecp
                 _PeoplePickerAttributeHierarchyNodeId = this._PeoplePickerAttributeHierarchyNodeId,
             };
             return copy;
+        }
+
+        internal void CopyFromObject(ClaimTypeConfig objectToCopy)
+        {
+            _ClaimType = objectToCopy._ClaimType;
+            _DirectoryObjectProperty = objectToCopy._DirectoryObjectProperty;
+            _DirectoryObjectType = objectToCopy._DirectoryObjectType;
+            _EntityDataKey = objectToCopy._EntityDataKey;
+            _ClaimValueType = objectToCopy._ClaimValueType;
+            _CreateAsIdentityClaim = objectToCopy._CreateAsIdentityClaim;
+            _PrefixToBypassLookup = objectToCopy._PrefixToBypassLookup;
+            _DirectoryObjectPropertyToShowAsDisplayText = objectToCopy._DirectoryObjectPropertyToShowAsDisplayText;
+            _FilterExactMatchOnly = objectToCopy._FilterExactMatchOnly;
+            _ClaimTypeDisplayName = objectToCopy._ClaimTypeDisplayName;
+            _PeoplePickerAttributeHierarchyNodeId = objectToCopy._PeoplePickerAttributeHierarchyNodeId;
         }
 
         public bool Equals(ClaimTypeConfig other)
@@ -226,7 +228,7 @@ namespace azurecp
         {
             if (item.DirectoryObjectProperty == AzureADObjectProperty.NotSet)
             {
-                throw new InvalidOperationException($"Properties LDAPAttribute and LDAPClass are required");
+                throw new InvalidOperationException($"Property DirectoryObjectProperty is required");
             }
 
             if (item.UseMainClaimTypeOfDirectoryObject && !String.IsNullOrEmpty(item.ClaimType))
@@ -236,12 +238,12 @@ namespace azurecp
 
             if (!item.UseMainClaimTypeOfDirectoryObject && String.IsNullOrEmpty(item.ClaimType) && String.IsNullOrEmpty(item.EntityDataKey))
             {
-                throw new InvalidOperationException($"EntityDataKey is required if ClaimType is empty and UseMainClaimTypeOfDirectoryObject is set to false");
+                throw new InvalidOperationException($"EntityDataKey is required if ClaimType is not set and UseMainClaimTypeOfDirectoryObject is set to false");
             }
 
             if (Contains(item, new ClaimTypeConfigSamePermissionMetadata()))
             {
-                throw new InvalidOperationException($"Permission metadata '{item.EntityDataKey}' already exists in the collection for the LDAP class {item.DirectoryObjectType}");
+                throw new InvalidOperationException($"Permission metadata '{item.EntityDataKey}' already exists in the collection for the directory object {item.DirectoryObjectType}");
             }
 
             if (Contains(item, new ClaimTypeConfigSameClaimType()))
@@ -257,7 +259,7 @@ namespace azurecp
             if (Contains(item))
             {
                 if (String.IsNullOrEmpty(item.ClaimType))
-                    throw new InvalidOperationException($"This configuration with LDAP attribute '{item.DirectoryObjectProperty}' and class '{item.DirectoryObjectType}' already exists in the collection");
+                    throw new InvalidOperationException($"This configuration with DirectoryObjectProperty '{item.DirectoryObjectProperty}' and DirectoryObjectType '{item.DirectoryObjectType}' already exists in the collection");
                 else
                     throw new InvalidOperationException($"This configuration with claim type '{item.ClaimType}' already exists in the collection");
             }
@@ -269,41 +271,40 @@ namespace azurecp
                     throw new InvalidOperationException($"A claim type for DirectoryObjectType '{AzureADObjectType.Group.ToString()}' already exists in the collection");
                 }
             }
-
             innerCol.Add(item);
         }
 
-        //public ClaimTypeConfig GetConfigByClaimType(string claimType)
-        //{
-        //    if (String.IsNullOrEmpty(claimType)) throw new ArgumentNullException(claimType);
+        /// <summary>
+        /// Only ClaimTypeConfig with property ClaimType already set can be updated
+        /// </summary>
+        /// <param name="oldClaimType">Claim type of ClaimTypeConfig object to update</param>
+        /// <param name="newItem">New version of ClaimTypeConfig object</param>
+        public void Update(string oldClaimType, ClaimTypeConfig newItem)
+        {
+            if (String.IsNullOrEmpty(oldClaimType)) throw new ArgumentNullException("oldClaimType");
+            if (newItem == null) throw new ArgumentNullException("newItem");
 
-        //    ClaimTypeConfig result = null;
-        //    for (int i = 0; i < innerCol.Count; i++)
-        //    {
-        //        ClaimTypeConfig curCT = (ClaimTypeConfig)innerCol[i];
-        //        if (String.Equals(curCT.ClaimType, claimType, StringComparison.InvariantCultureIgnoreCase))
-        //        {
-        //            result = curCT;
-        //            break;
-        //        }
-        //    }
-        //    return result;
-        //}
+            // Create a temporary copy of the collection without the old item, to test if new item can be added
+            ClaimTypeConfigCollection temporaryCollection = new ClaimTypeConfigCollection();
+            foreach (ClaimTypeConfig curCTConfig in innerCol.Where(x => !String.Equals(x.ClaimType, oldClaimType, StringComparison.InvariantCultureIgnoreCase)))
+            {
+                temporaryCollection.Add(curCTConfig);
+            }
 
-        //public void AddRange(List<ClaimTypeConfig> claimTypesList)
-        //{
-        //    foreach (ClaimTypeConfig claimType in claimTypesList)
-        //    {
-        //        Add(claimType);
-        //    }
-        //}
+            // ClaimTypeConfigCollection.Add() may thrown an exception if newItem is not valid for any reason
+            temporaryCollection.Add(newItem);
 
-        //public static ClaimTypeConfigCollection ToClaimTypeConfigCollection(IEnumerable<ClaimTypeConfig> enumList)
-        //{
-        //    Collection<ClaimTypeConfig> innerCol = new Collection<ClaimTypeConfig>(enumList.ToList());
-        //    ClaimTypeConfigCollection collection = new ClaimTypeConfigCollection(innerCol);
-        //    return collection;
-        //}
+            // ClaimTypeConfigCollection.Add() did not thrown an exception, current item can be safely updated
+            for (int i = 0; i < innerCol.Count; i++)
+            {
+                ClaimTypeConfig curCT = (ClaimTypeConfig)innerCol[i];
+                if (String.Equals(curCT.ClaimType, oldClaimType, StringComparison.InvariantCultureIgnoreCase))
+                {
+                    innerCol.ElementAt(i).CopyFromObject(newItem);
+                    break;
+                }
+            }
+        }
 
         public void Clear()
         {
@@ -437,7 +438,6 @@ namespace azurecp
         {
             get { return curBox; }
         }
-
 
         object IEnumerator.Current
         {

@@ -168,20 +168,20 @@ namespace azurecp
             this.EnableAugmentation = configToApply.EnableAugmentation;
         }
 
-        public AzureCPConfig CloneInReadOnlyObject()
+        public AzureCPConfig CopyCurrentObject()
         {
             //return this.Clone() as LDAPCPConfig;  // DOES NOT work
-            AzureCPConfig readOnlyCopy = new AzureCPConfig(true);
-            readOnlyCopy.AlwaysResolveUserInput = this.AlwaysResolveUserInput;
-            readOnlyCopy.FilterExactMatchOnly = this.FilterExactMatchOnly;
-            readOnlyCopy.EnableAugmentation = this.EnableAugmentation;
-            readOnlyCopy.ClaimTypes = new ClaimTypeConfigCollection();
+            AzureCPConfig copy = new AzureCPConfig(true);
+            copy.AlwaysResolveUserInput = this.AlwaysResolveUserInput;
+            copy.FilterExactMatchOnly = this.FilterExactMatchOnly;
+            copy.EnableAugmentation = this.EnableAugmentation;
+            copy.ClaimTypes = new ClaimTypeConfigCollection();
             foreach (ClaimTypeConfig currentObject in this.ClaimTypes)
             {
-                readOnlyCopy.ClaimTypes.Add(currentObject.CopyPersistedProperties());
+                copy.ClaimTypes.Add(currentObject.CopyCurrentObject());
             }
-            readOnlyCopy.AzureTenants = new List<AzureTenant>(this.AzureTenants);
-            return readOnlyCopy;
+            copy.AzureTenants = new List<AzureTenant>(this.AzureTenants);
+            return copy;
         }
 
         public void ResetClaimTypesList()
@@ -316,7 +316,7 @@ namespace azurecp
         {
         }
 
-        internal AzureTenant CopyPersistedProperties()
+        internal AzureTenant CopyCurrentObject()
         {
             AzureTenant copy = new AzureTenant()
             {

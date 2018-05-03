@@ -375,7 +375,7 @@ namespace azurecp.ControlTemplates
 
             // Get object to update
             int azureObjectId = Convert.ToInt32(itemId);
-            ClaimTypeConfig azureObject = ClaimsMapping.Find(x => x.Key == azureObjectId).Value;
+            ClaimTypeConfig existingCTConfig = ClaimsMapping.Find(x => x.Key == azureObjectId).Value;
 
             // Check if changes are OK
             // Check if claim type is not empty and not already used
@@ -386,47 +386,22 @@ namespace azurecp.ControlTemplates
                 BuildAttributesListTable(false);
                 return;
             }
-            List<KeyValuePair<int, ClaimTypeConfig>> otherAzureObjects = ClaimsMapping.FindAll(x => x.Key != azureObjectId);
-            KeyValuePair<int, ClaimTypeConfig> matchFound;
-            matchFound = otherAzureObjects.FirstOrDefault(x => String.Equals(x.Value.ClaimType, newClaimType, StringComparison.InvariantCultureIgnoreCase));
-
-            // Check if new claim type is not already used
-            if (!matchFound.Equals(default(KeyValuePair<int, ClaimTypeConfig>)))
-            {
-                this.LabelErrorMessage.Text = String.Format(TextErrorUpdateItemDuplicate, azureObject.ClaimType, "claim type", newClaimType);
-                BuildAttributesListTable(false);
-                return;
-            }
-
-            // Check if new entity data key is not already used (we don't care about this check if it's empty)
-            string newEntityDataKey = formData["list_Metadata_" + itemId];
-            if (newEntityDataKey != String.Empty)
-            {
-                matchFound = otherAzureObjects.FirstOrDefault(x => String.Equals(x.Value.EntityDataKey, newEntityDataKey, StringComparison.InvariantCultureIgnoreCase));
-                if (!matchFound.Equals(default(KeyValuePair<int, ClaimTypeConfig>)))
-                {
-                    this.LabelErrorMessage.Text = String.Format(TextErrorUpdateItemDuplicate, azureObject.ClaimType, "permission metadata", newEntityDataKey);
-                    BuildAttributesListTable(false);
-                    return;
-                }
-            }
 
             string newDirectoryObjectType = formData["list_ClaimEntityType_" + itemId];
             Enum.TryParse(newDirectoryObjectType, out AzureADObjectType typeSelected);
-            // Specific checks if current claim type is identity claim type
-            if (String.Equals(azureObject.ClaimType, CurrentTrustedLoginProvider.IdentityClaimTypeInformation.MappedClaimType, StringComparison.InvariantCultureIgnoreCase))
+
+            // Specific checks if existing ClaimTypeConfig is the identity claim type
+            if (String.Equals(existingCTConfig.ClaimType, CurrentTrustedLoginProvider.IdentityClaimTypeInformation.MappedClaimType, StringComparison.InvariantCultureIgnoreCase))
             {
                 // We don't allow to change claim type
-                if (!String.Equals(azureObject.ClaimType, newClaimType, StringComparison.InvariantCultureIgnoreCase))
+                if (!String.Equals(existingCTConfig.ClaimType, newClaimType, StringComparison.InvariantCultureIgnoreCase))
                 {
                     this.LabelErrorMessage.Text = TextErrorUpdateIdentityClaimTypeChanged;
                     BuildAttributesListTable(false);
                     return;
                 }
 
-                // ClaimEntityType must be "SPClaimEntityTypes.User"
-                //AzureADObjectType typeSelected;
-                //if (!String.Equals(SPClaimEntityTypes.User, newDirectoryObjectType, StringComparison.InvariantCultureIgnoreCase))
+                // DirectoryObjectType must be AzureADObjectType.User
                 if (typeSelected != AzureADObjectType.User)
                 {
                     this.LabelErrorMessage.Text = TextErrorUpdateIdentityClaimEntityTypeNotUser;
@@ -435,18 +410,30 @@ namespace azurecp.ControlTemplates
                 }
             }
 
-            azureObject.ClaimType = newClaimType;
-            azureObject.DirectoryObjectType = typeSelected;
-            azureObject.PrefixToBypassLookup = formData["input_PrefixToBypassLookup_" + itemId];
-            azureObject.EntityDataKey = newEntityDataKey;
+            ClaimTypeConfig newCTConfig = new ClaimTypeConfig();
+            newCTConfig.ClaimType = newClaimType;
+            newCTConfig.DirectoryObjectType = typeSelected;
+            newCTConfig.PrefixToBypassLookup = formData["input_PrefixToBypassLookup_" + itemId];
+            newCTConfig.EntityDataKey = formData["list_Metadata_" + itemId];
 
             AzureADObjectProperty prop;
             bool convertSuccess = Enum.TryParse<AzureADObjectProperty>(formData["list_graphproperty_" + itemId], out prop);
-            azureObject.DirectoryObjectProperty = convertSuccess ? prop : azureObject.DirectoryObjectProperty;
+            newCTConfig.DirectoryObjectProperty = convertSuccess ? prop : newCTConfig.DirectoryObjectProperty;
 
             convertSuccess = Enum.TryParse<AzureADObjectProperty>(formData["list_GraphPropertyToDisplay_" + itemId], out prop);
-            azureObject.DirectoryObjectPropertyToShowAsDisplayText = convertSuccess ? prop : azureObject.DirectoryObjectPropertyToShowAsDisplayText;
+            newCTConfig.DirectoryObjectPropertyToShowAsDisplayText = convertSuccess ? prop : newCTConfig.DirectoryObjectPropertyToShowAsDisplayText;
 
+            try
+            {
+                // ClaimTypeConfigCollection.Update() may thrown an exception if new ClaimTypeConfig is not valid for any reason
+                PersistedObject.ClaimTypes.Update(existingCTConfig.ClaimType, newCTConfig);
+            }
+            catch (Exception ex)
+            {
+                this.LabelErrorMessage.Text = ex.Message;
+                BuildAttributesListTable(false);
+                return;
+            }
             CommitChanges();
             this.BuildAttributesListTable(false);
         }
@@ -491,16 +478,7 @@ namespace azurecp.ControlTemplates
                     BuildAttributesListTable(false);
                     return;
                 }
-
                 ctConfig.ClaimType = New_TxtClaimType.Text;
-
-                if (PersistedObject.ClaimTypes.FirstOrDefault(x => String.Equals(x.ClaimType, ctConfig.ClaimType, StringComparison.InvariantCultureIgnoreCase)) != null)
-                {
-                    this.LabelErrorMessage.Text = TextErrorDuplicateClaimType;
-                    ShowNewItemForm = true;
-                    BuildAttributesListTable(false);
-                    return;
-                }
             }
             else if (RdbNewItemPermissionMetadata.Checked)
             {
@@ -514,14 +492,6 @@ namespace azurecp.ControlTemplates
             }
             else ctConfig.UseMainClaimTypeOfDirectoryObject = true;
 
-            // If new PickerEntity metadata is not null && if ClaimsMapping.FirstOrDefault does not match nothing, then new PickerEntity metadata is a duplicate
-            if (!String.IsNullOrEmpty(New_DdlPermissionMetadata.SelectedValue) && !ClaimsMapping.FirstOrDefault(x => x.Value.DirectoryObjectType == newDirectoryObjectType && String.Equals(x.Value.EntityDataKey, New_DdlPermissionMetadata.SelectedValue, StringComparison.InvariantCultureIgnoreCase)).Equals(default(KeyValuePair<int, ClaimTypeConfig>)))
-            {
-                this.LabelErrorMessage.Text = String.Format(TextErrorNewMetadataAlreadyUsed, New_DdlPermissionMetadata.SelectedValue);
-                ShowNewItemForm = true;
-                BuildAttributesListTable(false);
-                return;
-            }
             ctConfig.EntityDataKey = New_DdlPermissionMetadata.SelectedValue;
 
             convertSuccess = Enum.TryParse<AzureADObjectProperty>(New_DdlGraphPropertyToDisplay.SelectedValue, out newDirectoryObjectProp);

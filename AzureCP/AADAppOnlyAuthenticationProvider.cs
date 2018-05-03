@@ -81,7 +81,7 @@ namespace azurecp
                 AuthResult = await AuthContext.AcquireTokenAsync(GraphAPIResource, Creds);
 
                 TimeSpan duration = new TimeSpan(AuthResult.ExpiresOn.UtcTicks - DateTime.Now.ToUniversalTime().Ticks);
-                ClaimsProviderLogging.Log($"Got new access token for tenant '{Tenant}', valid for {Math.Round((duration.TotalHours), 1)} hour(s) and retrieved in {timer.ElapsedMilliseconds.ToString()} ms", TraceSeverity.Medium, EventSeverity.Information, TraceCategory.Core);
+                ClaimsProviderLogging.Log($"Got new access token for tenant '{Tenant}', valid for {Math.Round((duration.TotalHours), 1)} hour(s) and retrieved in {timer.ElapsedMilliseconds.ToString()} ms", TraceSeverity.High, EventSeverity.Information, TraceCategory.Core);
             }
             catch (AdalServiceException ex)
             {

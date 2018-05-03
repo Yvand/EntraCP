@@ -164,7 +164,7 @@ namespace azurecp
 
                     // Create local persisted object that will never be saved in config DB, it's just a local copy
                     // This copy is unique to current object instance to avoid thread safety issues
-                    this.CurrentConfiguration = ((AzureCPConfig)globalConfiguration).CloneInReadOnlyObject();
+                    this.CurrentConfiguration = ((AzureCPConfig)globalConfiguration).CopyCurrentObject();
 
                     SetCustomConfiguration(context, entityTypes);
                     if (this.CurrentConfiguration.ClaimTypes == null)
