@@ -350,22 +350,17 @@ namespace azurecp
     }
 
     /// <summary>
-    /// Contains information about current request
+    /// Contains information about current operation
     /// </summary>
-    public class RequestInformation
+    public class OperationContext
     {
         /// <summary>
-        /// Current LDAPCP configuration
+        /// Indicates what kind of operation SharePoint is requesting
         /// </summary>
-        //public IAzureCPConfiguration CurrentConfiguration;
+        public OperationType OperationType;
 
         /// <summary>
-        /// Indicates what kind of operation SharePoint is sending to LDAPCP
-        /// </summary>
-        public RequestType RequestType;
-
-        /// <summary>
-        /// SPClaim sent in parameter to LDAPCP. Can be null
+        /// Set only if request is a validation or an augmentation, to the incoming entity provided by SharePoint
         /// </summary>
         public SPClaim IncomingEntity;
 
@@ -374,32 +369,53 @@ namespace azurecp
         /// </summary>
         public SPClaim UserInHttpContext;
 
-        public Uri Context;
+        /// <summary>
+        /// Uri provided by SharePoint
+        /// </summary>
+        public Uri UriContext;
         public AzureADObjectType[] DirectoryObjectTypes;
-        private string OriginalInput;
         public string HierarchyNodeID;
         public int MaxCount;
 
+        /// <summary>
+        /// If request is a validation: contains the value of the SPClaim. If request is a search: contains the input
+        /// </summary>
         public string Input;
         public bool InputHasKeyword;
+
+        /// <summary>
+        /// Indicate if search operation should return only results that exactly match the Input
+        /// </summary>
         public bool ExactSearch;
 
         /// <summary>
-        /// If request is a validation or an augmentation, CurrentClaimTypeConfig will be set to the ClaimTypeConfig that matches the ClaimType of the incoming entity
+        /// Set only if request is a validation or an augmentation, to the ClaimTypeConfig that matches the ClaimType of the incoming entity
         /// </summary>
         public ClaimTypeConfig CurrentClaimTypeConfig;
 
-        public List<ClaimTypeConfig> ClaimTypeConfigList;
+        /// <summary>
+        /// Contains the relevant list of ClaimTypeConfig for every type of request. In case of validation or augmentation, it will contain only 1 item.
+        /// </summary>
+        public List<ClaimTypeConfig> CurrentClaimTypeConfigList;
 
-        public RequestInformation(IAzureCPConfiguration currentConfiguration, RequestType currentRequestType, List<ClaimTypeConfig> processedClaimTypeConfigList, string input, SPClaim incomingEntity, Uri context, AzureADObjectType[] directoryObjectTypes, string hierarchyNodeID, int maxCount)
+        public OperationContext(IAzureCPConfiguration currentConfiguration, OperationType currentRequestType, List<ClaimTypeConfig> processedClaimTypeConfigList, string input, SPClaim incomingEntity, Uri context, string[] entityTypes, string hierarchyNodeID, int maxCount)
         {
-            this.RequestType = currentRequestType;
-            this.OriginalInput = input;
+            this.OperationType = currentRequestType;
+            this.Input = input;
             this.IncomingEntity = incomingEntity;
-            this.Context = context;
-            this.DirectoryObjectTypes = directoryObjectTypes;
+            this.UriContext = context;
             this.HierarchyNodeID = hierarchyNodeID;
             this.MaxCount = maxCount;
+
+            if (entityTypes != null)
+            {
+                List<AzureADObjectType> aadEntityTypes = new List<AzureADObjectType>();
+                if (entityTypes.Contains(SPClaimEntityTypes.User))
+                    aadEntityTypes.Add(AzureADObjectType.User);
+                if (entityTypes.Contains(ClaimsProviderConstants.GroupClaimEntityType))
+                    aadEntityTypes.Add(AzureADObjectType.Group);
+                this.DirectoryObjectTypes = aadEntityTypes.ToArray();
+            }
 
             HttpContext httpctx = HttpContext.Current;
             if (httpctx != null)
@@ -409,96 +425,84 @@ namespace azurecp
                 if (cp != null) this.UserInHttpContext = SPClaimProviderManager.Local.DecodeClaimFromFormsSuffix(cp.Identity.Name);
             }
 
-            if (currentRequestType == RequestType.Validation)
+            if (currentRequestType == OperationType.Validation)
             {
                 this.InitializeValidation(processedClaimTypeConfigList);
             }
-            else if (currentRequestType == RequestType.Search)
+            else if (currentRequestType == OperationType.Search)
             {
                 this.InitializeSearch(processedClaimTypeConfigList, currentConfiguration.FilterExactMatchOnly);
             }
-            else if (currentRequestType == RequestType.Augmentation)
+            else if (currentRequestType == OperationType.Augmentation)
             {
                 this.InitializeAugmentation(processedClaimTypeConfigList);
             }
         }
 
         /// <summary>
-        /// Validation is when SharePoint asks LDAPCP to return 1 PickerEntity from a given SPClaim
+        /// Validation is when SharePoint expects exactly 1 PickerEntity from the incoming SPClaim
         /// </summary>
         /// <param name="processedClaimTypeConfigList"></param>
         protected void InitializeValidation(List<ClaimTypeConfig> processedClaimTypeConfigList)
         {
-            if (this.IncomingEntity == null) throw new ArgumentNullException("claimToValidate");
-            this.CurrentClaimTypeConfig = FindClaimsSetting(processedClaimTypeConfigList, this.IncomingEntity.ClaimType);
+            if (this.IncomingEntity == null) throw new ArgumentNullException("IncomingEntity");
+            this.CurrentClaimTypeConfig = processedClaimTypeConfigList.FirstOrDefault(x =>
+               String.Equals(x.ClaimType, this.IncomingEntity.ClaimType, StringComparison.InvariantCultureIgnoreCase) &&
+               !x.UseMainClaimTypeOfDirectoryObject);
             if (this.CurrentClaimTypeConfig == null) return;
-            this.ClaimTypeConfigList = processedClaimTypeConfigList.Where(x =>
-                String.Equals(x.ClaimType, this.IncomingEntity.ClaimType, StringComparison.InvariantCultureIgnoreCase)
-                && !x.UseMainClaimTypeOfDirectoryObject).ToList();
+
+            // ClaimTypeConfigList must also be set
+            this.CurrentClaimTypeConfigList = new List<ClaimTypeConfig>(1);
+            this.CurrentClaimTypeConfigList.Add(this.CurrentClaimTypeConfig);
             this.ExactSearch = true;
             this.Input = this.IncomingEntity.Value;
         }
 
         /// <summary>
-        /// Search is when SharePoint asks LDAPCP to return all PickerEntity that match input provided
+        /// Search is when SharePoint expects a list of any PickerEntity that match input provided
         /// </summary>
         /// <param name="processedClaimTypeConfigList"></param>
         protected void InitializeSearch(List<ClaimTypeConfig> processedClaimTypeConfigList, bool exactSearch)
         {
             this.ExactSearch = exactSearch;
-            this.Input = this.OriginalInput;
             if (!String.IsNullOrEmpty(this.HierarchyNodeID))
             {
-                // Restrict search to attributes currently selected in the hierarchy (may return multiple results if identity claim type)
-                ClaimTypeConfigList = processedClaimTypeConfigList.FindAll(x =>
+                // Restrict search to ClaimType currently selected in the hierarchy (may return multiple results if identity claim type)
+                CurrentClaimTypeConfigList = processedClaimTypeConfigList.FindAll(x =>
                     String.Equals(x.ClaimType, this.HierarchyNodeID, StringComparison.InvariantCultureIgnoreCase) &&
                     this.DirectoryObjectTypes.Contains(x.DirectoryObjectType));
             }
             else
             {
                 // List<T>.FindAll returns an empty list if no result found: http://msdn.microsoft.com/en-us/library/fh1w7y8z(v=vs.110).aspx
-                ClaimTypeConfigList = processedClaimTypeConfigList.FindAll(x => this.DirectoryObjectTypes.Contains(x.DirectoryObjectType));
+                CurrentClaimTypeConfigList = processedClaimTypeConfigList.FindAll(x => this.DirectoryObjectTypes.Contains(x.DirectoryObjectType));
             }
         }
 
         protected void InitializeAugmentation(List<ClaimTypeConfig> processedClaimTypeConfigList)
         {
-            if (this.IncomingEntity == null) throw new ArgumentNullException("claimToValidate");
-            this.CurrentClaimTypeConfig = FindClaimsSetting(processedClaimTypeConfigList, this.IncomingEntity.ClaimType);
-            if (this.CurrentClaimTypeConfig == null) return;
-        }
-
-        public static ClaimTypeConfig FindClaimsSetting(List<ClaimTypeConfig> processedClaimTypeConfigList, string claimType)
-        {
-            var claimsSettings = processedClaimTypeConfigList.FindAll(x =>
-                String.Equals(x.ClaimType, claimType, StringComparison.InvariantCultureIgnoreCase)
-                && !x.UseMainClaimTypeOfDirectoryObject);
-            if (claimsSettings.Count != 1)
-            {
-                // Should always find only 1 attribute at this stage
-                ClaimsProviderLogging.Log(String.Format("[{0}] Found {1} attributes that match the claim type \"{2}\", but exactly 1 is expected. Verify that there is no duplicate claim type. Aborting operation.", AzureCP._ProviderInternalName, claimsSettings.Count.ToString(), claimType), TraceSeverity.Unexpected, EventSeverity.Error, TraceCategory.Claims_Picking);
-                return null;
-            }
-            return claimsSettings.First();
+            if (this.IncomingEntity == null) throw new ArgumentNullException("IncomingEntity");
+            this.CurrentClaimTypeConfig = processedClaimTypeConfigList.FirstOrDefault(x =>
+               String.Equals(x.ClaimType, this.IncomingEntity.ClaimType, StringComparison.InvariantCultureIgnoreCase) &&
+               !x.UseMainClaimTypeOfDirectoryObject);
         }
     }
 
     public enum AzureADObjectProperty
     {
-        // Values are aligned with enum type Microsoft.Azure.ActiveDirectory.GraphClient.GraphProperty in Microsoft.Azure.ActiveDirectory.GraphClient.dll
-        None = 0,
-        AccountEnabled = 1,
-        Id = 2, // Id was not part of enum type Microsoft.Azure.ActiveDirectory.GraphClient.GraphProperty
-        Department = 20,
-        DisplayName = 28,
-        GivenName = 32,
-        JobTitle = 37,
-        Mail = 41,
-        MobilePhone = 47,
-        OfficeLocation = 54,
-        Surname = 83,
-        UserPrincipalName = 93,
-        UserType = 94
+        NotSet,
+        AccountEnabled,
+        Department,
+        DisplayName,
+        GivenName,
+        Id,
+        JobTitle,
+        Mail,
+        MobilePhone,
+        OfficeLocation,
+        Surname,
+        UserPrincipalName,
+        UserType
     }
 
     public enum AzureADObjectType
@@ -514,7 +518,7 @@ namespace azurecp
         public const string PropertyNameContainingUserType = "UserType";
     }
 
-    public enum RequestType
+    public enum OperationType
     {
         Search,
         Validation,

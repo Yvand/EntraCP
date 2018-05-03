@@ -64,7 +64,7 @@ namespace azurecp
         /// Processed list to use. It is guarranted to never contain an empty ClaimType
         /// </summary>
         public List<ClaimTypeConfig> ProcessedClaimTypesList;
-        protected IEnumerable<ClaimTypeConfig> ClaimTypesWithUserMetadata;
+        protected IEnumerable<ClaimTypeConfig> MetadataConfig;
         protected virtual string PickerEntityDisplayText { get { return "({0}) {1}"; } }
         protected virtual string PickerEntityOnMouseOver { get { return "{0}={1}"; } }
 
@@ -106,7 +106,7 @@ namespace azurecp
                     globalConfiguration = GetConfiguration(context, entityTypes, PersistedObjectName);
                     if (globalConfiguration == null)
                     {
-                        ClaimsProviderLogging.Log(String.Format("[{0}] AzureCPConfig PersistedObject not found. Visit AzureCP admin pages in central administration to create it.", ProviderInternalName),
+                        ClaimsProviderLogging.Log($"[{ProviderInternalName}] Configuration '{PersistedObjectName}' was not found. Visit AzureCP admin pages in central administration to create it.",
                             TraceSeverity.Unexpected, EventSeverity.Error, TraceCategory.Core);
                         // Create a fake persisted object just to get the default settings, it will not be saved in config database
                         globalConfiguration = AzureCPConfig.GetDefaultConfiguration();
@@ -114,28 +114,31 @@ namespace azurecp
                     }
                     else if (globalConfiguration.ClaimTypes == null || globalConfiguration.ClaimTypes.Count == 0)
                     {
-                        ClaimsProviderLogging.Log(String.Format("[{0}] AzureCPConfig PersistedObject was found but there are no AzureADObject set. Visit AzureCP admin pages in central administration to create it.", ProviderInternalName),
+                        ClaimsProviderLogging.Log($"[{ProviderInternalName}] Configuration '{PersistedObjectName}' was found but collection ClaimTypes is null or empty. Visit AzureCP admin pages in central administration to create it.",
                             TraceSeverity.Unexpected, EventSeverity.Error, TraceCategory.Core);
                         // Cannot continue 
                         success = false;
                     }
                     else if (globalConfiguration.AzureTenants == null || globalConfiguration.AzureTenants.Count == 0)
                     {
-                        ClaimsProviderLogging.Log(String.Format("[{0}] AzureCPConfig PersistedObject was found but there are no Azure tenant set. Visit AzureCP admin pages in central administration to add one.", ProviderInternalName),
+                        ClaimsProviderLogging.Log($"[{ProviderInternalName}] Configuration '{PersistedObjectName}' was found but there is no Azure AD tenant registered. Visit AzureCP admin pages in central administration to register it.",
                             TraceSeverity.Unexpected, EventSeverity.Error, TraceCategory.Core);
                         // Cannot continue 
                         success = false;
                     }
                     else
                     {
-                        // Persisted object is found and seems valid
-                        ClaimsProviderLogging.Log(String.Format("[{0}] AzureCPConfig PersistedObject found, version: {1}, previous version: {2}", ProviderInternalName, ((SPPersistedObject)globalConfiguration).Version.ToString(), this.CurrentConfigurationVersion.ToString()),
-                            TraceSeverity.VerboseEx, EventSeverity.Information, TraceCategory.Core);
-                        if (this.CurrentConfigurationVersion != ((SPPersistedObject)globalConfiguration).Version)
+                        // Persisted object is found
+                        if (this.CurrentConfigurationVersion == ((SPPersistedObject)globalConfiguration).Version)
+                        {
+                            ClaimsProviderLogging.Log($"[{ProviderInternalName}] Configuration '{PersistedObjectName}' was found, version {((SPPersistedObject)globalConfiguration).Version.ToString()}",
+                                TraceSeverity.VerboseEx, EventSeverity.Information, TraceCategory.Core);
+                        }
+                        else
                         {
                             refreshConfig = true;
                             this.CurrentConfigurationVersion = ((SPPersistedObject)globalConfiguration).Version;
-                            ClaimsProviderLogging.Log(String.Format("[{0}] AzureCPConfig PersistedObject changed, refreshing configuration", ProviderInternalName),
+                            ClaimsProviderLogging.Log($"[{ProviderInternalName}] Configuration '{PersistedObjectName}' changed to version {((SPPersistedObject)globalConfiguration).Version.ToString()}, refreshing local copy",
                                 TraceSeverity.Medium, EventSeverity.Information, TraceCategory.Core);
                         }
                     }
@@ -156,7 +159,7 @@ namespace azurecp
                 Lock_Config.EnterWriteLock();
                 try
                 {
-                    ClaimsProviderLogging.Log(String.Format("[{0}] Refreshing configuration", ProviderInternalName),
+                    ClaimsProviderLogging.Log($"[{ProviderInternalName}] Refreshing local copy of configuration '{PersistedObjectName}'",
                         TraceSeverity.Verbose, EventSeverity.Information, TraceCategory.Core);
 
                     // Create local persisted object that will never be saved in config DB, it's just a local copy
@@ -218,7 +221,7 @@ namespace azurecp
                     ClaimTypeConfig claimTypeConfig = nonProcessedClaimTypes.FirstOrDefault(x =>
                         String.Equals(x.ClaimType, claimTypeInformation.MappedClaimType, StringComparison.InvariantCultureIgnoreCase) &&
                         !x.UseMainClaimTypeOfDirectoryObject &&
-                        x.DirectoryObjectProperty != AzureADObjectProperty.None);
+                        x.DirectoryObjectProperty != AzureADObjectProperty.NotSet);
 
                     if (claimTypeConfig == null) continue;
                     claimTypesSetInTrust.Add(claimTypeConfig);
@@ -274,11 +277,10 @@ namespace azurecp
                     attr.ClaimTypeDisplayName = trustedClaim.DisplayName;
                 }
 
-                // Any metadata for a user with GraphProperty actually set is valid
-                this.ClaimTypesWithUserMetadata = nonProcessedClaimTypes.Where(x =>
+                // Get all PickerEntity metadata with a DirectoryObjectProperty set
+                this.MetadataConfig = nonProcessedClaimTypes.Where(x =>
                     !String.IsNullOrEmpty(x.EntityDataKey) &&
-                    x.DirectoryObjectProperty != AzureADObjectProperty.None &&
-                    x.DirectoryObjectType == AzureADObjectType.User);
+                    x.DirectoryObjectProperty != AzureADObjectProperty.NotSet);
             }
             catch (Exception ex)
             {
@@ -363,33 +365,31 @@ namespace azurecp
         }
 
         /// <summary>
-        /// Returns the graph property value of a GraphObject (User, Group, Role)
+        /// Uses reflection to return the value of a public property for the given object
         /// </summary>
-        /// <param name="src"></param>
-        /// <param name="propName"></param>
-        /// <returns>Null if property doesn't exist. String.Empty if property exists but has no value. Actual value otherwise</returns>
-        public static string GetGraphPropertyValue(object src, string propName)
+        /// <param name="directoryObject"></param>
+        /// <param name="propertyName"></param>
+        /// <returns>Null if property doesn't exist, String.Empty if property exists but has no value, actual value otherwise</returns>
+        public static string GetPropertyValue(object directoryObject, string propertyName)
         {
-            PropertyInfo pi = src.GetType().GetProperty(propName);
+            PropertyInfo pi = directoryObject.GetType().GetProperty(propertyName);
             if (pi == null) return null;    // Property doesn't exist
-            object propertyValue = pi.GetValue(src, null);
+            object propertyValue = pi.GetValue(directoryObject, null);
             return propertyValue == null ? String.Empty : propertyValue.ToString();
         }
 
         /// <summary>
-        /// Create the SPClaim with proper issuer name
+        /// Create a SPClaim with property OriginalIssuer correctly set
         /// </summary>
         /// <param name="type">Claim type</param>
         /// <param name="value">Claim value</param>
-        /// <param name="valueType">Claim valueType</param>
-        /// <param name="inputHasKeyword">Did the original input contain a keyword?</param>
-        /// <returns></returns>
+        /// <param name="valueType">Claim value type</param>
+        /// <returns>SPClaim object</returns>
         protected virtual new SPClaim CreateClaim(string type, string value, string valueType)
         {
-            string claimValue = value;
-            // SPClaimProvider.CreateClaim issues with SPOriginalIssuerType.ClaimProvider
-            //return CreateClaim(type, claimValue, valueType);
-            return new SPClaim(type, claimValue, valueType, IssuerName);
+            // SPClaimProvider.CreateClaim sets property OriginalIssuer to SPOriginalIssuerType.ClaimProvider, which is not correct
+            //return CreateClaim(type, value, valueType);
+            return new SPClaim(type, value, valueType, IssuerName);
         }
 
         protected virtual PickerEntity CreatePickerEntityHelper(AzureCPResult result)
@@ -447,16 +447,16 @@ namespace azurecp
             //pe.EntityGroupName = "";
 
             int nbMetadata = 0;
-            // Populate metadata attributes of permission created
-            foreach (var claimTypeWithMetadata in ClaimTypesWithUserMetadata)
+            // Populate metadata of new PickerEntity
+            foreach (var ctConfig in MetadataConfig.Where(x => x.DirectoryObjectType == result.ClaimTypeConfig.DirectoryObjectType))
             {
                 // if there is actally a value in the GraphObject, then it can be set
-                string entityAttribValue = GetGraphPropertyValue(result.UserOrGroupResult, claimTypeWithMetadata.DirectoryObjectProperty.ToString());
+                string entityAttribValue = GetPropertyValue(result.UserOrGroupResult, ctConfig.DirectoryObjectProperty.ToString());
                 if (!String.IsNullOrEmpty(entityAttribValue))
                 {
-                    pe.EntityData[claimTypeWithMetadata.EntityDataKey] = entityAttribValue;
+                    pe.EntityData[ctConfig.EntityDataKey] = entityAttribValue;
                     nbMetadata++;
-                    ClaimsProviderLogging.Log(String.Format("[{0}] Added metadata '{1}' with value '{2}' to new entity", ProviderInternalName, claimTypeWithMetadata.EntityDataKey, entityAttribValue), TraceSeverity.VerboseEx, EventSeverity.Information, TraceCategory.Claims_Picking);
+                    ClaimsProviderLogging.Log(String.Format("[{0}] Added metadata '{1}' with value '{2}' to new entity", ProviderInternalName, ctConfig.EntityDataKey, entityAttribValue), TraceSeverity.VerboseEx, EventSeverity.Information, TraceCategory.Claims_Picking);
                 }
             }
             ClaimsProviderLogging.Log($"[{ProviderInternalName}] Created entity: display text: '{pe.DisplayText}', value: '{pe.Claim.Value}', claim type: '{pe.Claim.ClaimType}', and filled with {nbMetadata.ToString()} metadata.", TraceSeverity.VerboseEx, EventSeverity.Information, TraceCategory.Claims_Picking);
@@ -490,11 +490,11 @@ namespace azurecp
             string permissionDisplayText = String.Empty;
             string valueDisplayedInPermission = String.Empty;
 
-            if (result.ClaimTypeConfig.DirectoryObjectPropertyToShowAsDisplayText != AzureADObjectProperty.None)
+            if (result.ClaimTypeConfig.DirectoryObjectPropertyToShowAsDisplayText != AzureADObjectProperty.NotSet)
             {
                 if (!isIdentityClaimType) permissionDisplayText = "(" + result.ClaimTypeConfig.ClaimTypeDisplayName + ") ";
 
-                string graphPropertyToDisplayValue = GetGraphPropertyValue(result.UserOrGroupResult, result.ClaimTypeConfig.DirectoryObjectPropertyToShowAsDisplayText.ToString());
+                string graphPropertyToDisplayValue = GetPropertyValue(result.UserOrGroupResult, result.ClaimTypeConfig.DirectoryObjectPropertyToShowAsDisplayText.ToString());
                 if (!String.IsNullOrEmpty(graphPropertyToDisplayValue)) permissionDisplayText += graphPropertyToDisplayValue;
                 else permissionDisplayText += result.PermissionValue;
             }
@@ -558,7 +558,7 @@ namespace azurecp
                 pe.IsResolved = true;
                 //pe.EntityGroupName = "";
 
-                if (claimTypeToResolve.DirectoryObjectType == AzureADObjectType.User && !String.IsNullOrEmpty(claimTypeToResolve.EntityDataKey))
+                if (!String.IsNullOrEmpty(claimTypeToResolve.EntityDataKey))
                 {
                     pe.EntityData[claimTypeToResolve.EntityDataKey] = pe.Claim.Value;
                     ClaimsProviderLogging.Log($"[{ProviderInternalName}] Added metadata '{claimTypeToResolve.EntityDataKey}' with value '{pe.EntityData[claimTypeToResolve.EntityDataKey]}' to new entity", TraceSeverity.VerboseEx, EventSeverity.Information, TraceCategory.Claims_Picking);
@@ -660,7 +660,7 @@ namespace azurecp
                     return;
                 }
 
-                RequestInformation infos = new RequestInformation(CurrentConfiguration, RequestType.Augmentation, ProcessedClaimTypesList, null, decodedEntity, context, null, null, Int32.MaxValue);
+                OperationContext infos = new OperationContext(CurrentConfiguration, OperationType.Augmentation, ProcessedClaimTypesList, null, decodedEntity, context, null, null, Int32.MaxValue);
                 Task<List<SPClaim>> resultsTask = GetGroupMembershipAsync(infos, groupClaimTypeSettings);
                 resultsTask.Wait();
                 List<SPClaim> groups = resultsTask.Result;
@@ -692,7 +692,7 @@ namespace azurecp
             }
         }
 
-        protected async virtual Task<List<SPClaim>> GetGroupMembershipAsync(RequestInformation requestInfo, ClaimTypeConfig groupClaimTypeSettings)
+        protected async virtual Task<List<SPClaim>> GetGroupMembershipAsync(OperationContext requestInfo, ClaimTypeConfig groupClaimTypeSettings)
         {
             List<SPClaim> claims = new List<SPClaim>();
             foreach (var tenant in this.CurrentConfiguration.AzureTenants)
@@ -704,7 +704,7 @@ namespace azurecp
             return claims;
         }
 
-        protected async virtual Task<List<SPClaim>> GetGroupMembershipFromAzureADAsync(RequestInformation requestInfo, ClaimTypeConfig groupClaimTypeSettings, AzureTenant tenant)
+        protected async virtual Task<List<SPClaim>> GetGroupMembershipFromAzureADAsync(OperationContext requestInfo, ClaimTypeConfig groupClaimTypeSettings, AzureTenant tenant)
         {
             List<SPClaim> claims = new List<SPClaim>();
             var userResult = await tenant.GraphService.Users.Request().Filter($"{requestInfo.CurrentClaimTypeConfig.DirectoryObjectProperty} eq '{requestInfo.IncomingEntity.Value}'").GetAsync().ConfigureAwait(false);
@@ -718,7 +718,7 @@ namespace azurecp
             {
                 foreach (Group group in groups.OfType<Group>())
                 {
-                    string groupClaimValue = GetGraphPropertyValue(group, groupClaimTypeSettings.DirectoryObjectProperty.ToString());
+                    string groupClaimValue = GetPropertyValue(group, groupClaimTypeSettings.DirectoryObjectProperty.ToString());
                     claims.Add(CreateClaim(groupClaimTypeSettings.ClaimType, groupClaimValue, groupClaimTypeSettings.ClaimValueType));
                 }
                 if (groups.NextPageRequest != null) groups = await groups.NextPageRequest.GetAsync().ConfigureAwait(false);
@@ -772,25 +772,19 @@ namespace azurecp
         }
 
         /// <summary>
-        /// Override this method to change / remove permissions created by LDAPCP, or add new ones
+        /// Override this method to change / remove permissions created by AzureCP, or add new ones
         /// </summary>
-        /// <param name="context"></param>
+        /// <param name="currentContext"></param>
         /// <param name="entityTypes"></param>
         /// <param name="input"></param>
         /// <param name="resolved">List of permissions created by LDAPCP</param>
-        protected virtual void FillPermissions(Uri context, string[] entityTypes, string input, ref List<PickerEntity> resolved)
+        protected virtual void FillPermissions(OperationContext currentContext, ref List<PickerEntity> resolved)
         {
         }
 
         protected override void FillResolve(Uri context, string[] entityTypes, SPClaim resolveInput, List<Microsoft.SharePoint.WebControls.PickerEntity> resolved)
         {
             ClaimsProviderLogging.LogDebug($"context passed to FillResolve (SPClaim): {context.ToString()}");
-            List<AzureADObjectType> aadEntityTypes = new List<AzureADObjectType>();
-            if (entityTypes.Contains(SPClaimEntityTypes.User))
-                aadEntityTypes.Add(AzureADObjectType.User);
-            if (entityTypes.Contains(ClaimsProviderConstants.GroupClaimEntityType))
-                aadEntityTypes.Add(AzureADObjectType.Group);
-
             if (!Initialize(context, entityTypes))
                 return;
 
@@ -802,17 +796,17 @@ namespace azurecp
             this.Lock_Config.EnterReadLock();
             try
             {
-                RequestInformation infos = new RequestInformation(CurrentConfiguration, RequestType.Validation, ProcessedClaimTypesList, resolveInput.Value, resolveInput, context, aadEntityTypes.ToArray(), null, Int32.MaxValue);
+                OperationContext infos = new OperationContext(CurrentConfiguration, OperationType.Validation, ProcessedClaimTypesList, resolveInput.Value, resolveInput, context, entityTypes, null, Int32.MaxValue);
                 List<PickerEntity> permissions = SearchOrValidate(infos);
                 if (permissions.Count == 1)
                 {
                     resolved.Add(permissions[0]);
-                    ClaimsProviderLogging.Log(String.Format("[{0}] Validated permission: claim value: '{1}', claim type: '{2}'", ProviderInternalName, permissions[0].Claim.Value, permissions[0].Claim.ClaimType),
-                        TraceSeverity.Medium, EventSeverity.Information, TraceCategory.Claims_Picking);
+                    ClaimsProviderLogging.Log(String.Format("[{0}] Validated entity: claim value: '{1}', claim type: '{2}'", ProviderInternalName, permissions[0].Claim.Value, permissions[0].Claim.ClaimType),
+                        TraceSeverity.High, EventSeverity.Information, TraceCategory.Claims_Picking);
                 }
                 else
                 {
-                    ClaimsProviderLogging.Log(String.Format("[{0}] Validation of incoming claim returned {1} permissions instead of 1 expected. Aborting operation", ProviderInternalName, permissions.Count.ToString()), TraceSeverity.Unexpected, EventSeverity.Error, TraceCategory.Claims_Picking);
+                    ClaimsProviderLogging.Log(String.Format("[{0}] Validation of incoming claim returned {1} entities instead of 1 expected. Aborting operation", ProviderInternalName, permissions.Count.ToString()), TraceSeverity.Unexpected, EventSeverity.Error, TraceCategory.Claims_Picking);
                 }
             }
             catch (Exception ex)
@@ -827,21 +821,15 @@ namespace azurecp
 
         protected override void FillResolve(Uri context, string[] entityTypes, string resolveInput, List<Microsoft.SharePoint.WebControls.PickerEntity> resolved)
         {
-            List<AzureADObjectType> aadEntityTypes = new List<AzureADObjectType>();
-            if (entityTypes.Contains(SPClaimEntityTypes.User))
-                aadEntityTypes.Add(AzureADObjectType.User);
-            if (entityTypes.Contains(ClaimsProviderConstants.GroupClaimEntityType))
-                aadEntityTypes.Add(AzureADObjectType.Group);
-
             if (!Initialize(context, entityTypes))
                 return;
 
             this.Lock_Config.EnterReadLock();
             try
             {
-                RequestInformation settings = new RequestInformation(CurrentConfiguration, RequestType.Search, ProcessedClaimTypesList, resolveInput, null, context, aadEntityTypes.ToArray(), null, Int32.MaxValue);
-                List<PickerEntity> permissions = SearchOrValidate(settings);
-                FillPermissions(context, entityTypes, resolveInput, ref permissions);
+                OperationContext currentContext = new OperationContext(CurrentConfiguration, OperationType.Search, ProcessedClaimTypesList, resolveInput, null, context, entityTypes, null, Int32.MaxValue);
+                List<PickerEntity> permissions = SearchOrValidate(currentContext);
+                FillPermissions(currentContext, ref permissions);
                 foreach (PickerEntity entity in permissions)
                 {
                     resolved.Add(entity);
@@ -851,8 +839,8 @@ namespace azurecp
 
                 if (permissions?.Count > 0)
                 {
-                    ClaimsProviderLogging.Log($"[{ProviderInternalName}] Returned {permissions.Count} entities with input '{settings.Input}'",
-                        TraceSeverity.Medium, EventSeverity.Information, TraceCategory.Claims_Picking);
+                    ClaimsProviderLogging.Log($"[{ProviderInternalName}] Returned {permissions.Count} entities with input '{currentContext.Input}'",
+                        TraceSeverity.High, EventSeverity.Information, TraceCategory.Claims_Picking);
                 }
             }
             catch (Exception ex)
@@ -872,21 +860,15 @@ namespace azurecp
 
         protected override void FillSearch(Uri context, string[] entityTypes, string searchPattern, string hierarchyNodeID, int maxCount, Microsoft.SharePoint.WebControls.SPProviderHierarchyTree searchTree)
         {
-            List<AzureADObjectType> aadEntityTypes = new List<AzureADObjectType>();
-            if (entityTypes.Contains(SPClaimEntityTypes.User))
-                aadEntityTypes.Add(AzureADObjectType.User);
-            if (entityTypes.Contains(ClaimsProviderConstants.GroupClaimEntityType))
-                aadEntityTypes.Add(AzureADObjectType.Group);
-
             if (!Initialize(context, entityTypes))
                 return;
 
             this.Lock_Config.EnterReadLock();
             try
             {
-                RequestInformation settings = new RequestInformation(CurrentConfiguration, RequestType.Search, ProcessedClaimTypesList, searchPattern, null, context, aadEntityTypes.ToArray(), hierarchyNodeID, maxCount);
-                List<PickerEntity> permissions = SearchOrValidate(settings);
-                FillPermissions(context, entityTypes, searchPattern, ref permissions);
+                OperationContext currentContext = new OperationContext(CurrentConfiguration, OperationType.Search, ProcessedClaimTypesList, searchPattern, null, context, entityTypes, hierarchyNodeID, maxCount);
+                List<PickerEntity> permissions = SearchOrValidate(currentContext);
+                FillPermissions(currentContext, ref permissions);
                 SPProviderHierarchyNode matchNode = null;
                 foreach (PickerEntity entity in permissions)
                 {
@@ -912,8 +894,8 @@ namespace azurecp
 
                 if (permissions?.Count > 0)
                 {
-                    ClaimsProviderLogging.Log($"[{ProviderInternalName}] Returned {permissions.Count} entities with input '{settings.Input}'", 
-                        TraceSeverity.Medium, EventSeverity.Information, TraceCategory.Claims_Picking);
+                    ClaimsProviderLogging.Log($"[{ProviderInternalName}] Returned {permissions.Count} entities with input '{currentContext.Input}'", 
+                        TraceSeverity.High, EventSeverity.Information, TraceCategory.Claims_Picking);
                 }
             }
             catch (Exception ex)
@@ -929,9 +911,9 @@ namespace azurecp
         /// <summary>
         /// Search or validate incoming input or entity
         /// </summary>
-        /// <param name="requestInfo">Information about current context and operation</param>
+        /// <param name="currentContext">Information about current context and operation</param>
         /// <returns></returns>
-        protected virtual List<PickerEntity> SearchOrValidate(RequestInformation requestInfo)
+        protected virtual List<PickerEntity> SearchOrValidate(OperationContext currentContext)
         {
             List<PickerEntity> permissions = new List<PickerEntity>();
             try
@@ -940,8 +922,8 @@ namespace azurecp
                 {
                     // Completely bypass query to Azure AD
                     List<PickerEntity> entities = CreatePickerEntityForSpecificClaimTypes(
-                        requestInfo.Input,
-                        requestInfo.ClaimTypeConfigList.FindAll(x => !x.UseMainClaimTypeOfDirectoryObject),
+                        currentContext.Input,
+                        currentContext.CurrentClaimTypeConfigList.FindAll(x => !x.UseMainClaimTypeOfDirectoryObject),
                         false);
                     if (entities != null)
                     {
@@ -955,23 +937,23 @@ namespace azurecp
                     return permissions;
                 }
 
-                if (requestInfo.RequestType == RequestType.Search)
+                if (currentContext.OperationType == OperationType.Search)
                 {
                     // Check if input starts with a prefix configured on a ClaimTypeConfig. If so an entity should be returned using ClaimTypeConfig found
                     // ClaimTypeConfigEnsureUniquePrefixToBypassLookup ensures that collection cannot contain duplicates
-                    ClaimTypeConfig ctConfigWithInputPrefixMatch = requestInfo.ClaimTypeConfigList.FirstOrDefault(x =>
+                    ClaimTypeConfig ctConfigWithInputPrefixMatch = currentContext.CurrentClaimTypeConfigList.FirstOrDefault(x =>
                         !String.IsNullOrEmpty(x.PrefixToBypassLookup) &&
-                        requestInfo.Input.StartsWith(x.PrefixToBypassLookup, StringComparison.InvariantCultureIgnoreCase));
+                        currentContext.Input.StartsWith(x.PrefixToBypassLookup, StringComparison.InvariantCultureIgnoreCase));
                     if (ctConfigWithInputPrefixMatch != null)
                     {
-                        requestInfo.Input = requestInfo.Input.Substring(ctConfigWithInputPrefixMatch.PrefixToBypassLookup.Length);
-                        if (String.IsNullOrEmpty(requestInfo.Input))
+                        currentContext.Input = currentContext.Input.Substring(ctConfigWithInputPrefixMatch.PrefixToBypassLookup.Length);
+                        if (String.IsNullOrEmpty(currentContext.Input))
                         {
                             // No value in the input after the prefix, return
                             return permissions;
                         }
                         PickerEntity entity = CreatePickerEntityForSpecificClaimType(
-                            requestInfo.Input,
+                            currentContext.Input,
                             ctConfigWithInputPrefixMatch,
                             true);
                         if (entity != null)
@@ -982,12 +964,12 @@ namespace azurecp
                             return permissions;
                         }
                     }
-                    SearchOrValidateInAzureAD(requestInfo, ref permissions);
+                    SearchOrValidateInAzureAD(currentContext, ref permissions);
                 }
-                else if (requestInfo.RequestType == RequestType.Validation)
+                else if (currentContext.OperationType == OperationType.Validation)
                 {
-                    SearchOrValidateInAzureAD(requestInfo, ref permissions);
-                    if (!String.IsNullOrEmpty(requestInfo.CurrentClaimTypeConfig.PrefixToBypassLookup))
+                    SearchOrValidateInAzureAD(currentContext, ref permissions);
+                    if (!String.IsNullOrEmpty(currentContext.CurrentClaimTypeConfig.PrefixToBypassLookup))
                     {
                         // At this stage, it is impossible to know if entity was originally created with the keyword that query to Azure AD
                         // But it should be always validated since property PrefixToBypassLookup is set for this ClaimTypeConfig
@@ -995,13 +977,13 @@ namespace azurecp
 
                         // If Azure AD didn't find a result, create entity manually
                         PickerEntity entity = CreatePickerEntityForSpecificClaimType(
-                            requestInfo.Input,
-                            requestInfo.CurrentClaimTypeConfig,
-                            requestInfo.InputHasKeyword);
+                            currentContext.Input,
+                            currentContext.CurrentClaimTypeConfig,
+                            currentContext.InputHasKeyword);
                         if (entity != null)
                         {
                             permissions.Add(entity);
-                            ClaimsProviderLogging.Log($"[{ProviderInternalName}] Validated entity with no query sent to Azure AD because its claim type ('{requestInfo.CurrentClaimTypeConfig.ClaimType}') has property 'PrefixToBypassLookup' set in AzureCPConfig.ClaimTypes: Claim value: '{entity.Claim.Value}', claim type: '{entity.Claim.ClaimType}'",
+                            ClaimsProviderLogging.Log($"[{ProviderInternalName}] Validated entity with no query sent to Azure AD because its claim type ('{currentContext.CurrentClaimTypeConfig.ClaimType}') has property 'PrefixToBypassLookup' set in AzureCPConfig.ClaimTypes: Claim value: '{entity.Claim.Value}', claim type: '{entity.Claim.ClaimType}'",
                                 TraceSeverity.VerboseEx, EventSeverity.Information, TraceCategory.Claims_Picking);
                         }
                         return permissions;
@@ -1015,13 +997,13 @@ namespace azurecp
             return permissions;
         }
 
-        protected virtual void SearchOrValidateInAzureAD(RequestInformation requestInfo, ref List<PickerEntity> permissions)
+        protected virtual void SearchOrValidateInAzureAD(OperationContext currentContext, ref List<PickerEntity> permissions)
         {
             string userFilter = String.Empty;
             string groupFilter = String.Empty;
             string userSelect = String.Empty;
             string groupSelect = String.Empty;
-            BuildFilter(requestInfo, out userFilter, out groupFilter, out userSelect, out groupSelect);
+            BuildFilter(currentContext, out userFilter, out groupFilter, out userSelect, out groupSelect);
 
             List<AzureADResult> aadResults = null;
             using (new SPMonitoredScope($"[{ProviderInternalName}] Total time spent to query Azure AD tenant(s)", 1000))
@@ -1030,14 +1012,14 @@ namespace azurecp
                 // More info on the error: https://stackoverflow.com/questions/672237/running-an-asynchronous-operation-triggered-by-an-asp-net-web-page-request
                 Task azureADQueryTask = Task.Run(async () =>
                 {
-                    aadResults = await QueryAzureADTenantsAsync(requestInfo, userFilter, groupFilter, userSelect, groupSelect).ConfigureAwait(false);
+                    aadResults = await QueryAzureADTenantsAsync(currentContext, userFilter, groupFilter, userSelect, groupSelect).ConfigureAwait(false);
                 });
                 azureADQueryTask.Wait();
             }
 
             if (aadResults?.Count > 0)
             {
-                List<AzureCPResult> results = ProcessAzureADResults(requestInfo, aadResults);
+                List<AzureCPResult> results = ProcessAzureADResults(currentContext, aadResults);
                 if (results?.Count > 0)
                 {
                     foreach (var result in results)
@@ -1054,12 +1036,12 @@ namespace azurecp
         /// Build filter and select statements sent to Azure AD
         /// $filter and $select must be URL encoded as documented in https://developer.microsoft.com/en-us/graph/docs/concepts/query_parameters#encoding-query-parameters
         /// </summary>
-        /// <param name="requestInfo"></param>
+        /// <param name="currentContext"></param>
         /// <param name="userFilter">User filter</param>
         /// <param name="groupFilter">Group filter</param>
         /// <param name="userSelect">User properties to get from AAD</param>
         /// <param name="groupSelect">Group properties to get from AAD</param>
-        protected virtual void BuildFilter(RequestInformation requestInfo, out string userFilter, out string groupFilter, out string userSelect, out string groupSelect)
+        protected virtual void BuildFilter(OperationContext currentContext, out string userFilter, out string groupFilter, out string userSelect, out string groupSelect)
         {
             StringBuilder userFilterBuilder = new StringBuilder("accountEnabled eq true and (");
             StringBuilder groupFilterBuilder = new StringBuilder();
@@ -1067,32 +1049,32 @@ namespace azurecp
             StringBuilder groupSelectBuilder = new StringBuilder("Id, ");               // Id is always required for groups
 
             string preferredFilterPattern;
-            string input = requestInfo.Input;
-            if (requestInfo.ExactSearch) preferredFilterPattern = String.Format(ClaimsProviderConstants.SearchPatternEquals, "{0}", input);
+            string input = currentContext.Input;
+            if (currentContext.ExactSearch) preferredFilterPattern = String.Format(ClaimsProviderConstants.SearchPatternEquals, "{0}", input);
             else preferredFilterPattern = String.Format(ClaimsProviderConstants.SearchPatternStartsWith, "{0}", input);
 
-            bool firstUserObject = true;
-            bool firstGroupObject = true;
-            foreach (ClaimTypeConfig claimConfig in requestInfo.ClaimTypeConfigList)
+            bool firstUserObjectProcessed = false;
+            bool firstGroupObjectProcessed = false;
+            foreach (ClaimTypeConfig ctConfig in currentContext.CurrentClaimTypeConfigList)
             {
-                string currentPropertyString = claimConfig.DirectoryObjectProperty.ToString();
+                string currentPropertyString = ctConfig.DirectoryObjectProperty.ToString();
                 string currentFilter;
-                if (!claimConfig.SupportsWildcard)
+                if (!ctConfig.SupportsWildcard)
                     currentFilter = String.Format(ClaimsProviderConstants.SearchPatternEquals, currentPropertyString, input);
                 else
                     currentFilter = String.Format(preferredFilterPattern, currentPropertyString);
 
                 // Id needs a specific check: input must be a valid GUID AND equals filter must be used, otherwise Azure AD will throw an error
-                if (claimConfig.DirectoryObjectProperty == AzureADObjectProperty.Id)
+                if (ctConfig.DirectoryObjectProperty == AzureADObjectProperty.Id)
                 {
                     Guid idGuid = new Guid();
                     if (!Guid.TryParse(input, out idGuid)) continue;
                     else currentFilter = String.Format(ClaimsProviderConstants.SearchPatternEquals, currentPropertyString, idGuid.ToString());
                 }
 
-                if (claimConfig.DirectoryObjectType == AzureADObjectType.User)
+                if (ctConfig.DirectoryObjectType == AzureADObjectType.User)
                 {
-                    if (firstUserObject) firstUserObject = false;
+                    if (!firstUserObjectProcessed) firstUserObjectProcessed = true;
                     else
                     {
                         currentFilter = " or " + currentFilter;
@@ -1104,7 +1086,7 @@ namespace azurecp
                 else
                 {
                     // else with no further test assumes everything that is not a User is a Group
-                    if (firstGroupObject) firstGroupObject = false;
+                    if (!firstGroupObjectProcessed) firstGroupObjectProcessed = true;
                     else
                     {
                         currentFilter = currentFilter + " or ";
@@ -1115,20 +1097,27 @@ namespace azurecp
                 }
             }
 
-            // Also add properties in user metadata list to $select
-            if (!firstUserObject)
+            // Also add metadata properties to $select of corresponding object type
+            if (firstUserObjectProcessed)
             {
-                foreach (ClaimTypeConfig claimConfig in ClaimTypesWithUserMetadata)
+                foreach (ClaimTypeConfig ctConfig in MetadataConfig.Where( x => x.DirectoryObjectType == AzureADObjectType.User))
                 {
-                    userSelectBuilder.Append($", {claimConfig.DirectoryObjectProperty.ToString()}");
+                    userSelectBuilder.Append($", {ctConfig.DirectoryObjectProperty.ToString()}");
+                }
+            }
+            if (firstGroupObjectProcessed)
+            {
+                foreach (ClaimTypeConfig ctConfig in MetadataConfig.Where(x => x.DirectoryObjectType == AzureADObjectType.Group))
+                {
+                    groupSelectBuilder.Append($", {ctConfig.DirectoryObjectProperty.ToString()}");
                 }
             }
 
-            userFilterBuilder.Append(")");
+            userFilterBuilder.Append(")");  // Closing of accountEnabled
 
             // Clear user/group filters if no corresponding object was found in requestInfo.ClaimTypeConfigList
-            if (firstUserObject) userFilterBuilder.Clear();
-            if (firstGroupObject) groupFilterBuilder.Clear();
+            if (!firstUserObjectProcessed) userFilterBuilder.Clear();
+            if (!firstGroupObjectProcessed) groupFilterBuilder.Clear();
 
             userFilter = HttpUtility.UrlEncode(userFilterBuilder.ToString());
             groupFilter = HttpUtility.UrlEncode(groupFilterBuilder.ToString());
@@ -1136,7 +1125,7 @@ namespace azurecp
             groupSelect = HttpUtility.UrlEncode(groupSelectBuilder.ToString());
         }
 
-        protected virtual async Task<List<AzureADResult>> QueryAzureADTenantsAsync(RequestInformation requestInfo, string userFilter, string groupFilter, string userSelect, string groupSelect)
+        protected virtual async Task<List<AzureADResult>> QueryAzureADTenantsAsync(OperationContext currentContext, string userFilter, string groupFilter, string userSelect, string groupSelect)
         {
             if (userFilter == null && groupFilter == null) return null;
             List<AzureADResult> allSearchResults = new List<AzureADResult>();
@@ -1151,7 +1140,7 @@ namespace azurecp
                 try
                 {
                     timer.Start();
-                    searchResult = await QueryAzureADTenantAsync(requestInfo, coco, userFilter, groupFilter, userSelect, groupSelect, true).ConfigureAwait(false);
+                    searchResult = await QueryAzureADTenantAsync(currentContext, coco, userFilter, groupFilter, userSelect, groupSelect, true).ConfigureAwait(false);
                 }
                 catch (Exception ex)
                 {
@@ -1168,25 +1157,25 @@ namespace azurecp
                     {
                         allSearchResults.Add(searchResult);
                     }
-                    ClaimsProviderLogging.Log($"[{ProviderInternalName}] Got {searchResult.UserOrGroupResultList.Count().ToString()} users/groups and {searchResult.DomainsRegisteredInAzureADTenant.Count().ToString()} registered domains in {timer.ElapsedMilliseconds.ToString()} ms from '{coco.TenantName}' with input '{requestInfo.Input}'",
+                    ClaimsProviderLogging.Log($"[{ProviderInternalName}] Got {searchResult.UserOrGroupResultList.Count().ToString()} users/groups and {searchResult.DomainsRegisteredInAzureADTenant.Count().ToString()} registered domains in {timer.ElapsedMilliseconds.ToString()} ms from '{coco.TenantName}' with input '{currentContext.Input}'",
                         TraceSeverity.Medium, EventSeverity.Information, TraceCategory.Lookup);
                 }
-                else ClaimsProviderLogging.Log($"[{ProviderInternalName}] Got no result from '{coco.TenantName}' with input '{requestInfo.Input}', search took {timer.ElapsedMilliseconds.ToString()} ms", TraceSeverity.Medium, EventSeverity.Information, TraceCategory.Lookup);
+                else ClaimsProviderLogging.Log($"[{ProviderInternalName}] Got no result from '{coco.TenantName}' with input '{currentContext.Input}', search took {timer.ElapsedMilliseconds.ToString()} ms", TraceSeverity.Medium, EventSeverity.Information, TraceCategory.Lookup);
             });
             //}
             return allSearchResults;
         }
 
-        protected virtual async Task<AzureADResult> QueryAzureADTenantAsync(RequestInformation requestInfo, AzureTenant coco, string userFilter, string groupFilter, string userSelect, string groupSelect, bool firstAttempt)
+        protected virtual async Task<AzureADResult> QueryAzureADTenantAsync(OperationContext currentContext, AzureTenant coco, string userFilter, string groupFilter, string userSelect, string groupSelect, bool firstAttempt)
         {
-            ClaimsProviderLogging.Log($"[{ProviderInternalName}] Querying Azure AD tenant '{coco.TenantName}' for users/groups/domains, with input '{requestInfo.Input}'", TraceSeverity.VerboseEx, EventSeverity.Information, TraceCategory.Lookup);
+            ClaimsProviderLogging.Log($"[{ProviderInternalName}] Querying Azure AD tenant '{coco.TenantName}' for users/groups/domains, with input '{currentContext.Input}'", TraceSeverity.VerboseEx, EventSeverity.Information, TraceCategory.Lookup);
             AzureADResult tenantResults = new AzureADResult();
             bool tryAgain = false;
             object lockAddResultToCollection = new object();
             CancellationTokenSource cts = new CancellationTokenSource(ClaimsProviderConstants.timeout);
             try
             {
-                using (new SPMonitoredScope($"[{ProviderInternalName}] Querying Azure AD tenant '{coco.TenantName}' for users/groups/domains, with input '{requestInfo.Input}'", 1000))
+                using (new SPMonitoredScope($"[{ProviderInternalName}] Querying Azure AD tenant '{coco.TenantName}' for users/groups/domains, with input '{currentContext.Input}'", 1000))
                 {
                     // No need to lock here: as per https://stackoverflow.com/questions/49108179/need-advice-on-getting-access-token-with-multiple-task-in-microsoft-graph:
                     // The Graph client object is thread-safe and re-entrant
@@ -1264,12 +1253,12 @@ namespace azurecp
             {
                 ClaimsProviderLogging.Log($"[{ProviderInternalName}] Doing new attempt to query tenant '{coco.TenantName}'...",
                     TraceSeverity.Medium, EventSeverity.Information, TraceCategory.Lookup);
-                tenantResults = await QueryAzureADTenantAsync(requestInfo, coco, userFilter, groupFilter, userSelect, groupSelect, false).ConfigureAwait(false);
+                tenantResults = await QueryAzureADTenantAsync(currentContext, coco, userFilter, groupFilter, userSelect, groupSelect, false).ConfigureAwait(false);
             }
             return tenantResults;
         }
 
-        protected virtual List<AzureCPResult> ProcessAzureADResults(RequestInformation requestInfo, List<AzureADResult> azureADResults)
+        protected virtual List<AzureCPResult> ProcessAzureADResults(OperationContext currentContext, List<AzureADResult> azureADResults)
         {
             // Split results between users/groups and list of registered domains in the tenant
             List<DirectoryObject> usersAndGroupsResults = new List<DirectoryObject>();
@@ -1289,8 +1278,8 @@ namespace azurecp
 
             // If exactSearch is true, we don't care about attributes with UseMainClaimTypeOfDirectoryObject = true
             List<ClaimTypeConfig> claimTypeConfigList;
-            if (requestInfo.ExactSearch) claimTypeConfigList = requestInfo.ClaimTypeConfigList.FindAll(x => !x.UseMainClaimTypeOfDirectoryObject);
-            else claimTypeConfigList = requestInfo.ClaimTypeConfigList;
+            if (currentContext.ExactSearch) claimTypeConfigList = currentContext.CurrentClaimTypeConfigList.FindAll(x => !x.UseMainClaimTypeOfDirectoryObject);
+            else claimTypeConfigList = currentContext.CurrentClaimTypeConfigList;
 
             List<AzureCPResult> processedResults = new List<AzureCPResult>();
             foreach (DirectoryObject userOrGroup in usersAndGroupsResults)
@@ -1300,7 +1289,7 @@ namespace azurecp
                 if (userOrGroup is User)
                 {
                     // Always skip shadow users: UserType is Guest and his mail matches a verified domain in AAD tenant
-                    string userType = GetGraphPropertyValue(userOrGroup, AzureADUserTypeHelper.PropertyNameContainingUserType);
+                    string userType = GetPropertyValue(userOrGroup, AzureADUserTypeHelper.PropertyNameContainingUserType);
                     if (String.IsNullOrEmpty(userType))
                     {
                         ClaimsProviderLogging.Log(
@@ -1310,7 +1299,7 @@ namespace azurecp
                     }
                     if (String.Equals(userType, AzureADUserTypeHelper.GuestUserType, StringComparison.InvariantCultureIgnoreCase))
                     {
-                        string mail = GetGraphPropertyValue(userOrGroup, "Mail");
+                        string mail = GetPropertyValue(userOrGroup, "Mail");
                         if (String.IsNullOrEmpty(mail))
                         {
                             ClaimsProviderLogging.Log(
@@ -1340,19 +1329,19 @@ namespace azurecp
                 foreach (ClaimTypeConfig currentClaimTypeConfig in claimTypeConfigList.Where(x => x.DirectoryObjectType == objectType))
                 {
                     // Get value with of current GraphProperty
-                    string directoryObjectPropertyValue = GetGraphPropertyValue(currentObject, currentClaimTypeConfig.DirectoryObjectProperty.ToString());
+                    string directoryObjectPropertyValue = GetPropertyValue(currentObject, currentClaimTypeConfig.DirectoryObjectProperty.ToString());
 
                     // Check if property exists (no null) and has a value (not String.Empty)
                     if (String.IsNullOrEmpty(directoryObjectPropertyValue)) continue;
 
                     // Check if current value mathes input, otherwise go to next GraphProperty to check
-                    if (requestInfo.ExactSearch)
+                    if (currentContext.ExactSearch)
                     {
-                        if (!String.Equals(directoryObjectPropertyValue, requestInfo.Input, StringComparison.InvariantCultureIgnoreCase)) continue;
+                        if (!String.Equals(directoryObjectPropertyValue, currentContext.Input, StringComparison.InvariantCultureIgnoreCase)) continue;
                     }
                     else
                     {
-                        if (!directoryObjectPropertyValue.StartsWith(requestInfo.Input, StringComparison.InvariantCultureIgnoreCase)) continue;
+                        if (!directoryObjectPropertyValue.StartsWith(currentContext.Input, StringComparison.InvariantCultureIgnoreCase)) continue;
                     }
 
                     // Current DirectoryObjectProperty value matches user input. Add current result to search results if it is not already present
@@ -1370,7 +1359,7 @@ namespace azurecp
                             claimTypeConfigToCompare = MainGroupClaimTypeConfig;                            
                         }
                         // Get the value of the DirectoryObjectProperty linked to current directory object
-                        valueToUseInClaimValue = GetGraphPropertyValue(currentObject, claimTypeConfigToCompare.DirectoryObjectProperty.ToString());
+                        valueToUseInClaimValue = GetPropertyValue(currentObject, claimTypeConfigToCompare.DirectoryObjectProperty.ToString());
                         if (String.IsNullOrEmpty(valueToUseInClaimValue)) continue;
                     }
                     else

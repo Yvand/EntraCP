@@ -59,7 +59,7 @@ namespace azurecp.ControlTemplates
 
         private void PopulateFields()
         {
-            if (IdentityClaim.DirectoryObjectPropertyToShowAsDisplayText == AzureADObjectProperty.None)
+            if (IdentityClaim.DirectoryObjectPropertyToShowAsDisplayText == AzureADObjectProperty.NotSet)
             {
                 this.RbIdentityDefault.Checked = true;
             }
@@ -78,7 +78,7 @@ namespace azurecp.ControlTemplates
             foreach (AzureADObjectProperty prop in Enum.GetValues(typeof(AzureADObjectProperty)))
             {
                 // Ensure property exists for the User object type
-                if (AzureCP.GetGraphPropertyValue(new User(), prop.ToString()) == null) continue;
+                if (AzureCP.GetPropertyValue(new User(), prop.ToString()) == null) continue;
 
                 // Ensure property is of type System.String
                 PropertyInfo pi = typeof(User).GetProperty(prop.ToString());
@@ -143,7 +143,7 @@ namespace azurecp.ControlTemplates
             }
             else
             {
-                IdentityClaim.DirectoryObjectPropertyToShowAsDisplayText = AzureADObjectProperty.None;
+                IdentityClaim.DirectoryObjectPropertyToShowAsDisplayText = AzureADObjectProperty.NotSet;
             }
 
             PersistedObject.AlwaysResolveUserInput = this.ChkAlwaysResolveUserInput.Checked;

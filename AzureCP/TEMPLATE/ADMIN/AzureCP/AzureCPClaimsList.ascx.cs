@@ -78,7 +78,7 @@ namespace azurecp.ControlTemplates
                 foreach (object field in typeof(AzureADObjectProperty).GetFields())
                 {
                     string prop = ((System.Reflection.FieldInfo)field).Name;
-                    if (AzureCP.GetGraphPropertyValue(new User(), prop) == null) continue;
+                    if (AzureCP.GetPropertyValue(new User(), prop) == null) continue;
                     //if (AzureCP.GetGraphPropertyValue(new Group(), prop) == null) continue;
                     //if (AzureCP.GetGraphPropertyValue(new Role(), prop) == null) continue;
 
@@ -117,7 +117,7 @@ namespace azurecp.ControlTemplates
             th = GetTableHeaderCell("Claim type");
             th.RowSpan = 2;
             tr.Cells.Add(th);
-            th = GetTableHeaderCell("Directory object settings");
+            th = GetTableHeaderCell("Directory object details");
             th.ColumnSpan = 3;
             tr.Cells.Add(th);
             th = GetTableHeaderCell("Optional settings");
@@ -298,12 +298,12 @@ namespace azurecp.ControlTemplates
                 //if (azureObject.Value.ClaimEntityType == SPClaimEntityTypes.User)
                 if (azureObject.Value.DirectoryObjectType == AzureADObjectType.User)
                 {
-                    if (AzureCP.GetGraphPropertyValue(new User(), prop.ToString()) == null) continue;
+                    if (AzureCP.GetPropertyValue(new User(), prop.ToString()) == null) continue;
                     directoryObjectTypeOptions.Append(String.Format(option, azureObject.Value.DirectoryObjectType.ToString(), "selected", azureObject.Value.DirectoryObjectType.ToString()));
                 }
                 else
                 {
-                    if (AzureCP.GetGraphPropertyValue(new Group(), prop.ToString()) == null) continue;
+                    if (AzureCP.GetPropertyValue(new Group(), prop.ToString()) == null) continue;
                     //if (AzureCP.GetGraphPropertyValue(new Role(), prop.ToString()) == null) continue;
                     directoryObjectTypeOptions.Append(String.Format(option, azureObject.Value.DirectoryObjectType.ToString(), "selected", azureObject.Value.DirectoryObjectType.ToString()));
                 }
@@ -323,10 +323,10 @@ namespace azurecp.ControlTemplates
 
             // Insert at 1st position GraphProperty.None in GraphPropertyToDisplay DDL and select it if needed
             string selectNone = graphPropertyToDisplayFound ? String.Empty : "selected";
-            graphPropertyToDisplayOptions = graphPropertyToDisplayOptions.Insert(0, String.Format(option, AzureADObjectProperty.None, selectNone, AzureADObjectProperty.None));
+            graphPropertyToDisplayOptions = graphPropertyToDisplayOptions.Insert(0, String.Format(option, AzureADObjectProperty.NotSet, selectNone, AzureADObjectProperty.NotSet));
 
             htmlCellGraphProperty = String.Format(HtmlCellGraphProperty, azureObject.Value.DirectoryObjectProperty, azureObject.Key, graphPropertyOptions.ToString());
-            string graphPropertyToDisplaySpanDisplay = azureObject.Value.DirectoryObjectPropertyToShowAsDisplayText == AzureADObjectProperty.None ? String.Empty : azureObject.Value.DirectoryObjectPropertyToShowAsDisplayText.ToString();
+            string graphPropertyToDisplaySpanDisplay = azureObject.Value.DirectoryObjectPropertyToShowAsDisplayText == AzureADObjectProperty.NotSet ? String.Empty : azureObject.Value.DirectoryObjectPropertyToShowAsDisplayText.ToString();
             htmlCellGraphPropertyToDisplay = String.Format(HtmlCellGraphPropertyToDisplay, graphPropertyToDisplaySpanDisplay, azureObject.Key, graphPropertyToDisplayOptions.ToString());
             htmlCellDirectoryObjectType = String.Format(HtmlCellClaimEntityType, azureObject.Value.DirectoryObjectType, azureObject.Key, directoryObjectTypeOptions.ToString());
         }
@@ -469,7 +469,7 @@ namespace azurecp.ControlTemplates
 
             AzureADObjectProperty newDirectoryObjectProp;
             bool convertSuccess = Enum.TryParse<AzureADObjectProperty>(New_DdlGraphProperty.SelectedValue, out newDirectoryObjectProp);
-            if (!convertSuccess || newDirectoryObjectProp == AzureADObjectProperty.None)
+            if (!convertSuccess || newDirectoryObjectProp == AzureADObjectProperty.NotSet)
             {
                 this.LabelErrorMessage.Text = TextErrorFieldsMissing;
                 ShowNewItemForm = true;
@@ -525,7 +525,7 @@ namespace azurecp.ControlTemplates
             ctConfig.EntityDataKey = New_DdlPermissionMetadata.SelectedValue;
 
             convertSuccess = Enum.TryParse<AzureADObjectProperty>(New_DdlGraphPropertyToDisplay.SelectedValue, out newDirectoryObjectProp);
-            ctConfig.DirectoryObjectPropertyToShowAsDisplayText = convertSuccess ? newDirectoryObjectProp : AzureADObjectProperty.None;
+            ctConfig.DirectoryObjectPropertyToShowAsDisplayText = convertSuccess ? newDirectoryObjectProp : AzureADObjectProperty.NotSet;
 
             try
             {

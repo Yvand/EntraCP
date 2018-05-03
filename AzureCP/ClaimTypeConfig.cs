@@ -224,7 +224,7 @@ namespace azurecp
 
         public void Add(ClaimTypeConfig item)
         {
-            if (item.DirectoryObjectProperty == AzureADObjectProperty.None)
+            if (item.DirectoryObjectProperty == AzureADObjectProperty.NotSet)
             {
                 throw new InvalidOperationException($"Properties LDAPAttribute and LDAPClass are required");
             }
