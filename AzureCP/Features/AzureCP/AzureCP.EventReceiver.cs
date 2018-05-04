@@ -53,7 +53,7 @@ namespace azurecp
             SPSecurity.RunWithElevatedPrivileges(delegate()
             {
                 base.RemoveClaimProvider(AzureCP._ProviderInternalName);
-                AzureCPConfig.DeleteAzureCPConfig(ClaimsProviderConstants.AZURECPCONFIG_NAME);
+                AzureCPConfig.DeleteConfiguration(ClaimsProviderConstants.AZURECPCONFIG_NAME);
             });
         }
 

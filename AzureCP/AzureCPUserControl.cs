@@ -49,7 +49,7 @@ namespace azurecp.ControlTemplates
                     if (_PersistedObject == null)
                     {
                         SPContext.Current.Web.AllowUnsafeUpdates = true;
-                        _PersistedObject = AzureCPConfig.CreatePersistedObject(this.PersistedObjectID, this.PersistedObjectName);
+                        _PersistedObject = AzureCPConfig.CreateConfiguration(this.PersistedObjectID, this.PersistedObjectName);
                         SPContext.Current.Web.AllowUnsafeUpdates = false;
                     }
                 });

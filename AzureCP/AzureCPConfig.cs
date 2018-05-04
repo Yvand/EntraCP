@@ -40,7 +40,7 @@ namespace azurecp
 #endif
 
         public const string SearchPatternEquals = "{0} eq '{1}'";
-        public const string SearchPatternStartsWith = "startswith({0},'{1}')";
+        public const string SearchPatternStartsWith = "startswith({0}, '{1}')";
         public static string GroupClaimEntityType = SPClaimEntityTypes.FormsRole;
         public const bool EnforceOnly1ClaimTypeForGroup = true;
     }
@@ -132,7 +132,7 @@ namespace azurecp
             }
             catch (Exception ex)
             {
-                ClaimsProviderLogging.Log(String.Format("Error while retrieving SPPersistedObject {0}: {1}", ClaimsProviderConstants.AZURECPCONFIG_NAME, ex.Message), TraceSeverity.Unexpected, EventSeverity.Error, TraceCategory.Core);
+                ClaimsProviderLogging.Log($"Error while retrieving configuration '{persistedObjectName}': {ex.Message}", TraceSeverity.Unexpected, EventSeverity.Error, TraceCategory.Core);
             }
             return null;
         }
@@ -143,7 +143,7 @@ namespace azurecp
         public override void Update()
         {
             base.Update();
-            ClaimsProviderLogging.Log($"PersistedObject {base.DisplayName} was updated successfully in configuration database.",
+            ClaimsProviderLogging.Log($"Configuration '{base.DisplayName}' was updated successfully in configuration database.",
                 TraceSeverity.Medium, EventSeverity.Information, TraceCategory.Core);
         }
 
@@ -152,9 +152,9 @@ namespace azurecp
             AzureCPConfig previousConfig = GetConfiguration(persistedObjectName);
             if (previousConfig == null) return null;
             Guid configId = previousConfig.Id;
-            DeleteAzureCPConfig(persistedObjectName);
-            AzureCPConfig newConfig = CreatePersistedObject(configId.ToString(), persistedObjectName);
-            ClaimsProviderLogging.Log($"PersistedObject {persistedObjectName} was successfully reset to its default configuration",
+            DeleteConfiguration(persistedObjectName);
+            AzureCPConfig newConfig = CreateConfiguration(configId.ToString(), persistedObjectName);
+            ClaimsProviderLogging.Log($"Configuration '{persistedObjectName}' was successfully reset to its default configuration",
                 TraceSeverity.High, EventSeverity.Information, TraceCategory.Core);
             return newConfig;
         }
@@ -188,7 +188,7 @@ namespace azurecp
         {
             ClaimTypes.Clear();
             ClaimTypes = GetDefaultClaimTypesConfig();
-            ClaimsProviderLogging.Log($"Claim types list of PersistedObject {Name} was successfully reset to default configuration",
+            ClaimsProviderLogging.Log($"Claim types list of configuration '{Name}' was successfully reset to default configuration",
                 TraceSeverity.High, EventSeverity.Information, TraceCategory.Core);
         }
 
@@ -197,22 +197,22 @@ namespace azurecp
         /// It should be created only in central administration with application pool credentials
         /// because this is the only place where we are sure user has the permission to write in the config database
         /// </summary>
-        public static AzureCPConfig CreatePersistedObject(string persistedObjectID, string persistedObjectName)
+        public static AzureCPConfig CreateConfiguration(string persistedObjectID, string persistedObjectName)
         {
             // Ensure it doesn't already exists and delete it if so
             AzureCPConfig existingConfig = AzureCPConfig.GetConfiguration(persistedObjectName);
             if (existingConfig != null)
             {
-                DeleteAzureCPConfig(persistedObjectName);
+                DeleteConfiguration(persistedObjectName);
             }
 
-            ClaimsProviderLogging.Log($"Creating persisted object {persistedObjectName} with Id {persistedObjectID}...", TraceSeverity.Medium, EventSeverity.Error, TraceCategory.Core);
+            ClaimsProviderLogging.Log($"Creating configuration '{persistedObjectName}' with Id {persistedObjectID}...", TraceSeverity.VerboseEx, EventSeverity.Error, TraceCategory.Core);
             AzureCPConfig PersistedObject = new AzureCPConfig(persistedObjectName, SPFarm.Local);
             PersistedObject.ResetCurrentConfiguration();
             PersistedObject.Id = new Guid(persistedObjectID);
             PersistedObject.AzureTenants = new List<AzureTenant>();
             PersistedObject.Update();
-            ClaimsProviderLogging.Log($"Created PersistedObject {PersistedObject.Name} with Id {PersistedObject.Id}", TraceSeverity.Medium, EventSeverity.Information, TraceCategory.Core);
+            ClaimsProviderLogging.Log($"Created configuration '{persistedObjectName}' with Id {PersistedObject.Id}", TraceSeverity.Medium, EventSeverity.Information, TraceCategory.Core);
             return PersistedObject;
         }
 
@@ -262,16 +262,16 @@ namespace azurecp
             };
         }
 
-        public static void DeleteAzureCPConfig(string persistedObjectName)
+        public static void DeleteConfiguration(string persistedObjectName)
         {
             AzureCPConfig config = AzureCPConfig.GetConfiguration(persistedObjectName);
             if (config == null)
             {
-                ClaimsProviderLogging.Log($"Persisted object {persistedObjectName} was not found in configuration database", TraceSeverity.Medium, EventSeverity.Error, TraceCategory.Core);
+                ClaimsProviderLogging.Log($"Configuration '{persistedObjectName}' was not found in configuration database", TraceSeverity.Medium, EventSeverity.Error, TraceCategory.Core);
                 return;
             }
             config.Delete();
-            ClaimsProviderLogging.Log($"Persisted object {persistedObjectName} was successfully deleted from configuration database", TraceSeverity.Medium, EventSeverity.Error, TraceCategory.Core);
+            ClaimsProviderLogging.Log($"Configuration '{persistedObjectName}' was successfully deleted from configuration database", TraceSeverity.High, EventSeverity.Information, TraceCategory.Core);
         }
     }
 
@@ -316,22 +316,6 @@ namespace azurecp
         {
         }
 
-        internal AzureTenant CopyCurrentObject()
-        {
-            AzureTenant copy = new AzureTenant()
-            {
-                TenantName = this.TenantName,
-                ClientId = this.ClientId,
-                ClientSecret = this.ClientSecret,
-                MemberUserTypeOnly = this.MemberUserTypeOnly,
-                AADInstance = this.AADInstance,
-                // This is done in SetAzureADContext
-                //AuthenticationProvider = this.AuthenticationProvider,
-                //GraphService = this.GraphService
-            };
-            return copy;
-        }
-
         /// <summary>
         /// Set properties AuthenticationProvider and GraphService
         /// </summary>
@@ -373,6 +357,10 @@ namespace azurecp
         /// Uri provided by SharePoint
         /// </summary>
         public Uri UriContext;
+
+        /// <summary>
+        /// EntityTypes expected by SharePoint in the entities returned
+        /// </summary>
         public AzureADObjectType[] DirectoryObjectTypes;
         public string HierarchyNodeID;
         public int MaxCount;

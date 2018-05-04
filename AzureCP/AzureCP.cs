@@ -181,9 +181,9 @@ namespace azurecp
                     }
 
                     // Set properties AuthenticationProvider and GraphService
-                    foreach (var coco in this.CurrentConfiguration.AzureTenants)
+                    foreach (var tenant in this.CurrentConfiguration.AzureTenants)
                     {
-                        coco.SetAzureADContext();
+                        tenant.SetAzureADContext();
                     }
                     success = this.InitializeClaimTypeConfigList(this.CurrentConfiguration.ClaimTypes);
                 }

@@ -290,7 +290,7 @@ namespace azurecp.ControlTemplates
 
         protected void BtnResetAzureCPConfig_Click(Object sender, EventArgs e)
         {
-            AzureCPConfig.DeleteAzureCPConfig(PersistedObjectName);
+            AzureCPConfig.DeleteConfiguration(PersistedObjectName);
             Response.Redirect(Request.RawUrl, false);
         }
 

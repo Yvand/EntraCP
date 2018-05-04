@@ -107,9 +107,8 @@ namespace azurecp.ControlTemplates
 
             TblClaimsMapping.Rows.Clear();
 
-            TableRow tr = new TableRow();
-
             // FIRST ROW HEADERS
+            TableRow tr = new TableRow();
             TableHeaderCell th;
             th = GetTableHeaderCell("Actions");
             th.RowSpan = 2;
@@ -295,7 +294,6 @@ namespace azurecp.ControlTemplates
             foreach (AzureADObjectProperty prop in Enum.GetValues(typeof(AzureADObjectProperty)))
             {
                 // Ensure property exists for the current object type
-                //if (azureObject.Value.ClaimEntityType == SPClaimEntityTypes.User)
                 if (azureObject.Value.DirectoryObjectType == AzureADObjectType.User)
                 {
                     if (AzureCP.GetPropertyValue(new User(), prop.ToString()) == null) continue;

@@ -136,17 +136,6 @@ namespace azurecp
         [Persisted]
         private bool _FilterExactMatchOnly = false;
 
-        /// <summary>
-        /// This azureObject is not intended to be used or modified in your code
-        /// </summary>
-        public string PeoplePickerAttributeHierarchyNodeId
-        {
-            get { return _PeoplePickerAttributeHierarchyNodeId; }
-            set { _PeoplePickerAttributeHierarchyNodeId = value; }
-        }
-        [Persisted]
-        private string _PeoplePickerAttributeHierarchyNodeId;
-
         internal ClaimTypeConfig CopyCurrentObject()
         {
             ClaimTypeConfig copy = new ClaimTypeConfig()
@@ -161,12 +150,11 @@ namespace azurecp
                 _DirectoryObjectPropertyToShowAsDisplayText = this._DirectoryObjectPropertyToShowAsDisplayText,
                 _FilterExactMatchOnly = this._FilterExactMatchOnly,
                 _ClaimTypeDisplayName = this._ClaimTypeDisplayName,
-                _PeoplePickerAttributeHierarchyNodeId = this._PeoplePickerAttributeHierarchyNodeId,
             };
             return copy;
         }
 
-        internal void CopyFromObject(ClaimTypeConfig objectToCopy)
+        internal void SetFromObject(ClaimTypeConfig objectToCopy)
         {
             _ClaimType = objectToCopy._ClaimType;
             _DirectoryObjectProperty = objectToCopy._DirectoryObjectProperty;
@@ -178,7 +166,6 @@ namespace azurecp
             _DirectoryObjectPropertyToShowAsDisplayText = objectToCopy._DirectoryObjectPropertyToShowAsDisplayText;
             _FilterExactMatchOnly = objectToCopy._FilterExactMatchOnly;
             _ClaimTypeDisplayName = objectToCopy._ClaimTypeDisplayName;
-            _PeoplePickerAttributeHierarchyNodeId = objectToCopy._PeoplePickerAttributeHierarchyNodeId;
         }
 
         public bool Equals(ClaimTypeConfig other)
@@ -271,6 +258,13 @@ namespace azurecp
                     throw new InvalidOperationException($"A claim type for DirectoryObjectType '{AzureADObjectType.Group.ToString()}' already exists in the collection");
                 }
             }
+
+            // Cannot add item with UseMainClaimTypeOfDirectoryObject true if collection does not contain an item with same directory object type AND a claim type defined
+            if (item.UseMainClaimTypeOfDirectoryObject && innerCol.FirstOrDefault (x => x.DirectoryObjectType == item.DirectoryObjectType && !String.IsNullOrEmpty(x.ClaimType)) == null)
+            {
+                throw new InvalidOperationException($"Cannot add this item (with UseMainClaimTypeOfDirectoryObject set to true) because collecton does not contain an item with same DirectoryObjectType '{item.DirectoryObjectType.ToString()}' AND a ClaimType set");
+            }
+
             innerCol.Add(item);
         }
 
@@ -300,7 +294,7 @@ namespace azurecp
                 ClaimTypeConfig curCT = (ClaimTypeConfig)innerCol[i];
                 if (String.Equals(curCT.ClaimType, oldClaimType, StringComparison.InvariantCultureIgnoreCase))
                 {
-                    innerCol.ElementAt(i).CopyFromObject(newItem);
+                    innerCol.ElementAt(i).SetFromObject(newItem);
                     break;
                 }
             }
