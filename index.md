@@ -5,7 +5,7 @@ This claims provider for SharePoint 2013 and 2016 leverages [Azure AD Graph Clie
 [Read this article](https://docs.microsoft.com/en-us/office365/enterprise/using-azure-ad-for-sharepoint-server-authentication) to learn how to federate SharePoint 2013 / 2016 with Azure AD.
 
 > **Note:**  
-> If you are starting a new project or testing AzureCP for the first time, I strongly recommend to test [the new version v12](https://github.com/Yvand/AzureCP/releases/tag/v12), which uses Microsoft Graph API and brings significant improvements in performance, customization capabilities and reliability.  
+> If you are starting a new project or testing AzureCP, I strongly recommend to test [the new version v12](https://github.com/Yvand/AzureCP/releases/tag/v12), which uses Microsoft Graph API and brings significant improvements in performance, customization capabilities and reliability.  
 > It's under active development but is sufficiently stable for testing. Note that it has breaking changes which may impact environments that update from a previous version.
 
 ## Features
@@ -21,7 +21,7 @@ This claims provider for SharePoint 2013 and 2016 leverages [Azure AD Graph Clie
 
 - Customize list of claim types, and their mapping with Azure AD users or groups. 
 - Enable/disable augmentation.
-- Enable/disable Azure AD lookup (to keep people picker returning results even if connectivity to Azure tenant is lost).
+- Enable/disable Azure AD lookup, to keep AzureCP running with limited functionality if connectivity with Azure AD is lost.
 - Customize display of permissions. 
 - Set a keyword to bypass Azure AD lookup. E.g. input "extuser:partner@contoso.com" directly creates permission "partner@contoso.com" on claim type set for this.
 - Developers can easily customize it by inheriting AzureCP class and override many methods.
