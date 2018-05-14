@@ -16,7 +16,6 @@ namespace azurecp
 {
     public class AADAppOnlyAuthenticationProvider : IAuthenticationProvider
     {
-        static string GraphAPIResource = "https://graph.microsoft.com/";
         private string AzureADInstance;
         private string Tenant;
         private string ClientId;
@@ -78,7 +77,7 @@ namespace azurecp
                 //AuthenticationContext authContext = new AuthenticationContext("https://login.windows.net/yvandev.onmicrosoft.com/oauth2/token");
                 AuthContext = new AuthenticationContext(Authority);
                 Creds = new ClientCredential(ClientId, ClientSecret);
-                AuthResult = await AuthContext.AcquireTokenAsync(GraphAPIResource, Creds);
+                AuthResult = await AuthContext.AcquireTokenAsync(ClaimsProviderConstants.GraphAPIResource, Creds);
 
                 TimeSpan duration = new TimeSpan(AuthResult.ExpiresOn.UtcTicks - DateTime.Now.ToUniversalTime().Ticks);
                 ClaimsProviderLogging.Log($"Got new access token for tenant '{Tenant}', valid for {Math.Round((duration.TotalHours), 1)} hour(s) and retrieved in {timer.ElapsedMilliseconds.ToString()} ms", TraceSeverity.High, EventSeverity.Information, TraceCategory.Core);

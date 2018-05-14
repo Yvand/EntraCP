@@ -1,18 +1,14 @@
-﻿using Microsoft.SharePoint.Administration;
+﻿using Microsoft.Graph;
+using Microsoft.SharePoint.Administration;
 using Microsoft.SharePoint.Administration.Claims;
 using Microsoft.SharePoint.WebControls;
 using System;
 using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
-using WIF4_5 = System.Security.Claims;
-using System.Text.RegularExpressions;
-using System.Web;
-using Microsoft.Graph;
-using System.Net.Http.Headers;
-using static azurecp.ClaimsProviderLogging;
 using System.Collections.ObjectModel;
+using System.Linq;
+using System.Web;
+using static azurecp.ClaimsProviderLogging;
+using WIF4_5 = System.Security.Claims;
 
 namespace azurecp
 {
@@ -29,19 +25,19 @@ namespace azurecp
     {
         public const string AZURECPCONFIG_ID = "0E9F8FB6-B314-4CCC-866D-DEC0BE76C237";
         public const string AZURECPCONFIG_NAME = "AzureCPConfig";
+        public const string GraphAPIResource = "https://graph.microsoft.com/";
         public const string AuthString = "https://login.windows.net/{0}";
         public const string ResourceUrl = "https://graph.windows.net";
-        //public const int timeout
-#if DEBUG
-        public const int timeout = 500000;    // 1000 secs      1000000
-#else
-        public const int timeout = 10000;    // 10 secs
-#endif
-
         public const string SearchPatternEquals = "{0} eq '{1}'";
         public const string SearchPatternStartsWith = "startswith({0}, '{1}')";
         public static string GroupClaimEntityType = SPClaimEntityTypes.FormsRole;
-        public const bool EnforceOnly1ClaimTypeForGroup = true;
+        public const bool EnforceOnly1ClaimTypeForGroup = true;     // In AzureCP, only 1 claim type can be used to create group permissions
+
+#if DEBUG
+        public const int timeout = 500000;   // 500 secs
+#else
+        public const int timeout = 10000;    // 10 secs
+#endif
     }
 
     public class AzureCPConfig : SPPersistedObject, IAzureCPConfiguration
@@ -102,8 +98,7 @@ namespace azurecp
         [Persisted]
         private bool AugmentAADRolesPersisted = true;
 
-        public AzureCPConfig(string persistedObjectName, SPPersistedObject parent) : base(persistedObjectName, parent)
-        { }
+        public AzureCPConfig(string persistedObjectName, SPPersistedObject parent) : base(persistedObjectName, parent) { }
 
         public AzureCPConfig() { }
 
@@ -116,9 +111,22 @@ namespace azurecp
             }
         }
 
+        /// <summary>
+        /// Override this method to allow more users to update the object. True specifies that more users can update the object; otherwise, false. The default value is false.
+        /// </summary>
+        /// <returns></returns>
         protected override bool HasAdditionalUpdateAccess()
         {
             return false;
+        }
+
+        /// <summary>
+        /// Returns configuration of AzureCP
+        /// </summary>
+        /// <returns></returns>
+        public static AzureCPConfig GetConfiguration()
+        {
+            return GetConfiguration(ClaimsProviderConstants.AZURECPCONFIG_NAME);
         }
 
         public static AzureCPConfig GetConfiguration(string persistedObjectName)
@@ -158,6 +166,17 @@ namespace azurecp
             return newConfig;
         }
 
+        /// <summary>
+        /// Set properties of current configuration to their default values
+        /// </summary>
+        /// <param name="persistedObjectName"></param>
+        /// <returns></returns>
+        public void ResetCurrentConfiguration()
+        {
+            AzureCPConfig defaultConfig = new AzureCPConfig(true);
+            ApplyConfiguration(defaultConfig);
+        }
+
         public void ApplyConfiguration(AzureCPConfig configToApply)
         {
             this.AzureTenants = configToApply.AzureTenants;
@@ -170,7 +189,7 @@ namespace azurecp
         public AzureCPConfig CopyCurrentObject()
         {
             //return this.Clone() as LDAPCPConfig;  // DOES NOT work
-            AzureCPConfig copy = new AzureCPConfig(true);
+            AzureCPConfig copy = new AzureCPConfig();
             copy.AlwaysResolveUserInput = this.AlwaysResolveUserInput;
             copy.FilterExactMatchOnly = this.FilterExactMatchOnly;
             copy.EnableAugmentation = this.EnableAugmentation;
@@ -192,10 +211,11 @@ namespace azurecp
         }
 
         /// <summary>
-        /// Create the persisted object that contains default configuration of AzureCP.
-        /// It should be created only in central administration with application pool credentials
-        /// because this is the only place where we are sure user has the permission to write in the config database
+        /// Create a persisted object with default configuration of AzureCP.
         /// </summary>
+        /// <param name="persistedObjectID"></param>
+        /// <param name="persistedObjectName"></param>
+        /// <returns></returns>
         public static AzureCPConfig CreateConfiguration(string persistedObjectID, string persistedObjectName)
         {
             // Ensure it doesn't already exists and delete it if so
@@ -215,52 +235,48 @@ namespace azurecp
             return PersistedObject;
         }
 
-        /// <summary>
-        /// Set properties of current configuration to their default values
-        /// </summary>
-        /// <param name="persistedObjectName"></param>
-        /// <returns></returns>
-        public void ResetCurrentConfiguration()
-        {
-            AzureCPConfig defaultConfig = new AzureCPConfig(true);
-            ApplyConfiguration(defaultConfig);
-        }
-
         public static IAzureCPConfiguration GetDefaultConfiguration()
         {
             IAzureCPConfiguration defaultConfig = new AzureCPConfig(true);
             return defaultConfig;
         }
 
+        /// <summary>
+        /// Return default claim types configuration list
+        /// </summary>
+        /// <returns></returns>
         public static ClaimTypeConfigCollection GetDefaultClaimTypesConfig()
         {
             return new ClaimTypeConfigCollection
             {
                 // By default ACS issues those 3 claim types: ClaimTypes.Name ClaimTypes.GivenName and ClaimTypes.Surname.
                 // But ClaimTypes.Name (http://schemas.xmlsoap.org/ws/2005/05/identity/claims/name) is a reserved claim type in SharePoint that cannot be used in the SPTrust.
+                // Alternatives claim types to ClaimTypes.Name most likely to be set as identity claim type:
+                new ClaimTypeConfig{DirectoryObjectType = AzureADObjectType.User, DirectoryObjectProperty = AzureADObjectProperty.UserPrincipalName, ClaimType = WIF4_5.ClaimTypes.Upn},
+                new ClaimTypeConfig{DirectoryObjectType = AzureADObjectType.User, DirectoryObjectProperty = AzureADObjectProperty.UserPrincipalName, ClaimType = WIF4_5.ClaimTypes.Email},
 
-                // Alternatives claim types to ClaimTypes.Name that might be used as identity claim types:
-                new ClaimTypeConfig{DirectoryObjectProperty=AzureADObjectProperty.UserPrincipalName, ClaimType=WIF4_5.ClaimTypes.Upn, DirectoryObjectType = AzureADObjectType.User},
-                new ClaimTypeConfig{DirectoryObjectProperty=AzureADObjectProperty.UserPrincipalName, ClaimType=WIF4_5.ClaimTypes.Email, DirectoryObjectType = AzureADObjectType.User},
+                // Additional properties to find user and create entity with the identity claim type (UseMainClaimTypeOfDirectoryObject=true)
+                new ClaimTypeConfig{DirectoryObjectType = AzureADObjectType.User, DirectoryObjectProperty = AzureADObjectProperty.DisplayName, UseMainClaimTypeOfDirectoryObject = true, EntityDataKey = PeopleEditorEntityDataKeys.DisplayName},
+                new ClaimTypeConfig{DirectoryObjectType = AzureADObjectType.User, DirectoryObjectProperty = AzureADObjectProperty.GivenName, UseMainClaimTypeOfDirectoryObject = true}, //Yvan
+                new ClaimTypeConfig{DirectoryObjectType = AzureADObjectType.User, DirectoryObjectProperty = AzureADObjectProperty.Surname, UseMainClaimTypeOfDirectoryObject = true},   //Duhamel
 
-                // Additional properties to find user
-                new ClaimTypeConfig{DirectoryObjectProperty=AzureADObjectProperty.DisplayName, UseMainClaimTypeOfDirectoryObject=true, DirectoryObjectType = AzureADObjectType.User, EntityDataKey=PeopleEditorEntityDataKeys.DisplayName},
-                new ClaimTypeConfig{DirectoryObjectProperty=AzureADObjectProperty.GivenName, UseMainClaimTypeOfDirectoryObject=true, DirectoryObjectType = AzureADObjectType.User},//Yvan
-                new ClaimTypeConfig{DirectoryObjectProperty=AzureADObjectProperty.Surname, UseMainClaimTypeOfDirectoryObject=true, DirectoryObjectType = AzureADObjectType.User},//Duhamel
-
-                // Retrieve additional properties to populate metadata in SharePoint (no claim type and UseMainClaimTypeOfDirectoryObject = false)
-                new ClaimTypeConfig{DirectoryObjectProperty=AzureADObjectProperty.Mail, DirectoryObjectType = AzureADObjectType.User, EntityDataKey=PeopleEditorEntityDataKeys.Email},
-                new ClaimTypeConfig{DirectoryObjectProperty=AzureADObjectProperty.MobilePhone, DirectoryObjectType = AzureADObjectType.User, EntityDataKey=PeopleEditorEntityDataKeys.MobilePhone},
-                new ClaimTypeConfig{DirectoryObjectProperty=AzureADObjectProperty.JobTitle, DirectoryObjectType = AzureADObjectType.User, EntityDataKey=PeopleEditorEntityDataKeys.JobTitle},
-                new ClaimTypeConfig{DirectoryObjectProperty=AzureADObjectProperty.Department, DirectoryObjectType = AzureADObjectType.User, EntityDataKey=PeopleEditorEntityDataKeys.Department},
-                new ClaimTypeConfig{DirectoryObjectProperty=AzureADObjectProperty.OfficeLocation, DirectoryObjectType = AzureADObjectType.User, EntityDataKey=PeopleEditorEntityDataKeys.Location},
+                // Additional properties to populate metadata of entity created: no claim type set, EntityDataKey is set and UseMainClaimTypeOfDirectoryObject = false (default value)
+                new ClaimTypeConfig{DirectoryObjectType = AzureADObjectType.User, DirectoryObjectProperty = AzureADObjectProperty.Mail, EntityDataKey = PeopleEditorEntityDataKeys.Email},
+                new ClaimTypeConfig{DirectoryObjectType = AzureADObjectType.User, DirectoryObjectProperty = AzureADObjectProperty.MobilePhone, EntityDataKey = PeopleEditorEntityDataKeys.MobilePhone},
+                new ClaimTypeConfig{DirectoryObjectType = AzureADObjectType.User, DirectoryObjectProperty = AzureADObjectProperty.JobTitle, EntityDataKey = PeopleEditorEntityDataKeys.JobTitle},
+                new ClaimTypeConfig{DirectoryObjectType = AzureADObjectType.User, DirectoryObjectProperty = AzureADObjectProperty.Department, EntityDataKey = PeopleEditorEntityDataKeys.Department},
+                new ClaimTypeConfig{DirectoryObjectType = AzureADObjectType.User, DirectoryObjectProperty = AzureADObjectProperty.OfficeLocation, EntityDataKey = PeopleEditorEntityDataKeys.Location},
 
                 // Group
-                new ClaimTypeConfig{DirectoryObjectProperty=AzureADObjectProperty.Id, ClaimType=WIF4_5.ClaimTypes.Role, DirectoryObjectType = AzureADObjectType.Group, DirectoryObjectPropertyToShowAsDisplayText=AzureADObjectProperty.DisplayName},
-                new ClaimTypeConfig{DirectoryObjectProperty=AzureADObjectProperty.DisplayName, DirectoryObjectType = AzureADObjectType.Group, UseMainClaimTypeOfDirectoryObject = true},
+                new ClaimTypeConfig{DirectoryObjectType = AzureADObjectType.Group, DirectoryObjectProperty = AzureADObjectProperty.Id, ClaimType=WIF4_5.ClaimTypes.Role, DirectoryObjectPropertyToShowAsDisplayText = AzureADObjectProperty.DisplayName},
+                new ClaimTypeConfig{DirectoryObjectType = AzureADObjectType.Group, DirectoryObjectProperty = AzureADObjectProperty.DisplayName, UseMainClaimTypeOfDirectoryObject = true},
             };
         }
 
+        /// <summary>
+        /// Delete persisted object from configuration database
+        /// </summary>
+        /// <param name="persistedObjectName">Name of persisted object to delete</param>
         public static void DeleteConfiguration(string persistedObjectName)
         {
             AzureCPConfig config = AzureCPConfig.GetConfiguration(persistedObjectName);
@@ -371,7 +387,7 @@ namespace azurecp
         public bool InputHasKeyword;
 
         /// <summary>
-        /// Indicate if search operation should return only results that exactly match the Input
+        /// Indicates if search operation should return only results that exactly match the Input
         /// </summary>
         public bool ExactSearch;
 
@@ -448,7 +464,7 @@ namespace azurecp
                !x.UseMainClaimTypeOfDirectoryObject);
             if (this.CurrentClaimTypeConfig == null) return;
 
-            // ClaimTypeConfigList must also be set
+            // CurrentClaimTypeConfigList must also be set
             this.CurrentClaimTypeConfigList = new List<ClaimTypeConfig>(1);
             this.CurrentClaimTypeConfigList.Add(this.CurrentClaimTypeConfig);
             this.ExactSearch = true;

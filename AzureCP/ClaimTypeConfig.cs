@@ -542,7 +542,7 @@ namespace azurecp
     }
 
     /// <summary>
-    /// Should be used only used to ensure that only 1 claim type is used per DirectoryObjectType
+    /// Should be used only to ensure that only 1 claim type is set per DirectoryObjectType
     /// </summary>
     internal class ClaimTypeConfigEnforeOnly1ClaimTypePerObjectType : EqualityComparer<ClaimTypeConfig>
     {
