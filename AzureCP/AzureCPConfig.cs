@@ -6,14 +6,13 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
-using WIF = System.Security.Claims;
+using WIF4_5 = System.Security.Claims;
 using System.Text.RegularExpressions;
 using System.Web;
 using Microsoft.Graph;
 using System.Net.Http.Headers;
 using static azurecp.ClaimsProviderLogging;
 using System.Collections.ObjectModel;
-//using WIF3_5 = Microsoft.IdentityModel.Claims;
 
 namespace azurecp
 {
@@ -241,8 +240,8 @@ namespace azurecp
                 // But ClaimTypes.Name (http://schemas.xmlsoap.org/ws/2005/05/identity/claims/name) is a reserved claim type in SharePoint that cannot be used in the SPTrust.
 
                 // Alternatives claim types to ClaimTypes.Name that might be used as identity claim types:
-                new ClaimTypeConfig{DirectoryObjectProperty=AzureADObjectProperty.UserPrincipalName, ClaimType=WIF.ClaimTypes.Upn, DirectoryObjectType = AzureADObjectType.User},
-                new ClaimTypeConfig{DirectoryObjectProperty=AzureADObjectProperty.UserPrincipalName, ClaimType=WIF.ClaimTypes.Email, DirectoryObjectType = AzureADObjectType.User},
+                new ClaimTypeConfig{DirectoryObjectProperty=AzureADObjectProperty.UserPrincipalName, ClaimType=WIF4_5.ClaimTypes.Upn, DirectoryObjectType = AzureADObjectType.User},
+                new ClaimTypeConfig{DirectoryObjectProperty=AzureADObjectProperty.UserPrincipalName, ClaimType=WIF4_5.ClaimTypes.Email, DirectoryObjectType = AzureADObjectType.User},
 
                 // Additional properties to find user
                 new ClaimTypeConfig{DirectoryObjectProperty=AzureADObjectProperty.DisplayName, UseMainClaimTypeOfDirectoryObject=true, DirectoryObjectType = AzureADObjectType.User, EntityDataKey=PeopleEditorEntityDataKeys.DisplayName},
@@ -257,7 +256,7 @@ namespace azurecp
                 new ClaimTypeConfig{DirectoryObjectProperty=AzureADObjectProperty.OfficeLocation, DirectoryObjectType = AzureADObjectType.User, EntityDataKey=PeopleEditorEntityDataKeys.Location},
 
                 // Group
-                new ClaimTypeConfig{DirectoryObjectProperty=AzureADObjectProperty.Id, ClaimType=WIF.ClaimTypes.Role, DirectoryObjectType = AzureADObjectType.Group, DirectoryObjectPropertyToShowAsDisplayText=AzureADObjectProperty.DisplayName},
+                new ClaimTypeConfig{DirectoryObjectProperty=AzureADObjectProperty.Id, ClaimType=WIF4_5.ClaimTypes.Role, DirectoryObjectType = AzureADObjectType.Group, DirectoryObjectPropertyToShowAsDisplayText=AzureADObjectProperty.DisplayName},
                 new ClaimTypeConfig{DirectoryObjectProperty=AzureADObjectProperty.DisplayName, DirectoryObjectType = AzureADObjectType.Group, UseMainClaimTypeOfDirectoryObject = true},
             };
         }
@@ -408,9 +407,19 @@ namespace azurecp
             HttpContext httpctx = HttpContext.Current;
             if (httpctx != null)
             {
-                WIF.ClaimsPrincipal cp = httpctx.User as WIF.ClaimsPrincipal;
-                // cp is typically null in central administration
-                if (cp != null) this.UserInHttpContext = SPClaimProviderManager.Local.DecodeClaimFromFormsSuffix(cp.Identity.Name);
+                WIF4_5.ClaimsPrincipal cp = httpctx.User as WIF4_5.ClaimsPrincipal;
+                if (cp != null)
+                {
+                    if (SPClaimProviderManager.IsEncodedClaim(cp.Identity.Name))
+                    {
+                        this.UserInHttpContext = SPClaimProviderManager.Local.DecodeClaimFromFormsSuffix(cp.Identity.Name);
+                    }
+                    else
+                    {
+                        // This code is reached only when called from central administration: current user is always a Windows user
+                        this.UserInHttpContext = SPClaimProviderManager.Local.ConvertIdentifierToClaim(cp.Identity.Name, SPIdentifierTypes.WindowsSamAccountName);
+                    }
+                }
             }
 
             if (currentRequestType == OperationType.Validation)

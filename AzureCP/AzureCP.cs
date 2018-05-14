@@ -15,7 +15,7 @@ using System.Threading;
 using System.Threading.Tasks;
 using System.Web;
 using static azurecp.ClaimsProviderLogging;
-using WIF = System.Security.Claims;
+using WIF4_5 = System.Security.Claims;
 
 /*
  * DO NOT directly edit AzureCP class. It is designed to be inherited to customize it as desired.
@@ -599,7 +599,7 @@ namespace azurecp
 
         protected override void FillClaimValueTypes(List<string> claimValueTypes)
         {
-            claimValueTypes.Add(WIF.ClaimValueTypes.String);
+            claimValueTypes.Add(WIF4_5.ClaimValueTypes.String);
         }
 
         protected override void FillClaimsForEntity(Uri context, SPClaim entity, SPClaimProviderContext claimProviderContext, List<SPClaim> claims)
