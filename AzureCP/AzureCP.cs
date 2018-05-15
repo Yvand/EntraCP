@@ -67,20 +67,9 @@ namespace azurecp
         protected IEnumerable<ClaimTypeConfig> MetadataConfig;
         protected virtual string PickerEntityDisplayText { get { return "({0}) {1}"; } }
         protected virtual string PickerEntityOnMouseOver { get { return "{0}={1}"; } }
+        protected string IssuerName => SPOriginalIssuers.Format(SPOriginalIssuerType.TrustedProvider, SPTrust.Name);
 
-        protected string IssuerName
-        {
-            get
-            {
-                // The advantage of using the SPTrustedLoginProvider name for the issuer name is that it makes possible and easy to replace current claims provider with another one.
-                // The other claims provider would simply have to use SPTrustedLoginProvider name too
-                return SPOriginalIssuers.Format(SPOriginalIssuerType.TrustedProvider, SPTrust.Name);
-            }
-        }
-
-        public AzureCP(string displayName) : base(displayName)
-        {
-        }
+        public AzureCP(string displayName) : base(displayName) { }
 
         /// <summary>
         /// Initializes claim provider. This method is reserved for internal use and is not intended to be called from external code or changed
@@ -212,40 +201,39 @@ namespace azurecp
             {
                 bool identityClaimTypeFound = false;
                 bool groupClaimTypeFound = false;
-                // Get claim types defined in SPTrustedLoginProvider based on their claim type (unique way to map them)
                 List<ClaimTypeConfig> claimTypesSetInTrust = new List<ClaimTypeConfig>();
+                // Foreach MappedClaimType in the SPTrustedLoginProvider
                 foreach (SPTrustedClaimTypeInformation claimTypeInformation in SPTrust.ClaimTypeInformation)
                 {
-                    // Search if current claim type in trust exists in AzureADObjects
-                    // List<T>.FindAll returns an empty list if no result found: http://msdn.microsoft.com/en-us/library/fh1w7y8z(v=vs.110).aspx
+                    // Search if current claim type in trust exists in ClaimTypeConfigCollection
                     ClaimTypeConfig claimTypeConfig = nonProcessedClaimTypes.FirstOrDefault(x =>
                         String.Equals(x.ClaimType, claimTypeInformation.MappedClaimType, StringComparison.InvariantCultureIgnoreCase) &&
                         !x.UseMainClaimTypeOfDirectoryObject &&
                         x.DirectoryObjectProperty != AzureADObjectProperty.NotSet);
 
                     if (claimTypeConfig == null) continue;
+                    claimTypeConfig.ClaimTypeDisplayName = claimTypeInformation.DisplayName;
                     claimTypesSetInTrust.Add(claimTypeConfig);
                     if (String.Equals(SPTrust.IdentityClaimTypeInformation.MappedClaimType, claimTypeConfig.ClaimType, StringComparison.InvariantCultureIgnoreCase))
                     {
-                        // Identity claim type found, set IdentityAzureADObject property
+                        // Identity claim type found, set IdentityClaimTypeConfig property
                         identityClaimTypeFound = true;
                         IdentityClaimTypeConfig = claimTypeConfig;
                     }
-                    else if (claimTypeConfig.DirectoryObjectType == AzureADObjectType.Group && !groupClaimTypeFound)
+                    else if (!groupClaimTypeFound && claimTypeConfig.DirectoryObjectType == AzureADObjectType.Group)
                     {
                         groupClaimTypeFound = true;
                         MainGroupClaimTypeConfig = claimTypeConfig;
                     }
                 }
 
-                // Check if identity claim is there. Should always check property SPTrustedClaimTypeInformation.MappedClaimType: http://msdn.microsoft.com/en-us/library/microsoft.sharepoint.administration.claims.sptrustedclaimtypeinformation.mappedclaimtype.aspx
                 if (!identityClaimTypeFound)
                 {
-                    ClaimsProviderLogging.Log(String.Format("[{0}] Impossible to continue because identity claim type '{1}' set in the SPTrustedIdentityTokenIssuer '{2}' is missing in AzureADObjects.", ProviderInternalName, SPTrust.IdentityClaimTypeInformation.MappedClaimType, SPTrust.Name), TraceSeverity.Unexpected, EventSeverity.ErrorCritical, TraceCategory.Core);
+                    ClaimsProviderLogging.Log($"[{ProviderInternalName}] Cannot continue because identity claim type '{SPTrust.IdentityClaimTypeInformation.MappedClaimType}' set in the SPTrustedIdentityTokenIssuer '{SPTrust.Name}' is missing in the ClaimTypeConfig list.", TraceSeverity.Unexpected, EventSeverity.ErrorCritical, TraceCategory.Core);
                     return false;
                 }
 
-                // Check if there are objects that should be always queried (UseMainClaimTypeOfDirectoryObject) to add in the list
+                // Check if there are additional properties to use in queries (UseMainClaimTypeOfDirectoryObject set to true)
                 List<ClaimTypeConfig> additionalClaimTypeConfigList = new List<ClaimTypeConfig>();
                 foreach (ClaimTypeConfig claimTypeConfig in nonProcessedClaimTypes.Where(x => x.UseMainClaimTypeOfDirectoryObject))
                 {
@@ -257,25 +245,16 @@ namespace azurecp
                     else
                     {
                         // If not a user, it must be a group
+                        if (MainGroupClaimTypeConfig == null) continue;
                         claimTypeConfig.ClaimType = MainGroupClaimTypeConfig.ClaimType;
                         claimTypeConfig.DirectoryObjectPropertyToShowAsDisplayText = MainGroupClaimTypeConfig.DirectoryObjectPropertyToShowAsDisplayText;
                     }
                     additionalClaimTypeConfigList.Add(claimTypeConfig);
                 }
 
-                ProcessedClaimTypesList = new List<ClaimTypeConfig>(claimTypesSetInTrust.Count + additionalClaimTypeConfigList.Count);
-                ProcessedClaimTypesList.AddRange(claimTypesSetInTrust);
-                ProcessedClaimTypesList.AddRange(additionalClaimTypeConfigList);
-
-                // Parse objects to configure some settings
-                // An object can have ClaimType set to null if only used to populate metadata of permission created
-                foreach (var attr in ProcessedClaimTypesList.Where(x => x.ClaimType != null))
-                {
-                    var trustedClaim = SPTrust.GetClaimTypeInformationFromMappedClaimType(attr.ClaimType);
-                    // It should never be null
-                    if (trustedClaim == null) continue;
-                    attr.ClaimTypeDisplayName = trustedClaim.DisplayName;
-                }
+                this.ProcessedClaimTypesList = new List<ClaimTypeConfig>(claimTypesSetInTrust.Count + additionalClaimTypeConfigList.Count);
+                this.ProcessedClaimTypesList.AddRange(claimTypesSetInTrust);
+                this.ProcessedClaimTypesList.AddRange(additionalClaimTypeConfigList);
 
                 // Get all PickerEntity metadata with a DirectoryObjectProperty set
                 this.MetadataConfig = nonProcessedClaimTypes.Where(x =>
@@ -894,7 +873,7 @@ namespace azurecp
 
                 if (permissions?.Count > 0)
                 {
-                    ClaimsProviderLogging.Log($"[{ProviderInternalName}] Returned {permissions.Count} entities with input '{currentContext.Input}'", 
+                    ClaimsProviderLogging.Log($"[{ProviderInternalName}] Returned {permissions.Count} entities with input '{currentContext.Input}'",
                         TraceSeverity.High, EventSeverity.Information, TraceCategory.Claims_Picking);
                 }
             }
@@ -1100,7 +1079,7 @@ namespace azurecp
             // Also add metadata properties to $select of corresponding object type
             if (firstUserObjectProcessed)
             {
-                foreach (ClaimTypeConfig ctConfig in MetadataConfig.Where( x => x.DirectoryObjectType == AzureADObjectType.User))
+                foreach (ClaimTypeConfig ctConfig in MetadataConfig.Where(x => x.DirectoryObjectType == AzureADObjectType.User))
                 {
                     userSelectBuilder.Append($", {ctConfig.DirectoryObjectProperty.ToString()}");
                 }
@@ -1356,7 +1335,7 @@ namespace azurecp
                         }
                         else
                         {
-                            claimTypeConfigToCompare = MainGroupClaimTypeConfig;                            
+                            claimTypeConfigToCompare = MainGroupClaimTypeConfig;
                         }
                         // Get the value of the DirectoryObjectProperty linked to current directory object
                         valueToUseInClaimValue = GetPropertyValue(currentObject, claimTypeConfigToCompare.DirectoryObjectProperty.ToString());
