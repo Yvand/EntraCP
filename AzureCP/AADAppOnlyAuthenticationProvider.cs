@@ -16,25 +16,22 @@ namespace azurecp
 {
     public class AADAppOnlyAuthenticationProvider : IAuthenticationProvider
     {
-        private string AzureADInstance;
         private string Tenant;
         private string ClientId;
         private string ClientSecret;
-        private string Authority;
+        private string AuthorityUri;
 
-        AuthenticationContext AuthContext;
-        ClientCredential Creds;
-        private AuthenticationResult AuthResult;
-
+        private AuthenticationContext AuthContext;
+        private ClientCredential Creds;
+        private AuthenticationResult AuthNResult;
         private AsyncLock GetAccessTokenLock = new AsyncLock();
 
-        public AADAppOnlyAuthenticationProvider(string aadInstance, string tenant, string clientId, string appKey)
+        public AADAppOnlyAuthenticationProvider(string authorityUriTemplate, string tenant, string clientId, string appKey)
         {
-            this.AzureADInstance = aadInstance;
             this.Tenant = tenant;
             this.ClientId = clientId;
             this.ClientSecret = appKey;
-            this.Authority = String.Format(CultureInfo.InvariantCulture, aadInstance, tenant);
+            this.AuthorityUri = String.Format(CultureInfo.InvariantCulture, authorityUriTemplate, tenant);
         }
 
         public async Task AuthenticateRequestAsync(HttpRequestMessage request)
@@ -42,55 +39,54 @@ namespace azurecp
             using (GetAccessTokenLock.Lock())
             {
                 bool getAccessToken = false;
-
-                if (AuthResult == null)
+                if (AuthNResult == null)
                 {
                     getAccessToken = true;
                 }
-                else if (DateTime.Now.ToUniversalTime().Ticks > AuthResult.ExpiresOn.UtcDateTime.Subtract(TimeSpan.FromMinutes(1)).Ticks)
+                else if (DateTime.Now.ToUniversalTime().Ticks > AuthNResult.ExpiresOn.UtcDateTime.Subtract(TimeSpan.FromMinutes(1)).Ticks)
                 {
-                    // Access token will expire within 1 min, let's renew it
+                    // Access token already expired or will expire within 1 min, let's renew it
                     ClaimsProviderLogging.Log($"Access token for tenant '{Tenant}' expired, renewing it...", TraceSeverity.Verbose, EventSeverity.Information, TraceCategory.Core);
                     getAccessToken = true;
                 }
 
                 if (getAccessToken)
                 {
-                    bool success = await GetAccessToken();
+                    bool success = await GetAccessToken(false);
                 }
 
-                if (!String.IsNullOrEmpty(AuthResult.AccessToken))
+                if (!String.IsNullOrEmpty(AuthNResult.AccessToken))
                 {
-                    request.Headers.Add("Authorization", $"Bearer {AuthResult.AccessToken}");
+                    request.Headers.Add("Authorization", $"Bearer {AuthNResult.AccessToken}");
                 }
             }
         }
 
-        private async Task<bool> GetAccessToken()
+        public async Task<bool> GetAccessToken(bool throwExceptionIfFail)
         {
-            bool success = true;
             ClaimsProviderLogging.Log($"Getting new access token for tenant '{Tenant}'", TraceSeverity.Verbose, EventSeverity.Information, TraceCategory.Core);
+            bool success = true;
             Stopwatch timer = new Stopwatch();
             timer.Start();
             try
             {
-                //AuthenticationContext authContext = new AuthenticationContext("https://login.windows.net/yvandev.onmicrosoft.com/oauth2/token");
-                AuthContext = new AuthenticationContext(Authority);
+                AuthContext = new AuthenticationContext(AuthorityUri);
                 Creds = new ClientCredential(ClientId, ClientSecret);
-                AuthResult = await AuthContext.AcquireTokenAsync(ClaimsProviderConstants.GraphAPIResource, Creds);
+                AuthNResult = await AuthContext.AcquireTokenAsync(ClaimsProviderConstants.GraphAPIResource, Creds);
 
-                TimeSpan duration = new TimeSpan(AuthResult.ExpiresOn.UtcTicks - DateTime.Now.ToUniversalTime().Ticks);
+                TimeSpan duration = new TimeSpan(AuthNResult.ExpiresOn.UtcTicks - DateTime.Now.ToUniversalTime().Ticks);
                 ClaimsProviderLogging.Log($"Got new access token for tenant '{Tenant}', valid for {Math.Round((duration.TotalHours), 1)} hour(s) and retrieved in {timer.ElapsedMilliseconds.ToString()} ms", TraceSeverity.High, EventSeverity.Information, TraceCategory.Core);
             }
             catch (AdalServiceException ex)
             {
                 ClaimsProviderLogging.Log($"Unable to get access token for tenant '{Tenant}': {ex.Message}", TraceSeverity.Unexpected, EventSeverity.Error, TraceCategory.Core);
                 success = false;
+                if (throwExceptionIfFail) throw ex;
             }
             catch (Exception ex)
             {
-                // Task.WaitAll throws an AggregateException, which contains all exceptions thrown by tasks it waited on
                 ClaimsProviderLogging.LogException(String.Empty, $"while getting access token for tenant '{Tenant}'", TraceCategory.Lookup, ex);
+                if (throwExceptionIfFail) throw ex;
             }
             finally
             {

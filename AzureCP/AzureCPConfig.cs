@@ -26,12 +26,13 @@ namespace azurecp
         public const string AZURECPCONFIG_ID = "0E9F8FB6-B314-4CCC-866D-DEC0BE76C237";
         public const string AZURECPCONFIG_NAME = "AzureCPConfig";
         public const string GraphAPIResource = "https://graph.microsoft.com/";
-        public const string AuthString = "https://login.windows.net/{0}";
+        public const string AuthorityUriTemplate = "https://login.windows.net/{0}";
         public const string ResourceUrl = "https://graph.windows.net";
         public const string SearchPatternEquals = "{0} eq '{1}'";
         public const string SearchPatternStartsWith = "startswith({0}, '{1}')";
         public static string GroupClaimEntityType = SPClaimEntityTypes.FormsRole;
         public const bool EnforceOnly1ClaimTypeForGroup = true;     // In AzureCP, only 1 claim type can be used to create group permissions
+        public const string PUBLICSITEURL = "https://yvand.github.io/AzureCP/";
 
 #if DEBUG
         public const int timeout = 500000;   // 500 secs
@@ -150,7 +151,7 @@ namespace azurecp
         public override void Update()
         {
             base.Update();
-            ClaimsProviderLogging.Log($"Configuration '{base.DisplayName}' was updated successfully in configuration database.",
+            ClaimsProviderLogging.Log($"Configuration '{base.DisplayName}' was updated successfully to version {base.Version} in configuration database.",
                 TraceSeverity.Medium, EventSeverity.Information, TraceCategory.Core);
         }
 
@@ -317,9 +318,6 @@ namespace azurecp
         [Persisted]
         public bool MemberUserTypeOnly;
 
-        [Persisted]
-        public string AADInstance = "https://login.windows.net/{0}";
-
         /// <summary>
         /// Instance of the IAuthenticationProvider class for this specific Azure AD tenant
         /// </summary>
@@ -338,7 +336,7 @@ namespace azurecp
         {
             try
             {
-                this.AuthenticationProvider = new AADAppOnlyAuthenticationProvider(this.AADInstance, this.TenantName, this.ClientId, this.ClientSecret);
+                this.AuthenticationProvider = new AADAppOnlyAuthenticationProvider(ClaimsProviderConstants.AuthorityUriTemplate, this.TenantName, this.ClientId, this.ClientSecret);
                 this.GraphService = new GraphServiceClient(this.AuthenticationProvider);
             }
             catch (Exception ex)

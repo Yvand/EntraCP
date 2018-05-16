@@ -110,7 +110,7 @@ namespace azurecp
                     }
                     else if (globalConfiguration.AzureTenants == null || globalConfiguration.AzureTenants.Count == 0)
                     {
-                        ClaimsProviderLogging.Log($"[{ProviderInternalName}] Configuration '{PersistedObjectName}' was found but there is no Azure AD tenant registered. Visit AzureCP admin pages in central administration to register it.",
+                        ClaimsProviderLogging.Log($"[{ProviderInternalName}] Configuration '{PersistedObjectName}' was found but there is no Azure AD tenant registered. Visit AzureCP admin pages in central administration to register one.",
                             TraceSeverity.Unexpected, EventSeverity.Error, TraceCategory.Core);
                         // Cannot continue 
                         success = false;
@@ -131,14 +131,20 @@ namespace azurecp
                                 TraceSeverity.Medium, EventSeverity.Information, TraceCategory.Core);
                         }
                     }
+
+                    // At this point, globalConfiguration should be set
+                    if (globalConfiguration == null) success = false;
+
+                    // ProcessedClaimTypesList can be null if:
+                    // - 1st initialization
+                    // - Initialized before but it failed. If so, try again to refresh config
+                    if (this.ProcessedClaimTypesList == null) refreshConfig = true;
                 }
                 catch (Exception ex)
                 {
                     success = false;
                     ClaimsProviderLogging.LogException(ProviderInternalName, "in Initialize", TraceCategory.Core, ex);
                 }
-                finally
-                { }
 
                 if (!success) return success;
                 if (!refreshConfig) return success;
@@ -270,8 +276,9 @@ namespace azurecp
         }
 
         /// <summary>
-        /// DO NOT Override this method if you use a custom persisted object to hold your configuration.
-        /// To get you custom persisted object, you must override property LDAPCP.PersistedObjectName and set its name
+        /// Override this method to return a custom configuration of AzureCP.
+        /// DO NOT Override this method if you use a custom persisted object to store configuration in config DB.
+        /// To use a custom persisted object, override property PersistedObjectName and set its name
         /// </summary>
         /// <returns></returns>
         protected virtual IAzureCPConfiguration GetConfiguration(Uri context, string[] entityTypes, string persistedObjectName)
@@ -280,10 +287,11 @@ namespace azurecp
         }
 
         /// <summary>
-        /// Override this method to customize configuration of AzureCP
+        /// [Deprecated] Override this method to customize the configuration of AzureCP. Please override GetConfiguration instead.
         /// </summary> 
         /// <param name="context">The context, as a URI</param>
         /// <param name="entityTypes">The EntityType entity types set to scope the search to</param>
+        [Obsolete("SetCustomConfiguration is deprecated, please override GetConfiguration instead.")]
         protected virtual void SetCustomConfiguration(Uri context, string[] entityTypes)
         {
         }
@@ -337,9 +345,9 @@ namespace azurecp
                 return lp.First();
 
             if (lp != null && lp.Count() > 1)
-                ClaimsProviderLogging.Log(String.Format("[{0}] Claims provider {0} is associated to multiple SPTrustedIdentityTokenIssuer, which is not supported because at runtime there is no way to determine what TrustedLoginProvider is currently calling", providerInternalName), TraceSeverity.Unexpected, EventSeverity.Error, TraceCategory.Core);
+                ClaimsProviderLogging.Log($"[{providerInternalName}] Cannot continue because '{providerInternalName}' is set with multiple SPTrustedIdentityTokenIssuer", TraceSeverity.Unexpected, EventSeverity.Error, TraceCategory.Core);
 
-            ClaimsProviderLogging.Log(String.Format("[{0}] Claims provider {0} is not associated with any SPTrustedIdentityTokenIssuer so it cannot create permissions.\r\nVisit http://ldapcp.codeplex.com for installation procedure or set property ClaimProviderName with PowerShell cmdlet Get-SPTrustedIdentityTokenIssuer to create association.", providerInternalName), TraceSeverity.High, EventSeverity.Warning, TraceCategory.Core);
+            ClaimsProviderLogging.Log($"[{providerInternalName}] Cannot continue because '{providerInternalName}' is not set with any SPTrustedIdentityTokenIssuer.\r\nVisit {ClaimsProviderConstants.PUBLICSITEURL} for more information.", TraceSeverity.High, EventSeverity.Warning, TraceCategory.Core);
             return null;
         }
 

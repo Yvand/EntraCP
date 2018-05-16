@@ -9,9 +9,19 @@
 
 <script type="text/javascript" src="/_layouts/15/azurecp/jquery-1.9.1.min.js"></script>
 <style>
+    /* Maximaze space available for description text */
+    .ms-inputformdescription {
+        width: 100%;
+    }
+
+    /* corev15.css set it to 0.9em, which makes it too small */
+    .ms-descriptiontext {
+        font-size: 1em;
+    }
+
     /* Set the size of the right part with all input controls */
     .ms-inputformcontrols {
-        width: 700px;
+        width: 750px;
     }
 
     /* Set the display of the title of each section */
@@ -109,9 +119,9 @@
 			<asp:Button UseSubmitBehavior="false" runat="server" class="ms-ButtonHeightWidth" OnClick="BtnOK_Click" Text="<%$Resources:wss,multipages_okbutton_text%>" id="BtnOKTop" accesskey="<%$Resources:wss,okbutton_accesskey%>"/>
 		</template_buttons>
     </wssuc:buttonsection>
-    <wssuc:inputformsection title="Current Azure tenants" runat="server">
+    <wssuc:inputformsection title="Existing Azure tenants" runat="server">
         <template_description>
-				<wssawc:EncodedLiteral runat="server" text="Current Azure tenants." EncodeMethod='HtmlEncodeAllowSimpleTextFormatting'/>
+				<wssawc:EncodedLiteral runat="server" text="Azure AD tenants registered." EncodeMethod='HtmlEncodeAllowSimpleTextFormatting'/>
 			</template_description>
         <template_inputformcontrols>
 				<tr><td>
@@ -120,7 +130,7 @@
 						<asp:BoundField DataField="Id" ItemStyle-CssClass="Azurecp-HideCol" HeaderStyle-CssClass="Azurecp-HideCol"/>
 						<asp:BoundField HeaderText="TenantName" DataField="TenantName"/>
 						<asp:BoundField HeaderText="ApplicationID" DataField="ClientID"/>
-                        <asp:BoundField HeaderText="Member Users Only" DataField="MemberUserTypeOnly" />
+                        <asp:BoundField HeaderText="Search 'Member' users Only" DataField="MemberUserTypeOnly" />
 						<asp:CommandField HeaderText="Action" ButtonType="Button" DeleteText="Remove" ShowDeleteButton="True" />
 					</Columns>
 				</wssawc:SPGridView>
@@ -129,7 +139,7 @@
     </wssuc:inputformsection>
     <wssuc:inputformsection title="New Azure tenant" runat="server">
         <template_description>
-				<wssawc:EncodedLiteral runat="server" text="Create a new connection to an Azure tenant." EncodeMethod='HtmlEncodeAllowSimpleTextFormatting'/>
+				<wssawc:EncodedLiteral runat="server" text="Register a new Azure AD tenant." EncodeMethod='HtmlEncodeAllowSimpleTextFormatting'/>
 			</template_description>
         <template_inputformcontrols>
 				<tr><td>
@@ -142,10 +152,6 @@
 						<label for="<%= TxtTenantName.ClientID %>">Tenant <a href="http://msdn.microsoft.com/en-us/library/system.directoryservices.directoryentry.path(v=vs.110).aspx" target="_blank">name</a>: <em>*</em></label>
 						<wssawc:InputFormTextBox title="Azure tenant name" class="ms-input" ID="TxtTenantName" Columns="50" Runat="server" MaxLength="255" Text="TENANTNAME.onMicrosoft.com" />
 					</li>
-					<%--<li>
-						<label for="<%= TxtTenantId.ClientID %>">Tenant ID: <em>*</em></label>
-						<wssawc:InputFormTextBox title="Username" class="ms-input" ID="TxtTenantId" Columns="50" Runat="server" MaxLength="255" />
-					</li>--%>
 					<li>
 						<label for="<%= TxtClientId.ClientID %>">Application ID: <em>*</em></label>
 						<wssawc:InputFormTextBox title="Password" class="ms-input" ID="TxtClientId" Columns="50" Runat="server" MaxLength="255" />
@@ -174,7 +180,7 @@
 			</td></tr>
 		 </template_inputformcontrols>
     </wssuc:inputformsection>
-    <wssuc:inputformsection runat="server" title="Display of permissions created with identity claim" description="Customize the display text of permissions created with identity claim. Identity claim is defined in the TrustedLoginProvider.<br/> It does not impact the actual value of the permission that will always be the property associated with the identity claim.">
+    <wssuc:inputformsection runat="server" title="Display of entities created with identity claim type" description="Customize the display text of entities created with identity claim type (which is defined in the TrustedLoginProvider).<br/>It does not change the actual value of the entity.">
         <template_inputformcontrols>
 				<wssawc:InputFormRadioButton id="RbIdentityDefault"
 					LabelText="Display the UserPrincipalName"
@@ -207,12 +213,12 @@
 				<asp:Checkbox Runat="server" Name="ChkFilterExactMatchOnly" ID="ChkFilterExactMatchOnly" Text="Require exact match" />
 			</template_inputformcontrols>
     </wssuc:inputformsection>
-    <wssuc:inputformsection runat="server" title="Augment users with their Azure groups" description="If enabled, upon successful authentication, query Azure to get the groups of current user and include them in his SAML token.<br/><br/>Without this augmentation, permissions granted on Azure groups won't work.">
+    <wssuc:inputformsection runat="server" title="Augmentation" description="Enable augmentation to let AzureCP get group membership of Azure AD users.<br/><br/>If not enabled, permissions granted on Azure AD groups may not work.">
         <template_inputformcontrols>
 				<asp:Checkbox Runat="server" Name="ChkAugmentAADRoles" ID="ChkAugmentAADRoles" Text="Retrieve Azure AD groups" />
 			</template_inputformcontrols>
     </wssuc:inputformsection>
-    <wssuc:inputformsection runat="server" title="Reset AzureCP configuration" description="This will delete the AzureCP persisted object in configuration database and recreate one with default values. Every custom settings, including customized claim types, will be deleted.">
+    <wssuc:inputformsection runat="server" title="Reset AzureCP configuration" description="Restore configuration to its default values. Every changes, including claim types configuration, will be reset.">
         <template_inputformcontrols>
 				<asp:Button runat="server" ID="BtnResetAzureCPConfig" Text="Reset AzureCP configuration" onclick="BtnResetAzureCPConfig_Click" class="ms-ButtonHeightWidth" OnClientClick="return confirm('Do you really want to reset AzureCP configuration?');" />
 			</template_inputformcontrols>

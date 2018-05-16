@@ -23,12 +23,7 @@ namespace azurecp.ControlTemplates
         public string TrustName = String.Empty; // This must be a field to be accessible from marup code, it cannot be a property
 
         string TextErrorFieldsMissing = "Some mandatory fields are missing.";
-        string TextErrorDuplicateClaimType = "This claim type already exists in the list, you cannot create duplicates.";
         string TextErrorUpdateEmptyClaimType = "Claim type must be set.";
-        string TextErrorUpdateItemDuplicate = "You tried to update item {0} with a {1} that already exists ({2}). Duplicates are not allowed.";
-        string TextErrorUpdateIdentityClaimTypeChanged = "You cannot change claim type of identity claim.";
-        string TextErrorUpdateIdentityClaimEntityTypeNotUser = "Identity claim type must be set with with object type &quot;User&quot;.";
-        string TextErrorNewMetadataAlreadyUsed = "Metadata {0} is already used. Duplicates are not allowed.";
 
         string HtmlCellClaimType = "<span name=\"span_claimtype_{1}\" id=\"span_claimtype_{1}\">{0}</span><input name=\"input_claimtype_{1}\" id=\"input_claimtype_{1}\" style=\"display: none; width: 90%;\" value=\"{0}\"></input>";
         string HtmlCellGraphProperty = "<span name=\"span_graphproperty_{1}\" id=\"span_graphproperty_{1}\">{0}</span><select name=\"list_graphproperty_{1}\" id=\"list_graphproperty_{1}\" style=\"display:none;\" value=\"{0}\">{2}</select>";
@@ -347,11 +342,6 @@ namespace azurecp.ControlTemplates
             TableCell tc = new TableCell();
             tc.Text = Value;
             return tc;
-        }
-
-        protected override bool UpdatePersistedObjectProperties(bool commitChanges)
-        {
-            throw new NotImplementedException();
         }
 
         void LnkDeleteItem_Command(object sender, CommandEventArgs e)

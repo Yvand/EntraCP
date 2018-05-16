@@ -30,7 +30,7 @@ namespace azurecp.ControlTemplates
         {
             get
             {
-                return (this._PersistedObjectID == null || this._PersistedObjectID == Guid.Empty ) ? String.Empty : this._PersistedObjectID.ToString();
+                return (this._PersistedObjectID == null || this._PersistedObjectID == Guid.Empty) ? String.Empty : this._PersistedObjectID.ToString();
             }
             set
             {
@@ -107,13 +107,11 @@ namespace azurecp.ControlTemplates
         protected static string ViewStatePersistedObjectVersionKey = "PersistedObjectVersion";
         protected static string TextErrorPersistedObjectNotFound = "PersistedObject cannot be found.";
         protected static string TextErrorPersistedObjectStale = "Modification is cancelled because persisted object was modified since last load of the page. Please refresh the page and try again.";
-        protected static string TextErrorNoSPTrustAssociation = "{0} is currently not associated with any TrustedLoginProvider. It is mandatory because it cannot create permission for a trust if it is not associated to it.<br/>Visit <a href=\"http://ldapcp.com/\" target=\"_blank\">ldapcp.com/</a> to see how to associate it.<br/>Settings on this page will not be available as long as AzureCP will not associated to a trut.";
+        protected static string TextErrorNoSPTrustAssociation = "{0} is currently not associated with any TrustedLoginProvider. It is mandatory because it cannot create permission for a trust if it is not associated to it.<br/>Visit <a href=\"" + ClaimsProviderConstants.PUBLICSITEURL + "\" target=\"_blank\">AzureCP site</a> for more information.<br/>Settings on this page will not be available as long as AzureCP will not associated to a trut.";
         protected static string TextErrorNoIdentityClaimType = "The TrustedLoginProvider {0} is set with identity claim type \"{1}\" but it is not in the claims list of AzureCP.<br/>Please visit AzureCP page \"claims mapping\" in Security tab to set it and return to this page afterwards.";
         protected static string TextErrorClaimsProviderNameNotSet = "The attribute 'ClaimsProviderName' is required but is not set on the user control.";
         protected static string TextErrorPersistedObjectNameNotSet = "The attribute 'PersistedObjectName' is required but is not set on the user control.";
         protected static string TextErrorPersistedObjectIDNotSet = "The attribute 'PersistedObjectID' is required but is not set on the user control.";
-
-        abstract protected bool UpdatePersistedObjectProperties(bool commitChanges);
 
         /// <summary>
         /// Ensures configuration is valid to proceed
@@ -162,11 +160,6 @@ namespace azurecp.ControlTemplates
         {
             PersistedObject.Update();
             PersistedObjectVersion = PersistedObject.Version;
-            ClaimsProviderLogging.Log(
-               $"[{ClaimsProviderName}] Updated configuration {PersistedObjectName} to version {PersistedObject.Version}", 
-               TraceSeverity.Medium,
-               EventSeverity.Information,
-               TraceCategory.Configuration);
         }
     }
 
