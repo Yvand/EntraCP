@@ -252,24 +252,24 @@ namespace azurecp
                 // By default ACS issues those 3 claim types: ClaimTypes.Name ClaimTypes.GivenName and ClaimTypes.Surname.
                 // But ClaimTypes.Name (http://schemas.xmlsoap.org/ws/2005/05/identity/claims/name) is a reserved claim type in SharePoint that cannot be used in the SPTrust.
                 // Alternatives claim types to ClaimTypes.Name most likely to be set as identity claim type:
-                new ClaimTypeConfig{DirectoryObjectType = AzureADObjectType.User, DirectoryObjectProperty = AzureADObjectProperty.UserPrincipalName, ClaimType = WIF4_5.ClaimTypes.Upn},
-                new ClaimTypeConfig{DirectoryObjectType = AzureADObjectType.User, DirectoryObjectProperty = AzureADObjectProperty.UserPrincipalName, ClaimType = WIF4_5.ClaimTypes.Email},
+                new ClaimTypeConfig{DirectoryObjectType = DirectoryObjectType.User, DirectoryObjectProperty = AzureADObjectProperty.UserPrincipalName, ClaimType = WIF4_5.ClaimTypes.Upn},
+                new ClaimTypeConfig{DirectoryObjectType = DirectoryObjectType.User, DirectoryObjectProperty = AzureADObjectProperty.UserPrincipalName, ClaimType = WIF4_5.ClaimTypes.Email},
 
                 // Additional properties to find user and create entity with the identity claim type (UseMainClaimTypeOfDirectoryObject=true)
-                new ClaimTypeConfig{DirectoryObjectType = AzureADObjectType.User, DirectoryObjectProperty = AzureADObjectProperty.DisplayName, UseMainClaimTypeOfDirectoryObject = true, EntityDataKey = PeopleEditorEntityDataKeys.DisplayName},
-                new ClaimTypeConfig{DirectoryObjectType = AzureADObjectType.User, DirectoryObjectProperty = AzureADObjectProperty.GivenName, UseMainClaimTypeOfDirectoryObject = true}, //Yvan
-                new ClaimTypeConfig{DirectoryObjectType = AzureADObjectType.User, DirectoryObjectProperty = AzureADObjectProperty.Surname, UseMainClaimTypeOfDirectoryObject = true},   //Duhamel
+                new ClaimTypeConfig{DirectoryObjectType = DirectoryObjectType.User, DirectoryObjectProperty = AzureADObjectProperty.DisplayName, UseMainClaimTypeOfDirectoryObject = true, EntityDataKey = PeopleEditorEntityDataKeys.DisplayName},
+                new ClaimTypeConfig{DirectoryObjectType = DirectoryObjectType.User, DirectoryObjectProperty = AzureADObjectProperty.GivenName, UseMainClaimTypeOfDirectoryObject = true}, //Yvan
+                new ClaimTypeConfig{DirectoryObjectType = DirectoryObjectType.User, DirectoryObjectProperty = AzureADObjectProperty.Surname, UseMainClaimTypeOfDirectoryObject = true},   //Duhamel
 
                 // Additional properties to populate metadata of entity created: no claim type set, EntityDataKey is set and UseMainClaimTypeOfDirectoryObject = false (default value)
-                new ClaimTypeConfig{DirectoryObjectType = AzureADObjectType.User, DirectoryObjectProperty = AzureADObjectProperty.Mail, EntityDataKey = PeopleEditorEntityDataKeys.Email},
-                new ClaimTypeConfig{DirectoryObjectType = AzureADObjectType.User, DirectoryObjectProperty = AzureADObjectProperty.MobilePhone, EntityDataKey = PeopleEditorEntityDataKeys.MobilePhone},
-                new ClaimTypeConfig{DirectoryObjectType = AzureADObjectType.User, DirectoryObjectProperty = AzureADObjectProperty.JobTitle, EntityDataKey = PeopleEditorEntityDataKeys.JobTitle},
-                new ClaimTypeConfig{DirectoryObjectType = AzureADObjectType.User, DirectoryObjectProperty = AzureADObjectProperty.Department, EntityDataKey = PeopleEditorEntityDataKeys.Department},
-                new ClaimTypeConfig{DirectoryObjectType = AzureADObjectType.User, DirectoryObjectProperty = AzureADObjectProperty.OfficeLocation, EntityDataKey = PeopleEditorEntityDataKeys.Location},
+                new ClaimTypeConfig{DirectoryObjectType = DirectoryObjectType.User, DirectoryObjectProperty = AzureADObjectProperty.Mail, EntityDataKey = PeopleEditorEntityDataKeys.Email},
+                new ClaimTypeConfig{DirectoryObjectType = DirectoryObjectType.User, DirectoryObjectProperty = AzureADObjectProperty.MobilePhone, EntityDataKey = PeopleEditorEntityDataKeys.MobilePhone},
+                new ClaimTypeConfig{DirectoryObjectType = DirectoryObjectType.User, DirectoryObjectProperty = AzureADObjectProperty.JobTitle, EntityDataKey = PeopleEditorEntityDataKeys.JobTitle},
+                new ClaimTypeConfig{DirectoryObjectType = DirectoryObjectType.User, DirectoryObjectProperty = AzureADObjectProperty.Department, EntityDataKey = PeopleEditorEntityDataKeys.Department},
+                new ClaimTypeConfig{DirectoryObjectType = DirectoryObjectType.User, DirectoryObjectProperty = AzureADObjectProperty.OfficeLocation, EntityDataKey = PeopleEditorEntityDataKeys.Location},
 
                 // Group
-                new ClaimTypeConfig{DirectoryObjectType = AzureADObjectType.Group, DirectoryObjectProperty = AzureADObjectProperty.Id, ClaimType=WIF4_5.ClaimTypes.Role, DirectoryObjectPropertyToShowAsDisplayText = AzureADObjectProperty.DisplayName},
-                new ClaimTypeConfig{DirectoryObjectType = AzureADObjectType.Group, DirectoryObjectProperty = AzureADObjectProperty.DisplayName, UseMainClaimTypeOfDirectoryObject = true},
+                new ClaimTypeConfig{DirectoryObjectType = DirectoryObjectType.Group, DirectoryObjectProperty = AzureADObjectProperty.Id, ClaimType=WIF4_5.ClaimTypes.Role, DirectoryObjectPropertyToShowAsDisplayText = AzureADObjectProperty.DisplayName},
+                new ClaimTypeConfig{DirectoryObjectType = DirectoryObjectType.Group, DirectoryObjectProperty = AzureADObjectProperty.DisplayName, UseMainClaimTypeOfDirectoryObject = true},
             };
         }
 
@@ -376,7 +376,7 @@ namespace azurecp
         /// <summary>
         /// EntityTypes expected by SharePoint in the entities returned
         /// </summary>
-        public AzureADObjectType[] DirectoryObjectTypes;
+        public DirectoryObjectType[] DirectoryObjectTypes;
         public string HierarchyNodeID;
         public int MaxCount;
 
@@ -412,11 +412,11 @@ namespace azurecp
 
             if (entityTypes != null)
             {
-                List<AzureADObjectType> aadEntityTypes = new List<AzureADObjectType>();
+                List<DirectoryObjectType> aadEntityTypes = new List<DirectoryObjectType>();
                 if (entityTypes.Contains(SPClaimEntityTypes.User))
-                    aadEntityTypes.Add(AzureADObjectType.User);
+                    aadEntityTypes.Add(DirectoryObjectType.User);
                 if (entityTypes.Contains(ClaimsProviderConstants.GroupClaimEntityType))
-                    aadEntityTypes.Add(AzureADObjectType.Group);
+                    aadEntityTypes.Add(DirectoryObjectType.Group);
                 this.DirectoryObjectTypes = aadEntityTypes.ToArray();
             }
 
@@ -518,7 +518,7 @@ namespace azurecp
         UserType
     }
 
-    public enum AzureADObjectType
+    public enum DirectoryObjectType
     {
         User,
         Group

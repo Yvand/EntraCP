@@ -220,7 +220,7 @@ namespace azurecp
                         identityClaimTypeFound = true;
                         IdentityClaimTypeConfig = claimTypeConfig;
                     }
-                    else if (!groupClaimTypeFound && claimTypeConfig.DirectoryObjectType == AzureADObjectType.Group)
+                    else if (!groupClaimTypeFound && claimTypeConfig.DirectoryObjectType == DirectoryObjectType.Group)
                     {
                         groupClaimTypeFound = true;
                         MainGroupClaimTypeConfig = claimTypeConfig;
@@ -237,7 +237,7 @@ namespace azurecp
                 List<ClaimTypeConfig> additionalClaimTypeConfigList = new List<ClaimTypeConfig>();
                 foreach (ClaimTypeConfig claimTypeConfig in nonProcessedClaimTypes.Where(x => x.UseMainClaimTypeOfDirectoryObject))
                 {
-                    if (claimTypeConfig.DirectoryObjectType == AzureADObjectType.User)
+                    if (claimTypeConfig.DirectoryObjectType == DirectoryObjectType.User)
                     {
                         claimTypeConfig.ClaimType = IdentityClaimTypeConfig.ClaimType;
                         claimTypeConfig.DirectoryObjectPropertyToShowAsDisplayText = IdentityClaimTypeConfig.DirectoryObjectPropertyToShowAsDisplayText;
@@ -388,7 +388,7 @@ namespace azurecp
             if (result.ClaimTypeConfig.UseMainClaimTypeOfDirectoryObject)
             {
                 string claimValueType;
-                if (result.ClaimTypeConfig.DirectoryObjectType == AzureADObjectType.User)
+                if (result.ClaimTypeConfig.DirectoryObjectType == DirectoryObjectType.User)
                 {
                     permissionClaimType = IdentityClaimTypeConfig.ClaimType;
                     pe.EntityType = SPClaimEntityTypes.User;
@@ -413,7 +413,7 @@ namespace azurecp
                     permissionClaimType,
                     permissionValue,
                     result.ClaimTypeConfig.ClaimValueType);
-                pe.EntityType = result.ClaimTypeConfig.DirectoryObjectType == AzureADObjectType.User ? SPClaimEntityTypes.User : ClaimsProviderConstants.GroupClaimEntityType;
+                pe.EntityType = result.ClaimTypeConfig.DirectoryObjectType == DirectoryObjectType.User ? SPClaimEntityTypes.User : ClaimsProviderConstants.GroupClaimEntityType;
             }
 
             pe.DisplayText = FormatPermissionDisplayText(permissionClaimType, permissionValue, isMappedClaimTypeConfig, result);
@@ -527,7 +527,7 @@ namespace azurecp
                         input);
                 }
 
-                pe.EntityType = claimTypeToResolve.DirectoryObjectType == AzureADObjectType.User ? SPClaimEntityTypes.User : ClaimsProviderConstants.GroupClaimEntityType;
+                pe.EntityType = claimTypeToResolve.DirectoryObjectType == DirectoryObjectType.User ? SPClaimEntityTypes.User : ClaimsProviderConstants.GroupClaimEntityType;
                 pe.Description = String.Format(
                     PickerEntityOnMouseOver,
                     claimTypeToResolve.DirectoryObjectProperty.ToString(),
@@ -631,7 +631,7 @@ namespace azurecp
                     return;
 
                 ClaimsProviderLogging.Log($"[{ProviderInternalName}] Starting augmentation for user '{decodedEntity.Value}'.", TraceSeverity.Verbose, EventSeverity.Information, TraceCategory.Augmentation);
-                ClaimTypeConfig groupClaimTypeSettings = this.ProcessedClaimTypesList.FirstOrDefault(x => x.DirectoryObjectType == AzureADObjectType.Group);
+                ClaimTypeConfig groupClaimTypeSettings = this.ProcessedClaimTypesList.FirstOrDefault(x => x.DirectoryObjectType == DirectoryObjectType.Group);
                 if (groupClaimTypeSettings == null)
                 {
                     ClaimsProviderLogging.Log($"[{ProviderInternalName}] No role claim type with SPClaimEntityTypes set to 'FormsRole' was found, please check claims mapping table.",
@@ -714,11 +714,11 @@ namespace azurecp
 
         protected override void FillHierarchy(Uri context, string[] entityTypes, string hierarchyNodeID, int numberOfLevels, Microsoft.SharePoint.WebControls.SPProviderHierarchyTree hierarchy)
         {
-            List<AzureADObjectType> aadEntityTypes = new List<AzureADObjectType>();
+            List<DirectoryObjectType> aadEntityTypes = new List<DirectoryObjectType>();
             if (entityTypes.Contains(SPClaimEntityTypes.User))
-                aadEntityTypes.Add(AzureADObjectType.User);
+                aadEntityTypes.Add(DirectoryObjectType.User);
             if (entityTypes.Contains(ClaimsProviderConstants.GroupClaimEntityType))
-                aadEntityTypes.Add(AzureADObjectType.Group);
+                aadEntityTypes.Add(DirectoryObjectType.Group);
 
             if (!Initialize(context, entityTypes))
                 return;
@@ -1051,7 +1051,7 @@ namespace azurecp
                     else currentFilter = String.Format(ClaimsProviderConstants.SearchPatternEquals, currentPropertyString, idGuid.ToString());
                 }
 
-                if (ctConfig.DirectoryObjectType == AzureADObjectType.User)
+                if (ctConfig.DirectoryObjectType == DirectoryObjectType.User)
                 {
                     if (!firstUserObjectProcessed) firstUserObjectProcessed = true;
                     else
@@ -1079,14 +1079,14 @@ namespace azurecp
             // Also add metadata properties to $select of corresponding object type
             if (firstUserObjectProcessed)
             {
-                foreach (ClaimTypeConfig ctConfig in MetadataConfig.Where(x => x.DirectoryObjectType == AzureADObjectType.User))
+                foreach (ClaimTypeConfig ctConfig in MetadataConfig.Where(x => x.DirectoryObjectType == DirectoryObjectType.User))
                 {
                     userSelectBuilder.Append($", {ctConfig.DirectoryObjectProperty.ToString()}");
                 }
             }
             if (firstGroupObjectProcessed)
             {
-                foreach (ClaimTypeConfig ctConfig in MetadataConfig.Where(x => x.DirectoryObjectType == AzureADObjectType.Group))
+                foreach (ClaimTypeConfig ctConfig in MetadataConfig.Where(x => x.DirectoryObjectType == DirectoryObjectType.Group))
                 {
                     groupSelectBuilder.Append($", {ctConfig.DirectoryObjectProperty.ToString()}");
                 }
@@ -1264,7 +1264,7 @@ namespace azurecp
             foreach (DirectoryObject userOrGroup in usersAndGroupsResults)
             {
                 DirectoryObject currentObject = null;
-                AzureADObjectType objectType;
+                DirectoryObjectType objectType;
                 if (userOrGroup is User)
                 {
                     // Always skip shadow users: UserType is Guest and his mail matches a verified domain in AAD tenant
@@ -1297,12 +1297,12 @@ namespace azurecp
                         }
                     }
                     currentObject = userOrGroup;
-                    objectType = AzureADObjectType.User;
+                    objectType = DirectoryObjectType.User;
                 }
                 else
                 {
                     currentObject = userOrGroup;
-                    objectType = AzureADObjectType.Group;
+                    objectType = DirectoryObjectType.Group;
                 }
 
                 foreach (ClaimTypeConfig currentClaimTypeConfig in claimTypeConfigList.Where(x => x.DirectoryObjectType == objectType))
@@ -1329,7 +1329,7 @@ namespace azurecp
                     ClaimTypeConfig claimTypeConfigToCompare;
                     if (currentClaimTypeConfig.UseMainClaimTypeOfDirectoryObject)
                     {
-                        if (objectType == AzureADObjectType.User)
+                        if (objectType == DirectoryObjectType.User)
                         {
                             claimTypeConfigToCompare = IdentityClaimTypeConfig;
                         }

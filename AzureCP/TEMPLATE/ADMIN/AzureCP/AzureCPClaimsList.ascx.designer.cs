@@ -109,16 +109,16 @@ namespace azurecp.ControlTemplates {
         /// Auto-generated field.
         /// To modify move field declaration from designer file to code-behind file.
         /// </remarks>
-        protected global::System.Web.UI.WebControls.TextBox New_TxtClaimType;
+        protected global::System.Web.UI.WebControls.TextBox TxtNewClaimType;
         
         /// <summary>
-        /// New_DdlDirectoryObjectType control.
+        /// DdlNewDirectoryObjectType control.
         /// </summary>
         /// <remarks>
         /// Auto-generated field.
         /// To modify move field declaration from designer file to code-behind file.
         /// </remarks>
-        protected global::System.Web.UI.WebControls.DropDownList New_DdlDirectoryObjectType;
+        protected global::System.Web.UI.WebControls.DropDownList DdlNewDirectoryObjectType;
         
         /// <summary>
         /// New_DdlGraphProperty control.
@@ -127,7 +127,7 @@ namespace azurecp.ControlTemplates {
         /// Auto-generated field.
         /// To modify move field declaration from designer file to code-behind file.
         /// </remarks>
-        protected global::System.Web.UI.WebControls.DropDownList New_DdlGraphProperty;
+        protected global::System.Web.UI.WebControls.DropDownList DdlNewGraphProperty;
         
         /// <summary>
         /// New_DdlGraphPropertyToDisplay control.
@@ -136,16 +136,16 @@ namespace azurecp.ControlTemplates {
         /// Auto-generated field.
         /// To modify move field declaration from designer file to code-behind file.
         /// </remarks>
-        protected global::System.Web.UI.WebControls.DropDownList New_DdlGraphPropertyToDisplay;
+        protected global::System.Web.UI.WebControls.DropDownList DdlNewGraphPropertyToDisplay;
         
         /// <summary>
-        /// New_DdlPermissionMetadata control.
+        /// DdlNewEntityMetadata control.
         /// </summary>
         /// <remarks>
         /// Auto-generated field.
         /// To modify move field declaration from designer file to code-behind file.
         /// </remarks>
-        protected global::System.Web.UI.WebControls.DropDownList New_DdlPermissionMetadata;
+        protected global::System.Web.UI.WebControls.DropDownList DdlNewEntityMetadata;
         
         /// <summary>
         /// BtnCreateNewItem control.
