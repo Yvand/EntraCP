@@ -1,7 +1,4 @@
 ﻿using Microsoft.Graph;
-using Microsoft.SharePoint;
-using Microsoft.SharePoint.Administration;
-using Microsoft.SharePoint.Administration.Claims;
 using Microsoft.SharePoint.WebControls;
 using System;
 using System.Collections.Generic;
@@ -11,7 +8,6 @@ using System.Reflection;
 using System.Text;
 using System.Web.UI;
 using System.Web.UI.WebControls;
-using static azurecp.ClaimsProviderLogging;
 
 namespace azurecp.ControlTemplates
 {
@@ -191,7 +187,7 @@ namespace azurecp.ControlTemplates
                         {
                             tr.CssClass = "azurecp-rowClaimTypeNotUsedInTrust";
                         }
-                        else if (attr.Value.DirectoryObjectType == DirectoryObjectType.Group)
+                        else if (attr.Value.EntityType == DirectoryObjectType.Group)
                         {
                             tr.CssClass = "azurecp-rowMainGroupClaimType";
                         }
@@ -204,8 +200,8 @@ namespace azurecp.ControlTemplates
                         }
                         else
                         {
-                            c = GetTableCell($"Use main claim type of object {attr.Value.DirectoryObjectType}");
-                            if (attr.Value.DirectoryObjectType == DirectoryObjectType.User)
+                            c = GetTableCell($"Use main claim type of object {attr.Value.EntityType}");
+                            if (attr.Value.EntityType == DirectoryObjectType.User)
                             {
                                 tr.CssClass = "azurecp-rowUserProperty";
                             }
@@ -289,17 +285,17 @@ namespace azurecp.ControlTemplates
             StringBuilder directoryObjectTypeOptions = new StringBuilder();
             bool graphPropertyToDisplayFound = false;
 
-            // Build DirectoryObjectType list
-            string selectedText = azureObject.Value.DirectoryObjectType == DirectoryObjectType.User ? "selected" : String.Empty;
+            // Build EntityType list
+            string selectedText = azureObject.Value.EntityType == DirectoryObjectType.User ? "selected" : String.Empty;
             directoryObjectTypeOptions.Append(String.Format(option, DirectoryObjectType.User.ToString(), selectedText, DirectoryObjectType.User.ToString()));
-            selectedText = azureObject.Value.DirectoryObjectType == DirectoryObjectType.Group ? "selected" : String.Empty;
+            selectedText = azureObject.Value.EntityType == DirectoryObjectType.Group ? "selected" : String.Empty;
             directoryObjectTypeOptions.Append(String.Format(option, DirectoryObjectType.Group.ToString(), selectedText, DirectoryObjectType.Group.ToString()));
 
             // Build DirectoryObjectProperty and DirectoryObjectPropertyToShowAsDisplayText lists
             foreach (AzureADObjectProperty prop in Enum.GetValues(typeof(AzureADObjectProperty)))
             {
                 // Ensure property exists for the current object type
-                if (azureObject.Value.DirectoryObjectType == DirectoryObjectType.User)
+                if (azureObject.Value.EntityType == DirectoryObjectType.User)
                 {
                     if (AzureCP.GetPropertyValue(new User(), prop.ToString()) == null) continue;
                 }
@@ -328,7 +324,7 @@ namespace azurecp.ControlTemplates
             htmlCellGraphProperty = String.Format(HtmlCellGraphProperty, azureObject.Value.DirectoryObjectProperty, azureObject.Key, graphPropertyOptions.ToString());
             string graphPropertyToDisplaySpanDisplay = azureObject.Value.DirectoryObjectPropertyToShowAsDisplayText == AzureADObjectProperty.NotSet ? String.Empty : azureObject.Value.DirectoryObjectPropertyToShowAsDisplayText.ToString();
             htmlCellGraphPropertyToDisplay = String.Format(HtmlCellGraphPropertyToDisplay, graphPropertyToDisplaySpanDisplay, azureObject.Key, graphPropertyToDisplayOptions.ToString());
-            htmlCellDirectoryObjectType = String.Format(HtmlCellDirectoryObjectType, azureObject.Value.DirectoryObjectType, azureObject.Key, directoryObjectTypeOptions.ToString());
+            htmlCellDirectoryObjectType = String.Format(HtmlCellDirectoryObjectType, azureObject.Value.EntityType, azureObject.Key, directoryObjectTypeOptions.ToString());
         }
 
         private TableHeaderCell GetTableHeaderCell(string Value)
@@ -377,7 +373,7 @@ namespace azurecp.ControlTemplates
 
             ClaimTypeConfig newCTConfig = new ClaimTypeConfig();
             newCTConfig.ClaimType = newClaimType;
-            newCTConfig.DirectoryObjectType = typeSelected;
+            newCTConfig.EntityType = typeSelected;
             newCTConfig.PrefixToBypassLookup = formData["input_PrefixToBypassLookup_" + itemId];
             newCTConfig.EntityDataKey = formData["list_Metadata_" + itemId];
 
@@ -452,7 +448,7 @@ namespace azurecp.ControlTemplates
 
             ClaimTypeConfig newCTConfig = new ClaimTypeConfig();
             newCTConfig.DirectoryObjectProperty = newDirectoryObjectProp;
-            newCTConfig.DirectoryObjectType = newDirectoryObjectType;
+            newCTConfig.EntityType = newDirectoryObjectType;
             newCTConfig.UseMainClaimTypeOfDirectoryObject = useMainClaimTypeOfDirectoryObject;
             newCTConfig.EntityDataKey = DdlNewEntityMetadata.SelectedValue;
             bool convertSuccess = Enum.TryParse<AzureADObjectProperty>(DdlNewGraphPropertyToDisplay.SelectedValue, out newDirectoryObjectProp);

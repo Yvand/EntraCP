@@ -3,12 +3,10 @@ using Microsoft.SharePoint.Administration;
 using Microsoft.SharePoint.Administration.Claims;
 using Microsoft.SharePoint.Utilities;
 using Microsoft.SharePoint.WebControls;
-using Nito.AsyncEx;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
-using System.Linq.Expressions;
 using System.Reflection;
 using System.Text;
 using System.Threading;
@@ -226,7 +224,7 @@ namespace azurecp
                         identityClaimTypeFound = true;
                         IdentityClaimTypeConfig = claimTypeConfig;
                     }
-                    else if (!groupClaimTypeFound && claimTypeConfig.DirectoryObjectType == DirectoryObjectType.Group)
+                    else if (!groupClaimTypeFound && claimTypeConfig.EntityType == DirectoryObjectType.Group)
                     {
                         groupClaimTypeFound = true;
                         MainGroupClaimTypeConfig = claimTypeConfig;
@@ -243,7 +241,7 @@ namespace azurecp
                 List<ClaimTypeConfig> additionalClaimTypeConfigList = new List<ClaimTypeConfig>();
                 foreach (ClaimTypeConfig claimTypeConfig in nonProcessedClaimTypes.Where(x => x.UseMainClaimTypeOfDirectoryObject))
                 {
-                    if (claimTypeConfig.DirectoryObjectType == DirectoryObjectType.User)
+                    if (claimTypeConfig.EntityType == DirectoryObjectType.User)
                     {
                         claimTypeConfig.ClaimType = IdentityClaimTypeConfig.ClaimType;
                         claimTypeConfig.DirectoryObjectPropertyToShowAsDisplayText = IdentityClaimTypeConfig.DirectoryObjectPropertyToShowAsDisplayText;
@@ -396,7 +394,7 @@ namespace azurecp
             if (result.ClaimTypeConfig.UseMainClaimTypeOfDirectoryObject)
             {
                 string claimValueType;
-                if (result.ClaimTypeConfig.DirectoryObjectType == DirectoryObjectType.User)
+                if (result.ClaimTypeConfig.EntityType == DirectoryObjectType.User)
                 {
                     permissionClaimType = IdentityClaimTypeConfig.ClaimType;
                     pe.EntityType = SPClaimEntityTypes.User;
@@ -421,7 +419,7 @@ namespace azurecp
                     permissionClaimType,
                     permissionValue,
                     result.ClaimTypeConfig.ClaimValueType);
-                pe.EntityType = result.ClaimTypeConfig.DirectoryObjectType == DirectoryObjectType.User ? SPClaimEntityTypes.User : ClaimsProviderConstants.GroupClaimEntityType;
+                pe.EntityType = result.ClaimTypeConfig.EntityType == DirectoryObjectType.User ? SPClaimEntityTypes.User : ClaimsProviderConstants.GroupClaimEntityType;
             }
 
             pe.DisplayText = FormatPermissionDisplayText(permissionClaimType, permissionValue, isMappedClaimTypeConfig, result);
@@ -435,7 +433,7 @@ namespace azurecp
 
             int nbMetadata = 0;
             // Populate metadata of new PickerEntity
-            foreach (var ctConfig in MetadataConfig.Where(x => x.DirectoryObjectType == result.ClaimTypeConfig.DirectoryObjectType))
+            foreach (var ctConfig in MetadataConfig.Where(x => x.EntityType == result.ClaimTypeConfig.EntityType))
             {
                 // if there is actally a value in the GraphObject, then it can be set
                 string entityAttribValue = GetPropertyValue(result.UserOrGroupResult, ctConfig.DirectoryObjectProperty.ToString());
@@ -535,7 +533,7 @@ namespace azurecp
                         input);
                 }
 
-                pe.EntityType = claimTypeToResolve.DirectoryObjectType == DirectoryObjectType.User ? SPClaimEntityTypes.User : ClaimsProviderConstants.GroupClaimEntityType;
+                pe.EntityType = claimTypeToResolve.EntityType == DirectoryObjectType.User ? SPClaimEntityTypes.User : ClaimsProviderConstants.GroupClaimEntityType;
                 pe.Description = String.Format(
                     PickerEntityOnMouseOver,
                     claimTypeToResolve.DirectoryObjectProperty.ToString(),
@@ -624,7 +622,7 @@ namespace azurecp
             SPOriginalIssuerType loginType = SPOriginalIssuers.GetIssuerType(decodedEntity.OriginalIssuer);
             if (loginType != SPOriginalIssuerType.TrustedProvider && loginType != SPOriginalIssuerType.ClaimProvider)
             {
-                ClaimsProviderLogging.Log($"[{ProviderInternalName}] Not trying to augment '{decodedEntity.Value}' because OriginalIssuer is '{decodedEntity.OriginalIssuer}'.",
+                ClaimsProviderLogging.Log($"[{ProviderInternalName}] Not trying to augment '{decodedEntity.Value}' because his OriginalIssuer is '{decodedEntity.OriginalIssuer}'.",
                     TraceSeverity.VerboseEx, EventSeverity.Information, TraceCategory.Augmentation);
                 return;
             }
@@ -635,20 +633,19 @@ namespace azurecp
             this.Lock_Config.EnterReadLock();
             try
             {
-                if (!this.CurrentConfiguration.EnableAugmentation)
-                    return;
+                if (!this.CurrentConfiguration.EnableAugmentation) return;
 
                 ClaimsProviderLogging.Log($"[{ProviderInternalName}] Starting augmentation for user '{decodedEntity.Value}'.", TraceSeverity.Verbose, EventSeverity.Information, TraceCategory.Augmentation);
-                ClaimTypeConfig groupClaimTypeSettings = this.ProcessedClaimTypesList.FirstOrDefault(x => x.DirectoryObjectType == DirectoryObjectType.Group);
+                ClaimTypeConfig groupClaimTypeSettings = this.ProcessedClaimTypesList.FirstOrDefault(x => x.EntityType == DirectoryObjectType.Group);
                 if (groupClaimTypeSettings == null)
                 {
-                    ClaimsProviderLogging.Log($"[{ProviderInternalName}] No role claim type with SPClaimEntityTypes set to 'FormsRole' was found, please check claims mapping table.",
+                    ClaimsProviderLogging.Log($"[{ProviderInternalName}] No claim type with EntityType 'Group' was found, please check claims mapping table.",
                         TraceSeverity.High, EventSeverity.Error, TraceCategory.Augmentation);
                     return;
                 }
 
-                OperationContext infos = new OperationContext(CurrentConfiguration, OperationType.Augmentation, ProcessedClaimTypesList, null, decodedEntity, context, null, null, Int32.MaxValue);
-                Task<List<SPClaim>> resultsTask = GetGroupMembershipAsync(infos, groupClaimTypeSettings);
+                OperationContext currentContext = new OperationContext(CurrentConfiguration, OperationType.Augmentation, ProcessedClaimTypesList, null, decodedEntity, context, null, null, Int32.MaxValue);
+                Task<List<SPClaim>> resultsTask = GetGroupMembershipAsync(currentContext, groupClaimTypeSettings);
                 resultsTask.Wait();
                 List<SPClaim> groups = resultsTask.Result;
                 timer.Stop();
@@ -657,15 +654,15 @@ namespace azurecp
                     foreach (SPClaim group in groups)
                     {
                         claims.Add(group);
-                        ClaimsProviderLogging.Log($"[{ProviderInternalName}] Added group '{group.Value}' to user '{infos.IncomingEntity.Value}'",
+                        ClaimsProviderLogging.Log($"[{ProviderInternalName}] Added group '{group.Value}' to user '{currentContext.IncomingEntity.Value}'",
                             TraceSeverity.Verbose, EventSeverity.Information, TraceCategory.Augmentation);
                     }
-                    ClaimsProviderLogging.Log($"[{ProviderInternalName}] User '{infos.IncomingEntity.Value}' was augmented with {groups.Count.ToString()} groups in {timer.ElapsedMilliseconds.ToString()} ms",
+                    ClaimsProviderLogging.Log($"[{ProviderInternalName}] User '{currentContext.IncomingEntity.Value}' was augmented with {groups.Count.ToString()} groups in {timer.ElapsedMilliseconds.ToString()} ms",
                         TraceSeverity.Medium, EventSeverity.Information, TraceCategory.Augmentation);
                 }
                 else
                 {
-                    ClaimsProviderLogging.Log($"[{ProviderInternalName}] No group found for user '{infos.IncomingEntity.Value}', search took {timer.ElapsedMilliseconds.ToString()} ms",
+                    ClaimsProviderLogging.Log($"[{ProviderInternalName}] No group found for user '{currentContext.IncomingEntity.Value}', search took {timer.ElapsedMilliseconds.ToString()} ms",
                         TraceSeverity.Medium, EventSeverity.Information, TraceCategory.Augmentation);
                 }
             }
@@ -679,37 +676,70 @@ namespace azurecp
             }
         }
 
-        protected async virtual Task<List<SPClaim>> GetGroupMembershipAsync(OperationContext requestInfo, ClaimTypeConfig groupClaimTypeSettings)
+        protected async virtual Task<List<SPClaim>> GetGroupMembershipAsync(OperationContext currentContext, ClaimTypeConfig groupClaimTypeSettings)
         {
-            List<SPClaim> claims = new List<SPClaim>();
-            foreach (var tenant in this.CurrentConfiguration.AzureTenants)
+            List<SPClaim> groups = new List<SPClaim>();
+
+            // Create a task for each tenant to query
+            var tenantQueryTasks = this.CurrentConfiguration.AzureTenants.Select(async tenant =>
             {
-                // The logic is that there will always be only 1 tenant returning groups, so as soon as 1 returned groups, foreach can stop
-                claims = await GetGroupMembershipFromAzureADAsync(requestInfo, groupClaimTypeSettings, tenant).ConfigureAwait(false);
-                if (claims?.Count > 0) break;
+                return await GetGroupMembershipFromAzureADAsync(currentContext, groupClaimTypeSettings, tenant).ConfigureAwait(false);
+            });
+
+            // Wait for all tasks to complete
+            List<SPClaim>[] tenantResults = await Task.WhenAll(tenantQueryTasks);
+
+            // Process result returned by each tenant
+            foreach (List<SPClaim> tenantResult in tenantResults)
+            {
+                if (tenantResult?.Count > 0)
+                {
+                    // The logic is that there will always be only 1 tenant returning groups, so as soon as 1 returned groups, foreach can stop
+                    groups = tenantResult;
+                    break;
+                }
             }
-            return claims;
+            return groups;
         }
 
-        protected async virtual Task<List<SPClaim>> GetGroupMembershipFromAzureADAsync(OperationContext requestInfo, ClaimTypeConfig groupClaimTypeSettings, AzureTenant tenant)
+        protected async virtual Task<List<SPClaim>> GetGroupMembershipFromAzureADAsync(OperationContext currentContext, ClaimTypeConfig groupClaimTypeConfig, AzureTenant tenant)
         {
             List<SPClaim> claims = new List<SPClaim>();
-            var userResult = await tenant.GraphService.Users.Request().Filter($"{requestInfo.CurrentClaimTypeConfig.DirectoryObjectProperty} eq '{requestInfo.IncomingEntity.Value}'").GetAsync().ConfigureAwait(false);
+            var userResult = await tenant.GraphService.Users.Request().Filter($"{currentContext.IncomingEntityClaimTypeConfig.DirectoryObjectProperty} eq '{currentContext.IncomingEntity.Value}'").GetAsync().ConfigureAwait(false);
             User user = userResult.FirstOrDefault();
             if (user == null) return claims;
-            // This only returns a collection of strings, set with group ID:
-            //IDirectoryObjectGetMemberGroupsCollectionPage groups = await tenant.GraphService.Users[requestInfo.IncomingEntity.Value].GetMemberGroups(true).Request().PostAsync().ConfigureAwait(false);
-            IUserMemberOfCollectionWithReferencesPage groups = await tenant.GraphService.Users[requestInfo.IncomingEntity.Value].MemberOf.Request().GetAsync().ConfigureAwait(false);
-            bool continueProcess = groups?.Count > 0;
-            while (continueProcess)
+
+            if (groupClaimTypeConfig.DirectoryObjectProperty == AzureADObjectProperty.Id)
             {
-                foreach (Group group in groups.OfType<Group>())
+                // POST to /v1.0/users/user@TENANT.onmicrosoft.com/microsoft.graph.getMemberGroups is the preferred way to return security groups as it includes nested groups
+                // But it returns only the group IDs so it can be used only if groupClaimTypeConfig.DirectoryObjectProperty == AzureADObjectProperty.Id
+                IDirectoryObjectGetMemberGroupsCollectionPage groupIDs = await tenant.GraphService.Users[currentContext.IncomingEntity.Value].GetMemberGroups(true).Request().PostAsync().ConfigureAwait(false);
+                bool morePages = groupIDs?.Count > 0;
+                while (morePages)
                 {
-                    string groupClaimValue = GetPropertyValue(group, groupClaimTypeSettings.DirectoryObjectProperty.ToString());
-                    claims.Add(CreateClaim(groupClaimTypeSettings.ClaimType, groupClaimValue, groupClaimTypeSettings.ClaimValueType));
+                    foreach (string groupID in groupIDs)
+                    {
+                        claims.Add(CreateClaim(groupClaimTypeConfig.ClaimType, groupID, groupClaimTypeConfig.ClaimValueType));
+                    }
+                    if (groupIDs.NextPageRequest != null) groupIDs = await groupIDs.NextPageRequest.PostAsync().ConfigureAwait(false);
+                    else morePages = false;
                 }
-                if (groups.NextPageRequest != null) groups = await groups.NextPageRequest.GetAsync().ConfigureAwait(false);
-                else continueProcess = false;
+            }
+            else
+            {
+                // Fallback to GET to /v1.0/users/user@TENANT.onmicrosoft.com/memberOf, which returns all group properties but does not return nested groups
+                IUserMemberOfCollectionWithReferencesPage groups = await tenant.GraphService.Users[currentContext.IncomingEntity.Value].MemberOf.Request().GetAsync().ConfigureAwait(false);
+                bool morePages = groups?.Count > 0;
+                while (morePages)
+                {
+                    foreach (Group group in groups.OfType<Group>())
+                    {
+                        string groupClaimValue = GetPropertyValue(group, groupClaimTypeConfig.DirectoryObjectProperty.ToString());
+                        claims.Add(CreateClaim(groupClaimTypeConfig.ClaimType, groupClaimValue, groupClaimTypeConfig.ClaimValueType));
+                    }
+                    if (groups.NextPageRequest != null) groups = await groups.NextPageRequest.GetAsync().ConfigureAwait(false);
+                    else morePages = false;
+                }
             }
             return claims;
         }
@@ -737,7 +767,7 @@ namespace azurecp
                 if (hierarchyNodeID == null)
                 {
                     // Root level
-                    foreach (var azureObject in this.ProcessedClaimTypesList.FindAll(x => !x.UseMainClaimTypeOfDirectoryObject && aadEntityTypes.Contains(x.DirectoryObjectType)))
+                    foreach (var azureObject in this.ProcessedClaimTypesList.FindAll(x => !x.UseMainClaimTypeOfDirectoryObject && aadEntityTypes.Contains(x.EntityType)))
                     {
                         hierarchy.AddChild(
                             new Microsoft.SharePoint.WebControls.SPProviderHierarchyNode(
@@ -956,7 +986,7 @@ namespace azurecp
                 else if (currentContext.OperationType == OperationType.Validation)
                 {
                     SearchOrValidateInAzureAD(currentContext, ref permissions);
-                    if (!String.IsNullOrEmpty(currentContext.CurrentClaimTypeConfig.PrefixToBypassLookup))
+                    if (!String.IsNullOrEmpty(currentContext.IncomingEntityClaimTypeConfig.PrefixToBypassLookup))
                     {
                         // At this stage, it is impossible to know if entity was originally created with the keyword that query to Azure AD
                         // But it should be always validated since property PrefixToBypassLookup is set for this ClaimTypeConfig
@@ -965,12 +995,12 @@ namespace azurecp
                         // If Azure AD didn't find a result, create entity manually
                         PickerEntity entity = CreatePickerEntityForSpecificClaimType(
                             currentContext.Input,
-                            currentContext.CurrentClaimTypeConfig,
+                            currentContext.IncomingEntityClaimTypeConfig,
                             currentContext.InputHasKeyword);
                         if (entity != null)
                         {
                             permissions.Add(entity);
-                            ClaimsProviderLogging.Log($"[{ProviderInternalName}] Validated entity with no query sent to Azure AD because its claim type ('{currentContext.CurrentClaimTypeConfig.ClaimType}') has property 'PrefixToBypassLookup' set in AzureCPConfig.ClaimTypes: Claim value: '{entity.Claim.Value}', claim type: '{entity.Claim.ClaimType}'",
+                            ClaimsProviderLogging.Log($"[{ProviderInternalName}] Validated entity with no query sent to Azure AD because its claim type ('{currentContext.IncomingEntityClaimTypeConfig.ClaimType}') has property 'PrefixToBypassLookup' set in AzureCPConfig.ClaimTypes: Claim value: '{entity.Claim.Value}', claim type: '{entity.Claim.ClaimType}'",
                                 TraceSeverity.VerboseEx, EventSeverity.Information, TraceCategory.Claims_Picking);
                         }
                         return permissions;
@@ -1059,7 +1089,7 @@ namespace azurecp
                     else currentFilter = String.Format(ClaimsProviderConstants.SearchPatternEquals, currentPropertyString, idGuid.ToString());
                 }
 
-                if (ctConfig.DirectoryObjectType == DirectoryObjectType.User)
+                if (ctConfig.EntityType == DirectoryObjectType.User)
                 {
                     if (!firstUserObjectProcessed) firstUserObjectProcessed = true;
                     else
@@ -1087,14 +1117,14 @@ namespace azurecp
             // Also add metadata properties to $select of corresponding object type
             if (firstUserObjectProcessed)
             {
-                foreach (ClaimTypeConfig ctConfig in MetadataConfig.Where(x => x.DirectoryObjectType == DirectoryObjectType.User))
+                foreach (ClaimTypeConfig ctConfig in MetadataConfig.Where(x => x.EntityType == DirectoryObjectType.User))
                 {
                     userSelectBuilder.Append($", {ctConfig.DirectoryObjectProperty.ToString()}");
                 }
             }
             if (firstGroupObjectProcessed)
             {
-                foreach (ClaimTypeConfig ctConfig in MetadataConfig.Where(x => x.DirectoryObjectType == DirectoryObjectType.Group))
+                foreach (ClaimTypeConfig ctConfig in MetadataConfig.Where(x => x.EntityType == DirectoryObjectType.Group))
                 {
                     groupSelectBuilder.Append($", {ctConfig.DirectoryObjectProperty.ToString()}");
                 }
@@ -1116,40 +1146,40 @@ namespace azurecp
         {
             if (userFilter == null && groupFilter == null) return null;
             List<AzureADResult> allSearchResults = new List<AzureADResult>();
-            var lockResults = new object();
 
-            //foreach (AzureTenant coco in this.CurrentConfiguration.AzureTenants)
-            Parallel.ForEach(this.CurrentConfiguration.AzureTenants, async coco =>
-            //var queryTenantTasks = this.CurrentConfiguration.AzureTenants.Select (async coco =>
+            // Create a task for each tenant to query
+            var tenantQueryTasks = this.CurrentConfiguration.AzureTenants.Select(async tenant =>
             {
                 Stopwatch timer = new Stopwatch();
-                AzureADResult searchResult = null;
+                AzureADResult tenantResult = null;
                 try
                 {
                     timer.Start();
-                    searchResult = await QueryAzureADTenantAsync(currentContext, coco, userFilter, groupFilter, userSelect, groupSelect, true).ConfigureAwait(false);
+                    tenantResult = await QueryAzureADTenantAsync(currentContext, tenant, userFilter, groupFilter, userSelect, groupSelect, true).ConfigureAwait(false);
                 }
                 catch (Exception ex)
                 {
-                    ClaimsProviderLogging.LogException(ProviderInternalName, String.Format("in QueryAzureADTenantsAsync while querying tenant {0}", coco.TenantName), TraceCategory.Lookup, ex);
+                    ClaimsProviderLogging.LogException(ProviderInternalName, String.Format("in QueryAzureADTenantsAsync while querying tenant {0}", tenant.TenantName), TraceCategory.Lookup, ex);
                 }
                 finally
                 {
                     timer.Stop();
                 }
-
-                if (searchResult != null)
-                {
-                    lock (lockResults)
-                    {
-                        allSearchResults.Add(searchResult);
-                    }
-                    ClaimsProviderLogging.Log($"[{ProviderInternalName}] Got {searchResult.UserOrGroupResultList.Count().ToString()} users/groups and {searchResult.DomainsRegisteredInAzureADTenant.Count().ToString()} registered domains in {timer.ElapsedMilliseconds.ToString()} ms from '{coco.TenantName}' with input '{currentContext.Input}'",
-                        TraceSeverity.Medium, EventSeverity.Information, TraceCategory.Lookup);
-                }
-                else ClaimsProviderLogging.Log($"[{ProviderInternalName}] Got no result from '{coco.TenantName}' with input '{currentContext.Input}', search took {timer.ElapsedMilliseconds.ToString()} ms", TraceSeverity.Medium, EventSeverity.Information, TraceCategory.Lookup);
+                if (tenantResult != null)
+                    ClaimsProviderLogging.Log($"[{ProviderInternalName}] Got {tenantResult.UsersAndGroups.Count().ToString()} users/groups and {tenantResult.DomainsRegisteredInAzureADTenant.Count().ToString()} registered domains in {timer.ElapsedMilliseconds.ToString()} ms from '{tenant.TenantName}' with input '{currentContext.Input}'", TraceSeverity.Medium, EventSeverity.Information, TraceCategory.Lookup);
+                else
+                    ClaimsProviderLogging.Log($"[{ProviderInternalName}] Got no result from '{tenant.TenantName}' with input '{currentContext.Input}', search took {timer.ElapsedMilliseconds.ToString()} ms", TraceSeverity.Medium, EventSeverity.Information, TraceCategory.Lookup);
+                return tenantResult;
             });
-            //}
+
+            // Wait for all tasks to complete
+            AzureADResult[] tenantResults = await Task.WhenAll(tenantQueryTasks);
+
+            // Add result returned by each tenant to allSearchResults
+            foreach (AzureADResult currentTenantResult in tenantResults)
+            {
+                allSearchResults.Add(currentTenantResult);
+            }
             return allSearchResults;
         }
 
@@ -1177,7 +1207,7 @@ namespace azurecp
                             {
                                 lock (lockAddResultToCollection)
                                 {
-                                    tenantResults.UserOrGroupResultList.AddRange(users.CurrentPage);
+                                    tenantResults.UsersAndGroups.AddRange(users.CurrentPage);
                                 }
                                 if (users.NextPageRequest != null) users = await users.NextPageRequest.GetAsync().ConfigureAwait(false);
                             }
@@ -1196,7 +1226,7 @@ namespace azurecp
                             {
                                 lock (lockAddResultToCollection)
                                 {
-                                    tenantResults.UserOrGroupResultList.AddRange(groups.CurrentPage);
+                                    tenantResults.UsersAndGroups.AddRange(groups.CurrentPage);
                                 }
                                 if (groups.NextPageRequest != null) groups = await groups.NextPageRequest.GetAsync().ConfigureAwait(false);
                             }
@@ -1248,28 +1278,28 @@ namespace azurecp
         protected virtual List<AzureCPResult> ProcessAzureADResults(OperationContext currentContext, List<AzureADResult> azureADResults)
         {
             // Split results between users/groups and list of registered domains in the tenant
-            List<DirectoryObject> usersAndGroupsResults = new List<DirectoryObject>();
+            List<DirectoryObject> usersAndGroups = new List<DirectoryObject>();
             List<string> domains = new List<string>();
             // For each Azure AD tenant
             foreach (AzureADResult tenantResults in azureADResults)
             {
-                usersAndGroupsResults.AddRange(tenantResults.UserOrGroupResultList);
+                usersAndGroups.AddRange(tenantResults.UsersAndGroups);
                 domains.AddRange(tenantResults.DomainsRegisteredInAzureADTenant);
             }
 
             // Return if no user / groups is found, or if no registered domain is found
-            if (usersAndGroupsResults == null || !usersAndGroupsResults.Any() || domains == null || !domains.Any())
+            if (usersAndGroups == null || !usersAndGroups.Any() || domains == null || !domains.Any())
             {
                 return null;
             };
 
-            // If exactSearch is true, we don't care about attributes with UseMainClaimTypeOfDirectoryObject = true
+            // If ExactSearch is true, we don't care about attributes with UseMainClaimTypeOfDirectoryObject = true
             List<ClaimTypeConfig> claimTypeConfigList;
             if (currentContext.ExactSearch) claimTypeConfigList = currentContext.CurrentClaimTypeConfigList.FindAll(x => !x.UseMainClaimTypeOfDirectoryObject);
             else claimTypeConfigList = currentContext.CurrentClaimTypeConfigList;
 
             List<AzureCPResult> processedResults = new List<AzureCPResult>();
-            foreach (DirectoryObject userOrGroup in usersAndGroupsResults)
+            foreach (DirectoryObject userOrGroup in usersAndGroups)
             {
                 DirectoryObject currentObject = null;
                 DirectoryObjectType objectType;
@@ -1313,7 +1343,7 @@ namespace azurecp
                     objectType = DirectoryObjectType.Group;
                 }
 
-                foreach (ClaimTypeConfig currentClaimTypeConfig in claimTypeConfigList.Where(x => x.DirectoryObjectType == objectType))
+                foreach (ClaimTypeConfig currentClaimTypeConfig in claimTypeConfigList.Where(x => x.EntityType == objectType))
                 {
                     // Get value with of current GraphProperty
                     string directoryObjectPropertyValue = GetPropertyValue(currentObject, currentClaimTypeConfig.DirectoryObjectProperty.ToString());
@@ -1452,13 +1482,13 @@ namespace azurecp
 
     public class AzureADResult
     {
-        public List<DirectoryObject> UserOrGroupResultList;
+        public List<DirectoryObject> UsersAndGroups;
         public List<string> DomainsRegisteredInAzureADTenant;
         //public string TenantName;
 
         public AzureADResult()
         {
-            UserOrGroupResultList = new List<DirectoryObject>();
+            UsersAndGroups = new List<DirectoryObject>();
             DomainsRegisteredInAzureADTenant = new List<string>();
             //this.TenantName = tenantName;
         }

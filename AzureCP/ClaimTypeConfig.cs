@@ -1,14 +1,11 @@
 ﻿using Microsoft.SharePoint.Administration;
 using Microsoft.SharePoint.Administration.Claims;
 using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
-using WIF = System.Security.Claims;
-using static azurecp.ClaimsProviderLogging;
-using System.Collections.ObjectModel;
 using System.Collections;
+using System.Collections.Generic;
+using System.Collections.ObjectModel;
+using System.Linq;
+using WIF = System.Security.Claims;
 
 namespace azurecp
 {
@@ -28,7 +25,7 @@ namespace azurecp
         [Persisted]
         private int _DirectoryObjectProperty;
 
-        public DirectoryObjectType DirectoryObjectType
+        public DirectoryObjectType EntityType
         {
             get { return (DirectoryObjectType)Enum.ToObject(typeof(DirectoryObjectType), _DirectoryObjectType); }
             set { _DirectoryObjectType = (int)value; }
@@ -235,7 +232,7 @@ namespace azurecp
 
             if (Contains(item, new ClaimTypeConfigSamePermissionMetadata()))
             {
-                throw new InvalidOperationException($"Entity metadata '{item.EntityDataKey}' already exists in the collection for the directory object {item.DirectoryObjectType}");
+                throw new InvalidOperationException($"Entity metadata '{item.EntityDataKey}' already exists in the collection for the directory object {item.EntityType}");
             }
 
             if (Contains(item, new ClaimTypeConfigSameClaimType()))
@@ -251,23 +248,23 @@ namespace azurecp
             if (Contains(item))
             {
                 if (String.IsNullOrEmpty(item.ClaimType))
-                    throw new InvalidOperationException($"This configuration with DirectoryObjectProperty '{item.DirectoryObjectProperty}' and DirectoryObjectType '{item.DirectoryObjectType}' already exists in the collection");
+                    throw new InvalidOperationException($"This configuration with DirectoryObjectProperty '{item.DirectoryObjectProperty}' and EntityType '{item.EntityType}' already exists in the collection");
                 else
                     throw new InvalidOperationException($"This configuration with claim type '{item.ClaimType}' already exists in the collection");
             }
 
-            if (ClaimsProviderConstants.EnforceOnly1ClaimTypeForGroup && item.DirectoryObjectType == DirectoryObjectType.Group)
+            if (ClaimsProviderConstants.EnforceOnly1ClaimTypeForGroup && item.EntityType == DirectoryObjectType.Group)
             {
                 if (Contains(item, new ClaimTypeConfigEnforeOnly1ClaimTypePerObjectType()))
                 {
-                    throw new InvalidOperationException($"A claim type for DirectoryObjectType '{DirectoryObjectType.Group.ToString()}' already exists in the collection");
+                    throw new InvalidOperationException($"A claim type for EntityType '{DirectoryObjectType.Group.ToString()}' already exists in the collection");
                 }
             }
 
             // Cannot add item with UseMainClaimTypeOfDirectoryObject true if collection does not contain an item with same directory object type AND a claim type defined
-            if (item.UseMainClaimTypeOfDirectoryObject && innerCol.FirstOrDefault (x => x.DirectoryObjectType == item.DirectoryObjectType && !String.IsNullOrEmpty(x.ClaimType)) == null)
+            if (item.UseMainClaimTypeOfDirectoryObject && innerCol.FirstOrDefault (x => x.EntityType == item.EntityType && !String.IsNullOrEmpty(x.ClaimType)) == null)
             {
-                throw new InvalidOperationException($"Cannot add this item (with UseMainClaimTypeOfDirectoryObject set to true) because collecton does not contain an item with same DirectoryObjectType '{item.DirectoryObjectType.ToString()}' AND a ClaimType set");
+                throw new InvalidOperationException($"Cannot add this item (with UseMainClaimTypeOfDirectoryObject set to true) because collecton does not contain an item with same EntityType '{item.EntityType.ToString()}' AND a ClaimType set");
             }
 
             // If SPTrustedLoginProvider is set, additional checks can be done
@@ -277,9 +274,9 @@ namespace azurecp
                 if (String.Equals(item.ClaimType, SPTrust.IdentityClaimTypeInformation.MappedClaimType, StringComparison.InvariantCultureIgnoreCase))
                 {
                     // LDAPObjectType must be User
-                    if (item.DirectoryObjectType != DirectoryObjectType.User)
+                    if (item.EntityType != DirectoryObjectType.User)
                     {
-                        throw new InvalidOperationException($"Identity claim type must be configured with DirectoryObjectType 'User'");
+                        throw new InvalidOperationException($"Identity claim type must be configured with EntityType 'User'");
                     }
                 }
             }
@@ -309,10 +306,10 @@ namespace azurecp
                         throw new InvalidOperationException($"Claim type cannot be changed because current item is the configuration of the identity claim type");
                     }
 
-                    // DirectoryObjectType must be User
-                    if (newItem.DirectoryObjectType != DirectoryObjectType.User)
+                    // EntityType must be User
+                    if (newItem.EntityType != DirectoryObjectType.User)
                     {
-                        throw new InvalidOperationException($"Identity claim type must be configured with DirectoryObjectType 'User'");
+                        throw new InvalidOperationException($"Identity claim type must be configured with EntityType 'User'");
                     }
                 }
             }
@@ -479,7 +476,7 @@ namespace azurecp
     }
 
     /// <summary>
-    /// Ensure that properties ClaimType, DirectoryObjectProperty and DirectoryObjectType are unique
+    /// Ensure that properties ClaimType, DirectoryObjectProperty and EntityType are unique
     /// </summary>
     public class ClaimTypeConfigSameConfig : EqualityComparer<ClaimTypeConfig>
     {
@@ -487,7 +484,7 @@ namespace azurecp
         {
             if (String.Equals(existingCTConfig.ClaimType, newCTConfig.ClaimType, StringComparison.InvariantCultureIgnoreCase) &&
                 existingCTConfig.DirectoryObjectProperty == newCTConfig.DirectoryObjectProperty &&
-                existingCTConfig.DirectoryObjectType == newCTConfig.DirectoryObjectType)
+                existingCTConfig.EntityType == newCTConfig.EntityType)
             {
                 return true;
             }
@@ -499,7 +496,7 @@ namespace azurecp
 
         public override int GetHashCode(ClaimTypeConfig ct)
         {
-            string hCode = ct.ClaimType + ct.DirectoryObjectProperty + ct.DirectoryObjectType;
+            string hCode = ct.ClaimType + ct.DirectoryObjectProperty + ct.EntityType;
             return hCode.GetHashCode();
         }
     }
@@ -524,13 +521,13 @@ namespace azurecp
 
         public override int GetHashCode(ClaimTypeConfig ct)
         {
-            string hCode = ct.ClaimType + ct.DirectoryObjectProperty + ct.DirectoryObjectType;
+            string hCode = ct.ClaimType + ct.DirectoryObjectProperty + ct.EntityType;
             return hCode.GetHashCode();
         }
     }
 
     /// <summary>
-    /// Ensure that property EntityDataKey is unique for the DirectoryObjectType
+    /// Ensure that property EntityDataKey is unique for the EntityType
     /// </summary>
     public class ClaimTypeConfigSamePermissionMetadata : EqualityComparer<ClaimTypeConfig>
     {
@@ -538,7 +535,7 @@ namespace azurecp
         {
             if (!String.IsNullOrEmpty(newCTConfig.EntityDataKey) &&
                 String.Equals(existingCTConfig.EntityDataKey, newCTConfig.EntityDataKey, StringComparison.InvariantCultureIgnoreCase) &&
-                existingCTConfig.DirectoryObjectType == newCTConfig.DirectoryObjectType)
+                existingCTConfig.EntityType == newCTConfig.EntityType)
             {
                 return true;
             }
@@ -550,7 +547,7 @@ namespace azurecp
 
         public override int GetHashCode(ClaimTypeConfig ct)
         {
-            string hCode = ct.ClaimType + ct.DirectoryObjectProperty + ct.DirectoryObjectType;
+            string hCode = ct.ClaimType + ct.DirectoryObjectProperty + ct.EntityType;
             return hCode.GetHashCode();
         }
     }
@@ -581,14 +578,14 @@ namespace azurecp
     }
 
     /// <summary>
-    /// Should be used only to ensure that only 1 claim type is set per DirectoryObjectType
+    /// Should be used only to ensure that only 1 claim type is set per EntityType
     /// </summary>
     internal class ClaimTypeConfigEnforeOnly1ClaimTypePerObjectType : EqualityComparer<ClaimTypeConfig>
     {
         public override bool Equals(ClaimTypeConfig existingCTConfig, ClaimTypeConfig newCTConfig)
         {
             if ((!String.IsNullOrEmpty(newCTConfig.ClaimType) && !String.IsNullOrEmpty(existingCTConfig.ClaimType)) &&
-                existingCTConfig.DirectoryObjectType == newCTConfig.DirectoryObjectType &&
+                existingCTConfig.EntityType == newCTConfig.EntityType &&
                 existingCTConfig.UseMainClaimTypeOfDirectoryObject == newCTConfig.UseMainClaimTypeOfDirectoryObject &&
                 newCTConfig.UseMainClaimTypeOfDirectoryObject == false)
             {
@@ -602,7 +599,7 @@ namespace azurecp
 
         public override int GetHashCode(ClaimTypeConfig ct)
         {
-            string hCode = ct.ClaimType + ct.DirectoryObjectType + ct.UseMainClaimTypeOfDirectoryObject.ToString();
+            string hCode = ct.ClaimType + ct.EntityType + ct.UseMainClaimTypeOfDirectoryObject.ToString();
             return hCode.GetHashCode();
         }
     }

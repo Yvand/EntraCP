@@ -3,12 +3,9 @@ using Microsoft.IdentityModel.Clients.ActiveDirectory;
 using Microsoft.SharePoint.Administration;
 using Nito.AsyncEx;
 using System;
-using System.Collections.Generic;
 using System.Diagnostics;
 using System.Globalization;
-using System.Linq;
 using System.Net.Http;
-using System.Text;
 using System.Threading.Tasks;
 using static azurecp.ClaimsProviderLogging;
 
