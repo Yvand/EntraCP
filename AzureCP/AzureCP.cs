@@ -1293,10 +1293,8 @@ namespace azurecp
                 return null;
             };
 
-            // If ExactSearch is true, we don't care about attributes with UseMainClaimTypeOfDirectoryObject = true
-            List<ClaimTypeConfig> claimTypeConfigList;
-            if (currentContext.ExactSearch) claimTypeConfigList = currentContext.CurrentClaimTypeConfigList.FindAll(x => !x.UseMainClaimTypeOfDirectoryObject);
-            else claimTypeConfigList = currentContext.CurrentClaimTypeConfigList;
+            List<ClaimTypeConfig> ctConfigs = currentContext.CurrentClaimTypeConfigList;
+            if (currentContext.ExactSearch) ctConfigs = currentContext.CurrentClaimTypeConfigList.FindAll(x => !x.UseMainClaimTypeOfDirectoryObject);
 
             List<AzureCPResult> processedResults = new List<AzureCPResult>();
             foreach (DirectoryObject userOrGroup in usersAndGroups)
@@ -1343,10 +1341,10 @@ namespace azurecp
                     objectType = DirectoryObjectType.Group;
                 }
 
-                foreach (ClaimTypeConfig currentClaimTypeConfig in claimTypeConfigList.Where(x => x.EntityType == objectType))
+                foreach (ClaimTypeConfig ctConfig in ctConfigs.Where(x => x.EntityType == objectType))
                 {
                     // Get value with of current GraphProperty
-                    string directoryObjectPropertyValue = GetPropertyValue(currentObject, currentClaimTypeConfig.DirectoryObjectProperty.ToString());
+                    string directoryObjectPropertyValue = GetPropertyValue(currentObject, ctConfig.DirectoryObjectProperty.ToString());
 
                     // Check if property exists (no null) and has a value (not String.Empty)
                     if (String.IsNullOrEmpty(directoryObjectPropertyValue)) continue;
@@ -1362,10 +1360,9 @@ namespace azurecp
                     }
 
                     // Current DirectoryObjectProperty value matches user input. Add current result to search results if it is not already present
-                    string queryMatchValue = directoryObjectPropertyValue;
-                    string valueToUseInClaimValue = directoryObjectPropertyValue;
+                    string entityClaimValue = directoryObjectPropertyValue;
                     ClaimTypeConfig claimTypeConfigToCompare;
-                    if (currentClaimTypeConfig.UseMainClaimTypeOfDirectoryObject)
+                    if (ctConfig.UseMainClaimTypeOfDirectoryObject)
                     {
                         if (objectType == DirectoryObjectType.User)
                         {
@@ -1376,27 +1373,27 @@ namespace azurecp
                             claimTypeConfigToCompare = MainGroupClaimTypeConfig;
                         }
                         // Get the value of the DirectoryObjectProperty linked to current directory object
-                        valueToUseInClaimValue = GetPropertyValue(currentObject, claimTypeConfigToCompare.DirectoryObjectProperty.ToString());
-                        if (String.IsNullOrEmpty(valueToUseInClaimValue)) continue;
+                        entityClaimValue = GetPropertyValue(currentObject, claimTypeConfigToCompare.DirectoryObjectProperty.ToString());
+                        if (String.IsNullOrEmpty(entityClaimValue)) continue;
                     }
                     else
                     {
-                        claimTypeConfigToCompare = currentClaimTypeConfig;
+                        claimTypeConfigToCompare = ctConfig;
                     }
 
                     // if claim type and claim value already exists, skip
                     bool resultAlreadyExists = processedResults.Exists(x =>
                         String.Equals(x.ClaimTypeConfig.ClaimType, claimTypeConfigToCompare.ClaimType, StringComparison.InvariantCultureIgnoreCase) &&
-                        String.Equals(x.PermissionValue, valueToUseInClaimValue, StringComparison.InvariantCultureIgnoreCase));
+                        String.Equals(x.PermissionValue, entityClaimValue, StringComparison.InvariantCultureIgnoreCase));
                     if (resultAlreadyExists) continue;
 
                     // Passed the checks, add it to the processedResults list
                     processedResults.Add(
                         new AzureCPResult(currentObject)
                         {
-                            ClaimTypeConfig = currentClaimTypeConfig,
-                            PermissionValue = valueToUseInClaimValue,
-                            QueryMatchValue = queryMatchValue,
+                            ClaimTypeConfig = ctConfig,
+                            PermissionValue = entityClaimValue,
+                            QueryMatchValue = directoryObjectPropertyValue,
                         });
                 }
             }

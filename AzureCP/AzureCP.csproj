@@ -115,12 +115,12 @@
       <SubType>ASPXCodeBehind</SubType>
     </Compile>
     <Compile Include="ClaimTypeConfig.cs" />
-    <Compile Include="TEMPLATE\ADMIN\AzureCP\AzureCPClaimsList.ascx.cs">
-      <DependentUpon>AzureCPClaimsList.ascx</DependentUpon>
+    <Compile Include="TEMPLATE\ADMIN\AzureCP\ClaimTypesConfig.ascx.cs">
+      <DependentUpon>ClaimTypesConfig.ascx</DependentUpon>
       <SubType>ASPXCodeBehind</SubType>
     </Compile>
-    <Compile Include="TEMPLATE\ADMIN\AzureCP\AzureCPClaimsList.ascx.designer.cs">
-      <DependentUpon>AzureCPClaimsList.ascx.cs</DependentUpon>
+    <Compile Include="TEMPLATE\ADMIN\AzureCP\ClaimTypesConfig.ascx.designer.cs">
+      <DependentUpon>ClaimTypesConfig.ascx.cs</DependentUpon>
     </Compile>
     <Compile Include="TEMPLATE\ADMIN\AzureCP\AzureCPGlobalSettings.ascx.cs">
       <DependentUpon>AzureCPGlobalSettings.ascx</DependentUpon>
@@ -165,7 +165,7 @@
   <ItemGroup />
   <ItemGroup>
     <Content Include="AzureCP.AdminLinks\Elements.xml" />
-    <Content Include="TEMPLATE\ADMIN\AzureCP\AzureCPClaimsList.ascx" />
+    <Content Include="TEMPLATE\ADMIN\AzureCP\ClaimTypesConfig.ascx" />
     <Content Include="TEMPLATE\ADMIN\AzureCP\AzureCPGlobalSettings.ascx" />
     <Content Include="Features\AzureCP\AzureCP.Template.xml">
       <DependentUpon>AzureCP.feature</DependentUpon>
@@ -174,7 +174,7 @@
       <DependentUpon>AzureCP_Administration.feature</DependentUpon>
     </Content>
     <Content Include="TEMPLATE\ADMIN\AzureCP\AzureCPSettings.aspx" />
-    <Content Include="TEMPLATE\ADMIN\AzureCP\ClaimsTable.aspx" />
+    <Content Include="TEMPLATE\ADMIN\AzureCP\ClaimTypesConfig.aspx" />
     <Content Include="TEMPLATE\LAYOUTS\AzureCP\jquery-1.9.1.min.js" />
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />

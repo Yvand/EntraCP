@@ -23,6 +23,6 @@
       Location="Microsoft.SharePoint.Administration.Security"
       Title="Claims mapping"
       Sequence="20">
-    <UrlAction Url="/_admin/azurecp/ClaimsTable.aspx" />
+    <UrlAction Url="/_admin/azurecp/ClaimTypesConfig.aspx" />
   </CustomAction>
 </Elements>

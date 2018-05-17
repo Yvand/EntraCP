@@ -1,5 +1,5 @@
 ﻿<%@ Assembly Name="$SharePoint.Project.AssemblyFullName$" %>
-<%@ Control Language="C#" AutoEventWireup="true" CodeBehind="AzureCPClaimsList.ascx.cs" Inherits="azurecp.ControlTemplates.AzureCPClaimsList" %>
+<%@ Control Language="C#" AutoEventWireup="true" CodeBehind="ClaimTypesConfig.ascx.cs" Inherits="azurecp.ControlTemplates.ClaimTypesConfigUserControl" %>
 <%@ Import Namespace="azurecp.ControlTemplates" %>
 <%@ Register TagPrefix="asp" Namespace="System.Web.UI" Assembly="System.Web.Extensions, Version=4.0.0.0, Culture=neutral, PublicKeyToken=31bf3856ad364e35" %>
 

@@ -10,7 +10,7 @@
 namespace azurecp.ControlTemplates {
     
     
-    public partial class AzureCPClaimsList {
+    public partial class ClaimTypesConfigUserControl {
         
         /// <summary>
         /// LabelMessage control.
@@ -103,7 +103,7 @@ namespace azurecp.ControlTemplates {
         protected global::System.Web.UI.WebControls.RadioButton RdbNewItemPermissionMetadata;
         
         /// <summary>
-        /// New_TxtClaimType control.
+        /// TxtNewClaimType control.
         /// </summary>
         /// <remarks>
         /// Auto-generated field.
@@ -121,7 +121,7 @@ namespace azurecp.ControlTemplates {
         protected global::System.Web.UI.WebControls.DropDownList DdlNewDirectoryObjectType;
         
         /// <summary>
-        /// New_DdlGraphProperty control.
+        /// DdlNewGraphProperty control.
         /// </summary>
         /// <remarks>
         /// Auto-generated field.
@@ -130,7 +130,7 @@ namespace azurecp.ControlTemplates {
         protected global::System.Web.UI.WebControls.DropDownList DdlNewGraphProperty;
         
         /// <summary>
-        /// New_DdlGraphPropertyToDisplay control.
+        /// DdlNewGraphPropertyToDisplay control.
         /// </summary>
         /// <remarks>
         /// Auto-generated field.

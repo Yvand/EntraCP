@@ -11,7 +11,7 @@ using System.Web.UI.WebControls;
 
 namespace azurecp.ControlTemplates
 {
-    public partial class AzureCPClaimsList : AzureCPUserControl
+    public partial class ClaimTypesConfigUserControl : AzureCPUserControl
     {
         List<KeyValuePair<int, ClaimTypeConfig>> ClaimsMapping;
         protected bool ShowNewItemForm = false;
