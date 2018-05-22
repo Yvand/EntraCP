@@ -1106,7 +1106,7 @@ namespace azurecp
                     if (!firstGroupObjectProcessed) firstGroupObjectProcessed = true;
                     else
                     {
-                        currentFilter = currentFilter + " or ";
+                        currentFilter = " or " + currentFilter;
                         currentPropertyString = ", " + currentPropertyString;
                     }
                     groupFilterBuilder.Append(currentFilter);
