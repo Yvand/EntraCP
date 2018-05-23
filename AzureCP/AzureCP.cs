@@ -1050,22 +1050,17 @@ namespace azurecp
         }
 
         /// <summary>
-        /// Build filter and select statements sent to Azure AD
+        /// Build filter and select statements used in queries sent to Azure AD
         /// $filter and $select must be URL encoded as documented in https://developer.microsoft.com/en-us/graph/docs/concepts/query_parameters#encoding-query-parameters
         /// </summary>
         /// <param name="currentContext"></param>
-        /// <param name="userFilter">User filter</param>
-        /// <param name="groupFilter">Group filter</param>
-        /// <param name="userSelect">User properties to get from AAD</param>
-        /// <param name="groupSelect">Group properties to get from AAD</param>
         protected virtual void BuildFilter(OperationContext currentContext)
         {
-            StringBuilder userFilterBuilder = new StringBuilder("accountEnabled eq true and ( ");
+            StringBuilder userFilterBuilder = new StringBuilder("( ");
             StringBuilder groupFilterBuilder = new StringBuilder();
             StringBuilder userSelectBuilder = new StringBuilder("UserType, Mail, ");    // UserType and Mail are always needed to deal with Guest users
             StringBuilder groupSelectBuilder = new StringBuilder("Id, ");               // Id is always required for groups
-
-            string memberOnlyUserTypeFilter = " and UserType eq ('Member')";
+            string memberOnlyUserTypeFilter = " and UserType eq 'Member'";
 
             string preferredFilterPattern;
             string input = currentContext.Input;
@@ -1132,8 +1127,7 @@ namespace azurecp
                 }
             }
 
-            userFilterBuilder.Append(" )");  // Closing of accountEnabled
-
+            userFilterBuilder.Append(" ) and accountEnabled eq true");  // Close the OR of all properties to query and add accountEnabled requirement
             string encodedUserFilter = HttpUtility.UrlEncode(userFilterBuilder.ToString());
             string encodedGroupFilter = HttpUtility.UrlEncode(groupFilterBuilder.ToString());
             string encodedUserSelect = HttpUtility.UrlEncode(userSelectBuilder.ToString());
