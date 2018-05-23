@@ -526,7 +526,6 @@ namespace azurecp
     {
         public const string GuestUserType = "Guest";
         public const string MemberUserType = "Member";
-        public const string PropertyNameContainingUserType = "UserType";
     }
 
     public enum OperationType

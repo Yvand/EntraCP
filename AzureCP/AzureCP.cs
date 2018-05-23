@@ -1145,7 +1145,6 @@ namespace azurecp
         protected virtual async Task<List<AzureADResult>> QueryAzureADTenantsAsync(OperationContext currentContext, string userFilter, string groupFilter, string userSelect, string groupSelect)
         {
             if (userFilter == null && groupFilter == null) return null;
-            List<AzureADResult> allSearchResults = new List<AzureADResult>();
 
             // Create a task for each tenant to query
             var tenantQueryTasks = this.CurrentConfiguration.AzureTenants.Select(async tenant =>
@@ -1172,15 +1171,9 @@ namespace azurecp
                 return tenantResult;
             });
 
-            // Wait for all tasks to complete
-            AzureADResult[] tenantResults = await Task.WhenAll(tenantQueryTasks);
-
-            // Add result returned by each tenant to allSearchResults
-            foreach (AzureADResult currentTenantResult in tenantResults)
-            {
-                allSearchResults.Add(currentTenantResult);
-            }
-            return allSearchResults;
+            // Wait for all tasks to complete and return result as a List<AzureADResult>
+            AzureADResult[] tenantResults = await Task.WhenAll(tenantQueryTasks).ConfigureAwait(false);
+            return tenantResults.ToList();
         }
 
         protected virtual async Task<AzureADResult> QueryAzureADTenantAsync(OperationContext currentContext, AzureTenant coco, string userFilter, string groupFilter, string userSelect, string groupSelect, bool firstAttempt)
@@ -1303,31 +1296,22 @@ namespace azurecp
                 DirectoryObjectType objectType;
                 if (userOrGroup is User)
                 {
-                    // Always skip shadow users: UserType is Guest and his mail matches a verified domain in AAD tenant
-                    string userType = GetPropertyValue(userOrGroup, AzureADUserTypeHelper.PropertyNameContainingUserType);
-                    if (String.IsNullOrEmpty(userType))
-                    {
-                        ClaimsProviderLogging.Log(
-                            String.Format("[{0}] User {1} filtered out because his property UserType is empty.", ProviderInternalName, ((User)userOrGroup).UserPrincipalName),
-                            TraceSeverity.Unexpected, EventSeverity.Warning, TraceCategory.Lookup);
-                        continue;
-                    }
+                    // Always exclude shadow users: UserType is Guest and his mail matches a verified domain in any Azure AD tenant
+                    string userType = ((User)userOrGroup).UserType;
                     if (String.Equals(userType, AzureADUserTypeHelper.GuestUserType, StringComparison.InvariantCultureIgnoreCase))
                     {
-                        string mail = GetPropertyValue(userOrGroup, "Mail");
-                        if (String.IsNullOrEmpty(mail))
+                        string userMail = ((User)userOrGroup).Mail;
+                        if (String.IsNullOrEmpty(userMail))
                         {
-                            ClaimsProviderLogging.Log(
-                                String.Format("[{0}] Guest user {1} filtered out because his mail is empty.", ProviderInternalName, ((User)userOrGroup).UserPrincipalName),
+                            ClaimsProviderLogging.Log($"[{ProviderInternalName}] Guest user '{((User)userOrGroup).UserPrincipalName}' filtered out because his mail is empty.",
                                 TraceSeverity.Unexpected, EventSeverity.Warning, TraceCategory.Lookup);
                             continue;
                         }
-                        if (!mail.Contains('@')) continue;
-                        string maildomain = mail.Split('@')[1];
+                        if (!userMail.Contains('@')) continue;
+                        string maildomain = userMail.Split('@')[1];
                         if (domains.Any(x => String.Equals(x, maildomain, StringComparison.InvariantCultureIgnoreCase)))
                         {
-                            ClaimsProviderLogging.Log(
-                                String.Format("[{0}] Guest user {1} filtered out because he is in a domain registered in AAD tenant.", ProviderInternalName, mail),
+                            ClaimsProviderLogging.Log($"[{ProviderInternalName}] Guest user '{((User)userOrGroup).UserPrincipalName}' filtered out because his email '{userMail}' matches a domain registered in a Azure AD tenant.",
                                 TraceSeverity.Verbose, EventSeverity.Verbose, TraceCategory.Lookup);
                             continue;
                         }
