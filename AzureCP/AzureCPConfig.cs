@@ -325,6 +325,11 @@ namespace azurecp
 
         public GraphServiceClient GraphService;
 
+        public string UserFilter;
+        public string GroupFilter;
+        public string UserSelect;
+        public string GroupSelect;
+
         public AzureTenant()
         {
         }
