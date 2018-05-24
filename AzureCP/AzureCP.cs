@@ -433,7 +433,7 @@ namespace azurecp
 
             int nbMetadata = 0;
             // Populate metadata of new PickerEntity
-            foreach (var ctConfig in MetadataConfig.Where(x => x.EntityType == result.ClaimTypeConfig.EntityType))
+            foreach (ClaimTypeConfig ctConfig in MetadataConfig.Where(x => x.EntityType == result.ClaimTypeConfig.EntityType))
             {
                 // if there is actally a value in the GraphObject, then it can be set
                 string entityAttribValue = GetPropertyValue(result.UserOrGroupResult, ctConfig.DirectoryObjectProperty.ToString());
@@ -441,7 +441,7 @@ namespace azurecp
                 {
                     pe.EntityData[ctConfig.EntityDataKey] = entityAttribValue;
                     nbMetadata++;
-                    ClaimsProviderLogging.Log(String.Format("[{0}] Added metadata '{1}' with value '{2}' to new entity", ProviderInternalName, ctConfig.EntityDataKey, entityAttribValue), TraceSeverity.VerboseEx, EventSeverity.Information, TraceCategory.Claims_Picking);
+                    ClaimsProviderLogging.Log($"[{ProviderInternalName}] Set metadata '{ctConfig.EntityDataKey}' of new entity to '{entityAttribValue}'", TraceSeverity.VerboseEx, EventSeverity.Information, TraceCategory.Claims_Picking);
                 }
             }
             ClaimsProviderLogging.Log($"[{ProviderInternalName}] Created entity: display text: '{pe.DisplayText}', value: '{pe.Claim.Value}', claim type: '{pe.Claim.ClaimType}', and filled with {nbMetadata.ToString()} metadata.", TraceSeverity.VerboseEx, EventSeverity.Information, TraceCategory.Claims_Picking);
@@ -789,19 +789,19 @@ namespace azurecp
         }
 
         /// <summary>
-        /// Override this method to change / remove permissions created by AzureCP, or add new ones
+        /// Override this method to change / remove entities created by AzureCP, or add new ones
         /// </summary>
         /// <param name="currentContext"></param>
         /// <param name="entityTypes"></param>
         /// <param name="input"></param>
-        /// <param name="resolved">List of permissions created by LDAPCP</param>
-        protected virtual void FillPermissions(OperationContext currentContext, ref List<PickerEntity> resolved)
+        /// <param name="resolved">List of entities created by LDAPCP</param>
+        protected virtual void FillEntities(OperationContext currentContext, ref List<PickerEntity> resolved)
         {
         }
 
         protected override void FillResolve(Uri context, string[] entityTypes, SPClaim resolveInput, List<Microsoft.SharePoint.WebControls.PickerEntity> resolved)
         {
-            ClaimsProviderLogging.LogDebug($"context passed to FillResolve (SPClaim): {context.ToString()}");
+            //ClaimsProviderLogging.LogDebug($"context passed to FillResolve (SPClaim): {context.ToString()}");
             if (!Initialize(context, entityTypes))
                 return;
 
@@ -813,17 +813,18 @@ namespace azurecp
             this.Lock_Config.EnterReadLock();
             try
             {
-                OperationContext infos = new OperationContext(CurrentConfiguration, OperationType.Validation, ProcessedClaimTypesList, resolveInput.Value, resolveInput, context, entityTypes, null, Int32.MaxValue);
-                List<PickerEntity> permissions = SearchOrValidate(infos);
-                if (permissions.Count == 1)
+                OperationContext currentContext = new OperationContext(CurrentConfiguration, OperationType.Validation, ProcessedClaimTypesList, resolveInput.Value, resolveInput, context, entityTypes, null, Int32.MaxValue);
+                List<PickerEntity> entities = SearchOrValidate(currentContext);
+                if (entities?.Count == 1)
                 {
-                    resolved.Add(permissions[0]);
-                    ClaimsProviderLogging.Log(String.Format("[{0}] Validated entity: claim value: '{1}', claim type: '{2}'", ProviderInternalName, permissions[0].Claim.Value, permissions[0].Claim.ClaimType),
+                    resolved.Add(entities[0]);
+                    ClaimsProviderLogging.Log($"[{ProviderInternalName}] Validated entity: display text: '{entities[0].DisplayText}', claim value: '{entities[0].Claim.Value}', claim type: '{entities[0].Claim.ClaimType}'",
                         TraceSeverity.High, EventSeverity.Information, TraceCategory.Claims_Picking);
                 }
                 else
                 {
-                    ClaimsProviderLogging.Log(String.Format("[{0}] Validation of incoming claim returned {1} entities instead of 1 expected. Aborting operation", ProviderInternalName, permissions.Count.ToString()), TraceSeverity.Unexpected, EventSeverity.Error, TraceCategory.Claims_Picking);
+                    int entityCount = entities == null ? 0 : entities.Count;
+                    ClaimsProviderLogging.Log($"[{ProviderInternalName}] Validation failed: found {entityCount.ToString()} entities instead of 1 for incoming claim with value '{currentContext.IncomingEntity.Value}' and type '{currentContext.IncomingEntity.ClaimType}'", TraceSeverity.Unexpected, EventSeverity.Error, TraceCategory.Claims_Picking);
                 }
             }
             catch (Exception ex)
@@ -845,20 +846,17 @@ namespace azurecp
             try
             {
                 OperationContext currentContext = new OperationContext(CurrentConfiguration, OperationType.Search, ProcessedClaimTypesList, resolveInput, null, context, entityTypes, null, Int32.MaxValue);
-                List<PickerEntity> permissions = SearchOrValidate(currentContext);
-                FillPermissions(currentContext, ref permissions);
-                foreach (PickerEntity entity in permissions)
+                List<PickerEntity> entities = SearchOrValidate(currentContext);
+                FillEntities(currentContext, ref entities);
+                if (entities == null || entities.Count == 0) return;
+                foreach (PickerEntity entity in entities)
                 {
                     resolved.Add(entity);
-                    ClaimsProviderLogging.Log($"[{ProviderInternalName}] Added entity: claim value: '{entity.Claim.Value}', claim type: '{entity.Claim.ClaimType}'",
+                    ClaimsProviderLogging.Log($"[{ProviderInternalName}] Added entity: display text: '{entity.DisplayText}', claim value: '{entity.Claim.Value}', claim type: '{entity.Claim.ClaimType}'",
                         TraceSeverity.Verbose, EventSeverity.Information, TraceCategory.Claims_Picking);
                 }
-
-                if (permissions?.Count > 0)
-                {
-                    ClaimsProviderLogging.Log($"[{ProviderInternalName}] Returned {permissions.Count} entities with input '{currentContext.Input}'",
-                        TraceSeverity.High, EventSeverity.Information, TraceCategory.Claims_Picking);
-                }
+                ClaimsProviderLogging.Log($"[{ProviderInternalName}] Returned {entities.Count} entities with input '{currentContext.Input}'",
+                    TraceSeverity.Medium, EventSeverity.Information, TraceCategory.Claims_Picking);
             }
             catch (Exception ex)
             {
@@ -884,10 +882,11 @@ namespace azurecp
             try
             {
                 OperationContext currentContext = new OperationContext(CurrentConfiguration, OperationType.Search, ProcessedClaimTypesList, searchPattern, null, context, entityTypes, hierarchyNodeID, maxCount);
-                List<PickerEntity> permissions = SearchOrValidate(currentContext);
-                FillPermissions(currentContext, ref permissions);
+                List<PickerEntity> entities = SearchOrValidate(currentContext);
+                FillEntities(currentContext, ref entities);
+                if (entities == null || entities.Count == 0) return;
                 SPProviderHierarchyNode matchNode = null;
-                foreach (PickerEntity entity in permissions)
+                foreach (PickerEntity entity in entities)
                 {
                     // Add current PickerEntity to the corresponding ClaimType in the hierarchy
                     if (searchTree.HasChild(entity.Claim.ClaimType))
@@ -908,12 +907,8 @@ namespace azurecp
                     ClaimsProviderLogging.Log($"[{ProviderInternalName}] Added entity: claim value: '{entity.Claim.Value}', claim type: '{entity.Claim.ClaimType}'",
                         TraceSeverity.Verbose, EventSeverity.Information, TraceCategory.Claims_Picking);
                 }
-
-                if (permissions?.Count > 0)
-                {
-                    ClaimsProviderLogging.Log($"[{ProviderInternalName}] Returned {permissions.Count} entities with input '{currentContext.Input}'",
-                        TraceSeverity.High, EventSeverity.Information, TraceCategory.Claims_Picking);
-                }
+                ClaimsProviderLogging.Log($"[{ProviderInternalName}] Returned {entities.Count} entities from input '{currentContext.Input}'",
+                    TraceSeverity.Medium, EventSeverity.Information, TraceCategory.Claims_Picking);
             }
             catch (Exception ex)
             {
@@ -929,33 +924,28 @@ namespace azurecp
         /// Search or validate incoming input or entity
         /// </summary>
         /// <param name="currentContext">Information about current context and operation</param>
-        /// <returns></returns>
+        /// <returns>Entities generated by AzureCP</returns>
         protected virtual List<PickerEntity> SearchOrValidate(OperationContext currentContext)
         {
-            List<PickerEntity> permissions = new List<PickerEntity>();
+            List<PickerEntity> entities = new List<PickerEntity>();
             try
             {
                 if (this.CurrentConfiguration.AlwaysResolveUserInput)
                 {
                     // Completely bypass query to Azure AD
-                    List<PickerEntity> entities = CreatePickerEntityForSpecificClaimTypes(
+                    entities = CreatePickerEntityForSpecificClaimTypes(
                         currentContext.Input,
                         currentContext.CurrentClaimTypeConfigList.FindAll(x => !x.UseMainClaimTypeOfDirectoryObject),
                         false);
-                    if (entities != null)
-                    {
-                        foreach (var entity in entities)
-                        {
-                            permissions.Add(entity);
-                            ClaimsProviderLogging.Log($"[{ProviderInternalName}] Added entity created with no query sent to Azure AD because AzureCP is configured to bypass Azure AD and always validate input: claim value: '{entity.Claim.Value}', claim type: '{entity.Claim.ClaimType}'",
-                                TraceSeverity.VerboseEx, EventSeverity.Information, TraceCategory.Claims_Picking);
-                        }
-                    }
-                    return permissions;
+                    ClaimsProviderLogging.Log($"[{ProviderInternalName}] Created {entities.Count} entity(ies) without contacting Azure AD tenant(s) because AzureCP property AlwaysResolveUserInput is set to true.",
+                        TraceSeverity.Medium, EventSeverity.Information, TraceCategory.Claims_Picking);
+                    return entities;
                 }
 
                 if (currentContext.OperationType == OperationType.Search)
                 {
+                    entities = SearchOrValidateInAzureAD(currentContext);
+
                     // Check if input starts with a prefix configured on a ClaimTypeConfig. If so an entity should be returned using ClaimTypeConfig found
                     // ClaimTypeConfigEnsureUniquePrefixToBypassLookup ensures that collection cannot contain duplicates
                     ClaimTypeConfig ctConfigWithInputPrefixMatch = currentContext.CurrentClaimTypeConfigList.FirstOrDefault(x =>
@@ -967,7 +957,7 @@ namespace azurecp
                         if (String.IsNullOrEmpty(currentContext.Input))
                         {
                             // No value in the input after the prefix, return
-                            return permissions;
+                            return entities;
                         }
                         PickerEntity entity = CreatePickerEntityForSpecificClaimType(
                             currentContext.Input,
@@ -975,35 +965,36 @@ namespace azurecp
                             true);
                         if (entity != null)
                         {
-                            permissions.Add(entity);
-                            ClaimsProviderLogging.Log($"[{ProviderInternalName}] Created entity with no query sent to Azure AD because input started with prefix '{ctConfigWithInputPrefixMatch.PrefixToBypassLookup}', which is configured for claim type '{ctConfigWithInputPrefixMatch.ClaimType}'. Claim value: '{entity.Claim.Value}', claim type: '{entity.Claim.ClaimType}'",
+                            if (entities == null) entities = new List<PickerEntity>();
+                            entities.Add(entity);
+                            ClaimsProviderLogging.Log($"[{ProviderInternalName}] Created entity without contacting Azure AD tenant(s) because input started with prefix '{ctConfigWithInputPrefixMatch.PrefixToBypassLookup}', which is configured for claim type '{ctConfigWithInputPrefixMatch.ClaimType}'. Claim value: '{entity.Claim.Value}', claim type: '{entity.Claim.ClaimType}'",
                                 TraceSeverity.VerboseEx, EventSeverity.Information, TraceCategory.Claims_Picking);
-                            return permissions;
+                            //return entities;
                         }
                     }
-                    SearchOrValidateInAzureAD(currentContext, ref permissions);
                 }
                 else if (currentContext.OperationType == OperationType.Validation)
                 {
-                    SearchOrValidateInAzureAD(currentContext, ref permissions);
+                    entities = SearchOrValidateInAzureAD(currentContext);
                     if (!String.IsNullOrEmpty(currentContext.IncomingEntityClaimTypeConfig.PrefixToBypassLookup))
                     {
                         // At this stage, it is impossible to know if entity was originally created with the keyword that query to Azure AD
                         // But it should be always validated since property PrefixToBypassLookup is set for this ClaimTypeConfig
-                        if (permissions.Count == 1) return permissions;
+                        // If an Azure AD tenant found a result, return it
+                        if (entities.Count == 1) return entities;
 
-                        // If Azure AD didn't find a result, create entity manually
+                        // If Azure AD tenant(s) didn't return exactly 1 entity, create it manually
                         PickerEntity entity = CreatePickerEntityForSpecificClaimType(
                             currentContext.Input,
                             currentContext.IncomingEntityClaimTypeConfig,
                             currentContext.InputHasKeyword);
                         if (entity != null)
                         {
-                            permissions.Add(entity);
-                            ClaimsProviderLogging.Log($"[{ProviderInternalName}] Validated entity with no query sent to Azure AD because its claim type ('{currentContext.IncomingEntityClaimTypeConfig.ClaimType}') has property 'PrefixToBypassLookup' set in AzureCPConfig.ClaimTypes: Claim value: '{entity.Claim.Value}', claim type: '{entity.Claim.ClaimType}'",
+                            entities.Add(entity);
+                            ClaimsProviderLogging.Log($"[{ProviderInternalName}] Validated entity without contacting Azure AD tenant(s) because its claim type ('{currentContext.IncomingEntityClaimTypeConfig.ClaimType}') has property 'PrefixToBypassLookup' set in AzureCPConfig.ClaimTypes. Claim value: '{entity.Claim.Value}', claim type: '{entity.Claim.ClaimType}'",
                                 TraceSeverity.VerboseEx, EventSeverity.Information, TraceCategory.Claims_Picking);
                         }
-                        return permissions;
+                        return entities;
                     }
                 }
             }
@@ -1011,10 +1002,10 @@ namespace azurecp
             {
                 ClaimsProviderLogging.LogException(ProviderInternalName, "in SearchOrValidate", TraceCategory.Claims_Picking, ex);
             }
-            return permissions;
+            return entities;
         }
 
-        protected virtual void SearchOrValidateInAzureAD(OperationContext currentContext, ref List<PickerEntity> permissions)
+        protected virtual List<PickerEntity> SearchOrValidateInAzureAD(OperationContext currentContext)
         {
             string userFilter = String.Empty;
             string groupFilter = String.Empty;
@@ -1034,19 +1025,17 @@ namespace azurecp
                 azureADQueryTask.Wait();
             }
 
-            if (aadResults?.Count > 0)
+            if (aadResults?.Count <= 0) return null;
+            List<AzureCPResult> results = ProcessAzureADResults(currentContext, aadResults);
+            if (results?.Count <= 0) return null;
+            List<PickerEntity> entities = new List<PickerEntity>();
+            foreach (var result in results)
             {
-                List<AzureCPResult> results = ProcessAzureADResults(currentContext, aadResults);
-                if (results?.Count > 0)
-                {
-                    foreach (var result in results)
-                    {
-                        permissions.Add(result.PickerEntity);
-                        ClaimsProviderLogging.Log($"[{ProviderInternalName}] Added entity returned by Azure AD: claim value: '{result.PickerEntity.Claim.Value}', claim type: '{result.PickerEntity.Claim.ClaimType}'",
-                            TraceSeverity.VerboseEx, EventSeverity.Information, TraceCategory.Claims_Picking);
-                    }
-                }
+                entities.Add(result.PickerEntity);
+                //ClaimsProviderLogging.Log($"[{ProviderInternalName}] Added entity returned by Azure AD: claim value: '{result.PickerEntity.Claim.Value}', claim type: '{result.PickerEntity.Claim.ClaimType}'",
+                //    TraceSeverity.VerboseEx, EventSeverity.Information, TraceCategory.Claims_Picking);
             }
+            return entities;
         }
 
         /// <summary>
@@ -1099,7 +1088,7 @@ namespace azurecp
                 }
                 else
                 {
-                    // else with no further test assumes everything that is not a User is a Group
+                    // else assume it's a Group
                     if (!firstGroupObjectProcessed) firstGroupObjectProcessed = true;
                     else
                     {
@@ -1127,7 +1116,7 @@ namespace azurecp
                 }
             }
 
-            userFilterBuilder.Append(" ) and accountEnabled eq true");  // Close the OR of all properties to query and add accountEnabled requirement
+            userFilterBuilder.Append(" ) and accountEnabled eq true");  // Close the OR of all properties to query, and add accountEnabled requirement
             string encodedUserFilter = HttpUtility.UrlEncode(userFilterBuilder.ToString());
             string encodedGroupFilter = HttpUtility.UrlEncode(groupFilterBuilder.ToString());
             string encodedUserSelect = HttpUtility.UrlEncode(userSelectBuilder.ToString());
@@ -1384,7 +1373,7 @@ namespace azurecp
                 }
             }
 
-            ClaimsProviderLogging.Log($"[{ProviderInternalName}] {processedResults.Count} permission(s) to create after filtering", TraceSeverity.Verbose, EventSeverity.Information, TraceCategory.Lookup);
+            ClaimsProviderLogging.Log($"[{ProviderInternalName}] {processedResults.Count} entity(ies) to create after filtering", TraceSeverity.Verbose, EventSeverity.Information, TraceCategory.Lookup);
             foreach (AzureCPResult result in processedResults)
             {
                 PickerEntity pe = CreatePickerEntityHelper(result);

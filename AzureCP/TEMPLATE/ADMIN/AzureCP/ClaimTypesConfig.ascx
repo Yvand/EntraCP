@@ -259,6 +259,7 @@
         <input type="button" value="Quit page" onclick="location.href = '/';" class="ms-ButtonHeightWidth" />
         <input id="btnDisableFullScreenMode" type="button" value="Show navigation" onclick="SetFullScreenMode(false); PreventDefaultNavigation(); $('#btnDisableFullScreenMode').hide(); $('#btnEnableFullScreenMode').show(); return false;" class="ms-ButtonHeightWidth" />
         <input id="btnEnableFullScreenMode" type="button" value="Maximize content" onclick="window.Azurecp.ClaimsTablePage.SetFullScreenModeInCurPageOnly(); $('#btnEnableFullScreenMode').hide(); $('#btnDisableFullScreenMode').show(); return false;" style="display: none;" class="ms-ButtonHeightWidth" />
+        <input type="button" value="Refresh page" onClick="window.location.href=window.location.href; return false;">
     </div>
     <div id="divTblClaims">
         <span style="display: block; margin-bottom: 10px;">This table is used by AzureCP to map claim types set in SPTrustedIdentityTokenIssuer &quot;{trustname}&quot; with Azure AD objects and properties.</span>
