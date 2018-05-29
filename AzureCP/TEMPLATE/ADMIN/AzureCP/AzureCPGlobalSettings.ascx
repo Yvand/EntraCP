@@ -48,16 +48,16 @@
     #divNewLdapConnection label {
         display: inline-block;
         line-height: 1.8;
-        width: 100px;
+        width: 250px;
     }
 
     #divNewLdapConnection fieldset {
-        border: 0;
+        border: 1;
         margin: 0;
-        padding: 0;
+		padding: 0;
     }
 
-        #divNewLdapConnection fieldset ol {
+        #divNewLdapConnection fieldset ul {
             margin: 0;
             padding: 0;
         }
@@ -119,7 +119,7 @@
 			<asp:Button UseSubmitBehavior="false" runat="server" class="ms-ButtonHeightWidth" OnClick="BtnOK_Click" Text="<%$Resources:wss,multipages_okbutton_text%>" id="BtnOKTop" accesskey="<%$Resources:wss,okbutton_accesskey%>"/>
 		</template_buttons>
     </wssuc:buttonsection>
-    <wssuc:inputformsection title="Existing Azure tenants" runat="server">
+    <wssuc:inputformsection title="Existing Azure Active Directory tenants" runat="server">
         <template_description>
 				<wssawc:EncodedLiteral runat="server" text="Azure AD tenants registered." EncodeMethod='HtmlEncodeAllowSimpleTextFormatting'/>
 			</template_description>
@@ -128,26 +128,25 @@
 				<wssawc:SPGridView runat="server" ID="grdAzureTenants" AutoGenerateColumns="false" OnRowDeleting="grdAzureTenants_RowDeleting">
 					<Columns>
 						<asp:BoundField DataField="Id" ItemStyle-CssClass="Azurecp-HideCol" HeaderStyle-CssClass="Azurecp-HideCol"/>
-						<asp:BoundField HeaderText="TenantName" DataField="TenantName"/>
-						<asp:BoundField HeaderText="ApplicationID" DataField="ClientID"/>
-                        <asp:BoundField HeaderText="Search 'Member' users Only" DataField="MemberUserTypeOnly" />
+						<asp:BoundField HeaderText="Tenant name" DataField="TenantName"/>
+						<asp:BoundField HeaderText="Application ID" DataField="ClientID"/>
+                        <asp:BoundField HeaderText="Filter out Guest users" DataField="MemberUserTypeOnly" />
 						<asp:CommandField HeaderText="Action" ButtonType="Button" DeleteText="Remove" ShowDeleteButton="True" />
 					</Columns>
 				</wssawc:SPGridView>
 				</td></tr>
 			</template_inputformcontrols>
     </wssuc:inputformsection>
-    <wssuc:inputformsection title="New Azure tenant" runat="server">
+    <wssuc:inputformsection title="New Azure Active Directory tenant" runat="server">
         <template_description>
 				<wssawc:EncodedLiteral runat="server" text="Register a new Azure AD tenant." EncodeMethod='HtmlEncodeAllowSimpleTextFormatting'/>
 			</template_description>
         <template_inputformcontrols>
-				<tr><td>
-				
+			<tr><td>
 				<div id="divNewLdapConnection">
 				<fieldset>
-				<legend>Informations to add new Azure tenant</legend>
-				<ol>
+				<legend>Details about new Azure AD tenant</legend>
+				<ul>
 					<li>
 						<label for="<%= TxtTenantName.ClientID %>">Tenant <a href="http://msdn.microsoft.com/en-us/library/system.directoryservices.directoryentry.path(v=vs.110).aspx" target="_blank">name</a>: <em>*</em></label>
 						<wssawc:InputFormTextBox title="Azure tenant name" class="ms-input" ID="TxtTenantName" Columns="50" Runat="server" MaxLength="255" Text="TENANTNAME.onMicrosoft.com" />
@@ -157,26 +156,26 @@
 						<wssawc:InputFormTextBox title="Password" class="ms-input" ID="TxtClientId" Columns="50" Runat="server" MaxLength="255" />
 					</li>
 					<li>
-						<label for="<%= TxtClientSecret.ClientID %>">Application Secret: <em>*</em></label>
+						<label for="<%= TxtClientSecret.ClientID %>">Application secret: <em>*</em></label>
 						<wssawc:InputFormTextBox title="Password" class="ms-input" ID="TxtClientSecret" Columns="50" Runat="server" MaxLength="255" TextMode="Password" />
 					</li>
-				</ol>
-				</fieldset>
-				</div>
-                <tr><td colspan='2'>
-					<label for="<%=ChkMemberUserTypeOnly.ClientID %>">Query <a href="https://docs.microsoft.com/en-us/azure/active-directory/active-directory-b2b-user-properties" target="_blank">"Member" UserType</a> only: <em>*</em></label>
-					<table style="display: inline;"><wssawc:InputFormCheckBox title="MemberUserTypeOnly" class="ms-input" ID="ChkMemberUserTypeOnly" runat="server" /></table>
-				</td></tr>
-                <tr><td colspan='2'>
+					<li>
+						<label for="<%=ChkMemberUserTypeOnly.ClientID %>">Filter out <a href="https://docs.microsoft.com/en-us/azure/active-directory/active-directory-b2b-user-properties" target="_blank">Guest users</a> on this tenant:</label>
+						<table border="0" cellpadding="0" cellspacing="0" style="display: inline;">
+						<wssawc:InputFormCheckBox class="ms-input" ID="ChkMemberUserTypeOnly" ToolTip="Filter out Guest users" runat="server" />
+						</table>
+					</li>
+				</ul>
 				<div class="divbuttons">
-					<asp:Button runat="server" ID="BtnTestAzureTenantConnection" Text="Test tenant connection" onclick="BtnTestAzureTenantConnection_Click" class="ms-ButtonHeightWidth" />
+					<asp:Button runat="server" ID="BtnTestAzureTenantConnection" Text="Test connection to tenant" ToolTip="Make sure this server has access to Internet before you click" onclick="BtnTestAzureTenantConnection_Click" class="ms-ButtonHeightWidth" />
 					<asp:Button runat="server" ID="BtnAddLdapConnection" Text="Add tenant" OnClick="BtnAddAzureTenant_Click" class="ms-ButtonHeightWidth" />
 				</div>
-                </td></tr>
-				<p>
+				<p style="margin-left: 10px;">
 					<asp:Label ID="LabelErrorTestLdapConnection" Runat="server" EnableViewState="False" class="ms-error" />
 					<asp:Label ID="LabelTestTenantConnectionOK" Runat="server" EnableViewState="False" />
 				</p>
+				</fieldset>
+				</div>
 			</td></tr>
 		 </template_inputformcontrols>
     </wssuc:inputformsection>
