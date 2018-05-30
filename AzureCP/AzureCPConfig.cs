@@ -1,4 +1,5 @@
 ﻿using Microsoft.Graph;
+using Microsoft.SharePoint;
 using Microsoft.SharePoint.Administration;
 using Microsoft.SharePoint.Administration.Claims;
 using Microsoft.SharePoint.WebControls;
@@ -289,6 +290,38 @@ namespace azurecp
             config.Delete();
             ClaimsProviderLogging.Log($"Configuration '{persistedObjectName}' was successfully deleted from configuration database", TraceSeverity.High, EventSeverity.Information, TraceCategory.Core);
         }
+
+        /// <summary>
+        /// Check if object is compatible with current version of AzureCP, and fix it if not. If object comes from configuration database, changes are committed in configuration database
+        /// </summary>
+        /// <returns>True if current object was cleaned</returns>
+        public bool CheckAndCleanPersistedObject()
+        {
+            bool objectCleaned = false;
+            try
+            {
+                // If AzureCP was updated from a version < v12, this.ClaimTypes.Count will throw a NullReferenceException
+                int testClaimTypeCollection = this.ClaimTypes.Count;
+            }
+            catch (NullReferenceException ex)
+            {
+                this.ClaimTypes = AzureCPConfig.GetDefaultClaimTypesConfig();
+                objectCleaned = true;
+            }
+
+            if (objectCleaned)
+            {
+                if (Version > 0)
+                {
+                    SPContext.Current.Web.AllowUnsafeUpdates = true;
+                    this.Update();
+                    SPContext.Current.Web.AllowUnsafeUpdates = false;
+                }
+                ClaimsProviderLogging.Log($"Configuration '{this.Name}' was not fully compatible with current version of AzureCP and was fixed, some collections were reset to their default configuration. This happens when AzureCP is updated from an earlier version and breaking changes were introduced.",
+                    TraceSeverity.High, EventSeverity.Information, TraceCategory.Core);
+            }
+            return objectCleaned;
+        }
     }
 
 
@@ -337,11 +370,11 @@ namespace azurecp
         /// <summary>
         /// Set properties AuthenticationProvider and GraphService
         /// </summary>
-        public void SetAzureADContext()
+        public void SetAzureADContext(string claimsProviderName)
         {
             try
             {
-                this.AuthenticationProvider = new AADAppOnlyAuthenticationProvider(ClaimsProviderConstants.AuthorityUriTemplate, this.TenantName, this.ClientId, this.ClientSecret);
+                this.AuthenticationProvider = new AADAppOnlyAuthenticationProvider(ClaimsProviderConstants.AuthorityUriTemplate, this.TenantName, this.ClientId, this.ClientSecret, claimsProviderName);
                 this.GraphService = new GraphServiceClient(this.AuthenticationProvider);
             }
             catch (Exception ex)

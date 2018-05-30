@@ -141,6 +141,20 @@ namespace azurecp.ControlTemplates
                 CurrentTrustedLoginProvider = AzureCP.GetSPTrustAssociatedWithCP(this.ClaimsProviderName);
                 if (CurrentTrustedLoginProvider == null) Status |= ConfigStatus.NoSPTrustAssociation;
             }
+            if (Status != ConfigStatus.AllGood)
+            {
+                ClaimsProviderLogging.Log($"[{ClaimsProviderName}] {MostImportantError}", TraceSeverity.Unexpected, EventSeverity.Error, TraceCategory.Configuration);
+                // Should not go further if those requirements are not met
+                return Status;
+            }
+
+            if (PersistedObject.CheckAndCleanPersistedObject())
+            {
+                //SPContext.Current.Web.AllowUnsafeUpdates = true;
+                //PersistedObject.Update();
+                //SPContext.Current.Web.AllowUnsafeUpdates = false;
+            }
+
             PersistedObject.ClaimTypes.SPTrust = CurrentTrustedLoginProvider;
             if (IdentityClaim == null && Status == ConfigStatus.AllGood)
             {

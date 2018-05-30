@@ -145,7 +145,7 @@ namespace azurecp.ControlTemplates
             string clientSecret = this.TxtClientSecret.Text;
             try
             {
-                AADAppOnlyAuthenticationProvider testConnection = new AADAppOnlyAuthenticationProvider(ClaimsProviderConstants.AuthorityUriTemplate, tenantName, clientId, clientSecret);
+                AADAppOnlyAuthenticationProvider testConnection = new AADAppOnlyAuthenticationProvider(ClaimsProviderConstants.AuthorityUriTemplate, tenantName, clientId, clientSecret, String.Empty);
                 Task<bool> testConnectionTask = testConnection.GetAccessToken(true);
                 testConnectionTask.Wait();
                 this.LabelTestTenantConnectionOK.Text = TextConnectionSuccessful;

@@ -17,18 +17,20 @@ namespace azurecp
         private string ClientId;
         private string ClientSecret;
         private string AuthorityUri;
+        private string ClaimsProviderName;
 
         private AuthenticationContext AuthContext;
         private ClientCredential Creds;
         private AuthenticationResult AuthNResult;
         private AsyncLock GetAccessTokenLock = new AsyncLock();
 
-        public AADAppOnlyAuthenticationProvider(string authorityUriTemplate, string tenant, string clientId, string appKey)
+        public AADAppOnlyAuthenticationProvider(string authorityUriTemplate, string tenant, string clientId, string appKey, string claimsProviderName)
         {
             this.Tenant = tenant;
             this.ClientId = clientId;
             this.ClientSecret = appKey;
             this.AuthorityUri = String.Format(CultureInfo.InvariantCulture, authorityUriTemplate, tenant);
+            this.ClaimsProviderName = claimsProviderName;
         }
 
         public async Task AuthenticateRequestAsync(HttpRequestMessage request)
@@ -43,7 +45,7 @@ namespace azurecp
                 else if (DateTime.Now.ToUniversalTime().Ticks > AuthNResult.ExpiresOn.UtcDateTime.Subtract(TimeSpan.FromMinutes(1)).Ticks)
                 {
                     // Access token already expired or will expire within 1 min, let's renew it
-                    ClaimsProviderLogging.Log($"Access token for tenant '{Tenant}' expired, renewing it...", TraceSeverity.Verbose, EventSeverity.Information, TraceCategory.Core);
+                    ClaimsProviderLogging.Log($"[{ClaimsProviderName}] Access token for tenant '{Tenant}' expired, renewing it...", TraceSeverity.Verbose, EventSeverity.Information, TraceCategory.Core);
                     getAccessToken = true;
                 }
 
@@ -52,7 +54,7 @@ namespace azurecp
                     bool success = await GetAccessToken(false);
                 }
 
-                if (!String.IsNullOrEmpty(AuthNResult.AccessToken))
+                if (AuthNResult != null && !String.IsNullOrEmpty(AuthNResult.AccessToken))
                 {
                     request.Headers.Add("Authorization", $"Bearer {AuthNResult.AccessToken}");
                 }
@@ -61,7 +63,7 @@ namespace azurecp
 
         public async Task<bool> GetAccessToken(bool throwExceptionIfFail)
         {
-            ClaimsProviderLogging.Log($"Getting new access token for tenant '{Tenant}'", TraceSeverity.Verbose, EventSeverity.Information, TraceCategory.Core);
+            ClaimsProviderLogging.Log($"[{ClaimsProviderName}] Getting new access token for tenant '{Tenant}'", TraceSeverity.Verbose, EventSeverity.Information, TraceCategory.Core);
             bool success = true;
             Stopwatch timer = new Stopwatch();
             timer.Start();
@@ -72,17 +74,17 @@ namespace azurecp
                 AuthNResult = await AuthContext.AcquireTokenAsync(ClaimsProviderConstants.GraphAPIResource, Creds);
 
                 TimeSpan duration = new TimeSpan(AuthNResult.ExpiresOn.UtcTicks - DateTime.Now.ToUniversalTime().Ticks);
-                ClaimsProviderLogging.Log($"Got new access token for tenant '{Tenant}', valid for {Math.Round((duration.TotalHours), 1)} hour(s) and retrieved in {timer.ElapsedMilliseconds.ToString()} ms", TraceSeverity.High, EventSeverity.Information, TraceCategory.Core);
+                ClaimsProviderLogging.Log($"[{ClaimsProviderName}] Got new access token for tenant '{Tenant}', valid for {Math.Round((duration.TotalHours), 1)} hour(s) and retrieved in {timer.ElapsedMilliseconds.ToString()} ms", TraceSeverity.High, EventSeverity.Information, TraceCategory.Core);
             }
             catch (AdalServiceException ex)
             {
-                ClaimsProviderLogging.Log($"Unable to get access token for tenant '{Tenant}': {ex.Message}", TraceSeverity.Unexpected, EventSeverity.Error, TraceCategory.Core);
+                ClaimsProviderLogging.Log($"[{ClaimsProviderName}] Unable to get access token for tenant '{Tenant}': {ex.Message}", TraceSeverity.Unexpected, EventSeverity.Error, TraceCategory.Core);
                 success = false;
                 if (throwExceptionIfFail) throw ex;
             }
             catch (Exception ex)
             {
-                ClaimsProviderLogging.LogException(String.Empty, $"while getting access token for tenant '{Tenant}'", TraceCategory.Lookup, ex);
+                ClaimsProviderLogging.LogException(ClaimsProviderName, $"while getting access token for tenant '{Tenant}'", TraceCategory.Lookup, ex);
                 if (throwExceptionIfFail) throw ex;
             }
             finally

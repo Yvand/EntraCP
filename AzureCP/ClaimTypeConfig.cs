@@ -189,7 +189,20 @@ namespace azurecp
         /// </summary>
         internal Collection<ClaimTypeConfig> innerCol = new Collection<ClaimTypeConfig>();
 
-        public int Count => innerCol.Count;
+        public int Count
+        {
+            get
+            {
+                // If innerCol is null, it means that collection is not correctly set in the persisted object, very likely because it was migrated from a previons version of AzureCP
+                // But this may not be the right place to handle this here: this should be handled in upper layer to clean the persisted object
+                //if (innerCol == null)
+                //{                    
+                //    ClaimTypeConfigCollection newConfig = AzureCPConfig.GetDefaultClaimTypesConfig();
+                //    this.innerCol = newConfig.innerCol;
+                //}
+                return innerCol.Count;
+            }
+        }
 
         public bool IsReadOnly => false;
 
@@ -262,7 +275,7 @@ namespace azurecp
             }
 
             // Cannot add item with UseMainClaimTypeOfDirectoryObject true if collection does not contain an item with same directory object type AND a claim type defined
-            if (item.UseMainClaimTypeOfDirectoryObject && innerCol.FirstOrDefault (x => x.EntityType == item.EntityType && !String.IsNullOrEmpty(x.ClaimType)) == null)
+            if (item.UseMainClaimTypeOfDirectoryObject && innerCol.FirstOrDefault(x => x.EntityType == item.EntityType && !String.IsNullOrEmpty(x.ClaimType)) == null)
             {
                 throw new InvalidOperationException($"Cannot add this item (with UseMainClaimTypeOfDirectoryObject set to true) because collecton does not contain an item with same EntityType '{item.EntityType.ToString()}' AND a ClaimType set");
             }

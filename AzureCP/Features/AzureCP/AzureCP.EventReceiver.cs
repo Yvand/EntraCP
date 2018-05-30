@@ -34,15 +34,15 @@ namespace azurecp
             // Wrapper function for base FeatureActivated. 
             // Used because base keywork can lead to unverifiable code inside lambda expression
             base.FeatureActivated(properties);
-            SPSecurity.RunWithElevatedPrivileges(delegate()
+            SPSecurity.RunWithElevatedPrivileges(delegate ()
             {
                 ClaimsProviderLogging svc = ClaimsProviderLogging.Local;
             });
-        }        
+        }
 
         public override void FeatureUninstalling(SPFeatureReceiverProperties properties)
         {
-            SPSecurity.RunWithElevatedPrivileges(delegate()
+            SPSecurity.RunWithElevatedPrivileges(delegate ()
             {
                 ClaimsProviderLogging.Unregister();
             });
@@ -50,7 +50,7 @@ namespace azurecp
 
         public override void FeatureDeactivating(SPFeatureReceiverProperties properties)
         {
-            SPSecurity.RunWithElevatedPrivileges(delegate()
+            SPSecurity.RunWithElevatedPrivileges(delegate ()
             {
                 base.RemoveClaimProvider(AzureCP._ProviderInternalName);
                 AzureCPConfig.DeleteConfiguration(ClaimsProviderConstants.AZURECPCONFIG_NAME);
@@ -59,9 +59,14 @@ namespace azurecp
 
         public override void FeatureUpgrading(SPFeatureReceiverProperties properties, string upgradeActionName, IDictionary<string, string> parameters)
         {
-            SPSecurity.RunWithElevatedPrivileges(delegate()
+            SPSecurity.RunWithElevatedPrivileges(delegate ()
             {
                 ClaimsProviderLogging svc = ClaimsProviderLogging.Local;
+                AzureCPConfig config = AzureCPConfig.GetConfiguration(ClaimsProviderConstants.AZURECPCONFIG_NAME);
+                if (config != null)
+                {
+                    config.CheckAndCleanPersistedObject();
+                }
             });
         }
     }

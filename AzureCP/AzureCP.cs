@@ -95,27 +95,32 @@ namespace azurecp
                     {
                         ClaimsProviderLogging.Log($"[{ProviderInternalName}] Configuration '{PersistedObjectName}' was not found. Visit AzureCP admin pages in central administration to create it.",
                             TraceSeverity.Unexpected, EventSeverity.Error, TraceCategory.Core);
-                        // Create a fake persisted object just to get the default settings, it will not be saved in config database
-                        globalConfiguration = AzureCPConfig.GetDefaultConfiguration();
-                        refreshConfig = true;
+                        // Cannot continue 
+                        success = false;
                     }
-                    else if (globalConfiguration.ClaimTypes == null || globalConfiguration.ClaimTypes.Count == 0)
+                    else
+                    {
+                        ((AzureCPConfig)globalConfiguration).CheckAndCleanPersistedObject();
+                    }
+
+                    if (globalConfiguration.ClaimTypes == null || globalConfiguration.ClaimTypes.Count == 0)
                     {
                         ClaimsProviderLogging.Log($"[{ProviderInternalName}] Configuration '{PersistedObjectName}' was found but collection ClaimTypes is null or empty. Visit AzureCP admin pages in central administration to create it.",
                             TraceSeverity.Unexpected, EventSeverity.Error, TraceCategory.Core);
                         // Cannot continue 
                         success = false;
                     }
-                    else if (globalConfiguration.AzureTenants == null || globalConfiguration.AzureTenants.Count == 0)
+
+                    if (globalConfiguration.AzureTenants == null || globalConfiguration.AzureTenants.Count == 0)
                     {
                         ClaimsProviderLogging.Log($"[{ProviderInternalName}] Configuration '{PersistedObjectName}' was found but there is no Azure AD tenant registered. Visit AzureCP admin pages in central administration to register one.",
                             TraceSeverity.Unexpected, EventSeverity.Error, TraceCategory.Core);
                         // Cannot continue 
                         success = false;
                     }
-                    else
+
+                    if (success)
                     {
-                        // Persisted object is found
                         if (this.CurrentConfigurationVersion == ((SPPersistedObject)globalConfiguration).Version)
                         {
                             ClaimsProviderLogging.Log($"[{ProviderInternalName}] Configuration '{PersistedObjectName}' was found, version {((SPPersistedObject)globalConfiguration).Version.ToString()}",
@@ -129,9 +134,6 @@ namespace azurecp
                                 TraceSeverity.Medium, EventSeverity.Information, TraceCategory.Core);
                         }
                     }
-
-                    // At this point, globalConfiguration should be set
-                    if (globalConfiguration == null) success = false;
 
                     // ProcessedClaimTypesList can be null if:
                     // - 1st initialization
@@ -176,7 +178,7 @@ namespace azurecp
                     // Set properties AuthenticationProvider and GraphService
                     foreach (var tenant in this.CurrentConfiguration.AzureTenants)
                     {
-                        tenant.SetAzureADContext();
+                        tenant.SetAzureADContext(ProviderInternalName);
                     }
                     success = this.InitializeClaimTypeConfigList(this.CurrentConfiguration.ClaimTypes);
                 }
@@ -1025,9 +1027,9 @@ namespace azurecp
                 azureADQueryTask.Wait();
             }
 
-            if (aadResults?.Count <= 0) return null;
+            if (aadResults == null || aadResults.Count <= 0) return null;
             List<AzureCPResult> results = ProcessAzureADResults(currentContext, aadResults);
-            if (results?.Count <= 0) return null;
+            if (results == null || results.Count <= 0) return null;
             List<PickerEntity> entities = new List<PickerEntity>();
             foreach (var result in results)
             {
@@ -1235,24 +1237,24 @@ namespace azurecp
             }
             catch (OperationCanceledException)
             {
-                ClaimsProviderLogging.Log($"[{ProviderInternalName}] Query on Azure AD tenant '{tenant.TenantName}' exceeded timeout of {ClaimsProviderConstants.timeout} ms and was cancelled.", TraceSeverity.Unexpected, EventSeverity.Error, TraceCategory.Lookup);
+                ClaimsProviderLogging.Log($"[{ProviderInternalName}] Queries on Azure AD tenant '{tenant.TenantName}' exceeded timeout of {ClaimsProviderConstants.timeout} ms and were cancelled.", TraceSeverity.Unexpected, EventSeverity.Error, TraceCategory.Lookup);
                 tryAgain = true;
             }
             catch (AggregateException ex)
             {
                 // Task.WaitAll throws an AggregateException, which contains all exceptions thrown by tasks it waited on
-                ClaimsProviderLogging.LogException(ProviderInternalName, $"while querying tenant '{tenant.TenantName}'", TraceCategory.Lookup, ex);
+                ClaimsProviderLogging.LogException(ProviderInternalName, $"while querying Azure AD tenant '{tenant.TenantName}'", TraceCategory.Lookup, ex);
                 tryAgain = true;
             }
             finally
             {
-                ClaimsProviderLogging.LogDebug($"[{ProviderInternalName}] End of query for tenant '{tenant.TenantName}'");
+                ClaimsProviderLogging.LogDebug($"[{ProviderInternalName}] Finished queries on Azure AD tenant '{tenant.TenantName}'");
                 cts.Dispose();
             }
 
             if (firstAttempt && tryAgain)
             {
-                ClaimsProviderLogging.Log($"[{ProviderInternalName}] Doing new attempt to query tenant '{tenant.TenantName}'...",
+                ClaimsProviderLogging.Log($"[{ProviderInternalName}] Doing new attempt to query Azure AD tenant '{tenant.TenantName}'...",
                     TraceSeverity.Medium, EventSeverity.Information, TraceCategory.Lookup);
                 tenantResults = await QueryAzureADTenantAsync(currentContext, tenant, false).ConfigureAwait(false);
             }
