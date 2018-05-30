@@ -20,6 +20,7 @@ namespace azurecp
         bool AlwaysResolveUserInput { get; set; }
         bool FilterExactMatchOnly { get; set; }
         bool EnableAugmentation { get; set; }
+        string EntityDisplayTextPrefix { get; set; }
     }
 
     public class ClaimsProviderConstants
@@ -99,6 +100,14 @@ namespace azurecp
         }
         [Persisted]
         private bool AugmentAADRolesPersisted = true;
+
+        public string EntityDisplayTextPrefix
+        {
+            get => _EntityDisplayTextPrefix;
+            set => _EntityDisplayTextPrefix = value;
+        }
+        [Persisted]
+        private string _EntityDisplayTextPrefix;
 
         public AzureCPConfig(string persistedObjectName, SPPersistedObject parent) : base(persistedObjectName, parent) { }
 
@@ -186,6 +195,7 @@ namespace azurecp
             this.AlwaysResolveUserInput = configToApply.AlwaysResolveUserInput;
             this.FilterExactMatchOnly = configToApply.FilterExactMatchOnly;
             this.EnableAugmentation = configToApply.EnableAugmentation;
+            this.EntityDisplayTextPrefix = configToApply.EntityDisplayTextPrefix;
         }
 
         public AzureCPConfig CopyCurrentObject()
@@ -195,6 +205,7 @@ namespace azurecp
             copy.AlwaysResolveUserInput = this.AlwaysResolveUserInput;
             copy.FilterExactMatchOnly = this.FilterExactMatchOnly;
             copy.EnableAugmentation = this.EnableAugmentation;
+            copy.EntityDisplayTextPrefix = this.EntityDisplayTextPrefix;
             copy.ClaimTypes = new ClaimTypeConfigCollection();
             foreach (ClaimTypeConfig currentObject in this.ClaimTypes)
             {
@@ -313,12 +324,24 @@ namespace azurecp
             {
                 if (Version > 0)
                 {
-                    SPContext.Current.Web.AllowUnsafeUpdates = true;
-                    this.Update();
-                    SPContext.Current.Web.AllowUnsafeUpdates = false;
+                    try
+                    {
+                        SPContext.Current.Web.AllowUnsafeUpdates = true;
+                        this.Update();
+                        ClaimsProviderLogging.Log($"Configuration '{this.Name}' was not compatible with current version of AzureCP and was updated in configuration database. Some settings were reset to their default configuration",
+                            TraceSeverity.High, EventSeverity.Information, TraceCategory.Core);
+                    }
+                    catch (Exception ex)
+                    {
+                        // It may fail if current user doesn't have permission to update the object in configuration database
+                        ClaimsProviderLogging.Log($"Configuration '{this.Name}' is not compatible with current version of AzureCP and was updated locally, but change could not be applied in configuration database. Please visit admin pages in central administration to fix configuration globally.",
+                            TraceSeverity.High, EventSeverity.Information, TraceCategory.Core);
+                    }
+                    finally
+                    {
+                        SPContext.Current.Web.AllowUnsafeUpdates = false;
+                    }
                 }
-                ClaimsProviderLogging.Log($"Configuration '{this.Name}' was not fully compatible with current version of AzureCP and was fixed, some collections were reset to their default configuration. This happens when AzureCP is updated from an earlier version and breaking changes were introduced.",
-                    TraceSeverity.High, EventSeverity.Information, TraceCategory.Core);
             }
             return objectCleaned;
         }

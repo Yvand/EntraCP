@@ -447,6 +447,7 @@ namespace azurecp.ControlTemplates
             }
 
             ClaimTypeConfig newCTConfig = new ClaimTypeConfig();
+            newCTConfig.ClaimType = newClaimType;
             newCTConfig.DirectoryObjectProperty = newDirectoryObjectProp;
             newCTConfig.EntityType = newDirectoryObjectType;
             newCTConfig.UseMainClaimTypeOfDirectoryObject = useMainClaimTypeOfDirectoryObject;
