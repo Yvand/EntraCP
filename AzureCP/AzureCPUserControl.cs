@@ -106,7 +106,7 @@ namespace azurecp.ControlTemplates
 
         protected static string ViewStatePersistedObjectVersionKey = "PersistedObjectVersion";
         protected static string TextErrorPersistedObjectNotFound = "PersistedObject cannot be found.";
-        protected static string TextErrorPersistedObjectStale = "Modifications where not applied because the persisted object was modified after this page was loaded. Please refresh the page and try again.";
+        protected static string TextErrorPersistedObjectStale = "Modifications were not applied because the persisted object was modified after this page was loaded. Please refresh the page and try again.";
         protected static string TextErrorNoSPTrustAssociation = "{0} is currently not associated with any TrustedLoginProvider, which is required to create entities.<br/>Visit <a href=\"" + ClaimsProviderConstants.PUBLICSITEURL + "\" target=\"_blank\">AzureCP site</a> for more information.<br/>Refresh this page once '{0}' is associated with a TrustedLoginProvider.";
         protected static string TextErrorNoIdentityClaimType = "The TrustedLoginProvider {0} is set with identity claim type '{1}', but is not set in claim types configuration list.<br/>Please visit claim types configuration page to add it.";
         protected static string TextErrorClaimsProviderNameNotSet = "The attribute 'ClaimsProviderName' must be set in the user control.";
@@ -119,9 +119,23 @@ namespace azurecp.ControlTemplates
         /// <returns></returns>
         public virtual ConfigStatus ValidatePrerequisite()
         {
+            if (!this.IsPostBack)
+            {
+                // DataBind() must be called to bind attributes that are set as "<%# #>"in .aspx
+                // But only during initial page load, otherwise it would reset bindings in other controls like SPGridView
+                DataBind();
+                ViewState.Add("ClaimsProviderName", ClaimsProviderName);
+                ViewState.Add("PersistedObjectName", PersistedObjectName);
+                ViewState.Add("PersistedObjectID", PersistedObjectID);
+            }
+            else
+            {
+                ClaimsProviderName = ViewState["ClaimsProviderName"].ToString();
+                PersistedObjectName = ViewState["PersistedObjectName"].ToString();
+                PersistedObjectID = ViewState["PersistedObjectID"].ToString();
+            }
+
             Status = ConfigStatus.AllGood;
-            // DataBind() must be called to bind attributes that are set as "<%# #>"in .aspx
-            DataBind();
             if (String.IsNullOrEmpty(ClaimsProviderName)) Status |= ConfigStatus.ClaimsProviderNamePropNotSet;
             if (String.IsNullOrEmpty(PersistedObjectName)) Status |= ConfigStatus.PersistedObjectNamePropNotSet;
             if (String.IsNullOrEmpty(PersistedObjectID)) Status |= ConfigStatus.PersistedObjectIDPropNotSet;
@@ -148,13 +162,7 @@ namespace azurecp.ControlTemplates
                 return Status;
             }
 
-            if (PersistedObject.CheckAndCleanPersistedObject())
-            {
-                //SPContext.Current.Web.AllowUnsafeUpdates = true;
-                //PersistedObject.Update();
-                //SPContext.Current.Web.AllowUnsafeUpdates = false;
-            }
-
+            PersistedObject.CheckAndCleanPersistedObject();
             PersistedObject.ClaimTypes.SPTrust = CurrentTrustedLoginProvider;
             if (IdentityClaim == null && Status == ConfigStatus.AllGood)
             {

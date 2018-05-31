@@ -197,7 +197,7 @@ namespace azurecp
                 // But this may not be the right place to handle this here: this should be handled in upper layer to clean the persisted object
                 //if (innerCol == null)
                 //{                    
-                //    ClaimTypeConfigCollection newConfig = AzureCPConfig.GetDefaultClaimTypesConfig();
+                //    ClaimTypeConfigCollection newConfig = AzureCPConfig.ReturnDefaultClaimTypesConfig();
                 //    this.innerCol = newConfig.innerCol;
                 //}
                 return innerCol.Count;

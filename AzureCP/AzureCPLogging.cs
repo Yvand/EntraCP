@@ -69,8 +69,8 @@ namespace azurecp
             {
                 if (ex is AggregateException)
                 {
-                    string message = String.Format ("[{0}] Unexpected error {1}:", ProviderInternalName, faultyAction);
-                    string excetpionMessage = "\r\n Exception {0}: {1}: {2}. Callstack: {3}";
+                    string message = String.Format ("[{0}] Unexpected error(s) occurred {1}:", ProviderInternalName, faultyAction);
+                    string excetpionMessage = Environment.NewLine + "[EXCEPTION {0}]: {1}: {2}. Callstack: {3}";
                     var aggEx = ex as AggregateException;
                     int count = 1;
                     foreach (var innerEx in aggEx.InnerExceptions)
@@ -86,7 +86,7 @@ namespace azurecp
                 }
                 else
                 {
-                    string message = "[{0}] Unexpected error {1}: {2}: {3}, Callstack: {4}";
+                    string message = "[{0}] Unexpected error occurred {1}: {2}: {3}, Callstack: {4}";
                     if (ex.InnerException != null)
                         message = String.Format(message, ProviderInternalName, faultyAction, ex.InnerException.GetType().FullName, ex.InnerException.Message, ex.InnerException.StackTrace);
                     else

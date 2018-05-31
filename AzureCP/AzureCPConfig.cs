@@ -21,6 +21,7 @@ namespace azurecp
         bool FilterExactMatchOnly { get; set; }
         bool EnableAugmentation { get; set; }
         string EntityDisplayTextPrefix { get; set; }
+        bool EnableRetry { get; set; }
     }
 
     public class ClaimsProviderConstants
@@ -109,18 +110,17 @@ namespace azurecp
         [Persisted]
         private string _EntityDisplayTextPrefix;
 
+        public bool EnableRetry
+        {
+            get => _EnableRetry;
+            set => _EnableRetry = value;
+        }
+        [Persisted]
+        private bool _EnableRetry = false;
+
         public AzureCPConfig(string persistedObjectName, SPPersistedObject parent) : base(persistedObjectName, parent) { }
 
-        public AzureCPConfig() { }
-
-        public AzureCPConfig(bool initializeConfiguration)
-        {
-            if (initializeConfiguration)
-            {
-                this.AzureTenants = new List<AzureTenant>();
-                this.ClaimTypes = GetDefaultClaimTypesConfig();
-            }
-        }
+        public AzureCPConfig() { }        
 
         /// <summary>
         /// Override this method to allow more users to update the object. True specifies that more users can update the object; otherwise, false. The default value is false.
@@ -184,7 +184,7 @@ namespace azurecp
         /// <returns></returns>
         public void ResetCurrentConfiguration()
         {
-            AzureCPConfig defaultConfig = new AzureCPConfig(true);
+            AzureCPConfig defaultConfig = ReturnDefaultConfiguration() as AzureCPConfig;
             ApplyConfiguration(defaultConfig);
         }
 
@@ -196,29 +196,31 @@ namespace azurecp
             this.FilterExactMatchOnly = configToApply.FilterExactMatchOnly;
             this.EnableAugmentation = configToApply.EnableAugmentation;
             this.EntityDisplayTextPrefix = configToApply.EntityDisplayTextPrefix;
+            this.EnableRetry = configToApply.EnableRetry;
         }
 
         public AzureCPConfig CopyCurrentObject()
         {
             //return this.Clone() as LDAPCPConfig;  // DOES NOT work
             AzureCPConfig copy = new AzureCPConfig();
-            copy.AlwaysResolveUserInput = this.AlwaysResolveUserInput;
-            copy.FilterExactMatchOnly = this.FilterExactMatchOnly;
-            copy.EnableAugmentation = this.EnableAugmentation;
-            copy.EntityDisplayTextPrefix = this.EntityDisplayTextPrefix;
+            copy.AzureTenants = new List<AzureTenant>(this.AzureTenants);
             copy.ClaimTypes = new ClaimTypeConfigCollection();
             foreach (ClaimTypeConfig currentObject in this.ClaimTypes)
             {
                 copy.ClaimTypes.Add(currentObject.CopyCurrentObject());
             }
-            copy.AzureTenants = new List<AzureTenant>(this.AzureTenants);
+            copy.AlwaysResolveUserInput = this.AlwaysResolveUserInput;
+            copy.FilterExactMatchOnly = this.FilterExactMatchOnly;
+            copy.EnableAugmentation = this.EnableAugmentation;
+            copy.EntityDisplayTextPrefix = this.EntityDisplayTextPrefix;
+            copy.EnableRetry = this.EnableRetry;            
             return copy;
         }
 
         public void ResetClaimTypesList()
         {
             ClaimTypes.Clear();
-            ClaimTypes = GetDefaultClaimTypesConfig();
+            ClaimTypes = ReturnDefaultClaimTypesConfig();
             ClaimsProviderLogging.Log($"Claim types list of configuration '{Name}' was successfully reset to default configuration",
                 TraceSeverity.High, EventSeverity.Information, TraceCategory.Core);
         }
@@ -242,23 +244,28 @@ namespace azurecp
             AzureCPConfig PersistedObject = new AzureCPConfig(persistedObjectName, SPFarm.Local);
             PersistedObject.ResetCurrentConfiguration();
             PersistedObject.Id = new Guid(persistedObjectID);
-            PersistedObject.AzureTenants = new List<AzureTenant>();
             PersistedObject.Update();
             ClaimsProviderLogging.Log($"Created configuration '{persistedObjectName}' with Id {PersistedObject.Id}", TraceSeverity.Medium, EventSeverity.Information, TraceCategory.Core);
             return PersistedObject;
         }
 
-        public static IAzureCPConfiguration GetDefaultConfiguration()
+        /// <summary>
+        /// Generate and return default configuration
+        /// </summary>
+        /// <returns></returns>
+        public static IAzureCPConfiguration ReturnDefaultConfiguration()
         {
-            IAzureCPConfiguration defaultConfig = new AzureCPConfig(true);
+            AzureCPConfig defaultConfig = new AzureCPConfig();
+            defaultConfig.AzureTenants = new List<AzureTenant>();
+            defaultConfig.ClaimTypes = ReturnDefaultClaimTypesConfig();
             return defaultConfig;
         }
 
         /// <summary>
-        /// Return default claim types configuration list
+        /// Generate and return default claim types configuration list
         /// </summary>
         /// <returns></returns>
-        public static ClaimTypeConfigCollection GetDefaultClaimTypesConfig()
+        public static ClaimTypeConfigCollection ReturnDefaultClaimTypesConfig()
         {
             return new ClaimTypeConfigCollection
             {
@@ -316,7 +323,7 @@ namespace azurecp
             }
             catch (NullReferenceException ex)
             {
-                this.ClaimTypes = AzureCPConfig.GetDefaultClaimTypesConfig();
+                this.ClaimTypes = AzureCPConfig.ReturnDefaultClaimTypesConfig();
                 objectCleaned = true;
             }
 

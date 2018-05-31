@@ -382,7 +382,7 @@ namespace azurecp
 
         protected virtual PickerEntity CreatePickerEntityHelper(AzureCPResult result)
         {
-            PickerEntity pe = CreatePickerEntity();
+            PickerEntity entity = CreatePickerEntity();
             SPClaim claim;
             string permissionValue = result.PermissionValue;
             string permissionClaimType = result.ClaimTypeConfig.ClaimType;
@@ -400,13 +400,13 @@ namespace azurecp
                 if (result.ClaimTypeConfig.EntityType == DirectoryObjectType.User)
                 {
                     permissionClaimType = IdentityClaimTypeConfig.ClaimType;
-                    pe.EntityType = SPClaimEntityTypes.User;
+                    entity.EntityType = SPClaimEntityTypes.User;
                     claimValueType = IdentityClaimTypeConfig.ClaimValueType;
                 }
                 else
                 {
                     permissionClaimType = MainGroupClaimTypeConfig.ClaimType;
-                    pe.EntityType = ClaimsProviderConstants.GroupClaimEntityType;
+                    entity.EntityType = ClaimsProviderConstants.GroupClaimEntityType;
                     claimValueType = MainGroupClaimTypeConfig.ClaimValueType;
                 }
                 permissionValue = FormatPermissionValue(permissionClaimType, permissionValue, isMappedClaimTypeConfig, result);
@@ -422,17 +422,16 @@ namespace azurecp
                     permissionClaimType,
                     permissionValue,
                     result.ClaimTypeConfig.ClaimValueType);
-                pe.EntityType = result.ClaimTypeConfig.EntityType == DirectoryObjectType.User ? SPClaimEntityTypes.User : ClaimsProviderConstants.GroupClaimEntityType;
+                entity.EntityType = result.ClaimTypeConfig.EntityType == DirectoryObjectType.User ? SPClaimEntityTypes.User : ClaimsProviderConstants.GroupClaimEntityType;
             }
 
-            pe.DisplayText = FormatPermissionDisplayText(permissionClaimType, permissionValue, isMappedClaimTypeConfig, result);
-            pe.Description = String.Format(
+            entity.Claim = claim;
+            entity.IsResolved = true;
+            //entity.EntityGroupName = "";
+            entity.Description = String.Format(
                 PickerEntityOnMouseOver,
                 result.ClaimTypeConfig.DirectoryObjectProperty.ToString(),
-                result.QueryMatchValue);
-            pe.Claim = claim;
-            pe.IsResolved = true;
-            //pe.EntityGroupName = "";
+                result.QueryMatchValue);            
 
             int nbMetadata = 0;
             // Populate metadata of new PickerEntity
@@ -442,13 +441,14 @@ namespace azurecp
                 string entityAttribValue = GetPropertyValue(result.UserOrGroupResult, ctConfig.DirectoryObjectProperty.ToString());
                 if (!String.IsNullOrEmpty(entityAttribValue))
                 {
-                    pe.EntityData[ctConfig.EntityDataKey] = entityAttribValue;
+                    entity.EntityData[ctConfig.EntityDataKey] = entityAttribValue;
                     nbMetadata++;
                     ClaimsProviderLogging.Log($"[{ProviderInternalName}] Set metadata '{ctConfig.EntityDataKey}' of new entity to '{entityAttribValue}'", TraceSeverity.VerboseEx, EventSeverity.Information, TraceCategory.Claims_Picking);
                 }
             }
-            ClaimsProviderLogging.Log($"[{ProviderInternalName}] Created entity: display text: '{pe.DisplayText}', value: '{pe.Claim.Value}', claim type: '{pe.Claim.ClaimType}', and filled with {nbMetadata.ToString()} metadata.", TraceSeverity.VerboseEx, EventSeverity.Information, TraceCategory.Claims_Picking);
-            return pe;
+            entity.DisplayText = FormatPermissionDisplayText(entity, isMappedClaimTypeConfig, result);
+            ClaimsProviderLogging.Log($"[{ProviderInternalName}] Created entity: display text: '{entity.DisplayText}', value: '{entity.Claim.Value}', claim type: '{entity.Claim.ClaimType}', and filled with {nbMetadata.ToString()} metadata.", TraceSeverity.VerboseEx, EventSeverity.Information, TraceCategory.Claims_Picking);
+            return entity;
         }
 
         /// <summary>
@@ -467,38 +467,36 @@ namespace azurecp
         /// <summary>
         /// Override this method to customize display text of permission created
         /// </summary>
-        /// <param name="displayText"></param>
-        /// <param name="claimType"></param>
-        /// <param name="claimValue"></param>
-        /// <param name="isIdentityClaim"></param>
+        /// <param name="entity"></param>
+        /// <param name="isIdentityClaimType"></param>
         /// <param name="result"></param>
         /// <returns></returns>
-        protected virtual string FormatPermissionDisplayText(string claimType, string claimValue, bool isIdentityClaimType, AzureCPResult result)
+        protected virtual string FormatPermissionDisplayText(PickerEntity entity, bool isIdentityClaimType, AzureCPResult result)
         {
-            string permissionDisplayText = this.CurrentConfiguration.EntityDisplayTextPrefix;
+            string entityDisplayText = this.CurrentConfiguration.EntityDisplayTextPrefix;
             if (result.ClaimTypeConfig.DirectoryObjectPropertyToShowAsDisplayText != AzureADObjectProperty.NotSet)
             {
-                if (!isIdentityClaimType) permissionDisplayText += "(" + result.ClaimTypeConfig.ClaimTypeDisplayName + ") ";
+                if (!isIdentityClaimType) entityDisplayText += "(" + result.ClaimTypeConfig.ClaimTypeDisplayName + ") ";
 
                 string graphPropertyToDisplayValue = GetPropertyValue(result.UserOrGroupResult, result.ClaimTypeConfig.DirectoryObjectPropertyToShowAsDisplayText.ToString());
-                if (!String.IsNullOrEmpty(graphPropertyToDisplayValue)) permissionDisplayText += graphPropertyToDisplayValue;
-                else permissionDisplayText += result.PermissionValue;
+                if (!String.IsNullOrEmpty(graphPropertyToDisplayValue)) entityDisplayText += graphPropertyToDisplayValue;
+                else entityDisplayText += result.PermissionValue;
             }
             else
             {
                 if (isIdentityClaimType)
                 {
-                    permissionDisplayText += result.QueryMatchValue;
+                    entityDisplayText += result.QueryMatchValue;
                 }
                 else
                 {
-                    permissionDisplayText += String.Format(
+                    entityDisplayText += String.Format(
                         PickerEntityDisplayText,
                         result.ClaimTypeConfig.ClaimTypeDisplayName,
                         result.PermissionValue);
                 }
             }
-            return permissionDisplayText;
+            return entityDisplayText;
         }
 
         protected virtual PickerEntity CreatePickerEntityForSpecificClaimType(string input, ClaimTypeConfig ctConfig, bool inputHasKeyword)
@@ -518,33 +516,29 @@ namespace azurecp
             List<PickerEntity> entities = new List<PickerEntity>();
             foreach (var ctConfig in ctConfigs)
             {
-                PickerEntity pe = CreatePickerEntity();
                 SPClaim claim = CreateClaim(ctConfig.ClaimType, input, ctConfig.ClaimValueType);
+                PickerEntity entity = CreatePickerEntity();
+                entity.Claim = claim;
+                entity.IsResolved = true;
+                entity.EntityType = ctConfig.EntityType == DirectoryObjectType.User ? SPClaimEntityTypes.User : ClaimsProviderConstants.GroupClaimEntityType;
+                //entity.EntityGroupName = "";
+                entity.Description = String.Format(PickerEntityOnMouseOver, ctConfig.DirectoryObjectProperty.ToString(), input);
+
+                if (!String.IsNullOrEmpty(ctConfig.EntityDataKey))
+                {
+                    entity.EntityData[ctConfig.EntityDataKey] = entity.Claim.Value;
+                    ClaimsProviderLogging.Log($"[{ProviderInternalName}] Added metadata '{ctConfig.EntityDataKey}' with value '{entity.EntityData[ctConfig.EntityDataKey]}' to new entity", TraceSeverity.VerboseEx, EventSeverity.Information, TraceCategory.Claims_Picking);
+                }
 
                 AzureCPResult result = new AzureCPResult(null);
                 result.ClaimTypeConfig = ctConfig;
                 result.PermissionValue = input;
                 result.QueryMatchValue = input;
                 bool isIdentityClaimType = String.Equals(claim.ClaimType, IdentityClaimTypeConfig.ClaimType, StringComparison.InvariantCultureIgnoreCase);
-                pe.DisplayText = FormatPermissionDisplayText(claim.ClaimType, claim.Value, isIdentityClaimType, result);
+                entity.DisplayText = FormatPermissionDisplayText(entity, isIdentityClaimType, result);
 
-                pe.EntityType = ctConfig.EntityType == DirectoryObjectType.User ? SPClaimEntityTypes.User : ClaimsProviderConstants.GroupClaimEntityType;
-                pe.Description = String.Format(
-                    PickerEntityOnMouseOver,
-                    ctConfig.DirectoryObjectProperty.ToString(),
-                    input);
-
-                pe.Claim = claim;
-                pe.IsResolved = true;
-                //pe.EntityGroupName = "";
-
-                if (!String.IsNullOrEmpty(ctConfig.EntityDataKey))
-                {
-                    pe.EntityData[ctConfig.EntityDataKey] = pe.Claim.Value;
-                    ClaimsProviderLogging.Log($"[{ProviderInternalName}] Added metadata '{ctConfig.EntityDataKey}' with value '{pe.EntityData[ctConfig.EntityDataKey]}' to new entity", TraceSeverity.VerboseEx, EventSeverity.Information, TraceCategory.Claims_Picking);
-                }
-                entities.Add(pe);
-                ClaimsProviderLogging.Log($"[{ProviderInternalName}] Created entity: display text: '{pe.DisplayText}', value: '{pe.Claim.Value}', claim type: '{pe.Claim.ClaimType}'.", TraceSeverity.VerboseEx, EventSeverity.Information, TraceCategory.Claims_Picking);
+                entities.Add(entity);
+                ClaimsProviderLogging.Log($"[{ProviderInternalName}] Created entity: display text: '{entity.DisplayText}', value: '{entity.Claim.Value}', claim type: '{entity.Claim.ClaimType}'.", TraceSeverity.VerboseEx, EventSeverity.Information, TraceCategory.Claims_Picking);
             }
             return entities.Count > 0 ? entities : null;
         }
@@ -971,20 +965,19 @@ namespace azurecp
                 else if (currentContext.OperationType == OperationType.Validation)
                 {
                     entities = SearchOrValidateInAzureAD(currentContext);
-                    if (entities != null && entities.Count == 1) return entities;
+                    if (entities?.Count == 1) return entities;
 
                     if (!String.IsNullOrEmpty(currentContext.IncomingEntityClaimTypeConfig.PrefixToBypassLookup))
                     {
-                        // At this stage, it is impossible to know if entity was originally created with the keyword that query to Azure AD
-                        // But it should be always validated since property PrefixToBypassLookup is set for this ClaimTypeConfig, so create entity manually
+                        // At this stage, it is impossible to know if entity was originally created with the keyword that bypass query to Azure AD
+                        // But it should be always validated since property PrefixToBypassLookup is set for current ClaimTypeConfig, so create entity manually
                         PickerEntity entity = CreatePickerEntityForSpecificClaimType(
                             currentContext.Input,
                             currentContext.IncomingEntityClaimTypeConfig,
                             currentContext.InputHasKeyword);
                         if (entity != null)
                         {
-                            entities = new List<PickerEntity>(1);
-                            entities.Add(entity);
+                            entities = new List<PickerEntity>(1) { entity };
                             ClaimsProviderLogging.Log($"[{ProviderInternalName}] Validated entity without contacting Azure AD tenant(s) because its claim type ('{currentContext.IncomingEntityClaimTypeConfig.ClaimType}') has property 'PrefixToBypassLookup' set in AzureCPConfig.ClaimTypes. Claim value: '{entity.Claim.Value}', claim type: '{entity.Claim.ClaimType}'",
                                 TraceSeverity.VerboseEx, EventSeverity.Information, TraceCategory.Claims_Picking);
                         }
@@ -1242,6 +1235,8 @@ namespace azurecp
                 ClaimsProviderLogging.LogDebug($"[{ProviderInternalName}] Finished queries on Azure AD tenant '{tenant.TenantName}'");
                 cts.Dispose();
             }
+
+            if (tryAgain && !CurrentConfiguration.EnableRetry) tryAgain = false;
 
             if (firstAttempt && tryAgain)
             {
