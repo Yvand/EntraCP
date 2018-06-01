@@ -207,7 +207,7 @@ namespace azurecp
             copy.ClaimTypes = new ClaimTypeConfigCollection();
             foreach (ClaimTypeConfig currentObject in this.ClaimTypes)
             {
-                copy.ClaimTypes.Add(currentObject.CopyCurrentObject());
+                copy.ClaimTypes.Add(currentObject.CopyCurrentObject(), false);
             }
             copy.AlwaysResolveUserInput = this.AlwaysResolveUserInput;
             copy.FilterExactMatchOnly = this.FilterExactMatchOnly;

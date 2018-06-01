@@ -369,9 +369,9 @@ namespace azurecp.ControlTemplates
                 this.LabelErrorMessage.Text = TextErrorUpdateEmptyClaimType;
                 BuildAttributesListTable(false);
                 return;
-            }            
+            }
 
-            ClaimTypeConfig newCTConfig = new ClaimTypeConfig();
+            ClaimTypeConfig newCTConfig = existingCTConfig.CopyCurrentObject();
             newCTConfig.ClaimType = newClaimType;
             newCTConfig.EntityType = typeSelected;
             newCTConfig.PrefixToBypassLookup = formData["input_PrefixToBypassLookup_" + itemId];

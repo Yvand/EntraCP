@@ -228,6 +228,11 @@ namespace azurecp
 
         public void Add(ClaimTypeConfig item)
         {
+            Add(item, true);
+        }
+
+        internal void Add(ClaimTypeConfig item, bool strictChecks)
+        {
             if (item.DirectoryObjectProperty == AzureADObjectProperty.NotSet)
             {
                 throw new InvalidOperationException($"Property DirectoryObjectProperty is required");
@@ -274,10 +279,14 @@ namespace azurecp
                 }
             }
 
-            // Cannot add item with UseMainClaimTypeOfDirectoryObject true if collection does not contain an item with same directory object type AND a claim type defined
-            if (item.UseMainClaimTypeOfDirectoryObject && innerCol.FirstOrDefault(x => x.EntityType == item.EntityType && !String.IsNullOrEmpty(x.ClaimType)) == null)
+            if (strictChecks)
             {
-                throw new InvalidOperationException($"Cannot add this item (with UseMainClaimTypeOfDirectoryObject set to true) because collecton does not contain an item with same EntityType '{item.EntityType.ToString()}' AND a ClaimType set");
+                // If current item has UseMainClaimTypeOfDirectoryObject = true: check if another item with same EntityType AND a claim type defined
+                // Another valid item may be added later, and even if not, code should handle that scenario
+                if (item.UseMainClaimTypeOfDirectoryObject && innerCol.FirstOrDefault(x => x.EntityType == item.EntityType && !String.IsNullOrEmpty(x.ClaimType)) == null)
+                {
+                    throw new InvalidOperationException($"Cannot add this item (with UseMainClaimTypeOfDirectoryObject set to true) because collecton does not contain an item with same EntityType '{item.EntityType.ToString()}' AND a ClaimType set");
+                }
             }
 
             // If SPTrustedLoginProvider is set, additional checks can be done
@@ -331,7 +340,7 @@ namespace azurecp
             ClaimTypeConfigCollection testUpdateCollection = new ClaimTypeConfigCollection();
             foreach (ClaimTypeConfig curCTConfig in innerCol)
             {
-                testUpdateCollection.Add(curCTConfig.CopyCurrentObject());
+                testUpdateCollection.Add(curCTConfig.CopyCurrentObject(), false);
             }
 
             // Update ClaimTypeConfig in testUpdateCollection
@@ -343,7 +352,7 @@ namespace azurecp
             foreach (ClaimTypeConfig curCTConfig in testUpdateCollection)
             {
                 // ClaimTypeConfigCollection.Add() may thrown an exception if newItem is not valid for any reason
-                testNewItemCollection.Add(curCTConfig);
+                testNewItemCollection.Add(curCTConfig, false);
             }
 
             // No error, current collection can safely be updated
