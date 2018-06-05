@@ -175,6 +175,7 @@
     </Content>
     <Content Include="TEMPLATE\ADMIN\AzureCP\AzureCPSettings.aspx" />
     <Content Include="TEMPLATE\ADMIN\AzureCP\ClaimTypesConfig.aspx" />
+    <Content Include="TEMPLATE\LAYOUTS\AzureCP\AzureCP_logo_small.png" />
     <Content Include="TEMPLATE\LAYOUTS\AzureCP\jquery-1.9.1.min.js" />
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />

@@ -431,7 +431,7 @@ namespace azurecp
             entity.Description = String.Format(
                 PickerEntityOnMouseOver,
                 result.ClaimTypeConfig.DirectoryObjectProperty.ToString(),
-                result.QueryMatchValue);            
+                result.QueryMatchValue);
 
             int nbMetadata = 0;
             // Populate metadata of new PickerEntity
@@ -802,7 +802,7 @@ namespace azurecp
             this.Lock_Config.EnterReadLock();
             try
             {
-                OperationContext currentContext = new OperationContext(CurrentConfiguration, OperationType.Validation, ProcessedClaimTypesList, resolveInput.Value, resolveInput, context, entityTypes, null, Int32.MaxValue);
+                OperationContext currentContext = new OperationContext(CurrentConfiguration, OperationType.Validation, ProcessedClaimTypesList, resolveInput.Value, resolveInput, context, entityTypes, null, 1);
                 List<PickerEntity> entities = SearchOrValidate(currentContext);
                 if (entities?.Count == 1)
                 {
@@ -834,7 +834,8 @@ namespace azurecp
             this.Lock_Config.EnterReadLock();
             try
             {
-                OperationContext currentContext = new OperationContext(CurrentConfiguration, OperationType.Search, ProcessedClaimTypesList, resolveInput, null, context, entityTypes, null, Int32.MaxValue);
+                int maxCount = 30;  // SharePoint sets maxCount to 30 in method FillSearch
+                OperationContext currentContext = new OperationContext(CurrentConfiguration, OperationType.Search, ProcessedClaimTypesList, resolveInput, null, context, entityTypes, null, maxCount);
                 List<PickerEntity> entities = SearchOrValidate(currentContext);
                 FillEntities(currentContext, ref entities);
                 if (entities == null || entities.Count == 0) return;
@@ -1170,7 +1171,7 @@ namespace azurecp
                     {
                         if (String.IsNullOrEmpty(tenant.UserFilter)) return;
                         ClaimsProviderLogging.LogDebug($"[{ProviderInternalName}] UserQueryTask starting for tenant '{tenant.TenantName}'");
-                        IGraphServiceUsersCollectionPage users = await tenant.GraphService.Users.Request().Select(tenant.UserSelect).Filter(tenant.UserFilter).GetAsync().ConfigureAwait(false);
+                        IGraphServiceUsersCollectionPage users = await tenant.GraphService.Users.Request().Select(tenant.UserSelect).Filter(tenant.UserFilter).Top(currentContext.MaxCount).GetAsync().ConfigureAwait(false);
                         if (users?.Count > 0)
                         {
                             do
@@ -1189,7 +1190,7 @@ namespace azurecp
                     {
                         if (String.IsNullOrEmpty(tenant.GroupFilter)) return;
                         ClaimsProviderLogging.LogDebug($"[{ProviderInternalName}] GroupQueryTask starting for tenant '{tenant.TenantName}'");
-                        IGraphServiceGroupsCollectionPage groups = await tenant.GraphService.Groups.Request().Select(tenant.GroupSelect).Filter(tenant.GroupFilter).GetAsync().ConfigureAwait(false);
+                        IGraphServiceGroupsCollectionPage groups = await tenant.GraphService.Groups.Request().Select(tenant.GroupSelect).Filter(tenant.GroupFilter).Top(currentContext.MaxCount).GetAsync().ConfigureAwait(false);
                         if (groups?.Count > 0)
                         {
                             do
