@@ -1112,9 +1112,17 @@ namespace azurecp
 
             foreach (AzureTenant tenant in this.CurrentConfiguration.AzureTenants)
             {
-                // Don't set filters if no corresponding object was found in requestInfo.ClaimTypeConfigList, to detect that tenant should not be actually queried
-                if (firstUserObjectProcessed) tenant.UserFilter = tenant.MemberUserTypeOnly ? encodedUserFilter + encodedMemberOnlyUserTypeFilter : encodedUserFilter;
-                if (firstGroupObjectProcessed) tenant.GroupFilter = encodedGroupFilter;
+                // Reset filters if no corresponding object was found in requestInfo.ClaimTypeConfigList, to detect that tenant should not be actually queried
+                if (firstUserObjectProcessed)
+                    tenant.UserFilter = tenant.MemberUserTypeOnly ? encodedUserFilter + encodedMemberOnlyUserTypeFilter : encodedUserFilter;
+                else
+                    tenant.UserFilter = String.Empty;
+
+                if (firstGroupObjectProcessed)
+                    tenant.GroupFilter = encodedGroupFilter;
+                else
+                    tenant.GroupFilter = String.Empty;
+
                 tenant.UserSelect = encodedUserSelect;
                 tenant.GroupSelect = encodedgroupSelect;
             }
