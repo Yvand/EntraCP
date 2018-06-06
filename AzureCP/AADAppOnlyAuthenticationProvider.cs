@@ -6,6 +6,7 @@ using System;
 using System.Diagnostics;
 using System.Globalization;
 using System.Net.Http;
+using System.Threading;
 using System.Threading.Tasks;
 using static azurecp.ClaimsProviderLogging;
 
@@ -67,11 +68,35 @@ namespace azurecp
             bool success = true;
             Stopwatch timer = new Stopwatch();
             timer.Start();
+            int timeout = ClaimsProviderConstants.TIMEOUT;
+            //if (Tenant.StartsWith("YvanDev")) timeout = 2000;
+            //else timeout = 1;
+
             try
             {
                 AuthContext = new AuthenticationContext(AuthorityUri);
                 Creds = new ClientCredential(ClientId, ClientSecret);
-                AuthNResult = await AuthContext.AcquireTokenAsync(ClaimsProviderConstants.GraphAPIResource, Creds);
+                //AuthNResult = await AuthContext.AcquireTokenAsync(ClaimsProviderConstants.GraphAPIResource, Creds);                
+
+                // USING CANCELLETION TOKEN
+                //Task<AuthenticationResult> task = AuthContext.AcquireTokenAsync(ClaimsProviderConstants.GraphAPIResource, Creds);
+                //if (await Task.WhenAny(task, Task.Delay(TIMEOUT)) == task)
+                //{
+                //    // task completed within TIMEOUT
+                //    AuthNResult = task.Result;
+                //    TimeSpan duration = new TimeSpan(AuthNResult.ExpiresOn.UtcTicks - DateTime.Now.ToUniversalTime().Ticks);
+                //    ClaimsProviderLogging.Log($"[{ClaimsProviderName}] Got new access token for tenant '{Tenant}', valid for {Math.Round((duration.TotalHours), 1)} hour(s) and retrieved in {timer.ElapsedMilliseconds.ToString()} ms", TraceSeverity.High, EventSeverity.Information, TraceCategory.Core);
+                //}
+                //else
+                //{
+                //    // TIMEOUT logic
+                //    ClaimsProviderLogging.Log($"[{ClaimsProviderName}] Could not get an access token before TIMEOUT for tenant '{Tenant}'", TraceSeverity.High, EventSeverity.Information, TraceCategory.Core);
+                //    success = false;
+                //}
+
+                // USING EXTENSION METHOD 
+                Task<AuthenticationResult> acquireTokenTask = AuthContext.AcquireTokenAsync(ClaimsProviderConstants.GraphAPIResource, Creds);
+                AuthNResult = await TaskHelper.TimeoutAfter<AuthenticationResult>(acquireTokenTask, new TimeSpan(0, 0, 0, 0, timeout));
 
                 TimeSpan duration = new TimeSpan(AuthNResult.ExpiresOn.UtcTicks - DateTime.Now.ToUniversalTime().Ticks);
                 ClaimsProviderLogging.Log($"[{ClaimsProviderName}] Got new access token for tenant '{Tenant}', valid for {Math.Round((duration.TotalHours), 1)} hour(s) and retrieved in {timer.ElapsedMilliseconds.ToString()} ms", TraceSeverity.High, EventSeverity.Information, TraceCategory.Core);
@@ -82,9 +107,16 @@ namespace azurecp
                 success = false;
                 if (throwExceptionIfFail) throw ex;
             }
+            catch (TimeoutException ex)
+            {
+                ClaimsProviderLogging.Log($"[{ClaimsProviderName}] Could not get access token before timeout of {timeout.ToString()} ms for tenant '{Tenant}'", TraceSeverity.Unexpected, EventSeverity.Error, TraceCategory.Core);
+                success = false;
+                if (throwExceptionIfFail) throw ex;
+            }
             catch (Exception ex)
             {
                 ClaimsProviderLogging.LogException(ClaimsProviderName, $"while getting access token for tenant '{Tenant}'", TraceCategory.Lookup, ex);
+                success = false;
                 if (throwExceptionIfFail) throw ex;
             }
             finally
@@ -92,6 +124,33 @@ namespace azurecp
                 timer.Stop();
             }
             return success;
+        }
+    }
+
+    public static class TaskHelper
+    {
+        /// <summary>
+        /// Use extension method documented in https://stackoverflow.com/questions/4238345/asynchronously-wait-for-taskt-to-complete-with-timeout
+        /// </summary>
+        /// <typeparam name="TResult"></typeparam>
+        /// <param name="task"></param>
+        /// <param name="timeout"></param>
+        /// <returns></returns>
+        public static async Task<TResult> TimeoutAfter<TResult>(this Task<TResult> task, TimeSpan timeout)
+        {
+            using (var timeoutCancellationTokenSource = new CancellationTokenSource())
+            {
+                var completedTask = await Task.WhenAny(task, Task.Delay(timeout, timeoutCancellationTokenSource.Token));
+                if (completedTask == task)
+                {
+                    timeoutCancellationTokenSource.Cancel();
+                    return await task;  // Very important in order to propagate exceptions
+                }
+                else
+                {
+                    throw new TimeoutException("The operation has timed out.");
+                }
+            }
         }
     }
 }

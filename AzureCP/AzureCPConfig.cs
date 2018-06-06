@@ -38,9 +38,9 @@ namespace azurecp
         public const string PUBLICSITEURL = "https://yvand.github.io/AzureCP/";
 
 #if DEBUG
-        public const int timeout = 500000;   // 500 secs
+        public const int TIMEOUT = 5000;   // 500000 - 500 secs
 #else
-        public const int timeout = 10000;    // 10 secs
+        public const int TIMEOUT = 5000;    // 5 secs
 #endif
     }
 
@@ -120,7 +120,7 @@ namespace azurecp
 
         public AzureCPConfig(string persistedObjectName, SPPersistedObject parent) : base(persistedObjectName, parent) { }
 
-        public AzureCPConfig() { }        
+        public AzureCPConfig() { }
 
         /// <summary>
         /// Override this method to allow more users to update the object. True specifies that more users can update the object; otherwise, false. The default value is false.
@@ -213,7 +213,7 @@ namespace azurecp
             copy.FilterExactMatchOnly = this.FilterExactMatchOnly;
             copy.EnableAugmentation = this.EnableAugmentation;
             copy.EntityDisplayTextPrefix = this.EntityDisplayTextPrefix;
-            copy.EnableRetry = this.EnableRetry;            
+            copy.EnableRetry = this.EnableRetry;
             return copy;
         }
 
