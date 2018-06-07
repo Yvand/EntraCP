@@ -7,10 +7,10 @@
 // </auto-generated>
 //------------------------------------------------------------------------------
 
-namespace azurecp {
+namespace azurecp.ControlTemplates {
     
     
-    public partial class ClaimsTablePage {
+    public partial class AzureCPGlobalSettings {
         
         /// <summary>
         /// LabelMessage control.
@@ -40,111 +40,165 @@ namespace azurecp {
         protected global::System.Web.UI.WebControls.ValidationSummary ValSummary;
         
         /// <summary>
-        /// DeleteItemLink_ control.
+        /// BtnOKTop control.
         /// </summary>
         /// <remarks>
         /// Auto-generated field.
         /// To modify move field declaration from designer file to code-behind file.
         /// </remarks>
-        protected global::System.Web.UI.WebControls.LinkButton DeleteItemLink_;
+        protected global::System.Web.UI.WebControls.Button BtnOKTop;
         
         /// <summary>
-        /// UpdateItemLink_ control.
+        /// grdAzureTenants control.
         /// </summary>
         /// <remarks>
         /// Auto-generated field.
         /// To modify move field declaration from designer file to code-behind file.
         /// </remarks>
-        protected global::System.Web.UI.WebControls.LinkButton UpdateItemLink_;
+        protected global::Microsoft.SharePoint.WebControls.SPGridView grdAzureTenants;
         
         /// <summary>
-        /// TblClaimsMapping control.
+        /// TxtTenantName control.
         /// </summary>
         /// <remarks>
         /// Auto-generated field.
         /// To modify move field declaration from designer file to code-behind file.
         /// </remarks>
-        protected global::System.Web.UI.WebControls.Table TblClaimsMapping;
+        protected global::Microsoft.SharePoint.WebControls.InputFormTextBox TxtTenantName;
         
         /// <summary>
-        /// BtnReset control.
+        /// TxtClientId control.
         /// </summary>
         /// <remarks>
         /// Auto-generated field.
         /// To modify move field declaration from designer file to code-behind file.
         /// </remarks>
-        protected global::System.Web.UI.WebControls.Button BtnReset;
+        protected global::Microsoft.SharePoint.WebControls.InputFormTextBox TxtClientId;
         
         /// <summary>
-        /// RdbNewItemClassicClaimType control.
+        /// TxtClientSecret control.
         /// </summary>
         /// <remarks>
         /// Auto-generated field.
         /// To modify move field declaration from designer file to code-behind file.
         /// </remarks>
-        protected global::System.Web.UI.WebControls.RadioButton RdbNewItemClassicClaimType;
+        protected global::Microsoft.SharePoint.WebControls.InputFormTextBox TxtClientSecret;
         
         /// <summary>
-        /// RdbNewItemLinkdedToIdClaim control.
+        /// ChkMemberUserTypeOnly control.
         /// </summary>
         /// <remarks>
         /// Auto-generated field.
         /// To modify move field declaration from designer file to code-behind file.
         /// </remarks>
-        protected global::System.Web.UI.WebControls.RadioButton RdbNewItemLinkdedToIdClaim;
+        protected global::Microsoft.SharePoint.WebControls.InputFormCheckBox ChkMemberUserTypeOnly;
         
         /// <summary>
-        /// RdbNewItemPermissionMetadata control.
+        /// BtnTestAzureTenantConnection control.
         /// </summary>
         /// <remarks>
         /// Auto-generated field.
         /// To modify move field declaration from designer file to code-behind file.
         /// </remarks>
-        protected global::System.Web.UI.WebControls.RadioButton RdbNewItemPermissionMetadata;
+        protected global::System.Web.UI.WebControls.Button BtnTestAzureTenantConnection;
         
         /// <summary>
-        /// New_TxtClaimType control.
+        /// BtnAddLdapConnection control.
         /// </summary>
         /// <remarks>
         /// Auto-generated field.
         /// To modify move field declaration from designer file to code-behind file.
         /// </remarks>
-        protected global::System.Web.UI.WebControls.TextBox New_TxtClaimType;
+        protected global::System.Web.UI.WebControls.Button BtnAddLdapConnection;
         
         /// <summary>
-        /// New_DdlPermissionMetadata control.
+        /// LabelErrorTestLdapConnection control.
         /// </summary>
         /// <remarks>
         /// Auto-generated field.
         /// To modify move field declaration from designer file to code-behind file.
         /// </remarks>
-        protected global::System.Web.UI.WebControls.DropDownList New_DdlPermissionMetadata;
+        protected global::System.Web.UI.WebControls.Label LabelErrorTestLdapConnection;
         
         /// <summary>
-        /// New_DdlGraphProperty control.
+        /// LabelTestTenantConnectionOK control.
         /// </summary>
         /// <remarks>
         /// Auto-generated field.
         /// To modify move field declaration from designer file to code-behind file.
         /// </remarks>
-        protected global::System.Web.UI.WebControls.DropDownList New_DdlGraphProperty;
+        protected global::System.Web.UI.WebControls.Label LabelTestTenantConnectionOK;
         
         /// <summary>
-        /// New_DdlGraphPropertyToDisplay control.
+        /// RbIdentityDefault control.
         /// </summary>
         /// <remarks>
         /// Auto-generated field.
         /// To modify move field declaration from designer file to code-behind file.
         /// </remarks>
-        protected global::System.Web.UI.WebControls.DropDownList New_DdlGraphPropertyToDisplay;
+        protected global::Microsoft.SharePoint.WebControls.InputFormRadioButton RbIdentityDefault;
         
         /// <summary>
-        /// BtnCreateNewItem control.
+        /// RbIdentityCustomGraphProperty control.
         /// </summary>
         /// <remarks>
         /// Auto-generated field.
         /// To modify move field declaration from designer file to code-behind file.
         /// </remarks>
-        protected global::System.Web.UI.WebControls.Button BtnCreateNewItem;
+        protected global::Microsoft.SharePoint.WebControls.InputFormRadioButton RbIdentityCustomGraphProperty;
+        
+        /// <summary>
+        /// DDLGraphPropertyToDisplay control.
+        /// </summary>
+        /// <remarks>
+        /// Auto-generated field.
+        /// To modify move field declaration from designer file to code-behind file.
+        /// </remarks>
+        protected global::System.Web.UI.WebControls.DropDownList DDLGraphPropertyToDisplay;
+        
+        /// <summary>
+        /// ChkAlwaysResolveUserInput control.
+        /// </summary>
+        /// <remarks>
+        /// Auto-generated field.
+        /// To modify move field declaration from designer file to code-behind file.
+        /// </remarks>
+        protected global::System.Web.UI.WebControls.CheckBox ChkAlwaysResolveUserInput;
+        
+        /// <summary>
+        /// ChkFilterExactMatchOnly control.
+        /// </summary>
+        /// <remarks>
+        /// Auto-generated field.
+        /// To modify move field declaration from designer file to code-behind file.
+        /// </remarks>
+        protected global::System.Web.UI.WebControls.CheckBox ChkFilterExactMatchOnly;
+        
+        /// <summary>
+        /// ChkAugmentAADRoles control.
+        /// </summary>
+        /// <remarks>
+        /// Auto-generated field.
+        /// To modify move field declaration from designer file to code-behind file.
+        /// </remarks>
+        protected global::System.Web.UI.WebControls.CheckBox ChkAugmentAADRoles;
+        
+        /// <summary>
+        /// BtnResetAzureCPConfig control.
+        /// </summary>
+        /// <remarks>
+        /// Auto-generated field.
+        /// To modify move field declaration from designer file to code-behind file.
+        /// </remarks>
+        protected global::System.Web.UI.WebControls.Button BtnResetAzureCPConfig;
+        
+        /// <summary>
+        /// BtnOK control.
+        /// </summary>
+        /// <remarks>
+        /// Auto-generated field.
+        /// To modify move field declaration from designer file to code-behind file.
+        /// </remarks>
+        protected global::System.Web.UI.WebControls.Button BtnOK;
     }
 }
