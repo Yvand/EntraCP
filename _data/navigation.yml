@@ -16,5 +16,11 @@ docs:
 - title: Create app in Azure AD
   url: Create-App-In-AAD.html
 
+- title: For developers
+  url: For-Developers.html
+
+- title: Fix setup issues
+  url: Fix-setup-issues.html
+
 - title: Report an issue
   url: https://github.com/Yvand/AzureCP/issues

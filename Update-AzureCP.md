@@ -4,6 +4,7 @@
 > Start a **new PowerShell console** to ensure the use of up to date persisted objects, which avoids concurrency update errors.  
 > Version 12 has breaking changes, please read below if you update from an earlier version.  
 > If some SharePoint servers do not run SharePoint service "Microsoft SharePoint Foundation Web Application", azurecp.dll must be manually updated in their GAC as [documented here](Install-AzureCP.html).  
+> If something goes wrong, [check this page](Fix-setup-issues.html) to fix issues.
 
 - Update solution
 

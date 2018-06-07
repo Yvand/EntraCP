@@ -1,5 +1,9 @@
 ## How to remove AzureCP
 
+> **Important:**  
+> Start a **new PowerShell console** to ensure the use of up to date persisted objects, which avoids concurrency update errors.  
+> If something goes wrong, [check this page](Fix-setup-issues.html) to fix issues.
+
 ### Step 1: Reset property ClaimProviderName in the SPTrustedIdentityTokenIssuer
 
 Unfortunately, the only supported way to reset property ClaimProviderName is to remove and recreate the SPTrustedIdentityTokenIssuer object, which requires to remove the trust from all the web apps where it is used.
@@ -16,8 +20,6 @@ $trust.Update()
 ### Step 2: Uninstall AzureCP
 
 Randomly, SharePoint doesn’t uninstall the solution correctly: it removes the assembly too early and fails to call the feature receiver... When this happens, the claims provider is not removed and that causes issues when you re-install it.
-
-> **Important**: Start a **new PowerShell console** to ensure the use of up to date persisted objects, which avoids concurrency update errors.  
 
 ```powershell
 Disable-SPFeature -identity "AzureCP"

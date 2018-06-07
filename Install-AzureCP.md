@@ -1,6 +1,8 @@
 ## How to install AzureCP
 
-> **Important:**  Start a **new PowerShell console** to ensure the use of up to date persisted objects, which avoids concurrency update errors.  
+> **Important:**  
+> Start a **new PowerShell console** to ensure the use of up to date persisted objects, which avoids concurrency update errors.  
+> If something goes wrong, [check this page](Fix-setup-issues.html) to fix issues.
 
 - Download AzureCP.wsp.
 - Install and deploy the solution:
