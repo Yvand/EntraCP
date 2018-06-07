@@ -13,28 +13,20 @@ namespace azurecp
     /// <remarks>
     /// The GUID attached to this class may be used during packaging and should not be modified.
     /// </remarks>
-
     [Guid("39c10d12-2c7f-4148-bd81-2283a5ce4a27")]
     public class AzureCPEventReceiver : SPClaimProviderFeatureReceiver
     {
-        public override string ClaimProviderAssembly
-        {
-            get { return typeof(AzureCP).Assembly.FullName; }
-        }
+        public override string ClaimProviderAssembly => typeof(AzureCP).Assembly.FullName;
 
-        public override string ClaimProviderDescription
-        {
-            get { return AzureCP._ProviderInternalName; }
-        }
+        public override string ClaimProviderDescription => AzureCP._ProviderInternalName;
 
-        public override string ClaimProviderDisplayName
-        {
-            get { return AzureCP._ProviderInternalName; }
-        }
+        public override string ClaimProviderDisplayName => AzureCP._ProviderInternalName;
 
-        public override string ClaimProviderType
+        public override string ClaimProviderType => typeof(AzureCP).FullName;
+
+        public override void FeatureActivated(SPFeatureReceiverProperties properties)
         {
-            get { return typeof(AzureCP).FullName; }
+            ExecBaseFeatureActivated(properties);
         }
 
         private void ExecBaseFeatureActivated(Microsoft.SharePoint.SPFeatureReceiverProperties properties)
@@ -42,62 +34,39 @@ namespace azurecp
             // Wrapper function for base FeatureActivated. 
             // Used because base keywork can lead to unverifiable code inside lambda expression
             base.FeatureActivated(properties);
-            SPSecurity.RunWithElevatedPrivileges(delegate()
+            SPSecurity.RunWithElevatedPrivileges(delegate ()
             {
-                AzureCPLogging svc = AzureCPLogging.Local;
+                ClaimsProviderLogging svc = ClaimsProviderLogging.Local;
             });
-        }
-
-        private void RemovePersistedObject()
-        {
-            var PersistedObject = AzureCPConfig.GetFromConfigDB();
-            if (PersistedObject != null)
-                PersistedObject.Delete();
-        }
-
-        public override void FeatureActivated(SPFeatureReceiverProperties properties)
-        {
-            ExecBaseFeatureActivated(properties);
         }
 
         public override void FeatureUninstalling(SPFeatureReceiverProperties properties)
         {
-            SPSecurity.RunWithElevatedPrivileges(delegate()
+            SPSecurity.RunWithElevatedPrivileges(delegate ()
             {
-                this.RemovePersistedObject();
+                ClaimsProviderLogging.Unregister();
             });
         }
 
         public override void FeatureDeactivating(SPFeatureReceiverProperties properties)
         {
-            SPSecurity.RunWithElevatedPrivileges(delegate()
+            SPSecurity.RunWithElevatedPrivileges(delegate ()
             {
                 base.RemoveClaimProvider(AzureCP._ProviderInternalName);
-                //var trust = LDAPCP.GetSPTrustAssociatedWithCP(LDAPCP._ProviderInternalName);
-                //if (trust != null)
-                //{
-                //    trust.ClaimProviderName = null;
-                //    trust.Update();
-                //}
-                this.RemovePersistedObject();
-                AzureCPLogging.Unregister();
-            });
-        }
-
-        public override void FeatureInstalled(SPFeatureReceiverProperties properties)
-        {
-            SPSecurity.RunWithElevatedPrivileges(delegate()
-            {
-                this.RemovePersistedObject();
+                AzureCPConfig.DeleteConfiguration(ClaimsProviderConstants.AZURECPCONFIG_NAME);
             });
         }
 
         public override void FeatureUpgrading(SPFeatureReceiverProperties properties, string upgradeActionName, IDictionary<string, string> parameters)
         {
-            SPSecurity.RunWithElevatedPrivileges(delegate()
+            SPSecurity.RunWithElevatedPrivileges(delegate ()
             {
-                //this.RemovePersistedObject();
-                AzureCPLogging svc = AzureCPLogging.Local;
+                ClaimsProviderLogging svc = ClaimsProviderLogging.Local;
+                AzureCPConfig config = AzureCPConfig.GetConfiguration(ClaimsProviderConstants.AZURECPCONFIG_NAME);
+                if (config != null)
+                {
+                    config.CheckAndCleanPersistedObject();
+                }
             });
         }
     }
