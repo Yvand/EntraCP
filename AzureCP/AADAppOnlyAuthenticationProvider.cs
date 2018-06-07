@@ -71,8 +71,6 @@ namespace azurecp
             Stopwatch timer = new Stopwatch();
             timer.Start();
             int timeout = this.Timeout;
-            //if (Tenant.StartsWith("YvanDev")) timeout = 2000;
-            //else timeout = 1;
 
             try
             {
