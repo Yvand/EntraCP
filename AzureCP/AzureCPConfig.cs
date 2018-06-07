@@ -22,6 +22,7 @@ namespace azurecp
         bool EnableAugmentation { get; set; }
         string EntityDisplayTextPrefix { get; set; }
         bool EnableRetry { get; set; }
+        int Timeout { get; set; }
     }
 
     public class ClaimsProviderConstants
@@ -38,9 +39,9 @@ namespace azurecp
         public const string PUBLICSITEURL = "https://yvand.github.io/AzureCP/";
 
 #if DEBUG
-        public const int TIMEOUT = 5000;   // 500000 - 500 secs
+        public const int DEFAULT_TIMEOUT = 4000;
 #else
-        public const int TIMEOUT = 5000;    // 5 secs
+        public const int DEFAULT_TIMEOUT = 4000;    // 4 secs
 #endif
     }
 
@@ -118,6 +119,14 @@ namespace azurecp
         [Persisted]
         private bool _EnableRetry = false;
 
+        public int Timeout
+        {
+            get => _Timeout;
+            set => _Timeout = value;
+        }
+        [Persisted]
+        private int _Timeout = ClaimsProviderConstants.DEFAULT_TIMEOUT;
+
         public AzureCPConfig(string persistedObjectName, SPPersistedObject parent) : base(persistedObjectName, parent) { }
 
         public AzureCPConfig() { }
@@ -160,6 +169,20 @@ namespace azurecp
         /// </summary>
         public override void Update()
         {
+            // In case ClaimTypes collection was modified, test if it is still valid before committed changes to database
+            try
+            {
+                ClaimTypeConfigCollection testUpdateCollection = new ClaimTypeConfigCollection();
+                foreach (ClaimTypeConfig curCTConfig in this.ClaimTypes)
+                {
+                    testUpdateCollection.Add(curCTConfig, false);
+                }
+            }
+            catch (Exception ex)
+            {
+                throw new Exception("Some changes made to list ClaimTypes are invalid and cannot be committed to configuration database. Inspect inner exception for more details about the error.", ex);
+            }
+
             base.Update();
             ClaimsProviderLogging.Log($"Configuration '{base.DisplayName}' was updated successfully to version {base.Version} in configuration database.",
                 TraceSeverity.Medium, EventSeverity.Information, TraceCategory.Core);
@@ -197,6 +220,7 @@ namespace azurecp
             this.EnableAugmentation = configToApply.EnableAugmentation;
             this.EntityDisplayTextPrefix = configToApply.EntityDisplayTextPrefix;
             this.EnableRetry = configToApply.EnableRetry;
+            this.Timeout = configToApply.Timeout;
         }
 
         public AzureCPConfig CopyCurrentObject()
@@ -214,6 +238,7 @@ namespace azurecp
             copy.EnableAugmentation = this.EnableAugmentation;
             copy.EntityDisplayTextPrefix = this.EntityDisplayTextPrefix;
             copy.EnableRetry = this.EnableRetry;
+            copy.Timeout = this.Timeout;
             return copy;
         }
 
@@ -397,11 +422,11 @@ namespace azurecp
         /// <summary>
         /// Set properties AuthenticationProvider and GraphService
         /// </summary>
-        public void SetAzureADContext(string claimsProviderName)
+        public void SetAzureADContext(string claimsProviderName, int timeout)
         {
             try
             {
-                this.AuthenticationProvider = new AADAppOnlyAuthenticationProvider(ClaimsProviderConstants.AuthorityUriTemplate, this.TenantName, this.ClientId, this.ClientSecret, claimsProviderName);
+                this.AuthenticationProvider = new AADAppOnlyAuthenticationProvider(ClaimsProviderConstants.AuthorityUriTemplate, this.TenantName, this.ClientId, this.ClientSecret, claimsProviderName, timeout);
                 this.GraphService = new GraphServiceClient(this.AuthenticationProvider);
             }
             catch (Exception ex)

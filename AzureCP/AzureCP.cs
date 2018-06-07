@@ -178,7 +178,7 @@ namespace azurecp
                     // Set properties AuthenticationProvider and GraphService
                     foreach (var tenant in this.CurrentConfiguration.AzureTenants)
                     {
-                        tenant.SetAzureADContext(ProviderInternalName);
+                        tenant.SetAzureADContext(ProviderInternalName, this.CurrentConfiguration.Timeout);
                     }
                     success = this.InitializeClaimTypeConfigList(this.CurrentConfiguration.ClaimTypes);
                 }
@@ -1168,7 +1168,7 @@ namespace azurecp
             AzureADResult tenantResults = new AzureADResult();
             bool tryAgain = false;
             object lockAddResultToCollection = new object();
-            CancellationTokenSource cts = new CancellationTokenSource(ClaimsProviderConstants.TIMEOUT);
+            CancellationTokenSource cts = new CancellationTokenSource(this.CurrentConfiguration.Timeout);
             try
             {
                 using (new SPMonitoredScope($"[{ProviderInternalName}] Querying Azure AD tenant '{tenant.TenantName}' for users/groups/domains, with input '{currentContext.Input}'", 1000))
@@ -1226,14 +1226,14 @@ namespace azurecp
 
                     // Waits for all tasks to complete execution within a specified number of milliseconds
                     // Use specifically WaitAll(Task[], Int32, CancellationToken) as it will thwrow an OperationCanceledException if cancellationToken is canceled
-                    bool tasksCompletedInTime = Task.WaitAll(new Task[3] { userQueryTask, groupQueryTask, domainQueryTask }, ClaimsProviderConstants.TIMEOUT, cts.Token);
+                    bool tasksCompletedInTime = Task.WaitAll(new Task[3] { userQueryTask, groupQueryTask, domainQueryTask }, this.CurrentConfiguration.Timeout, cts.Token);
                     if (!tasksCompletedInTime)
                     {
                         // Some or all tasks didn't complete on time, cancel them
                         //ClaimsProviderLogging.Log($"[{ProviderInternalName}] DEBUG: Exceeded Timeout on Azure AD tenant '{tenant.TenantName}', cancelling token.", TraceSeverity.Unexpected, EventSeverity.Error, TraceCategory.Lookup);
                         cts.Cancel();
                         // For some reason, Cancel() doesn't make Task.WaitAll to throw an OperationCanceledException
-                        ClaimsProviderLogging.Log($"[{ProviderInternalName}] Queries on Azure AD tenant '{tenant.TenantName}' exceeded Timeout of {ClaimsProviderConstants.TIMEOUT} ms and were cancelled.", TraceSeverity.Unexpected, EventSeverity.Error, TraceCategory.Lookup);
+                        ClaimsProviderLogging.Log($"[{ProviderInternalName}] Queries on Azure AD tenant '{tenant.TenantName}' exceeded Timeout of {this.CurrentConfiguration.Timeout} ms and were cancelled.", TraceSeverity.Unexpected, EventSeverity.Error, TraceCategory.Lookup);
                         tryAgain = true;
                     }
                     //await Task.WhenAll(userQueryTask, groupQueryTask).ConfigureAwait(false);
@@ -1241,7 +1241,7 @@ namespace azurecp
             }
             catch (OperationCanceledException)
             {
-                ClaimsProviderLogging.Log($"[{ProviderInternalName}] Queries on Azure AD tenant '{tenant.TenantName}' exceeded timeout of {ClaimsProviderConstants.TIMEOUT} ms and were cancelled.", TraceSeverity.Unexpected, EventSeverity.Error, TraceCategory.Lookup);
+                ClaimsProviderLogging.Log($"[{ProviderInternalName}] Queries on Azure AD tenant '{tenant.TenantName}' exceeded timeout of {this.CurrentConfiguration.Timeout} ms and were cancelled.", TraceSeverity.Unexpected, EventSeverity.Error, TraceCategory.Lookup);
                 tryAgain = true;
             }
             catch (AggregateException ex)

@@ -19,19 +19,21 @@ namespace azurecp
         private string ClientSecret;
         private string AuthorityUri;
         private string ClaimsProviderName;
+        private int Timeout;
 
         private AuthenticationContext AuthContext;
         private ClientCredential Creds;
         private AuthenticationResult AuthNResult;
         private AsyncLock GetAccessTokenLock = new AsyncLock();
 
-        public AADAppOnlyAuthenticationProvider(string authorityUriTemplate, string tenant, string clientId, string appKey, string claimsProviderName)
+        public AADAppOnlyAuthenticationProvider(string authorityUriTemplate, string tenant, string clientId, string appKey, string claimsProviderName, int timeout)
         {
             this.Tenant = tenant;
             this.ClientId = clientId;
             this.ClientSecret = appKey;
             this.AuthorityUri = String.Format(CultureInfo.InvariantCulture, authorityUriTemplate, tenant);
             this.ClaimsProviderName = claimsProviderName;
+            this.Timeout = timeout;
         }
 
         public async Task AuthenticateRequestAsync(HttpRequestMessage request)
@@ -68,7 +70,7 @@ namespace azurecp
             bool success = true;
             Stopwatch timer = new Stopwatch();
             timer.Start();
-            int timeout = ClaimsProviderConstants.TIMEOUT;
+            int timeout = this.Timeout;
             //if (Tenant.StartsWith("YvanDev")) timeout = 2000;
             //else timeout = 1;
 
@@ -76,25 +78,6 @@ namespace azurecp
             {
                 AuthContext = new AuthenticationContext(AuthorityUri);
                 Creds = new ClientCredential(ClientId, ClientSecret);
-                //AuthNResult = await AuthContext.AcquireTokenAsync(ClaimsProviderConstants.GraphAPIResource, Creds);                
-
-                // USING CANCELLETION TOKEN
-                //Task<AuthenticationResult> task = AuthContext.AcquireTokenAsync(ClaimsProviderConstants.GraphAPIResource, Creds);
-                //if (await Task.WhenAny(task, Task.Delay(TIMEOUT)) == task)
-                //{
-                //    // task completed within TIMEOUT
-                //    AuthNResult = task.Result;
-                //    TimeSpan duration = new TimeSpan(AuthNResult.ExpiresOn.UtcTicks - DateTime.Now.ToUniversalTime().Ticks);
-                //    ClaimsProviderLogging.Log($"[{ClaimsProviderName}] Got new access token for tenant '{Tenant}', valid for {Math.Round((duration.TotalHours), 1)} hour(s) and retrieved in {timer.ElapsedMilliseconds.ToString()} ms", TraceSeverity.High, EventSeverity.Information, TraceCategory.Core);
-                //}
-                //else
-                //{
-                //    // TIMEOUT logic
-                //    ClaimsProviderLogging.Log($"[{ClaimsProviderName}] Could not get an access token before TIMEOUT for tenant '{Tenant}'", TraceSeverity.High, EventSeverity.Information, TraceCategory.Core);
-                //    success = false;
-                //}
-
-                // USING EXTENSION METHOD 
                 Task<AuthenticationResult> acquireTokenTask = AuthContext.AcquireTokenAsync(ClaimsProviderConstants.GraphAPIResource, Creds);
                 AuthNResult = await TaskHelper.TimeoutAfter<AuthenticationResult>(acquireTokenTask, new TimeSpan(0, 0, 0, 0, timeout));
 
