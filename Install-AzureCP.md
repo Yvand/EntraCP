@@ -1,18 +1,16 @@
 ## How to install AzureCP
 
-Download [latest release](https://github.com/Yvand/AzureCP/releases/latest).
-Install and deploy the solution (that will automatically activate the "AzureCP" farm feature):
+> **Important:**  Start a **new PowerShell console** to ensure the use of up to date persisted objects, which avoids concurrency update errors.  
 
-> **Important:**
-> - Always start a new PowerShell console to ensure it uses up to date persisted objects and avoid concurrency update errors.
-> - If some SharePoint servers do not have SharePoint service “Microsoft SharePoint Foundation Web Application” started, you need to deploy AzureCP.dll on their GAC manually. Read "Important - Limitations" below.
+- Download AzureCP.wsp.
+- Install and deploy the solution:
 
 ```powershell
-Add-SPSolution "PATH TO WSP FILE"
+Add-SPSolution -LiteralPath "F:\Data\Dev\AzureCP.wsp"
 Install-SPSolution -Identity "AzureCP.wsp" -GACDeployment
 ```
 
-At this point AzureCP is inactive and it must be associated to a SPTrustedIdentityTokenIssuer:
+- Associate AzureCP with a SPTrustedIdentityTokenIssuer:
 
 ```powershell
 $trust = Get-SPTrustedIdentityTokenIssuer "SPTRUST NAME"
@@ -20,18 +18,16 @@ $trust.ClaimProviderName = "AzureCP"
 $trust.Update()
 ```
 
-Finally, AzureCP must be registered as an application in Azure Active Directory. Check [this page](Create-App-In-AAD.html) to create the app.
+## Important
 
-## Important - Limitations
+- Due to limitations of SharePoint API, do not associate AzureCP with more than 1 SPTrustedIdentityTokenIssuer. Developers can [bypass this limitation](For-Developers.html).
 
-What you need to know:
-- Due to limitations of SharePoint API, do not associate AzureCP with more than 1 SPTrustedIdentityTokenIssuer.
-- You must install AzureCP.dll manually in the GAC of SharePoint servers that do not have SharePoint service "Microsoft SharePoint Foundation Web Application" started.  
-You can extract AzureCP.dll from AzureCP.wsp by opening it with [7-zip](https://www.7-zip.org/) and install it in the GAC with this PowerShell script:
+- You must manually install azurecp.dll in the GAC of SharePoint servers that do not run SharePoint service "Microsoft SharePoint Foundation Web Application".
+
+You can extract azurecp.dll from AzureCP.wsp using [7-zip](https://www.7-zip.org/), and install it in the GAC using this PowerShell script:
 
 ```powershell
-# Manually install AzureCP.dll in the GAC of a server
 [System.Reflection.Assembly]::Load("System.EnterpriseServices, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a")
 $publish = New-Object System.EnterpriseServices.Internal.Publish
-$publish.GacInstall("C:\Data\Dev\AzureCP.dll")
+$publish.GacInstall("F:\Data\Dev\azurecp.dll")
 ```

@@ -5,13 +5,14 @@ This claims provider uses [Microsoft Graph](https://developer.microsoft.com/en-u
 
 ## Features
 
-- Get group membership of Azure AD users
+- Query Azure AD to get users and groups based on the user input.
+- Get group membership of Azure AD users.
 - Connect to multiple Azure AD tenants in parallel (multi-threaded queries).
 - Easy to configure with administration pages or using PowerShell.
 
 ## Customization capabilities
 
-- Configure the list of claim types, and their mapping with Azure AD users or groups.
+- Configure the list of claim types, their mapping with Azure AD users and groups, and many other settings.
 - Enable/disable augmentation.
 - Enable/disable Azure AD lookup, to keep AzureCP running with limited functionality if connectivity with Azure AD is lost.
 - Customize display of results in the people picker.
