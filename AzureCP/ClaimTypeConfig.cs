@@ -9,6 +9,17 @@ using WIF = System.Security.Claims;
 
 namespace azurecp
 {
+    public class IdentityClaimTypeConfig : ClaimTypeConfig
+    {
+        public AzureADObjectProperty DirectoryObjectPropertyForGuestUsers
+        {
+            get { return (AzureADObjectProperty)Enum.ToObject(typeof(AzureADObjectProperty), _DirectoryObjectPropertyForGuestUsers); }
+            set { _DirectoryObjectPropertyForGuestUsers = (int)value; }
+        }
+        [Persisted]
+        private int _DirectoryObjectPropertyForGuestUsers = (int)AzureADObjectProperty.Mail;
+    }
+
     /// <summary>
     /// Stores configuration associated to a claim type, and its mapping with the Azure AD attribute (GraphProperty)
     /// </summary>
@@ -218,6 +229,15 @@ namespace azurecp
         internal ClaimTypeConfigCollection(ref Collection<ClaimTypeConfig> innerCol)
         {
             this.innerCol = innerCol;
+        }
+
+        public bool InitializeIdentityClaimTypeConfig()
+        {
+            if (SPTrust == null) return false;
+
+            string identityClaimType = SPTrust.IdentityClaimTypeInformation.MappedClaimType;
+
+            return true;
         }
 
         public ClaimTypeConfig this[int index]

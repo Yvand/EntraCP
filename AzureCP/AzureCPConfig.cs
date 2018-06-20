@@ -127,7 +127,26 @@ namespace azurecp
         [Persisted]
         private int _Timeout = ClaimsProviderConstants.DEFAULT_TIMEOUT;
 
-        public AzureCPConfig(string persistedObjectName, SPPersistedObject parent) : base(persistedObjectName, parent) { }
+        /// <summary>
+        /// Name of the SPTrustedLoginProvider where AzureCP is enabled
+        /// </summary>
+        [Persisted]
+        private string SPTrustName;
+
+        private SPTrustedLoginProvider _SPTrust;
+        private SPTrustedLoginProvider SPTrust
+        {
+            get
+            {
+                if (_SPTrust == null) _SPTrust = SPSecurityTokenServiceManager.Local.TrustedLoginProviders.GetProviderByName(SPTrustName);
+                return _SPTrust;
+            }
+        }
+
+        public AzureCPConfig(string persistedObjectName, SPPersistedObject parent, string spTrustName) : base(persistedObjectName, parent)
+        {
+            this.SPTrustName = spTrustName;
+        }
 
         public AzureCPConfig() { }
 
@@ -193,8 +212,9 @@ namespace azurecp
             AzureCPConfig previousConfig = GetConfiguration(persistedObjectName);
             if (previousConfig == null) return null;
             Guid configId = previousConfig.Id;
+            string spTrustName = previousConfig.SPTrustName;
             DeleteConfiguration(persistedObjectName);
-            AzureCPConfig newConfig = CreateConfiguration(configId.ToString(), persistedObjectName);
+            AzureCPConfig newConfig = CreateConfiguration(configId.ToString(), persistedObjectName, spTrustName);
             ClaimsProviderLogging.Log($"Configuration '{persistedObjectName}' was successfully reset to its default configuration",
                 TraceSeverity.High, EventSeverity.Information, TraceCategory.Core);
             return newConfig;
@@ -226,7 +246,7 @@ namespace azurecp
         public AzureCPConfig CopyCurrentObject()
         {
             //return this.Clone() as LDAPCPConfig;  // DOES NOT work
-            AzureCPConfig copy = new AzureCPConfig();
+            AzureCPConfig copy = new AzureCPConfig(this.Name, this.Parent, this.SPTrustName);
             copy.AzureTenants = new List<AzureTenant>(this.AzureTenants);
             copy.ClaimTypes = new ClaimTypeConfigCollection();
             foreach (ClaimTypeConfig currentObject in this.ClaimTypes)
@@ -256,8 +276,13 @@ namespace azurecp
         /// <param name="persistedObjectID"></param>
         /// <param name="persistedObjectName"></param>
         /// <returns></returns>
-        public static AzureCPConfig CreateConfiguration(string persistedObjectID, string persistedObjectName)
+        public static AzureCPConfig CreateConfiguration(string persistedObjectID, string persistedObjectName, string spTrustName)
         {
+            if (String.IsNullOrEmpty(spTrustName))
+            {
+                throw new ArgumentNullException("spTrust");
+            }
+
             // Ensure it doesn't already exists and delete it if so
             AzureCPConfig existingConfig = AzureCPConfig.GetConfiguration(persistedObjectName);
             if (existingConfig != null)
@@ -266,7 +291,7 @@ namespace azurecp
             }
 
             ClaimsProviderLogging.Log($"Creating configuration '{persistedObjectName}' with Id {persistedObjectID}...", TraceSeverity.VerboseEx, EventSeverity.Error, TraceCategory.Core);
-            AzureCPConfig PersistedObject = new AzureCPConfig(persistedObjectName, SPFarm.Local);
+            AzureCPConfig PersistedObject = new AzureCPConfig(persistedObjectName, SPFarm.Local, spTrustName);
             PersistedObject.ResetCurrentConfiguration();
             PersistedObject.Id = new Guid(persistedObjectID);
             PersistedObject.Update();
@@ -278,9 +303,9 @@ namespace azurecp
         /// Generate and return default configuration
         /// </summary>
         /// <returns></returns>
-        public static IAzureCPConfiguration ReturnDefaultConfiguration()
+        public IAzureCPConfiguration ReturnDefaultConfiguration()
         {
-            AzureCPConfig defaultConfig = new AzureCPConfig();
+            AzureCPConfig defaultConfig = new AzureCPConfig(this.Name, this.Parent, this.SPTrustName);
             defaultConfig.AzureTenants = new List<AzureTenant>();
             defaultConfig.ClaimTypes = ReturnDefaultClaimTypesConfig();
             return defaultConfig;
@@ -290,12 +315,13 @@ namespace azurecp
         /// Generate and return default claim types configuration list
         /// </summary>
         /// <returns></returns>
-        public static ClaimTypeConfigCollection ReturnDefaultClaimTypesConfig()
+        public ClaimTypeConfigCollection ReturnDefaultClaimTypesConfig()
         {
             return new ClaimTypeConfigCollection
             {
                 // Identity claim type. "Name" (http://schemas.xmlsoap.org/ws/2005/05/identity/claims/name) is a reserved claim type in SharePoint that cannot be used in the SPTrust.
-                new ClaimTypeConfig{EntityType = DirectoryObjectType.User, DirectoryObjectProperty = AzureADObjectProperty.UserPrincipalName, ClaimType = WIF4_5.ClaimTypes.Upn},
+                //new ClaimTypeConfig{EntityType = DirectoryObjectType.User, DirectoryObjectProperty = AzureADObjectProperty.UserPrincipalName, ClaimType = WIF4_5.ClaimTypes.Upn},
+                new IdentityClaimTypeConfig{EntityType = DirectoryObjectType.User, DirectoryObjectProperty = AzureADObjectProperty.UserPrincipalName, ClaimType = SPTrust.IdentityClaimTypeInformation.MappedClaimType},
 
                 // Additional properties to find user and create entity with the identity claim type (UseMainClaimTypeOfDirectoryObject=true)
                 new ClaimTypeConfig{EntityType = DirectoryObjectType.User, DirectoryObjectProperty = AzureADObjectProperty.DisplayName, UseMainClaimTypeOfDirectoryObject = true, EntityDataKey = PeopleEditorEntityDataKeys.DisplayName},
@@ -332,12 +358,21 @@ namespace azurecp
         }
 
         /// <summary>
-        /// Check if object is compatible with current version of AzureCP, and fix it if not. If object comes from configuration database, changes are committed in configuration database
+        /// Check if current configuration is compatible with current version of AzureCP, and fix it if not. If object comes from configuration database, changes are committed in configuration database
         /// </summary>
         /// <returns>True if current object was cleaned</returns>
-        public bool CheckAndCleanPersistedObject()
+        public bool CheckAndCleanConfiguration(string currentSPTrustName)
         {
             bool objectCleaned = false;
+
+            if (!String.IsNullOrEmpty(currentSPTrustName) && !String.Equals(this.SPTrustName, currentSPTrustName, StringComparison.InvariantCultureIgnoreCase))
+            {
+                this.SPTrustName = currentSPTrustName;
+                ClaimsProviderLogging.Log($"Updated the SPTrustedLoginProvider name to '{this.SPTrustName}' in configuration '{base.DisplayName}'.",
+                    TraceSeverity.Medium, EventSeverity.Information, TraceCategory.Core);
+                objectCleaned = true;
+            }
+
             try
             {
                 // If AzureCP was updated from a version < v12, this.ClaimTypes.Count will throw a NullReferenceException
@@ -345,7 +380,7 @@ namespace azurecp
             }
             catch (NullReferenceException ex)
             {
-                this.ClaimTypes = AzureCPConfig.ReturnDefaultClaimTypesConfig();
+                this.ClaimTypes = ReturnDefaultClaimTypesConfig();
                 objectCleaned = true;
             }
 

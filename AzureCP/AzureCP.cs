@@ -100,7 +100,7 @@ namespace azurecp
                     }
                     else
                     {
-                        ((AzureCPConfig)globalConfiguration).CheckAndCleanPersistedObject();
+                        ((AzureCPConfig)globalConfiguration).CheckAndCleanConfiguration(SPTrust.Name);
                     }
 
                     if (globalConfiguration.ClaimTypes == null || globalConfiguration.ClaimTypes.Count == 0)
@@ -1314,6 +1314,10 @@ namespace azurecp
                                 TraceSeverity.Verbose, EventSeverity.Verbose, TraceCategory.Lookup);
                             continue;
                         }
+
+                        //// Test to deal issue reported in https://github.com/MicrosoftDocs/OfficeDocs-Enterprise/issues/43
+                        //User user = userOrGroup as User;
+                        //user.UserPrincipalName = user.Mail;
                     }
                     currentObject = userOrGroup;
                     objectType = DirectoryObjectType.User;

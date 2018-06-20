@@ -65,7 +65,7 @@ namespace azurecp
                 AzureCPConfig config = AzureCPConfig.GetConfiguration(ClaimsProviderConstants.AZURECPCONFIG_NAME);
                 if (config != null)
                 {
-                    config.CheckAndCleanPersistedObject();
+                    config.CheckAndCleanConfiguration(String.Empty);
                 }
             });
         }

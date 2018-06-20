@@ -45,11 +45,14 @@ namespace azurecp.ControlTemplates
             {
                 SPSecurity.RunWithElevatedPrivileges(delegate ()
                 {
-                    if (_PersistedObject == null) _PersistedObject = AzureCPConfig.GetConfiguration(PersistedObjectName);
+                    if (_PersistedObject == null)
+                    {
+                        _PersistedObject = AzureCPConfig.GetConfiguration(PersistedObjectName);
+                    }
                     if (_PersistedObject == null)
                     {
                         SPContext.Current.Web.AllowUnsafeUpdates = true;
-                        _PersistedObject = AzureCPConfig.CreateConfiguration(this.PersistedObjectID, this.PersistedObjectName);
+                        _PersistedObject = AzureCPConfig.CreateConfiguration(this.PersistedObjectID, this.PersistedObjectName, this.CurrentTrustedLoginProvider.Name);
                         SPContext.Current.Web.AllowUnsafeUpdates = false;
                     }
                 });
@@ -146,14 +149,18 @@ namespace azurecp.ControlTemplates
                 return Status;
             }
 
-            if (PersistedObject == null)
-            {
-                Status |= ConfigStatus.PersistedObjectNotFound;
-            }
             if (CurrentTrustedLoginProvider == null)
             {
                 CurrentTrustedLoginProvider = AzureCP.GetSPTrustAssociatedWithCP(this.ClaimsProviderName);
-                if (CurrentTrustedLoginProvider == null) Status |= ConfigStatus.NoSPTrustAssociation;
+                if (CurrentTrustedLoginProvider == null)
+                {
+                    Status |= ConfigStatus.NoSPTrustAssociation;
+                    return Status;
+                }
+            }
+            if (PersistedObject == null)
+            {
+                Status |= ConfigStatus.PersistedObjectNotFound;
             }
             if (Status != ConfigStatus.AllGood)
             {
@@ -162,7 +169,7 @@ namespace azurecp.ControlTemplates
                 return Status;
             }
 
-            PersistedObject.CheckAndCleanPersistedObject();
+            PersistedObject.CheckAndCleanConfiguration(CurrentTrustedLoginProvider.Name);
             PersistedObject.ClaimTypes.SPTrust = CurrentTrustedLoginProvider;
             if (IdentityClaim == null && Status == ConfigStatus.AllGood)
             {
