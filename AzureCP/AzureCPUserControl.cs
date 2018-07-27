@@ -158,10 +158,12 @@ namespace azurecp.ControlTemplates
                     return Status;
                 }
             }
+
             if (PersistedObject == null)
             {
                 Status |= ConfigStatus.PersistedObjectNotFound;
             }
+
             if (Status != ConfigStatus.AllGood)
             {
                 ClaimsProviderLogging.Log($"[{ClaimsProviderName}] {MostImportantError}", TraceSeverity.Unexpected, EventSeverity.Error, TraceCategory.Configuration);

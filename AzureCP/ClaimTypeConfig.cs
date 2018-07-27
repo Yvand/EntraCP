@@ -144,21 +144,31 @@ namespace azurecp
         [Persisted]
         private bool _FilterExactMatchOnly = false;
 
-        internal ClaimTypeConfig CopyCurrentObject()
+        internal ClaimTypeConfig CopyPersistedProperties()
         {
-            ClaimTypeConfig copy = new ClaimTypeConfig()
+            ClaimTypeConfig copy;
+            if (this is IdentityClaimTypeConfig)
             {
-                _ClaimType = this._ClaimType,
-                _DirectoryObjectProperty = this._DirectoryObjectProperty,
-                _DirectoryObjectType = this._DirectoryObjectType,
-                _EntityDataKey = this._EntityDataKey,
-                _ClaimValueType = this._ClaimValueType,
-                _CreateAsIdentityClaim = this._CreateAsIdentityClaim,
-                _PrefixToBypassLookup = this._PrefixToBypassLookup,
-                _DirectoryObjectPropertyToShowAsDisplayText = this._DirectoryObjectPropertyToShowAsDisplayText,
-                _FilterExactMatchOnly = this._FilterExactMatchOnly,
-                _ClaimTypeDisplayName = this._ClaimTypeDisplayName,
-            };
+                copy = new IdentityClaimTypeConfig()
+                {
+                    DirectoryObjectPropertyForGuestUsers = ((IdentityClaimTypeConfig)this).DirectoryObjectPropertyForGuestUsers
+                };
+            }
+            else
+            {
+                copy = new ClaimTypeConfig();
+            }
+
+            copy._ClaimType = this._ClaimType;
+            copy._DirectoryObjectProperty = this._DirectoryObjectProperty;
+            copy._DirectoryObjectType = this._DirectoryObjectType;
+            copy._EntityDataKey = this._EntityDataKey;
+            copy._ClaimValueType = this._ClaimValueType;
+            copy._CreateAsIdentityClaim = this._CreateAsIdentityClaim;
+            copy._PrefixToBypassLookup = this._PrefixToBypassLookup;
+            copy._DirectoryObjectPropertyToShowAsDisplayText = this._DirectoryObjectPropertyToShowAsDisplayText;
+            copy._FilterExactMatchOnly = this._FilterExactMatchOnly;
+            copy._ClaimTypeDisplayName = this._ClaimTypeDisplayName;
             return copy;
         }
 
@@ -229,15 +239,6 @@ namespace azurecp
         internal ClaimTypeConfigCollection(ref Collection<ClaimTypeConfig> innerCol)
         {
             this.innerCol = innerCol;
-        }
-
-        public bool InitializeIdentityClaimTypeConfig()
-        {
-            if (SPTrust == null) return false;
-
-            string identityClaimType = SPTrust.IdentityClaimTypeInformation.MappedClaimType;
-
-            return true;
         }
 
         public ClaimTypeConfig this[int index]
@@ -312,10 +313,9 @@ namespace azurecp
             // If SPTrustedLoginProvider is set, additional checks can be done
             if (SPTrust != null)
             {
-                // Specific checks if current claim type is identity claim type
+                // If current claim type is identity claim type: EntityType must be User
                 if (String.Equals(item.ClaimType, SPTrust.IdentityClaimTypeInformation.MappedClaimType, StringComparison.InvariantCultureIgnoreCase))
                 {
-                    // LDAPObjectType must be User
                     if (item.EntityType != DirectoryObjectType.User)
                     {
                         throw new InvalidOperationException($"Identity claim type must be configured with EntityType 'User'");
@@ -360,7 +360,7 @@ namespace azurecp
             ClaimTypeConfigCollection testUpdateCollection = new ClaimTypeConfigCollection();
             foreach (ClaimTypeConfig curCTConfig in innerCol)
             {
-                testUpdateCollection.Add(curCTConfig.CopyCurrentObject(), false);
+                testUpdateCollection.Add(curCTConfig.CopyPersistedProperties(), false);
             }
 
             // Update ClaimTypeConfig in testUpdateCollection
@@ -432,6 +432,8 @@ namespace azurecp
 
         public bool Remove(ClaimTypeConfig item)
         {
+            if (SPTrust != null && String.Equals(item.ClaimType, SPTrust.IdentityClaimTypeInformation.MappedClaimType, StringComparison.InvariantCultureIgnoreCase)) throw new InvalidOperationException($"Cannot delete claim type \"{item.ClaimType}\" because it is the identity claim type of \"{SPTrust.Name}\"");
+
             bool result = false;
             for (int i = 0; i < innerCol.Count; i++)
             {
@@ -449,6 +451,8 @@ namespace azurecp
         public bool Remove(string claimType)
         {
             if (String.IsNullOrEmpty(claimType)) throw new ArgumentNullException("claimType");
+            if (SPTrust != null && String.Equals(claimType, SPTrust.IdentityClaimTypeInformation.MappedClaimType, StringComparison.InvariantCultureIgnoreCase)) throw new InvalidOperationException($"Cannot delete claim type \"{claimType}\" because it is the identity claim type of \"{SPTrust.Name}\"");
+
             bool result = false;
             for (int i = 0; i < innerCol.Count; i++)
             {
@@ -470,6 +474,13 @@ namespace azurecp
         IEnumerator IEnumerable.GetEnumerator()
         {
             return new ClaimTypeConfigEnumerator(this);
+        }
+
+        public ClaimTypeConfig GetByClaimType(string claimType)
+        {
+            if (String.IsNullOrEmpty(claimType)) throw new ArgumentNullException("claimType");
+            ClaimTypeConfig ctConfig = innerCol.FirstOrDefault(x => String.Equals(claimType, x.ClaimType, StringComparison.InvariantCultureIgnoreCase));
+            return ctConfig;
         }
     }
 

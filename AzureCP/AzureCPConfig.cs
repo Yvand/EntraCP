@@ -34,12 +34,15 @@ namespace azurecp
         public const string ResourceUrl = "https://graph.windows.net";
         public const string SearchPatternEquals = "{0} eq '{1}'";
         public const string SearchPatternStartsWith = "startswith({0}, '{1}')";
+        public const string IdentityConfigSearchPatternEquals = "({0} eq '{1}' and UserType eq '{2}')";
+        public const string IdentityConfigSearchPatternStartsWith = "(startswith({0}, '{1}') and UserType eq '{2}')";
         public static string GroupClaimEntityType = SPClaimEntityTypes.FormsRole;
         public const bool EnforceOnly1ClaimTypeForGroup = true;     // In AzureCP, only 1 claim type can be used to create group permissions
+        public const string DefaultMainGroupClaimType = WIF4_5.ClaimTypes.Role;
         public const string PUBLICSITEURL = "https://yvand.github.io/AzureCP/";
 
 #if DEBUG
-        public const int DEFAULT_TIMEOUT = 4000;
+        public const int DEFAULT_TIMEOUT = 10000;
 #else
         public const int DEFAULT_TIMEOUT = 4000;    // 4 secs
 #endif
@@ -128,7 +131,7 @@ namespace azurecp
         private int _Timeout = ClaimsProviderConstants.DEFAULT_TIMEOUT;
 
         /// <summary>
-        /// Name of the SPTrustedLoginProvider where AzureCP is enabled
+        /// Name of the SPTrustedLoginProvider where LDAPCP is enabled
         /// </summary>
         [Persisted]
         private string SPTrustName;
@@ -174,6 +177,7 @@ namespace azurecp
             try
             {
                 AzureCPConfig persistedObject = parent.GetChild<AzureCPConfig>(persistedObjectName);
+                persistedObject.CheckAndCleanConfiguration(String.Empty);
                 return persistedObject;
             }
             catch (Exception ex)
@@ -197,9 +201,9 @@ namespace azurecp
                     testUpdateCollection.Add(curCTConfig, false);
                 }
             }
-            catch (Exception ex)
+            catch (InvalidOperationException ex)
             {
-                throw new Exception("Some changes made to list ClaimTypes are invalid and cannot be committed to configuration database. Inspect inner exception for more details about the error.", ex);
+                throw new InvalidOperationException("Some changes made to list ClaimTypes are invalid and cannot be committed to configuration database. Inspect inner exception for more details about the error.", ex);
             }
 
             base.Update();
@@ -223,12 +227,12 @@ namespace azurecp
         /// <summary>
         /// Set properties of current configuration to their default values
         /// </summary>
-        /// <param name="persistedObjectName"></param>
         /// <returns></returns>
         public void ResetCurrentConfiguration()
         {
-            AzureCPConfig defaultConfig = ReturnDefaultConfiguration() as AzureCPConfig;
+            AzureCPConfig defaultConfig = ReturnDefaultConfiguration(this.SPTrustName) as AzureCPConfig;
             ApplyConfiguration(defaultConfig);
+            CheckAndCleanConfiguration(String.Empty);
         }
 
         public void ApplyConfiguration(AzureCPConfig configToApply)
@@ -243,15 +247,14 @@ namespace azurecp
             this.Timeout = configToApply.Timeout;
         }
 
-        public AzureCPConfig CopyCurrentObject()
+        public AzureCPConfig CopyPersistedProperties()
         {
-            //return this.Clone() as LDAPCPConfig;  // DOES NOT work
             AzureCPConfig copy = new AzureCPConfig(this.Name, this.Parent, this.SPTrustName);
             copy.AzureTenants = new List<AzureTenant>(this.AzureTenants);
             copy.ClaimTypes = new ClaimTypeConfigCollection();
             foreach (ClaimTypeConfig currentObject in this.ClaimTypes)
             {
-                copy.ClaimTypes.Add(currentObject.CopyCurrentObject(), false);
+                copy.ClaimTypes.Add(currentObject.CopyPersistedProperties(), false);
             }
             copy.AlwaysResolveUserInput = this.AlwaysResolveUserInput;
             copy.FilterExactMatchOnly = this.FilterExactMatchOnly;
@@ -265,7 +268,7 @@ namespace azurecp
         public void ResetClaimTypesList()
         {
             ClaimTypes.Clear();
-            ClaimTypes = ReturnDefaultClaimTypesConfig();
+            ClaimTypes = ReturnDefaultClaimTypesConfig(this.SPTrustName);
             ClaimsProviderLogging.Log($"Claim types list of configuration '{Name}' was successfully reset to default configuration",
                 TraceSeverity.High, EventSeverity.Information, TraceCategory.Core);
         }
@@ -303,11 +306,12 @@ namespace azurecp
         /// Generate and return default configuration
         /// </summary>
         /// <returns></returns>
-        public IAzureCPConfiguration ReturnDefaultConfiguration()
+        public static IAzureCPConfiguration ReturnDefaultConfiguration(string spTrustName)
         {
-            AzureCPConfig defaultConfig = new AzureCPConfig(this.Name, this.Parent, this.SPTrustName);
+            AzureCPConfig defaultConfig = new AzureCPConfig();
+            defaultConfig.SPTrustName = spTrustName;
             defaultConfig.AzureTenants = new List<AzureTenant>();
-            defaultConfig.ClaimTypes = ReturnDefaultClaimTypesConfig();
+            defaultConfig.ClaimTypes = ReturnDefaultClaimTypesConfig(spTrustName);
             return defaultConfig;
         }
 
@@ -315,13 +319,16 @@ namespace azurecp
         /// Generate and return default claim types configuration list
         /// </summary>
         /// <returns></returns>
-        public ClaimTypeConfigCollection ReturnDefaultClaimTypesConfig()
+        public static ClaimTypeConfigCollection ReturnDefaultClaimTypesConfig(string spTrustName)
         {
+            if (String.IsNullOrWhiteSpace(spTrustName)) throw new ArgumentNullException("spTrustName cannot be null.");
+
+            SPTrustedLoginProvider spTrust = SPSecurityTokenServiceManager.Local.TrustedLoginProviders.GetProviderByName(spTrustName);
             return new ClaimTypeConfigCollection
             {
                 // Identity claim type. "Name" (http://schemas.xmlsoap.org/ws/2005/05/identity/claims/name) is a reserved claim type in SharePoint that cannot be used in the SPTrust.
                 //new ClaimTypeConfig{EntityType = DirectoryObjectType.User, DirectoryObjectProperty = AzureADObjectProperty.UserPrincipalName, ClaimType = WIF4_5.ClaimTypes.Upn},
-                new IdentityClaimTypeConfig{EntityType = DirectoryObjectType.User, DirectoryObjectProperty = AzureADObjectProperty.UserPrincipalName, ClaimType = SPTrust.IdentityClaimTypeInformation.MappedClaimType},
+                new IdentityClaimTypeConfig{EntityType = DirectoryObjectType.User, DirectoryObjectProperty = AzureADObjectProperty.UserPrincipalName, ClaimType = spTrust.IdentityClaimTypeInformation.MappedClaimType},
 
                 // Additional properties to find user and create entity with the identity claim type (UseMainClaimTypeOfDirectoryObject=true)
                 new ClaimTypeConfig{EntityType = DirectoryObjectType.User, DirectoryObjectProperty = AzureADObjectProperty.DisplayName, UseMainClaimTypeOfDirectoryObject = true, EntityDataKey = PeopleEditorEntityDataKeys.DisplayName},
@@ -336,7 +343,7 @@ namespace azurecp
                 new ClaimTypeConfig{EntityType = DirectoryObjectType.User, DirectoryObjectProperty = AzureADObjectProperty.OfficeLocation, EntityDataKey = PeopleEditorEntityDataKeys.Location},
 
                 // Group
-                new ClaimTypeConfig{EntityType = DirectoryObjectType.Group, DirectoryObjectProperty = AzureADObjectProperty.Id, ClaimType=WIF4_5.ClaimTypes.Role, DirectoryObjectPropertyToShowAsDisplayText = AzureADObjectProperty.DisplayName},
+                new ClaimTypeConfig{EntityType = DirectoryObjectType.Group, DirectoryObjectProperty = AzureADObjectProperty.Id, ClaimType = ClaimsProviderConstants.DefaultMainGroupClaimType, DirectoryObjectPropertyToShowAsDisplayText = AzureADObjectProperty.DisplayName},
                 new ClaimTypeConfig{EntityType = DirectoryObjectType.Group, DirectoryObjectProperty = AzureADObjectProperty.DisplayName, UseMainClaimTypeOfDirectoryObject = true, EntityDataKey = PeopleEditorEntityDataKeys.DisplayName},
             };
         }
@@ -360,14 +367,15 @@ namespace azurecp
         /// <summary>
         /// Check if current configuration is compatible with current version of AzureCP, and fix it if not. If object comes from configuration database, changes are committed in configuration database
         /// </summary>
-        /// <returns>True if current object was cleaned</returns>
-        public bool CheckAndCleanConfiguration(string currentSPTrustName)
+        /// <param name="spTrustName">Name of the SPTrust if it changed, null or empty string otherwise</param>
+        /// <returns>Bollean indicates whether the configuration was updated in configuration database</returns>
+        public bool CheckAndCleanConfiguration(string spTrustName)
         {
             bool objectCleaned = false;
 
-            if (!String.IsNullOrEmpty(currentSPTrustName) && !String.Equals(this.SPTrustName, currentSPTrustName, StringComparison.InvariantCultureIgnoreCase))
+            if (!String.IsNullOrEmpty(spTrustName) && !String.Equals(this.SPTrustName, spTrustName, StringComparison.InvariantCultureIgnoreCase))
             {
-                this.SPTrustName = currentSPTrustName;
+                this.SPTrustName = spTrustName;
                 ClaimsProviderLogging.Log($"Updated the SPTrustedLoginProvider name to '{this.SPTrustName}' in configuration '{base.DisplayName}'.",
                     TraceSeverity.Medium, EventSeverity.Information, TraceCategory.Core);
                 objectCleaned = true;
@@ -380,8 +388,13 @@ namespace azurecp
             }
             catch (NullReferenceException ex)
             {
-                this.ClaimTypes = ReturnDefaultClaimTypesConfig();
+                this.ClaimTypes = ReturnDefaultClaimTypesConfig(this.SPTrustName);
                 objectCleaned = true;
+            }
+
+            if (!String.IsNullOrEmpty(this.SPTrustName))
+            {
+                this.ClaimTypes.SPTrust = this.SPTrust;
             }
 
             if (objectCleaned)
@@ -468,6 +481,23 @@ namespace azurecp
             {
                 ClaimsProviderLogging.LogException(AzureCP._ProviderInternalName, $"while setting client context for tenant '{this.TenantName}'.", TraceCategory.Core, ex);
             }
+        }
+
+        internal AzureTenant CopyPersistedProperties()
+        {
+            AzureTenant copy = new AzureTenant();
+            copy.AuthenticationProvider = this.AuthenticationProvider;
+            copy.ClientId = this.ClientId;
+            copy.ClientSecret = this.ClientSecret;
+            copy.GraphService = this.GraphService;
+            copy.GroupFilter = this.GroupFilter;
+            copy.GroupSelect = this.GroupSelect;
+            copy.Id = this.Id;
+            copy.MemberUserTypeOnly = this.MemberUserTypeOnly;
+            copy.TenantName = this.TenantName;
+            copy.UserFilter = this.UserFilter;
+            copy.UserSelect = this.UserSelect;
+            return copy;
         }
     }
 

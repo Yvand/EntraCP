@@ -1,6 +1,7 @@
 ﻿using Microsoft.Graph;
 using Microsoft.IdentityModel.Clients.ActiveDirectory;
 using Microsoft.SharePoint.Administration;
+using Microsoft.SharePoint.Utilities;
 using Microsoft.SharePoint.WebControls;
 using System;
 using System.Collections.Generic;
@@ -31,7 +32,7 @@ namespace azurecp.ControlTemplates
         {
             if (ValidatePrerequisite() != ConfigStatus.AllGood)
             {
-                this.LabelErrorMessage.Text = base.MostImportantError;
+                this.LabelErrorMessage.Text = SPEncode.HtmlEncode(base.MostImportantError);
                 this.BtnOK.Enabled = this.BtnOKTop.Enabled = false;
                 return;
             }
@@ -164,7 +165,7 @@ namespace azurecp.ControlTemplates
         {
             if (ValidatePrerequisite() != ConfigStatus.AllGood) return;
             if (UpdateConfiguration(true)) Response.Redirect("/Security.aspx", false);
-            else LabelErrorMessage.Text = MostImportantError;
+            else LabelErrorMessage.Text = SPEncode.HtmlEncode(base.MostImportantError);
         }
 
         protected void BtnResetAzureCPConfig_Click(Object sender, EventArgs e)
