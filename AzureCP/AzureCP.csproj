@@ -147,7 +147,6 @@
     <None Include="Features\AzureCP_Administration\AzureCP_Administration.feature">
       <FeatureId>{b82964c9-f57c-4826-b1dd-f03f63c7f197}</FeatureId>
     </None>
-    <None Include="key.snk" />
     <None Include="packages.config">
       <SubType>Designer</SubType>
     </None>

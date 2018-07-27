@@ -18,6 +18,22 @@ namespace azurecp
         }
         [Persisted]
         private int _DirectoryObjectPropertyForGuestUsers = (int)AzureADObjectProperty.Mail;
+
+        public static IdentityClaimTypeConfig ConvertClaimTypeConfig(ClaimTypeConfig ctConfig)
+        {
+            IdentityClaimTypeConfig identityCTConfig = new IdentityClaimTypeConfig();
+            identityCTConfig.ClaimType = ctConfig.ClaimType;
+            identityCTConfig.ClaimTypeDisplayName = ctConfig.ClaimTypeDisplayName;
+            identityCTConfig.ClaimValueType = ctConfig.ClaimValueType;
+            identityCTConfig.DirectoryObjectProperty = ctConfig.DirectoryObjectProperty;
+            identityCTConfig.DirectoryObjectPropertyToShowAsDisplayText = ctConfig.DirectoryObjectPropertyToShowAsDisplayText;
+            identityCTConfig.EntityDataKey = ctConfig.EntityDataKey;
+            identityCTConfig.EntityType = ctConfig.EntityType;
+            identityCTConfig.FilterExactMatchOnly = ctConfig.FilterExactMatchOnly;
+            identityCTConfig.PrefixToBypassLookup = ctConfig.PrefixToBypassLookup;
+            identityCTConfig.UseMainClaimTypeOfDirectoryObject = ctConfig.UseMainClaimTypeOfDirectoryObject;
+            return identityCTConfig;
+        }
     }
 
     /// <summary>
