@@ -1,6 +1,7 @@
 ﻿using azurecp;
 using NUnit.Framework;
 using System;
+using System.Collections.Generic;
 using System.Linq;
 
 namespace AzureCP.Tests
@@ -9,7 +10,8 @@ namespace AzureCP.Tests
     public class ModifyConfigTests
     {
         public const string ClaimsProviderConfigName = "AzureCPConfig";
-        public const string NonExistingClaimType = "http://schemas.yvand.com/ws/claims/random";
+        public const string AvailableClaimType = "http://schemas.yvand.com/ws/claims/random";
+        public const AzureADObjectProperty AvailableObjectProperty = AzureADObjectProperty.AccountEnabled;
 
         private AzureCPConfig Config;
 
@@ -28,28 +30,36 @@ namespace AzureCP.Tests
         {
             ClaimTypeConfig ctConfig = new ClaimTypeConfig();
 
-            // Identity claim type already exists and a claim type cannot be added twice
+            // Adding a ClaimTypeConfig with a claim type already set should fail
             ctConfig.ClaimType = UnitTestsHelper.SPTrust.IdentityClaimTypeInformation.MappedClaimType;
+            ctConfig.DirectoryObjectProperty = AvailableObjectProperty;
             Assert.Throws<InvalidOperationException>(() => Config.ClaimTypes.Add(ctConfig));
 
-            // Property DirectoryObjectProperty should be set
-            ctConfig.ClaimType = NonExistingClaimType;
+            // Adding a ClaimTypeConfig with UseMainClaimTypeOfDirectoryObject = false (default value) and DirectoryObjectProperty not set should fail
+            ctConfig.ClaimType = AvailableClaimType;
+            ctConfig.DirectoryObjectProperty = AzureADObjectProperty.NotSet;
             Assert.Throws<InvalidOperationException>(() => Config.ClaimTypes.Add(ctConfig));
 
-            // Property ClaimType should be empty if UseMainClaimTypeOfDirectoryObject is true
+            // Adding a ClaimTypeConfig with UseMainClaimTypeOfDirectoryObject = true and ClaimType set should fail
+            ctConfig.ClaimType = AvailableClaimType;
+            ctConfig.DirectoryObjectProperty = AvailableObjectProperty;
             ctConfig.UseMainClaimTypeOfDirectoryObject = true;
             Assert.Throws<InvalidOperationException>(() => Config.ClaimTypes.Add(ctConfig));
 
-            // AzureCP allows only 1 claim type for EntityType 'Group'
+            // Adding a ClaimTypeConfig with EntityType 'Group' should fail since 1 already exists by default and AzureCP allows only 1 claim type for EntityType 'Group'
+            ctConfig.ClaimType = AvailableClaimType;
+            ctConfig.DirectoryObjectProperty = AvailableObjectProperty;
             ctConfig.EntityType = DirectoryObjectType.Group;
             ctConfig.UseMainClaimTypeOfDirectoryObject = false;
             Assert.Throws<InvalidOperationException>(() => Config.ClaimTypes.Add(ctConfig));
 
-            // Valid ClaimTypeConfig
-            ctConfig.UseMainClaimTypeOfDirectoryObject = false;
+            // Adding a valid ClaimTypeConfig should succeed
+            ctConfig.ClaimType = AvailableClaimType;
+            ctConfig.DirectoryObjectProperty = AvailableObjectProperty;
             ctConfig.EntityType = DirectoryObjectType.User;
-            ctConfig.DirectoryObjectProperty = AzureADObjectProperty.UserPrincipalName;
+            ctConfig.UseMainClaimTypeOfDirectoryObject = false;
             Config.ClaimTypes.Add(ctConfig);
+            Config.ClaimTypes.Remove(ctConfig);
         }
 
         [Test]
@@ -91,7 +101,7 @@ namespace AzureCP.Tests
             // Set a PrefixToBypassLookup on an existing item and add a new item with the same PrefixToBypassLookup
             var firstCTConfig = Config.ClaimTypes.FirstOrDefault(x => !String.IsNullOrEmpty(x.ClaimType));
             firstCTConfig.PrefixToBypassLookup = prefixToBypassLookup;
-            ClaimTypeConfig ctConfig = new ClaimTypeConfig() { ClaimType = NonExistingClaimType, PrefixToBypassLookup = prefixToBypassLookup, DirectoryObjectProperty = AzureADObjectProperty.OfficeLocation };
+            ClaimTypeConfig ctConfig = new ClaimTypeConfig() { ClaimType = AvailableClaimType, PrefixToBypassLookup = prefixToBypassLookup, DirectoryObjectProperty = AzureADObjectProperty.OfficeLocation };
             Assert.Throws<InvalidOperationException>(() => Config.Update());
         }
 
@@ -107,7 +117,25 @@ namespace AzureCP.Tests
             // Set a EntityDataKey on an existing item and add a new item with the same EntityDataKey
             var firstCTConfig = Config.ClaimTypes.FirstOrDefault(x => !String.IsNullOrEmpty(x.ClaimType));
             firstCTConfig.EntityDataKey = entityDataKey;
-            ClaimTypeConfig ctConfig = new ClaimTypeConfig() { ClaimType = NonExistingClaimType, EntityDataKey = entityDataKey, DirectoryObjectProperty = AzureADObjectProperty.OfficeLocation };
+            ClaimTypeConfig ctConfig = new ClaimTypeConfig() { ClaimType = AvailableClaimType, EntityDataKey = entityDataKey, DirectoryObjectProperty = AvailableObjectProperty };
+            Assert.Throws<InvalidOperationException>(() => Config.Update());
+        }
+
+        [Test]
+        public void DuplicateDirectoryObjectProperty()
+        {
+            ClaimTypeConfig existingCTConfig = Config.ClaimTypes.FirstOrDefault(x => !String.IsNullOrEmpty(x.ClaimType) && x.EntityType == DirectoryObjectType.User);
+
+            // Create a new ClaimTypeConfig with a DirectoryObjectProperty already set should fail
+            ClaimTypeConfig ctConfig = new ClaimTypeConfig() { ClaimType = AvailableClaimType, EntityType = DirectoryObjectType.User, DirectoryObjectProperty = existingCTConfig.DirectoryObjectProperty };
+            Assert.Throws<InvalidOperationException>(() => Config.ClaimTypes.Add(ctConfig));
+
+            // Should be added successfully (for next test)
+            ctConfig.DirectoryObjectProperty = AvailableObjectProperty;
+            Config.ClaimTypes.Add(ctConfig);
+
+            // Update an existing ClaimTypeConfig with a DirectoryObjectProperty already set should fail
+            ctConfig.DirectoryObjectProperty = existingCTConfig.DirectoryObjectProperty;
             Assert.Throws<InvalidOperationException>(() => Config.Update());
         }
     }
