@@ -1182,7 +1182,7 @@ namespace azurecp
                     timer.Stop();
                 }
                 if (tenantResult != null)
-                    ClaimsProviderLogging.Log($"[{ProviderInternalName}] Got {tenantResult.UsersAndGroups.Count().ToString()} users/groups and {tenantResult.DomainsRegisteredInAzureADTenant.Count().ToString()} registered domains in {timer.ElapsedMilliseconds.ToString()} ms from '{tenant.TenantName}' with input '{currentContext.Input}'", TraceSeverity.Medium, EventSeverity.Information, TraceCategory.Lookup);
+                    ClaimsProviderLogging.Log($"[{ProviderInternalName}] Got {tenantResult.UsersAndGroups.Count().ToString()} users/groups in {timer.ElapsedMilliseconds.ToString()} ms from '{tenant.TenantName}' with input '{currentContext.Input}'", TraceSeverity.Medium, EventSeverity.Information, TraceCategory.Lookup);
                 else
                     ClaimsProviderLogging.Log($"[{ProviderInternalName}] Got no result from '{tenant.TenantName}' with input '{currentContext.Input}', search took {timer.ElapsedMilliseconds.ToString()} ms", TraceSeverity.Medium, EventSeverity.Information, TraceCategory.Lookup);
                 return tenantResult;
@@ -1304,12 +1304,12 @@ namespace azurecp
         {
             // Split results between users/groups and list of registered domains in the tenant
             List<DirectoryObject> usersAndGroups = new List<DirectoryObject>();
-            List<string> domains = new List<string>();
+            //List<string> domains = new List<string>();
             // For each Azure AD tenant
             foreach (AzureADResult tenantResults in azureADResults)
             {
                 usersAndGroups.AddRange(tenantResults.UsersAndGroups);
-                domains.AddRange(tenantResults.DomainsRegisteredInAzureADTenant);
+                //domains.AddRange(tenantResults.DomainsRegisteredInAzureADTenant);
             }
 
             // Return if no user / groups is found, or if no registered domain is found
