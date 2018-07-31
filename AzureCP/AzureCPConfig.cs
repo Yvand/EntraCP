@@ -177,8 +177,11 @@ namespace azurecp
             try
             {
                 AzureCPConfig persistedObject = parent.GetChild<AzureCPConfig>(persistedObjectName);
-                persistedObject.CheckAndCleanConfiguration(String.Empty);
-                return persistedObject;
+                if (persistedObject != null)
+                {
+                    persistedObject.CheckAndCleanConfiguration(String.Empty);
+                    return persistedObject;
+                }
             }
             catch (Exception ex)
             {
@@ -250,7 +253,8 @@ namespace azurecp
 
         public AzureCPConfig CopyPersistedProperties()
         {
-            AzureCPConfig copy = new AzureCPConfig(this.Name, this.Parent, this.SPTrustName);
+            AzureCPConfig copy = new AzureCPConfig();
+            copy.SPTrustName = this.SPTrustName;
             copy.AzureTenants = new List<AzureTenant>(this.AzureTenants);
             copy.ClaimTypes = new ClaimTypeConfigCollection();
             foreach (ClaimTypeConfig currentObject in this.ClaimTypes)
