@@ -1,4 +1,5 @@
-﻿using DataAccess;
+﻿using azurecp;
+using DataAccess;
 using Microsoft.SharePoint;
 using Microsoft.SharePoint.Administration;
 using Microsoft.SharePoint.Administration.Claims;
@@ -14,13 +15,17 @@ using System.Security.Claims;
 public class UnitTestsHelper
 {
     public const string ClaimsProviderName = "AzureCP";
+    public const string ClaimsProviderConfigName = "AzureCPConfig";
     public static Uri Context = new Uri("http://spsites/sites/AzureCP.UnitTests");
     public const int MaxTime = 50000;
     public const int TestRepeatCount = 50;
     public const string FarmAdmin = @"i:0#.w|contoso\yvand";
-    public const string NonExistentClaimValue = "IDoNotExist";
 
-    public const string TrustedGroupToAdd_ClaimValue = "a5e76528-a305-4345-8481-af345ea56032";
+    public const string RandomClaimType = "http://schemas.yvand.com/ws/claims/random";
+    public const string RandomClaimValue = "IDoNotExist";
+    public const AzureADObjectProperty RandomObjectProperty = AzureADObjectProperty.AccountEnabled;
+
+    public const string TrustedGroupToAdd_ClaimValue = "99abdc91-e6e0-475c-a0ba-5014f91de853";
     public const string TrustedGroupToAdd_ClaimType = "http://schemas.microsoft.com/ws/2008/06/identity/claims/role";
     private static SPBasePermissions TrustedGroupToAdd_PermissionsAssigned = SPBasePermissions.EditListItems;
 
@@ -36,12 +41,19 @@ public class UnitTestsHelper
     public static void CheckSiteCollection()
     {
         //return; // Uncommented when debugging AzureCP code from unit tests
+
+        AzureCPConfig config = AzureCPConfig.GetConfiguration(UnitTestsHelper.ClaimsProviderConfigName);
+        if (config == null)
+        {
+            AzureCPConfig.CreateConfiguration(ClaimsProviderConstants.AZURECPCONFIG_ID, ClaimsProviderConstants.AZURECPCONFIG_NAME, SPTrust.Name);
+        }
+
         SPWebApplication wa = SPWebApplication.Lookup(Context);
         if (wa != null)
         {
             Console.WriteLine($"Web app {wa.Name} found.");
             SPClaimProviderManager claimMgr = SPClaimProviderManager.Local;
-            SPClaim claim = new SPClaim(TrustedGroupToAdd_ClaimType, TrustedGroupToAdd_ClaimValue, "http://www.w3.org/2001/XMLSchema#string", SPOriginalIssuers.Format(SPOriginalIssuerType.TrustedProvider, SPTrust.Name));
+            SPClaim claim = new SPClaim(TrustedGroupToAdd_ClaimType, TrustedGroupToAdd_ClaimValue, ClaimValueTypes.String, SPOriginalIssuers.Format(SPOriginalIssuerType.TrustedProvider, SPTrust.Name));
             string encodedClaim = claimMgr.EncodeClaim(claim);
             SPUserInfo userInfo = new SPUserInfo { LoginName = encodedClaim, Name = TrustedGroupToAdd_ClaimValue };
 
@@ -73,7 +85,7 @@ public class UnitTestsHelper
     public static SPProviderHierarchyTree[] DoSearchOperation(string inputValue)
     {
         SPClaimProviderOperationOptions mode = SPClaimProviderOperationOptions.DisableHierarchyAugmentation;
-        string[] providerNames = new string[] { "AllUsers", "LDAPCP", "AzureCP", "AD" };
+        string[] providerNames = new string[] { "AllUsers", ClaimsProviderName, "AD" };
         string[] entityTypes = new string[] { "User", "SecGroup", "SharePointGroup", "System", "FormsRole" };
 
         SPProviderHierarchyTree[] providerResults = SPClaimProviderOperations.Search(UnitTestsHelper.Context, mode, providerNames, entityTypes, inputValue, 30);
@@ -98,8 +110,10 @@ public class UnitTestsHelper
         {
             // SPSite.RootWeb should not be disposed: https://blogs.msdn.microsoft.com/rogerla/2008/10/04/updated-spsite-rootweb-dispose-guidance/
             SPWeb rootWeb = site.RootWeb;
-            bool entityHasPerms = rootWeb.DoesUserHavePermissions(inputClaim.ToEncodedString(), TrustedGroupToAdd_PermissionsAssigned);
-            if (shouldHavePermissions) Assert.IsTrue(entityHasPerms);
+            SPBasePermissions effectivePermissions = rootWeb.GetUserEffectivePermissions(inputClaim.ToEncodedString());
+            bool hasPermissions = (effectivePermissions & TrustedGroupToAdd_PermissionsAssigned) == TrustedGroupToAdd_PermissionsAssigned;
+            if (shouldHavePermissions) Assert.IsTrue(hasPermissions);
+            else Assert.IsFalse(hasPermissions);
         }
     }
 

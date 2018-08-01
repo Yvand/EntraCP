@@ -8,15 +8,12 @@ namespace AzureCP.Tests
     [TestFixture]
     public class ModifyConfigTests
     {
-        public const string ClaimsProviderConfigName = "AzureCPConfig";
-        public const string AvailableClaimType = "http://schemas.yvand.com/ws/claims/random";
-        public const AzureADObjectProperty AvailableObjectProperty = AzureADObjectProperty.AccountEnabled;
         private AzureCPConfig Config;
 
         [OneTimeSetUp]
         public void Init()
         {
-            AzureCPConfig configFromConfigDB = AzureCPConfig.GetConfiguration(ClaimsProviderConfigName);
+            AzureCPConfig configFromConfigDB = AzureCPConfig.GetConfiguration(UnitTestsHelper.ClaimsProviderConfigName);
             // Create a local copy, otherwise changes will impact the whole process (even without calling Update method)
             Config = configFromConfigDB.CopyPersistedProperties();
             // Reset configuration to test its default for the tests
@@ -30,30 +27,30 @@ namespace AzureCP.Tests
 
             // Adding a ClaimTypeConfig with a claim type already set should fail
             ctConfig.ClaimType = UnitTestsHelper.SPTrust.IdentityClaimTypeInformation.MappedClaimType;
-            ctConfig.DirectoryObjectProperty = AvailableObjectProperty;
+            ctConfig.DirectoryObjectProperty = UnitTestsHelper.RandomObjectProperty;
             Assert.Throws<InvalidOperationException>(() => Config.ClaimTypes.Add(ctConfig));
 
             // Adding a ClaimTypeConfig with UseMainClaimTypeOfDirectoryObject = false (default value) and DirectoryObjectProperty not set should fail
-            ctConfig.ClaimType = AvailableClaimType;
+            ctConfig.ClaimType = UnitTestsHelper.RandomClaimType;
             ctConfig.DirectoryObjectProperty = AzureADObjectProperty.NotSet;
             Assert.Throws<InvalidOperationException>(() => Config.ClaimTypes.Add(ctConfig));
 
             // Adding a ClaimTypeConfig with UseMainClaimTypeOfDirectoryObject = true and ClaimType set should fail
-            ctConfig.ClaimType = AvailableClaimType;
-            ctConfig.DirectoryObjectProperty = AvailableObjectProperty;
+            ctConfig.ClaimType = UnitTestsHelper.RandomClaimType;
+            ctConfig.DirectoryObjectProperty = UnitTestsHelper.RandomObjectProperty;
             ctConfig.UseMainClaimTypeOfDirectoryObject = true;
             Assert.Throws<InvalidOperationException>(() => Config.ClaimTypes.Add(ctConfig));
 
             // Adding a ClaimTypeConfig with EntityType 'Group' should fail since 1 already exists by default and AzureCP allows only 1 claim type for EntityType 'Group'
-            ctConfig.ClaimType = AvailableClaimType;
-            ctConfig.DirectoryObjectProperty = AvailableObjectProperty;
+            ctConfig.ClaimType = UnitTestsHelper.RandomClaimType;
+            ctConfig.DirectoryObjectProperty = UnitTestsHelper.RandomObjectProperty;
             ctConfig.EntityType = DirectoryObjectType.Group;
             ctConfig.UseMainClaimTypeOfDirectoryObject = false;
             Assert.Throws<InvalidOperationException>(() => Config.ClaimTypes.Add(ctConfig));
 
             // Adding a valid ClaimTypeConfig should succeed
-            ctConfig.ClaimType = AvailableClaimType;
-            ctConfig.DirectoryObjectProperty = AvailableObjectProperty;
+            ctConfig.ClaimType = UnitTestsHelper.RandomClaimType;
+            ctConfig.DirectoryObjectProperty = UnitTestsHelper.RandomObjectProperty;
             ctConfig.EntityType = DirectoryObjectType.User;
             ctConfig.UseMainClaimTypeOfDirectoryObject = false;
             Assert.DoesNotThrow(() => Config.ClaimTypes.Add(ctConfig));
@@ -109,7 +106,7 @@ namespace AzureCP.Tests
             // Setting a PrefixToBypassLookup on an existing item and add a new item with the same PrefixToBypassLookup should fail
             var firstCTConfig = Config.ClaimTypes.FirstOrDefault(x => !String.IsNullOrEmpty(x.ClaimType));
             firstCTConfig.PrefixToBypassLookup = prefixToBypassLookup;
-            ClaimTypeConfig ctConfig = new ClaimTypeConfig() { ClaimType = AvailableClaimType, PrefixToBypassLookup = prefixToBypassLookup, DirectoryObjectProperty = AzureADObjectProperty.OfficeLocation };
+            ClaimTypeConfig ctConfig = new ClaimTypeConfig() { ClaimType = UnitTestsHelper.RandomClaimType, PrefixToBypassLookup = prefixToBypassLookup, DirectoryObjectProperty = AzureADObjectProperty.OfficeLocation };
             Assert.Throws<InvalidOperationException>(() => Config.Update());
         }
 
@@ -125,7 +122,7 @@ namespace AzureCP.Tests
             // Setting a EntityDataKey on an existing item and add a new item with the same EntityDataKey should fail
             var firstCTConfig = Config.ClaimTypes.FirstOrDefault(x => !String.IsNullOrEmpty(x.ClaimType));
             firstCTConfig.EntityDataKey = entityDataKey;
-            ClaimTypeConfig ctConfig = new ClaimTypeConfig() { ClaimType = AvailableClaimType, EntityDataKey = entityDataKey, DirectoryObjectProperty = AvailableObjectProperty };
+            ClaimTypeConfig ctConfig = new ClaimTypeConfig() { ClaimType = UnitTestsHelper.RandomClaimType, EntityDataKey = entityDataKey, DirectoryObjectProperty = UnitTestsHelper.RandomObjectProperty };
             Assert.Throws<InvalidOperationException>(() => Config.Update());
         }
 
@@ -135,11 +132,11 @@ namespace AzureCP.Tests
             ClaimTypeConfig existingCTConfig = Config.ClaimTypes.FirstOrDefault(x => !String.IsNullOrEmpty(x.ClaimType) && x.EntityType == DirectoryObjectType.User);
 
             // Create a new ClaimTypeConfig with a DirectoryObjectProperty already set should fail
-            ClaimTypeConfig ctConfig = new ClaimTypeConfig() { ClaimType = AvailableClaimType, EntityType = DirectoryObjectType.User, DirectoryObjectProperty = existingCTConfig.DirectoryObjectProperty };
+            ClaimTypeConfig ctConfig = new ClaimTypeConfig() { ClaimType = UnitTestsHelper.RandomClaimType, EntityType = DirectoryObjectType.User, DirectoryObjectProperty = existingCTConfig.DirectoryObjectProperty };
             Assert.Throws<InvalidOperationException>(() => Config.ClaimTypes.Add(ctConfig));
 
             // Should be added successfully (for next test)
-            ctConfig.DirectoryObjectProperty = AvailableObjectProperty;
+            ctConfig.DirectoryObjectProperty = UnitTestsHelper.RandomObjectProperty;
             Assert.DoesNotThrow(() => Config.ClaimTypes.Add(ctConfig));
 
             // Update an existing ClaimTypeConfig with a DirectoryObjectProperty already set should fail
