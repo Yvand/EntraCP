@@ -93,10 +93,11 @@ namespace azurecp
                     globalConfiguration = GetConfiguration(context, entityTypes, PersistedObjectName);
                     if (globalConfiguration == null)
                     {
-                        ClaimsProviderLogging.Log($"[{ProviderInternalName}] Configuration '{PersistedObjectName}' was not found. Visit AzureCP admin pages in central administration to create it.",
+                        ClaimsProviderLogging.Log($"[{ProviderInternalName}] Configuration '{PersistedObjectName}' was not found in configuration database, use default configuration instead. Visit AzureCP admin pages in central administration to create it.",
                             TraceSeverity.Unexpected, EventSeverity.Error, TraceCategory.Core);
                         // Cannot continue
-                        success = false;
+                        globalConfiguration = AzureCPConfig.ReturnDefaultConfiguration(SPTrust.Name);
+                        refreshConfig = true;
                     }
                     else
                     {
@@ -106,14 +107,6 @@ namespace azurecp
                     if (globalConfiguration.ClaimTypes == null || globalConfiguration.ClaimTypes.Count == 0)
                     {
                         ClaimsProviderLogging.Log($"[{ProviderInternalName}] Configuration '{PersistedObjectName}' was found but collection ClaimTypes is null or empty. Visit AzureCP admin pages in central administration to create it.",
-                            TraceSeverity.Unexpected, EventSeverity.Error, TraceCategory.Core);
-                        // Cannot continue 
-                        success = false;
-                    }
-
-                    if (globalConfiguration.AzureTenants == null || globalConfiguration.AzureTenants.Count == 0)
-                    {
-                        ClaimsProviderLogging.Log($"[{ProviderInternalName}] Configuration '{PersistedObjectName}' was found but there is no Azure AD tenant registered. Visit AzureCP admin pages in central administration to register one.",
                             TraceSeverity.Unexpected, EventSeverity.Error, TraceCategory.Core);
                         // Cannot continue 
                         success = false;
@@ -164,14 +157,13 @@ namespace azurecp
                     SetCustomConfiguration(context, entityTypes);
                     if (this.CurrentConfiguration.ClaimTypes == null)
                     {
-                        // this.CurrentConfiguration.ClaimTypes was set to null in SetCustomConfiguration, which is bad
-                        ClaimsProviderLogging.Log(String.Format("[{0}] ClaimTypes was set to null in SetCustomConfiguration, don't set it or set it with actual entries.", ProviderInternalName), TraceSeverity.Unexpected, EventSeverity.Error, TraceCategory.Core);
+                        ClaimsProviderLogging.Log($"[{ProviderInternalName}] List if claim types was set to null in method SetCustomConfiguration for configuration '{PersistedObjectName}'.", TraceSeverity.Unexpected, EventSeverity.Error, TraceCategory.Core);
                         return false;
                     }
 
                     if (this.CurrentConfiguration.AzureTenants == null || this.CurrentConfiguration.AzureTenants.Count == 0)
                     {
-                        ClaimsProviderLogging.Log(String.Format("[{0}] AzureTenants was not set. Override method SetCustomConfiguration to set it.", ProviderInternalName), TraceSeverity.Unexpected, EventSeverity.Error, TraceCategory.Core);
+                        ClaimsProviderLogging.Log($"[{ProviderInternalName}] There is no Azure tenant registered in the configuration '{PersistedObjectName}'. Visit AzureCP in central administration to add it, or override method SetCustomConfiguration.", TraceSeverity.Unexpected, EventSeverity.Error, TraceCategory.Core);
                         return false;
                     }
 

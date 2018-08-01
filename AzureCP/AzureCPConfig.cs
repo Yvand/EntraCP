@@ -74,7 +74,7 @@ namespace azurecp
             set
             {
                 _ClaimTypes = value;
-                _ClaimTypesCollection = value.innerCol;
+                _ClaimTypesCollection = value == null ? null : value.innerCol;
             }
         }
         [Persisted]
@@ -329,6 +329,12 @@ namespace azurecp
             if (String.IsNullOrWhiteSpace(spTrustName)) throw new ArgumentNullException("spTrustName cannot be null.");
 
             SPTrustedLoginProvider spTrust = SPSecurityTokenServiceManager.Local.TrustedLoginProviders.GetProviderByName(spTrustName);
+            if (spTrust == null)
+            {
+                ClaimsProviderLogging.Log($"SPTrustedLoginProvider '{spTrustName}' was not found ", TraceSeverity.Unexpected, EventSeverity.Error, TraceCategory.Core);
+                return null;
+            }
+
             return new ClaimTypeConfigCollection
             {
                 // Identity claim type. "Name" (http://schemas.xmlsoap.org/ws/2005/05/identity/claims/name) is a reserved claim type in SharePoint that cannot be used in the SPTrust.
