@@ -95,7 +95,7 @@ namespace azurecp
                     {
                         ClaimsProviderLogging.Log($"[{ProviderInternalName}] Configuration '{PersistedObjectName}' was not found in configuration database, use default configuration instead. Visit AzureCP admin pages in central administration to create it.",
                             TraceSeverity.Unexpected, EventSeverity.Error, TraceCategory.Core);
-                        // Cannot continue
+                        // Return default configuration and set refreshConfig to true to give a chance to deprecated method SetCustomConfiguration() to set AzureTenants list
                         globalConfiguration = AzureCPConfig.ReturnDefaultConfiguration(SPTrust.Name);
                         refreshConfig = true;
                     }
@@ -163,7 +163,7 @@ namespace azurecp
 
                     if (this.CurrentConfiguration.AzureTenants == null || this.CurrentConfiguration.AzureTenants.Count == 0)
                     {
-                        ClaimsProviderLogging.Log($"[{ProviderInternalName}] There is no Azure tenant registered in the configuration '{PersistedObjectName}'. Visit AzureCP in central administration to add it, or override method SetCustomConfiguration.", TraceSeverity.Unexpected, EventSeverity.Error, TraceCategory.Core);
+                        ClaimsProviderLogging.Log($"[{ProviderInternalName}] There is no Azure tenant registered in the configuration '{PersistedObjectName}'. Visit AzureCP in central administration to add it, or override method GetConfiguration.", TraceSeverity.Unexpected, EventSeverity.Error, TraceCategory.Core);
                         return false;
                     }
 
