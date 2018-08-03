@@ -40,14 +40,12 @@ namespace AzureCP.Tests
             ctConfig.PrefixToBypassLookup = "ext:";
             Config.Update();
 
-            SPProviderHierarchyTree[] providerResults = UnitTestsHelper.DoSearchOperation(inputValue);
-            UnitTestsHelper.VerifySearchResult(providerResults, expectedCount, expectedClaimValue);
+            UnitTestsHelper.TestSearchOperation(inputValue, expectedCount, expectedClaimValue);
 
             if (expectedCount > 0)
             {
                 SPClaim inputClaim = new SPClaim(UnitTestsHelper.SPTrust.IdentityClaimTypeInformation.MappedClaimType, expectedClaimValue, ClaimValueTypes.String, SPOriginalIssuers.Format(SPOriginalIssuerType.TrustedProvider, UnitTestsHelper.SPTrust.Name));
-                PickerEntity[] entities = UnitTestsHelper.DoValidationOperation(inputClaim);
-                UnitTestsHelper.VerifyValidationResult(entities, true, expectedClaimValue);
+                UnitTestsHelper.TestValidationOperation(inputClaim, true, expectedClaimValue);
             }
         }
 
@@ -57,12 +55,10 @@ namespace AzureCP.Tests
             Config.AlwaysResolveUserInput = true;
             Config.Update();
 
-            SPProviderHierarchyTree[] providerResults = UnitTestsHelper.DoSearchOperation(UnitTestsHelper.RandomClaimValue);
-            UnitTestsHelper.VerifySearchResult(providerResults, 2, UnitTestsHelper.RandomClaimValue);
+            UnitTestsHelper.TestSearchOperation(UnitTestsHelper.RandomClaimValue, 2, UnitTestsHelper.RandomClaimValue);
 
             SPClaim inputClaim = new SPClaim(UnitTestsHelper.SPTrust.IdentityClaimTypeInformation.MappedClaimType, UnitTestsHelper.RandomClaimValue, ClaimValueTypes.String, SPOriginalIssuers.Format(SPOriginalIssuerType.TrustedProvider, UnitTestsHelper.SPTrust.Name));
-            PickerEntity[] entities = UnitTestsHelper.DoValidationOperation(inputClaim);
-            UnitTestsHelper.VerifyValidationResult(entities, true, UnitTestsHelper.RandomClaimValue);
+            UnitTestsHelper.TestValidationOperation(inputClaim, true, UnitTestsHelper.RandomClaimValue);
 
             Config.AlwaysResolveUserInput = false;
             Config.Update();

@@ -33,13 +33,13 @@ namespace AzureCP.Tests
         [MaxTime(UnitTestsHelper.MaxTime)]
         public void AugmentEntity(ValidateEntityData registrationData)
         {
-            UnitTestsHelper.DoAugmentationOperationAndVerifyResult(UnitTestsHelper.SPTrust.IdentityClaimTypeInformation.MappedClaimType, registrationData.ClaimValue, registrationData.IsMemberOfTrustedGroup);
+            UnitTestsHelper.TestAugmentationOperation(UnitTestsHelper.SPTrust.IdentityClaimTypeInformation.MappedClaimType, registrationData.ClaimValue, registrationData.IsMemberOfTrustedGroup);
         }
 
         [TestCase("i:05.t|contoso.local|xyd@FAKE.onmicrosoft.com", false)]
         public void DEBUG_AugmentEntity(string claimValue, bool shouldHavePermissions)
         {
-            UnitTestsHelper.DoAugmentationOperationAndVerifyResult(UnitTestsHelper.SPTrust.IdentityClaimTypeInformation.MappedClaimType, claimValue, shouldHavePermissions);
+            UnitTestsHelper.TestAugmentationOperation(UnitTestsHelper.SPTrust.IdentityClaimTypeInformation.MappedClaimType, claimValue, shouldHavePermissions);
         }
     }
 }
