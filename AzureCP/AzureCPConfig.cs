@@ -414,7 +414,8 @@ namespace azurecp
                 {
                     try
                     {
-                        SPContext.Current.Web.AllowUnsafeUpdates = true;
+                        // SPContext may be null if code does not run in a SharePoint process (e.g. in unit tests process)
+                        if (SPContext.Current != null) SPContext.Current.Web.AllowUnsafeUpdates = true;
                         this.Update();
                         ClaimsProviderLogging.Log($"Configuration '{this.Name}' was not compatible with current version of AzureCP and was updated in configuration database. Some settings were reset to their default configuration",
                             TraceSeverity.High, EventSeverity.Information, TraceCategory.Core);
@@ -427,7 +428,7 @@ namespace azurecp
                     }
                     finally
                     {
-                        SPContext.Current.Web.AllowUnsafeUpdates = false;
+                        if (SPContext.Current != null) SPContext.Current.Web.AllowUnsafeUpdates = false;
                     }
                 }
             }
