@@ -9,6 +9,7 @@
 * Added method ClaimTypeConfigCollection.GetByClaimType()
 * Implemented unit tests
 * Explicitely encode HTML messages shown in admin pages and renderred from server side code to comply with tools scanning code to detect security vulnerabilities
+* Fixed display text of groups that were not using the expected format "(GROUP) groupname"
 
 
 ## AzureCP v12 enhancements & bug-fixes - Published in June 7, 2018

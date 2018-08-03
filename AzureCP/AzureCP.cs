@@ -247,6 +247,7 @@ namespace azurecp
                         if (MainGroupClaimTypeConfig == null) continue;
                         claimTypeConfig.ClaimType = MainGroupClaimTypeConfig.ClaimType;
                         claimTypeConfig.DirectoryObjectPropertyToShowAsDisplayText = MainGroupClaimTypeConfig.DirectoryObjectPropertyToShowAsDisplayText;
+                        claimTypeConfig.ClaimTypeDisplayName = MainGroupClaimTypeConfig.ClaimTypeDisplayName;
                     }
                     additionalClaimTypeConfigList.Add(claimTypeConfig);
                 }
@@ -461,15 +462,15 @@ namespace azurecp
         /// Override this method to customize display text of permission created
         /// </summary>
         /// <param name="entity"></param>
-        /// <param name="isIdentityClaimType"></param>
+        /// <param name="isMappedClaimTypeConfig"></param>
         /// <param name="result"></param>
         /// <returns></returns>
-        protected virtual string FormatPermissionDisplayText(PickerEntity entity, bool isIdentityClaimType, AzureCPResult result)
+        protected virtual string FormatPermissionDisplayText(PickerEntity entity, bool isMappedClaimTypeConfig, AzureCPResult result)
         {
             string entityDisplayText = this.CurrentConfiguration.EntityDisplayTextPrefix;
             if (result.ClaimTypeConfig.DirectoryObjectPropertyToShowAsDisplayText != AzureADObjectProperty.NotSet)
             {
-                if (!isIdentityClaimType) entityDisplayText += "(" + result.ClaimTypeConfig.ClaimTypeDisplayName + ") ";
+                if (!isMappedClaimTypeConfig || result.ClaimTypeConfig.EntityType == DirectoryObjectType.Group) entityDisplayText += "(" + result.ClaimTypeConfig.ClaimTypeDisplayName + ") ";
 
                 string graphPropertyToDisplayValue = GetPropertyValue(result.UserOrGroupResult, result.ClaimTypeConfig.DirectoryObjectPropertyToShowAsDisplayText.ToString());
                 if (!String.IsNullOrEmpty(graphPropertyToDisplayValue)) entityDisplayText += graphPropertyToDisplayValue;
@@ -477,7 +478,7 @@ namespace azurecp
             }
             else
             {
-                if (isIdentityClaimType)
+                if (isMappedClaimTypeConfig)
                 {
                     entityDisplayText += result.QueryMatchValue;
                 }
