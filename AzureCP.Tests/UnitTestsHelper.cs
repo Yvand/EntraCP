@@ -19,7 +19,7 @@ public class UnitTestsHelper
     public const string ClaimsProviderConfigName = "AzureCPConfig";
     public static Uri Context = new Uri("http://spsites/sites/AzureCP.UnitTests");
     public const int MaxTime = 50000;
-    public const int TestRepeatCount = 50;
+    public const int TestRepeatCount = 100;
     public const string FarmAdmin = @"i:0#.w|contoso\yvand";
 
     public const string RandomClaimType = "http://schemas.yvand.com/ws/claims/random";
@@ -138,11 +138,13 @@ public class UnitTestsHelper
         SPClaim[] groups = ClaimsProvider.GetClaimsForEntity(context, inputClaim);
 
         bool groupFound = false;
-        if (groups != null && groups.Contains(TrustedGroup)) groupFound = true;
+        if (groups != null && groups.Contains(TrustedGroup))
+            groupFound = true;
+
         if (isMemberOfTrustedGroup)
-        {
-            Assert.IsTrue(groupFound, $"Entity \"{claimValue}\" should be member of group \"{TrustedGroupToAdd_ClaimValue}\" but is not.");
-        }
+            Assert.IsTrue(groupFound, $"Entity \"{claimValue}\" should be member of group \"{TrustedGroupToAdd_ClaimValue}\", but this group was not found in the claims returned by the claims provider.");
+        else
+            Assert.IsFalse(groupFound, $"Entity \"{claimValue}\" should NOT be member of group \"{TrustedGroupToAdd_ClaimValue}\", but this group was found in the claims returned by the claims provider.");
     }
 }
 

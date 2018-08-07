@@ -30,7 +30,7 @@ namespace AzureCP.Tests
         }
 
         [Test, TestCaseSource(typeof(ValidateEntityDataSource), "GetTestData")]
-        [MaxTime(UnitTestsHelper.MaxTime)]
+        [Repeat(UnitTestsHelper.TestRepeatCount)]
         public void AugmentEntity(ValidateEntityData registrationData)
         {
             UnitTestsHelper.TestAugmentationOperation(UnitTestsHelper.SPTrust.IdentityClaimTypeInformation.MappedClaimType, registrationData.ClaimValue, registrationData.IsMemberOfTrustedGroup);

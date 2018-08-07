@@ -664,6 +664,7 @@ namespace azurecp
             List<SPClaim> groups = new List<SPClaim>();
 
             // Create a task for each tenant to query
+            // Using list CurrentConfiguration.AzureTenants directly doesn't cause thread safety issues because no property from this list is written during augmentation
             var tenantQueryTasks = this.CurrentConfiguration.AzureTenants.Select(async tenant =>
             {
                 return await GetGroupMembershipFromAzureADAsync(currentContext, groupClaimTypeSettings, tenant).ConfigureAwait(false);
@@ -1002,9 +1003,7 @@ namespace azurecp
             string userSelect = String.Empty;
             string groupSelect = String.Empty;
 
-            // BUG: FILTERS MUST BE SET IN AN OBJECT CREATED IN THIS METHOD (TO BE BOUND TO CURRENT THREAD), OTHERWISE FILTER MAY BE UPDATED BY MULTIPLE THREADS
-            // Somehow, this constructor is not working, AzureTenant must be explicitely copied into new list
-            //List<AzureTenant> azureTenants = new List<AzureTenant>(this.CurrentConfiguration.AzureTenants);
+            // BUG: Filters must be set in an object created in this method (to be bound to current thread), otherwise filter may be updated by multiple threads
             List<AzureTenant> azureTenants = new List<AzureTenant>(this.CurrentConfiguration.AzureTenants.Count);
             foreach (AzureTenant tenant in this.CurrentConfiguration.AzureTenants)
             {
