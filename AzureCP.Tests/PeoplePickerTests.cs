@@ -31,7 +31,7 @@ namespace AzureCP.Tests
             UnitTestsHelper.TestSearchOperation(inputValue, Convert.ToInt32(expectedCount), expectedClaimValue);
         }
 
-        //[TestCase(@"AADGroup1", 1, "5b0f6c56-c87f-44c3-9354-56cba03da433")]
+        [TestCase(@"AADGroup1", 1, "5b0f6c56-c87f-44c3-9354-56cba03da433")]
         public void DEBUG_SearchEntities(string inputValue, int expectedResultCount, string expectedEntityClaimValue)
         {
             UnitTestsHelper.TestSearchOperation(inputValue, expectedResultCount, expectedEntityClaimValue);

@@ -68,5 +68,24 @@ namespace AzureCP.Tests
                 Config.Update();
             }
         }
+
+        [Test, TestCaseSource(typeof(ValidateEntityDataSource), "GetTestData")]
+        //[Repeat(UnitTestsHelper.TestRepeatCount)]
+        public void RequireExactMatchDuringSearch(ValidateEntityData registrationData)
+        {
+            Config.FilterExactMatchOnly = true;
+            Config.Update();
+
+            try
+            {
+                int expectedCount = registrationData.ShouldValidate ? 1 : 0;
+                UnitTestsHelper.TestSearchOperation(registrationData.ClaimValue, expectedCount, registrationData.ClaimValue);
+            }
+            finally
+            {
+                Config.FilterExactMatchOnly = false;
+                Config.Update();
+            }
+        }
     }
 }
