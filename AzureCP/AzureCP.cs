@@ -216,7 +216,6 @@ namespace azurecp
                     {
                         // Identity claim type found, set IdentityClaimTypeConfig property
                         identityClaimTypeFound = true;
-                        //IdentityClaimTypeConfig = claimTypeConfig as IdentityClaimTypeConfig;
                         IdentityClaimTypeConfig = IdentityClaimTypeConfig.ConvertClaimTypeConfig(claimTypeConfig);
                     }
                     else if (!groupClaimTypeFound && claimTypeConfig.EntityType == DirectoryObjectType.Group)

@@ -408,6 +408,47 @@ namespace azurecp
                 this.ClaimTypes.SPTrust = this.SPTrust;
             }
 
+            // Starting with v13, adding 2 times a ClaimTypeConfig with the same EntityType and same DirectoryObjectProperty throws an InvalidOperationException
+            // But this was possible before, so list this.ClaimTypes must be checked to be sure we are not in this scenario, and cleaned if so
+            foreach (DirectoryObjectType entityType in Enum.GetValues(typeof(DirectoryObjectType)))
+            {
+                var duplicatedPropertiesList = this.ClaimTypes.Where(x => x.EntityType == entityType)   // Check 1 EntityType
+                                                          .GroupBy(x => x.DirectoryObjectProperty)      // Group by DirectoryObjectProperty
+                                                          .Select(x => new
+                                                          {
+                                                              DirectoryObjectProperty = x.Key,
+                                                              ObjectCount = x.Count()                   // For each DirectoryObjectProperty, how many items found
+                                                          })
+                                                          .Where(x => x.ObjectCount > 1);               // Keep only DirectoryObjectProperty found more than 1 time (for a given EntityType)
+                foreach (var duplicatedProperty in duplicatedPropertiesList)
+                {
+                    ClaimTypeConfig ctConfigToDelete = null;
+                    if (SPTrust != null && entityType == DirectoryObjectType.User)
+                        ctConfigToDelete = this.ClaimTypes.FirstOrDefault(x => x.DirectoryObjectProperty == duplicatedProperty.DirectoryObjectProperty && x.EntityType == entityType && !String.Equals(x.ClaimType, SPTrust.IdentityClaimTypeInformation.MappedClaimType, StringComparison.InvariantCultureIgnoreCase));
+                    else
+                        ctConfigToDelete = this.ClaimTypes.FirstOrDefault(x => x.DirectoryObjectProperty == duplicatedProperty.DirectoryObjectProperty && x.EntityType == entityType);
+
+                    this.ClaimTypes.Remove(ctConfigToDelete);
+                    objectCleaned = true;
+                    ClaimsProviderLogging.Log($"Removed claim type '{ctConfigToDelete.ClaimType}' from list of claim types because it duplicates property {ctConfigToDelete.DirectoryObjectProperty}",
+                       TraceSeverity.High, EventSeverity.Information, TraceCategory.Core);
+                }
+            }
+
+            // Starting with v13, identity claim type is automatically detected and added when list is reset to default (so it should always be present)
+            // And it has its own class IdentityClaimTypeConfig that must be present as is to work correctly with Guest accounts
+            if (this.SPTrust != null)
+            {
+                ClaimTypeConfig identityCTConfig = this.ClaimTypes.FirstOrDefault(x => String.Equals(x.ClaimType, SPTrust.IdentityClaimTypeInformation.MappedClaimType, StringComparison.InvariantCultureIgnoreCase));
+                if (identityCTConfig == null || !(identityCTConfig is IdentityClaimTypeConfig))
+                {
+                    this.ClaimTypes = ReturnDefaultClaimTypesConfig(this.SPTrustName);
+                    ClaimsProviderLogging.Log($"Claims list was reset because the identity claim type was not found or not using the right format",
+                       TraceSeverity.High, EventSeverity.Information, TraceCategory.Core);
+                    objectCleaned = true;
+                }
+            }
+
             if (objectCleaned)
             {
                 if (Version > 0)
@@ -417,7 +458,7 @@ namespace azurecp
                         // SPContext may be null if code does not run in a SharePoint process (e.g. in unit tests process)
                         if (SPContext.Current != null) SPContext.Current.Web.AllowUnsafeUpdates = true;
                         this.Update();
-                        ClaimsProviderLogging.Log($"Configuration '{this.Name}' was not compatible with current version of AzureCP and was updated in configuration database. Some settings were reset to their default configuration",
+                        ClaimsProviderLogging.Log($"Configuration '{this.Name}' was not compatible with current version of AzureCP and was updated in configuration database. Some settings were updated or reset to their default configuration",
                             TraceSeverity.High, EventSeverity.Information, TraceCategory.Core);
                     }
                     catch (Exception ex)
