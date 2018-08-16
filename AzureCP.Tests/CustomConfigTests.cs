@@ -19,7 +19,7 @@ namespace AzureCP.Tests
         public void Init()
         {
             Console.WriteLine($"Starting custom config test {TestContext.CurrentContext.Test.Name}...");
-            Config = AzureCPConfig.GetConfiguration(UnitTestsHelper.ClaimsProviderConfigName);
+            Config = AzureCPConfig.GetConfiguration(UnitTestsHelper.ClaimsProviderConfigName, UnitTestsHelper.SPTrust.Name);
             BackupConfig = Config.CopyPersistedProperties();
             Config.ResetClaimTypesList();
         }

@@ -90,7 +90,7 @@ namespace azurecp
                     }
                     if (!CheckIfShouldProcessInput(context)) return false;
 
-                    globalConfiguration = GetConfiguration(context, entityTypes, PersistedObjectName);
+                    globalConfiguration = GetConfiguration(context, entityTypes, PersistedObjectName, SPTrust.Name);
                     if (globalConfiguration == null)
                     {
                         ClaimsProviderLogging.Log($"[{ProviderInternalName}] Configuration '{PersistedObjectName}' was not found in configuration database, use default configuration instead. Visit AzureCP admin pages in central administration to create it.",
@@ -274,9 +274,9 @@ namespace azurecp
         /// To use a custom persisted object, override property PersistedObjectName and set its name
         /// </summary>
         /// <returns></returns>
-        protected virtual IAzureCPConfiguration GetConfiguration(Uri context, string[] entityTypes, string persistedObjectName)
+        protected virtual IAzureCPConfiguration GetConfiguration(Uri context, string[] entityTypes, string persistedObjectName, string spTrustName)
         {
-            return AzureCPConfig.GetConfiguration(persistedObjectName);
+            return AzureCPConfig.GetConfiguration(persistedObjectName, spTrustName);
         }
 
         /// <summary>

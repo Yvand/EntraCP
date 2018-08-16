@@ -48,7 +48,7 @@ namespace azurecp.ControlTemplates
                 {
                     if (_PersistedObject == null)
                     {
-                        _PersistedObject = AzureCPConfig.GetConfiguration(PersistedObjectName);
+                        _PersistedObject = AzureCPConfig.GetConfiguration(PersistedObjectName, this.CurrentTrustedLoginProvider.Name);
                     }
                     if (_PersistedObject == null)
                     {
@@ -172,7 +172,8 @@ namespace azurecp.ControlTemplates
                 return Status;
             }
 
-            PersistedObject.CheckAndCleanConfiguration(CurrentTrustedLoginProvider.Name);
+            // AzureCPConfig.GetConfiguration will call method AzureCPConfig.CheckAndCleanConfiguration();
+            //PersistedObject.CheckAndCleanConfiguration(CurrentTrustedLoginProvider.Name);
             PersistedObject.ClaimTypes.SPTrust = CurrentTrustedLoginProvider;
             if (IdentityClaim == null && Status == ConfigStatus.AllGood)
             {

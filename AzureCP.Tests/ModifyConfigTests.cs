@@ -14,7 +14,7 @@ namespace AzureCP.Tests
         [OneTimeSetUp]
         public void Init()
         {
-            AzureCPConfig configFromConfigDB = AzureCPConfig.GetConfiguration(UnitTestsHelper.ClaimsProviderConfigName);
+            AzureCPConfig configFromConfigDB = AzureCPConfig.GetConfiguration(UnitTestsHelper.ClaimsProviderConfigName, UnitTestsHelper.SPTrust.Name);
             // Create a local copy, otherwise changes will impact the whole process (even without calling Update method)
             Config = configFromConfigDB.CopyPersistedProperties();
             // Reset configuration to test its default for the tests

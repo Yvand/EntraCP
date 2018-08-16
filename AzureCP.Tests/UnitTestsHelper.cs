@@ -43,7 +43,7 @@ public class UnitTestsHelper
     {
         //return; // Uncommented when debugging AzureCP code from unit tests
 
-        AzureCPConfig config = AzureCPConfig.GetConfiguration(UnitTestsHelper.ClaimsProviderConfigName);
+        AzureCPConfig config = AzureCPConfig.GetConfiguration(UnitTestsHelper.ClaimsProviderConfigName, UnitTestsHelper.SPTrust.Name);
         if (config == null)
         {
             AzureCPConfig.CreateConfiguration(ClaimsProviderConstants.AZURECPCONFIG_ID, ClaimsProviderConstants.AZURECPCONFIG_NAME, SPTrust.Name);

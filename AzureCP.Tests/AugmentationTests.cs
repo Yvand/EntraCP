@@ -15,7 +15,7 @@ namespace AzureCP.Tests
         public void Init()
         {
             Console.WriteLine($"Starting augmentation test {TestContext.CurrentContext.Test.Name}...");
-            Config = AzureCPConfig.GetConfiguration(UnitTestsHelper.ClaimsProviderConfigName);
+            Config = AzureCPConfig.GetConfiguration(UnitTestsHelper.ClaimsProviderConfigName, UnitTestsHelper.SPTrust.Name);
             BackupConfig = Config.CopyPersistedProperties();
             Config.EnableAugmentation = true;
             Config.Update();

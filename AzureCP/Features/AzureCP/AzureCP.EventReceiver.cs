@@ -62,11 +62,14 @@ namespace azurecp
             SPSecurity.RunWithElevatedPrivileges(delegate ()
             {
                 ClaimsProviderLogging svc = ClaimsProviderLogging.Local;
-                AzureCPConfig config = AzureCPConfig.GetConfiguration(ClaimsProviderConstants.AZURECPCONFIG_NAME);
-                if (config != null)
-                {
-                    config.CheckAndCleanConfiguration(String.Empty);
-                }
+                var spTrust = AzureCP.GetSPTrustAssociatedWithCP(AzureCP._ProviderInternalName);
+                string spTrustName = spTrust == null ? String.Empty : spTrust.Name;
+                // AzureCPConfig.GetConfiguration will call method AzureCPConfig.CheckAndCleanConfiguration();
+                AzureCPConfig config = AzureCPConfig.GetConfiguration(ClaimsProviderConstants.AZURECPCONFIG_NAME, spTrustName);
+                //if (config != null)
+                //{
+                //    config.CheckAndCleanConfiguration(spTrustName);
+                //}
             });
         }
     }
