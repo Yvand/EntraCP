@@ -59,6 +59,10 @@ namespace azurecp
 
         public override void FeatureUpgrading(SPFeatureReceiverProperties properties, string upgradeActionName, IDictionary<string, string> parameters)
         {
+            // Upgrade must be explicitely triggered as documented in https://www.sharepointnutsandbolts.com/2010/06/feature-upgrade-part-1-fundamentals.html
+            // In PowerShell: 
+            // $feature = [Microsoft.SharePoint.Administration.SPWebService]::AdministrationService.Features["d1817470-ca9f-4b0c-83c5-ea61f9b0660d"]
+            // $feature.Upgrade($false)
             SPSecurity.RunWithElevatedPrivileges(delegate ()
             {
                 ClaimsProviderLogging svc = ClaimsProviderLogging.Local;

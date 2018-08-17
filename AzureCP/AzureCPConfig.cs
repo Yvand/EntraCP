@@ -409,9 +409,9 @@ namespace azurecp
 
             if (!String.IsNullOrEmpty(spTrustName) && !String.Equals(this.SPTrustName, spTrustName, StringComparison.InvariantCultureIgnoreCase))
             {
-                this.SPTrustName = spTrustName;
-                ClaimsProviderLogging.Log($"Updated property SPTrustName to \"{this.SPTrustName}\" in configuration \"{base.DisplayName}\".",
+                ClaimsProviderLogging.Log($"Updated property SPTrustName from \"{this.SPTrustName}\" to \"{spTrustName}\" in configuration \"{base.DisplayName}\".",
                     TraceSeverity.Medium, EventSeverity.Information, TraceCategory.Core);
+                this.SPTrustName = spTrustName;
                 configUpdated = true;
             }
 
