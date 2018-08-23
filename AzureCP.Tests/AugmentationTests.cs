@@ -38,7 +38,6 @@ namespace AzureCP.Tests
 
         [TestCase("i:05.t|contoso.local|xyd@FAKE.onmicrosoft.com", false)]
         [TestCase("i:05.t|contoso.local|aadUser1@yvandev.onmicrosoft.com", true)]
-        [TestCase("i:05.t|contoso.local|yvand@outlook.com", true)]
         public void DEBUG_AugmentEntity(string claimValue, bool shouldHavePermissions)
         {
             UnitTestsHelper.TestAugmentationOperation(UnitTestsHelper.SPTrust.IdentityClaimTypeInformation.MappedClaimType, claimValue, shouldHavePermissions);
