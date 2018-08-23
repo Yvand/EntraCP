@@ -68,6 +68,8 @@ namespace azurecp.ControlTemplates
                 this.RbIdentityCustomGraphProperty.Checked = true;
                 this.DDLGraphPropertyToDisplay.Items.FindByValue(((int)IdentityClaim.DirectoryObjectPropertyToShowAsDisplayText).ToString()).Selected = true;
             }
+            this.DDLDirectoryPropertyMemberUsers.Items.FindByValue(((int)IdentityClaim.DirectoryObjectProperty).ToString()).Selected = true;
+            this.DDLDirectoryPropertyGuestUsers.Items.FindByValue(((int)IdentityClaim.DirectoryObjectPropertyForGuestUsers).ToString()).Selected = true;
             this.ChkAlwaysResolveUserInput.Checked = PersistedObject.AlwaysResolveUserInput;
             this.ChkFilterExactMatchOnly.Checked = PersistedObject.FilterExactMatchOnly;
             this.ChkAugmentAADRoles.Checked = PersistedObject.EnableAugmentation;
@@ -85,7 +87,10 @@ namespace azurecp.ControlTemplates
                 if (pi == null) continue;
                 if (pi.PropertyType != typeof(System.String)) continue;
 
+                //System.Web.UI.WebControls.ListItem listItem = new System.Web.UI.WebControls.ListItem(prop.ToString(), ((int)prop).ToString());
                 this.DDLGraphPropertyToDisplay.Items.Add(new System.Web.UI.WebControls.ListItem(prop.ToString(), ((int)prop).ToString()));
+                this.DDLDirectoryPropertyMemberUsers.Items.Add(new System.Web.UI.WebControls.ListItem(prop.ToString(), ((int)prop).ToString()));
+                this.DDLDirectoryPropertyGuestUsers.Items.Add(new System.Web.UI.WebControls.ListItem(prop.ToString(), ((int)prop).ToString()));
             }
         }
 

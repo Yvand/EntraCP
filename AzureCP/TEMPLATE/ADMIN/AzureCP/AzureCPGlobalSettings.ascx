@@ -54,7 +54,7 @@
     #divNewLdapConnection fieldset {
         border: 1;
         margin: 0;
-		padding: 0;
+        padding: 0;
     }
 
         #divNewLdapConnection fieldset ul {
@@ -181,10 +181,26 @@
     </wssuc:inputformsection>
     <wssuc:inputformsection runat="server" title="Display of entities created with identity claim type" description="Customize the display text of entities created with identity claim type (which is defined in the TrustedLoginProvider).<br/>It does not change the actual value of the entity.">
         <template_inputformcontrols>
+                <div id="divUserIdentifiers">
+				<fieldset>
+					<legend>User identifier property</legend>
+					<ul>
+						<li>
+							<label>User identifier for 'Member' users:</label>
+							<asp:DropDownList runat="server" ID="DDLDirectoryPropertyMemberUsers" class="ms-input">
+							</asp:DropDownList>
+						</li>
+						<li>
+							<label>User identifier for 'Guest' users:</label>
+							<asp:DropDownList runat="server" ID="DDLDirectoryPropertyGuestUsers" class="ms-input">
+							</asp:DropDownList>
+						</li>
+				</fieldset>
+				</div>
 				<wssawc:InputFormRadioButton id="RbIdentityDefault"
 					LabelText="Display the UserPrincipalName"
 					Checked="true"
-					GroupName="RbIdentityDisplay"
+                    GroupName="RbIdentityDisplay"
 					CausesValidation="false"
 					runat="server" >
                 </wssawc:InputFormRadioButton>

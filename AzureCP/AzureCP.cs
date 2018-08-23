@@ -694,7 +694,7 @@ namespace azurecp
             if (user == null)
             {
                 // If user was not found, he might be a Guest user. Query to check this: /users?$filter=userType eq 'Guest' and mail eq 'guest@live.com'&$select=userPrincipalName, Id
-                string guestFilter = HttpUtility.UrlEncode($"userType eq 'Guest' and mail eq '{currentContext.IncomingEntity.Value}'");
+                string guestFilter = HttpUtility.UrlEncode($"userType eq 'Guest' and {IdentityClaimTypeConfig.DirectoryObjectPropertyForGuestUsers} eq '{currentContext.IncomingEntity.Value}'");
                 userResult = await tenant.GraphService.Users.Request().Filter(guestFilter).Select(HttpUtility.UrlEncode("userPrincipalName, Id")).GetAsync().ConfigureAwait(false);
                 user = userResult.FirstOrDefault();
                 if (user == null) return claims;
@@ -704,6 +704,7 @@ namespace azurecp
             {
                 // POST to /v1.0/users/user@TENANT.onmicrosoft.com/microsoft.graph.getMemberGroups is the preferred way to return security groups as it includes nested groups
                 // But it returns only the group IDs so it can be used only if groupClaimTypeConfig.DirectoryObjectProperty == AzureADObjectProperty.Id
+                // For Guest users, it must be the id: POST to /v1.0/users/18ff6ae9-dd01-4008-a786-aabf71f1492a/microsoft.graph.getMemberGroups
                 IDirectoryObjectGetMemberGroupsCollectionPage groupIDs = await tenant.GraphService.Users[user.Id].GetMemberGroups(true).Request().PostAsync().ConfigureAwait(false);
                 bool morePages = groupIDs?.Count > 0;
                 while (morePages)
