@@ -165,7 +165,7 @@ namespace AzureCP.Tests
             configUpdated = Config.ClaimTypes.UpdateUserIdentifier(backupIdentityCTConfig.DirectoryObjectProperty);
             Assert.IsFalse(configUpdated, $"Update user identifier with the same AzureADObjectProperty should not change anything and return false");
 
-            // Gest UserType
+            // Guest UserType
             Assert.Throws<ArgumentNullException>(() => Config.ClaimTypes.UpdateIdentifierForGuestUsers(AzureADObjectProperty.NotSet), $"Update user identifier of Guest UserType with value NotSet should throw exception ArgumentNullException");
 
             configUpdated = Config.ClaimTypes.UpdateIdentifierForGuestUsers(UnitTestsHelper.RandomObjectProperty);

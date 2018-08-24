@@ -1,9 +1,8 @@
+using Microsoft.SharePoint;
+using Microsoft.SharePoint.Administration;
+using Microsoft.SharePoint.Administration.Claims;
 using System;
 using System.Runtime.InteropServices;
-using System.Security.Permissions;
-using Microsoft.SharePoint;
-using Microsoft.SharePoint.Administration.Claims;
-using System.Collections.Generic;
 
 namespace azurecp
 {
@@ -36,7 +35,25 @@ namespace azurecp
             base.FeatureActivated(properties);
             SPSecurity.RunWithElevatedPrivileges(delegate ()
             {
-                ClaimsProviderLogging svc = ClaimsProviderLogging.Local;
+                try
+                {
+                    ClaimsProviderLogging svc = ClaimsProviderLogging.Local;
+                    ClaimsProviderLogging.Log($"[{AzureCP._ProviderInternalName}] Activating farm-scoped feature for claims provider \"{AzureCP._ProviderInternalName}\"", TraceSeverity.High, EventSeverity.Information, ClaimsProviderLogging.TraceCategory.Configuration);
+
+                    var spTrust = AzureCP.GetSPTrustAssociatedWithCP(AzureCP._ProviderInternalName);
+                    if (spTrust != null)
+                    {
+                        AzureCPConfig existingConfig = AzureCPConfig.GetConfiguration(ClaimsProviderConstants.AZURECPCONFIG_NAME);
+                        if (existingConfig == null)
+                            AzureCPConfig.CreateConfiguration(ClaimsProviderConstants.AZURECPCONFIG_ID, ClaimsProviderConstants.AZURECPCONFIG_NAME, spTrust.Name);
+                        else
+                            ClaimsProviderLogging.Log($"[{AzureCP._ProviderInternalName}] Use configuration \"{ClaimsProviderConstants.AZURECPCONFIG_NAME}\" found in the configuration database", TraceSeverity.High, EventSeverity.Information, ClaimsProviderLogging.TraceCategory.Configuration);
+                    }
+                }
+                catch (Exception ex)
+                {
+                    ClaimsProviderLogging.LogException(AzureCP._ProviderInternalName, $"activating farm-scoped feature for claims provider \"{AzureCP._ProviderInternalName}\"", ClaimsProviderLogging.TraceCategory.Configuration, ex);
+                }
             });
         }
 
@@ -44,7 +61,16 @@ namespace azurecp
         {
             SPSecurity.RunWithElevatedPrivileges(delegate ()
             {
-                ClaimsProviderLogging.Unregister();
+                try
+                {
+                    ClaimsProviderLogging.Log($"[{AzureCP._ProviderInternalName}] Uninstalling farm-scoped feature for claims provider \"{AzureCP._ProviderInternalName}\": Deleting configuration from the farm", TraceSeverity.High, EventSeverity.Information, ClaimsProviderLogging.TraceCategory.Configuration);
+                    AzureCPConfig.DeleteConfiguration(ClaimsProviderConstants.AZURECPCONFIG_NAME);
+                    ClaimsProviderLogging.Unregister();
+                }
+                catch (Exception ex)
+                {
+                    ClaimsProviderLogging.LogException(AzureCP._ProviderInternalName, $"deactivating farm-scoped feature for claims provider \"{AzureCP._ProviderInternalName}\"", ClaimsProviderLogging.TraceCategory.Configuration, ex);
+                }
             });
         }
 
@@ -52,8 +78,15 @@ namespace azurecp
         {
             SPSecurity.RunWithElevatedPrivileges(delegate ()
             {
-                base.RemoveClaimProvider(AzureCP._ProviderInternalName);
-                AzureCPConfig.DeleteConfiguration(ClaimsProviderConstants.AZURECPCONFIG_NAME);
+                try
+                {
+                    ClaimsProviderLogging.Log($"[{AzureCP._ProviderInternalName}] Deactivating farm-scoped feature for claims provider \"{AzureCP._ProviderInternalName}\": Removing claims provider from the farm (but not its configuration)", TraceSeverity.High, EventSeverity.Information, ClaimsProviderLogging.TraceCategory.Configuration);
+                    base.RemoveClaimProvider(AzureCP._ProviderInternalName);
+                }
+                catch (Exception ex)
+                {
+                    ClaimsProviderLogging.LogException(AzureCP._ProviderInternalName, $"deactivating farm-scoped feature for claims provider \"{AzureCP._ProviderInternalName}\"", ClaimsProviderLogging.TraceCategory.Configuration, ex);
+                }
             });
         }
 
