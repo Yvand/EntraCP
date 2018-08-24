@@ -128,6 +128,15 @@ namespace azurecp.ControlTemplates
             PersistedObject.AlwaysResolveUserInput = this.ChkAlwaysResolveUserInput.Checked;
             PersistedObject.FilterExactMatchOnly = this.ChkFilterExactMatchOnly.Checked;
             PersistedObject.EnableAugmentation = this.ChkAugmentAADRoles.Checked;
+
+            AzureADObjectProperty newUserIdentifier = (AzureADObjectProperty)Convert.ToInt32(this.DDLDirectoryPropertyMemberUsers.SelectedValue);
+            if (IdentityClaim.DirectoryObjectProperty != newUserIdentifier)
+                PersistedObject.ClaimTypes.UpdateUserIdentifier(newUserIdentifier);
+
+            AzureADObjectProperty newIdentifierForGuestUsers = (AzureADObjectProperty)Convert.ToInt32(this.DDLDirectoryPropertyGuestUsers.SelectedValue);
+            if (IdentityClaim.DirectoryObjectPropertyForGuestUsers != newIdentifierForGuestUsers)
+                PersistedObject.ClaimTypes.UpdateIdentifierForGuestUsers(newIdentifierForGuestUsers);
+
             if (commitChanges) CommitChanges();
             return true;
         }

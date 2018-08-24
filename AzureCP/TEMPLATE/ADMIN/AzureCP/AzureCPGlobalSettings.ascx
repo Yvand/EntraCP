@@ -50,19 +50,25 @@
         line-height: 1.8;
         width: 250px;
     }
-
-    #divNewLdapConnection fieldset {
-        border: 1;
-        margin: 0;
-        padding: 0;
+	
+	#divUserIdentifiers label {
+        display: inline-block;
+        line-height: 1.8;
+        width: 250px;
     }
 
-        #divNewLdapConnection fieldset ul {
+    fieldset {
+        border: 1;
+        margin: 0;
+		padding: 0;
+    }
+
+        fieldset ul {
             margin: 0;
             padding: 0;
         }
 
-        #divNewLdapConnection fieldset li {
+        fieldset li {
             list-style: none;
             padding: 5px;
             margin: 0;
@@ -148,7 +154,7 @@
 				<legend>Details about new Azure AD tenant</legend>
 				<ul>
 					<li>
-						<label for="<%= TxtTenantName.ClientID %>">Tenant <a href="http://msdn.microsoft.com/en-us/library/system.directoryservices.directoryentry.path(v=vs.110).aspx" target="_blank">name</a>: <em>*</em></label>
+						<label for="<%= TxtTenantName.ClientID %>">Tenant name: <em>*</em></label>
 						<wssawc:InputFormTextBox title="Azure tenant name" class="ms-input" ID="TxtTenantName" Columns="50" Runat="server" MaxLength="255" Text="TENANTNAME.onMicrosoft.com" />
 					</li>
 					<li>
@@ -179,28 +185,25 @@
 			</td></tr>
 		 </template_inputformcontrols>
     </wssuc:inputformsection>
-    <wssuc:inputformsection runat="server" title="Display of entities created with identity claim type" description="Customize the display text of entities created with identity claim type (which is defined in the TrustedLoginProvider).<br/>It does not change the actual value of the entity.">
+	<wssuc:inputformsection runat="server" title="User identifier property" description="Set the property defined in Azure Active Directory to identify users.<br/><br/>AzureCP automatically maps those properties with the identity claim type set in the SharePoint TrustedLoginProvider">
         <template_inputformcontrols>
-                <div id="divUserIdentifiers">
-				<fieldset>
-					<legend>User identifier property</legend>
-					<ul>
-						<li>
-							<label>User identifier for 'Member' users:</label>
-							<asp:DropDownList runat="server" ID="DDLDirectoryPropertyMemberUsers" class="ms-input">
-							</asp:DropDownList>
-						</li>
-						<li>
-							<label>User identifier for 'Guest' users:</label>
-							<asp:DropDownList runat="server" ID="DDLDirectoryPropertyGuestUsers" class="ms-input">
-							</asp:DropDownList>
-						</li>
-				</fieldset>
-				</div>
+			<div id="divUserIdentifiers">
+			<label>User identifier for 'Member' users:</label>
+			<asp:DropDownList runat="server" ID="DDLDirectoryPropertyMemberUsers" class="ms-input">
+			</asp:DropDownList>
+			<br/>
+			<label>User identifier for 'Guest' users:</label>
+			<asp:DropDownList runat="server" ID="DDLDirectoryPropertyGuestUsers" class="ms-input">
+			</asp:DropDownList>
+			</div> 
+		</template_inputformcontrols>
+    </wssuc:inputformsection>
+    <wssuc:inputformsection runat="server" title="Display of user identifier results" description="Configure how entities created with identity claim type are shown in the people picker.<br/>It does not change the actual value of the entity, that is the user identifier.">
+        <template_inputformcontrols>
 				<wssawc:InputFormRadioButton id="RbIdentityDefault"
 					LabelText="Display the UserPrincipalName"
 					Checked="true"
-                    GroupName="RbIdentityDisplay"
+					GroupName="RbIdentityDisplay"
 					CausesValidation="false"
 					runat="server" >
                 </wssawc:InputFormRadioButton>

@@ -400,6 +400,31 @@ namespace azurecp
             innerCol.First(x => String.Equals(x.ClaimType, oldClaimType, StringComparison.InvariantCultureIgnoreCase)).SetFromObject(newItem);
         }
 
+        public void UpdateUserIdentifier(AzureADObjectProperty newIdentifier)
+        {
+            for (int i = 0; i < innerCol.Count; i++)
+            {
+                ClaimTypeConfig curCT = (ClaimTypeConfig)innerCol[i];
+                if (curCT.EntityType == DirectoryObjectType.User &&
+                    curCT.DirectoryObjectProperty == newIdentifier)
+                {
+                    innerCol.RemoveAt(i);
+                    break;
+                }
+            }
+
+            IdentityClaimTypeConfig identityClaimType = innerCol.FirstOrDefault(x  => x is IdentityClaimTypeConfig) as IdentityClaimTypeConfig;
+            if (identityClaimType == null) return;
+            identityClaimType.DirectoryObjectProperty = newIdentifier;
+        }
+
+        public void UpdateIdentifierForGuestUsers(AzureADObjectProperty newIdentifier)
+        {
+            IdentityClaimTypeConfig identityClaimType = innerCol.FirstOrDefault(x => x is IdentityClaimTypeConfig) as IdentityClaimTypeConfig;
+            if (identityClaimType == null) return;
+            identityClaimType.DirectoryObjectPropertyForGuestUsers = newIdentifier;
+        }
+
         public void Clear()
         {
             innerCol.Clear();
