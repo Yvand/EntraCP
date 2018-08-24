@@ -160,7 +160,7 @@ namespace azurecp
         [Persisted]
         private bool _FilterExactMatchOnly = false;
 
-        internal ClaimTypeConfig CopyPersistedProperties()
+        public ClaimTypeConfig CopyPersistedProperties()
         {
             ClaimTypeConfig copy;
             if (this is IdentityClaimTypeConfig)
@@ -400,8 +400,24 @@ namespace azurecp
             innerCol.First(x => String.Equals(x.ClaimType, oldClaimType, StringComparison.InvariantCultureIgnoreCase)).SetFromObject(newItem);
         }
 
-        public void UpdateUserIdentifier(AzureADObjectProperty newIdentifier)
+        /// <summary>
+        /// Update the DirectoryObjectProperty of the identity ClaimTypeConfig. If new value duplicates an existing item, it will be removed from the collection
+        /// </summary>
+        /// <param name="newIdentifier">new DirectoryObjectProperty</param>
+        /// <returns>True if the identity ClaimTypeConfig was successfully updated</returns>
+        public bool UpdateUserIdentifier(AzureADObjectProperty newIdentifier)
         {
+            if (newIdentifier == AzureADObjectProperty.NotSet) throw new ArgumentNullException("newIdentifier");
+
+            bool identifierUpdated = false;
+            IdentityClaimTypeConfig identityClaimType = innerCol.FirstOrDefault(x => x is IdentityClaimTypeConfig) as IdentityClaimTypeConfig;
+            if (identityClaimType == null)
+                return identifierUpdated;
+
+            if (identityClaimType.DirectoryObjectProperty == newIdentifier)
+                return identifierUpdated;
+
+            // Check if the new DirectoryObjectProperty duplicates an existing item, and delete it if so
             for (int i = 0; i < innerCol.Count; i++)
             {
                 ClaimTypeConfig curCT = (ClaimTypeConfig)innerCol[i];
@@ -409,20 +425,35 @@ namespace azurecp
                     curCT.DirectoryObjectProperty == newIdentifier)
                 {
                     innerCol.RemoveAt(i);
-                    break;
+                    break;  // There can be only 1 potential duplicate
                 }
             }
-
-            IdentityClaimTypeConfig identityClaimType = innerCol.FirstOrDefault(x  => x is IdentityClaimTypeConfig) as IdentityClaimTypeConfig;
-            if (identityClaimType == null) return;
+            
             identityClaimType.DirectoryObjectProperty = newIdentifier;
+            identifierUpdated = true;
+            return identifierUpdated;
         }
 
-        public void UpdateIdentifierForGuestUsers(AzureADObjectProperty newIdentifier)
+        /// <summary>
+        /// Update the DirectoryObjectPropertyForGuestUsers of the identity ClaimTypeConfig.
+        /// </summary>
+        /// <param name="newIdentifier">new DirectoryObjectPropertyForGuestUsers</param>
+        /// <returns></returns>
+        public bool UpdateIdentifierForGuestUsers(AzureADObjectProperty newIdentifier)
         {
+            if (newIdentifier == AzureADObjectProperty.NotSet) throw new ArgumentNullException("newIdentifier");
+
+            bool identifierUpdated = false;
             IdentityClaimTypeConfig identityClaimType = innerCol.FirstOrDefault(x => x is IdentityClaimTypeConfig) as IdentityClaimTypeConfig;
-            if (identityClaimType == null) return;
+            if (identityClaimType == null)
+                return identifierUpdated;
+
+            if (identityClaimType.DirectoryObjectPropertyForGuestUsers == newIdentifier)
+                return identifierUpdated;
+
             identityClaimType.DirectoryObjectPropertyForGuestUsers = newIdentifier;
+            identifierUpdated = true;
+            return identifierUpdated;
         }
 
         public void Clear()

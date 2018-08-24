@@ -185,7 +185,7 @@
 			</td></tr>
 		 </template_inputformcontrols>
     </wssuc:inputformsection>
-	<wssuc:inputformsection runat="server" title="User identifier property" description="Set the property defined in Azure Active Directory to identify users.<br/><br/>AzureCP automatically maps those properties with the identity claim type set in the SharePoint TrustedLoginProvider">
+	<wssuc:inputformsection runat="server" title="User identifier property" description="Set the properties that identify users in Azure Active Directory.<br/><br/>AzureCP automatically maps those properties with the identity claim type set in the SharePoint TrustedLoginProvider">
         <template_inputformcontrols>
 			<div id="divUserIdentifiers">
 			<label>User identifier for 'Member' users:</label>

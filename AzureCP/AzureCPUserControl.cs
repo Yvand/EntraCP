@@ -63,7 +63,7 @@ namespace azurecp.ControlTemplates
         }
 
         protected SPTrustedLoginProvider CurrentTrustedLoginProvider;
-        protected IdentityClaimTypeConfig IdentityClaim;
+        protected IdentityClaimTypeConfig IdentityCTConfig;
         protected ConfigStatus Status;
 
         protected long PersistedObjectVersion
@@ -175,10 +175,10 @@ namespace azurecp.ControlTemplates
             // AzureCPConfig.GetConfiguration will call method AzureCPConfig.CheckAndCleanConfiguration();
             //PersistedObject.CheckAndCleanConfiguration(CurrentTrustedLoginProvider.Name);
             PersistedObject.ClaimTypes.SPTrust = CurrentTrustedLoginProvider;
-            if (IdentityClaim == null && Status == ConfigStatus.AllGood)
+            if (IdentityCTConfig == null && Status == ConfigStatus.AllGood)
             {
-                IdentityClaim = this.IdentityClaim = PersistedObject.ClaimTypes.FirstOrDefault(x => String.Equals(CurrentTrustedLoginProvider.IdentityClaimTypeInformation.MappedClaimType, x.ClaimType, StringComparison.InvariantCultureIgnoreCase) && !x.UseMainClaimTypeOfDirectoryObject) as IdentityClaimTypeConfig;
-                if (IdentityClaim == null) Status |= ConfigStatus.NoIdentityClaimType;
+                IdentityCTConfig = this.IdentityCTConfig = PersistedObject.ClaimTypes.FirstOrDefault(x => String.Equals(CurrentTrustedLoginProvider.IdentityClaimTypeInformation.MappedClaimType, x.ClaimType, StringComparison.InvariantCultureIgnoreCase) && !x.UseMainClaimTypeOfDirectoryObject) as IdentityClaimTypeConfig;
+                if (IdentityCTConfig == null) Status |= ConfigStatus.NoIdentityClaimType;
             }
             if (PersistedObjectVersion != PersistedObject.Version)
             {

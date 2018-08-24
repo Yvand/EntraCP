@@ -146,5 +146,36 @@ namespace AzureCP.Tests
             // Delete the ClaimTypeConfig should succeed
             Assert.IsTrue(Config.ClaimTypes.Remove(ctConfig), "Delete the ClaimTypeConfig should succeed");
         }
+
+        [Test]
+        public void ModifyUserIdentifier()
+        {
+            IdentityClaimTypeConfig backupIdentityCTConfig = Config.ClaimTypes.FirstOrDefault(x => x is IdentityClaimTypeConfig) as IdentityClaimTypeConfig;
+            backupIdentityCTConfig = backupIdentityCTConfig.CopyPersistedProperties() as IdentityClaimTypeConfig;
+
+            // Member UserType
+            Assert.Throws<ArgumentNullException>(() => Config.ClaimTypes.UpdateUserIdentifier(AzureADObjectProperty.NotSet), $"Update user identifier with value NotSet should throw exception ArgumentNullException");
+
+            bool configUpdated = Config.ClaimTypes.UpdateUserIdentifier(UnitTestsHelper.RandomObjectProperty);
+            Assert.IsTrue(configUpdated, $"Update user identifier with any AzureADObjectProperty should succeed and return true");
+
+            configUpdated = Config.ClaimTypes.UpdateUserIdentifier(backupIdentityCTConfig.DirectoryObjectProperty);
+            Assert.IsTrue(configUpdated, $"Update user identifier with any AzureADObjectProperty should succeed and return true");
+
+            configUpdated = Config.ClaimTypes.UpdateUserIdentifier(backupIdentityCTConfig.DirectoryObjectProperty);
+            Assert.IsFalse(configUpdated, $"Update user identifier with the same AzureADObjectProperty should not change anything and return false");
+
+            // Gest UserType
+            Assert.Throws<ArgumentNullException>(() => Config.ClaimTypes.UpdateIdentifierForGuestUsers(AzureADObjectProperty.NotSet), $"Update user identifier of Guest UserType with value NotSet should throw exception ArgumentNullException");
+
+            configUpdated = Config.ClaimTypes.UpdateIdentifierForGuestUsers(UnitTestsHelper.RandomObjectProperty);
+            Assert.IsTrue(configUpdated, $"Update user identifier of Guest UserType with any AzureADObjectProperty should succeed and return true");
+
+            configUpdated = Config.ClaimTypes.UpdateIdentifierForGuestUsers(backupIdentityCTConfig.DirectoryObjectPropertyForGuestUsers);
+            Assert.IsTrue(configUpdated, $"Update user identifier of Guest UserType with any AzureADObjectProperty should succeed and return true");
+
+            configUpdated = Config.ClaimTypes.UpdateIdentifierForGuestUsers(backupIdentityCTConfig.DirectoryObjectPropertyForGuestUsers);
+            Assert.IsFalse(configUpdated, $"Update user identifier of Guest UserType with the same AzureADObjectProperty should not change anything and return false");
+        }
     }
 }
