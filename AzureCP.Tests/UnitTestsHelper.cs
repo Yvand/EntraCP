@@ -46,7 +46,7 @@ public class UnitTestsHelper
         AzureCPConfig config = AzureCPConfig.GetConfiguration(UnitTestsHelper.ClaimsProviderConfigName, UnitTestsHelper.SPTrust.Name);
         if (config == null)
         {
-            AzureCPConfig.CreateConfiguration(ClaimsProviderConstants.AZURECPCONFIG_ID, ClaimsProviderConstants.AZURECPCONFIG_NAME, SPTrust.Name);
+            AzureCPConfig.CreateConfiguration(ClaimsProviderConstants.CONFIG_ID, ClaimsProviderConstants.CONFIG_NAME, SPTrust.Name);
         }
 
         SPWebApplication wa = SPWebApplication.Lookup(Context);

@@ -32,7 +32,7 @@ namespace azurecp
     {
         public const string _ProviderInternalName = "AzureCP";
         public virtual string ProviderInternalName => "AzureCP";
-        public virtual string PersistedObjectName => ClaimsProviderConstants.AZURECPCONFIG_NAME;
+        public virtual string PersistedObjectName => ClaimsProviderConstants.CONFIG_NAME;
 
         private object Lock_Init = new object();
         private ReaderWriterLockSlim Lock_Config = new ReaderWriterLockSlim();

@@ -29,8 +29,8 @@ namespace azurecp
 
     public class ClaimsProviderConstants
     {
-        public const string AZURECPCONFIG_ID = "0E9F8FB6-B314-4CCC-866D-DEC0BE76C237";
-        public const string AZURECPCONFIG_NAME = "AzureCPConfig";
+        public const string CONFIG_ID = "0E9F8FB6-B314-4CCC-866D-DEC0BE76C237";
+        public const string CONFIG_NAME = "AzureCPConfig";
         public const string GraphAPIResource = "https://graph.microsoft.com/";
         public const string AuthorityUriTemplate = "https://login.windows.net/{0}";
         public const string ResourceUrl = "https://graph.windows.net";
@@ -175,7 +175,7 @@ namespace azurecp
         /// <returns></returns>
         public static AzureCPConfig GetConfiguration()
         {
-            return GetConfiguration(ClaimsProviderConstants.AZURECPCONFIG_NAME, String.Empty);
+            return GetConfiguration(ClaimsProviderConstants.CONFIG_NAME, String.Empty);
         }
 
         /// <summary>

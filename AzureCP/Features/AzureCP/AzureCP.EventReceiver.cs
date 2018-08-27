@@ -43,11 +43,11 @@ namespace azurecp
                     var spTrust = AzureCP.GetSPTrustAssociatedWithCP(AzureCP._ProviderInternalName);
                     if (spTrust != null)
                     {
-                        AzureCPConfig existingConfig = AzureCPConfig.GetConfiguration(ClaimsProviderConstants.AZURECPCONFIG_NAME);
+                        AzureCPConfig existingConfig = AzureCPConfig.GetConfiguration(ClaimsProviderConstants.CONFIG_NAME);
                         if (existingConfig == null)
-                            AzureCPConfig.CreateConfiguration(ClaimsProviderConstants.AZURECPCONFIG_ID, ClaimsProviderConstants.AZURECPCONFIG_NAME, spTrust.Name);
+                            AzureCPConfig.CreateConfiguration(ClaimsProviderConstants.CONFIG_ID, ClaimsProviderConstants.CONFIG_NAME, spTrust.Name);
                         else
-                            ClaimsProviderLogging.Log($"[{AzureCP._ProviderInternalName}] Use configuration \"{ClaimsProviderConstants.AZURECPCONFIG_NAME}\" found in the configuration database", TraceSeverity.High, EventSeverity.Information, ClaimsProviderLogging.TraceCategory.Configuration);
+                            ClaimsProviderLogging.Log($"[{AzureCP._ProviderInternalName}] Use configuration \"{ClaimsProviderConstants.CONFIG_NAME}\" found in the configuration database", TraceSeverity.High, EventSeverity.Information, ClaimsProviderLogging.TraceCategory.Configuration);
                     }
                 }
                 catch (Exception ex)
@@ -64,7 +64,7 @@ namespace azurecp
                 try
                 {
                     ClaimsProviderLogging.Log($"[{AzureCP._ProviderInternalName}] Uninstalling farm-scoped feature for claims provider \"{AzureCP._ProviderInternalName}\": Deleting configuration from the farm", TraceSeverity.High, EventSeverity.Information, ClaimsProviderLogging.TraceCategory.Configuration);
-                    AzureCPConfig.DeleteConfiguration(ClaimsProviderConstants.AZURECPCONFIG_NAME);
+                    AzureCPConfig.DeleteConfiguration(ClaimsProviderConstants.CONFIG_NAME);
                     ClaimsProviderLogging.Unregister();
                 }
                 catch (Exception ex)
