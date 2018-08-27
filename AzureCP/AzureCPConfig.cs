@@ -42,8 +42,21 @@ namespace azurecp
         public const bool EnforceOnly1ClaimTypeForGroup = true;     // In AzureCP, only 1 claim type can be used to create group permissions
         public const string DefaultMainGroupClaimType = WIF4_5.ClaimTypes.Role;
         public const string PUBLICSITEURL = "https://yvand.github.io/AzureCP/";
-        public static string ClaimsProviderVersion = FileVersionInfo.GetVersionInfo(Assembly.GetAssembly(typeof(AzureCP)).Location).FileVersion;
-        
+        public static string ClaimsProviderVersion
+        {
+            get
+            {
+                try
+                {
+                    return FileVersionInfo.GetVersionInfo(Assembly.GetAssembly(typeof(AzureCP)).Location).FileVersion;
+                }
+                // If assembly was removed from the GAC, CLR will throw that a FileNotFoundException
+                catch (System.IO.FileNotFoundException)
+                {
+                    return String.Empty;
+                }
+            }
+        }
 
 #if DEBUG
         public const int DEFAULT_TIMEOUT = 10000;
@@ -208,7 +221,7 @@ namespace azurecp
             }
             catch (Exception ex)
             {
-                ClaimsProviderLogging.Log($"Error while retrieving configuration '{persistedObjectName}': {ex.Message}", TraceSeverity.Unexpected, EventSeverity.Error, TraceCategory.Core);
+                ClaimsProviderLogging.LogException(String.Empty, $"while retrieving configuration '{persistedObjectName}'", TraceCategory.Configuration, ex);
             }
             return null;
         }
@@ -405,6 +418,10 @@ namespace azurecp
         /// <returns>Bollean indicates whether the configuration was updated in configuration database</returns>
         public bool CheckAndCleanConfiguration(string spTrustName)
         {
+            // ClaimsProviderConstants.ClaimsProviderVersion can be null if assembly was removed from GAC
+            if (String.IsNullOrEmpty(ClaimsProviderConstants.ClaimsProviderVersion))
+                return false;
+
             bool configUpdated = false;
 
             if (!String.IsNullOrEmpty(spTrustName) && !String.Equals(this.SPTrustName, spTrustName, StringComparison.InvariantCultureIgnoreCase))
