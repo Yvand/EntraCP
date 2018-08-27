@@ -11,7 +11,7 @@
 * Explicitely encode HTML messages shown in admin pages and renderred from server side code to comply with tools scanning code to detect security vulnerabilities
 * Fixed display text of groups that were not using the expected format "(GROUP) groupname"
 * Deactivating farm-scoped feature "AzureCP" removes the claims provider from the farm, but it does not delete its configuration anymore. Configuration is now deleted when feature is uninstalled (typically when retracting the solution)
-
+* Added user identifier properties in global configuration page
 
 ## AzureCP v12 enhancements & bug-fixes - Published in June 7, 2018
 
