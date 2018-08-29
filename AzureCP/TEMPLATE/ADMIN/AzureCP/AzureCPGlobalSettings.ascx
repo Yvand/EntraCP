@@ -50,8 +50,8 @@
         line-height: 1.8;
         width: 250px;
     }
-	
-	#divUserIdentifiers label {
+
+    #divUserIdentifiers label {
         display: inline-block;
         line-height: 1.8;
         width: 250px;
@@ -60,7 +60,7 @@
     fieldset {
         border: 1;
         margin: 0;
-		padding: 0;
+        padding: 0;
     }
 
         fieldset ul {
@@ -185,7 +185,7 @@
 			</td></tr>
 		 </template_inputformcontrols>
     </wssuc:inputformsection>
-	<wssuc:inputformsection runat="server" title="User identifier property" description="Set the properties that identify users in Azure Active Directory.<br/><br/>AzureCP automatically maps those properties with the identity claim type set in the SharePoint TrustedLoginProvider">
+    <wssuc:inputformsection runat="server" title="User identifier property" description="Set the properties that identify users in Azure Active Directory.<br/><br/>AzureCP automatically maps those properties with the identity claim type set in the SharePoint TrustedLoginProvider">
         <template_inputformcontrols>
 			<div id="divUserIdentifiers">
 			<label>User identifier for 'Member' users:</label>
@@ -201,20 +201,19 @@
     <wssuc:inputformsection runat="server" title="Display of user identifier results" description="Configure how entities created with identity claim type are shown in the people picker.<br/>It does not change the actual value of the entity, that is the user identifier.">
         <template_inputformcontrols>
 				<wssawc:InputFormRadioButton id="RbIdentityDefault"
-					LabelText="Display the UserPrincipalName"
+					LabelText="Show the user identifier value"
 					Checked="true"
 					GroupName="RbIdentityDisplay"
 					CausesValidation="false"
 					runat="server" >
                 </wssawc:InputFormRadioButton>
 				<wssawc:InputFormRadioButton id="RbIdentityCustomGraphProperty"
-					LabelText="Display another property"
+					LabelText="Show the value of another property, e.g the display name:"
 					GroupName="RbIdentityDisplay"
 					CausesValidation="false"
 					runat="server" >
                 <wssuc:InputFormControl LabelText="InputFormControlLabelText">
 					<Template_control>
-						<wssawc:EncodedLiteral runat="server" text="You can choose to display a specific property (e.g the display name):<br/>" EncodeMethod='HtmlEncodeAllowSimpleTextFormatting'/>
                         <asp:DropDownList runat="server" ID="DDLGraphPropertyToDisplay" onclick="window.Azurecp.AzurecpSettingsPage.CheckRbIdentityCustomGraphProperty()" class="ms-input" />
 					</Template_control>
 				</wssuc:InputFormControl>
