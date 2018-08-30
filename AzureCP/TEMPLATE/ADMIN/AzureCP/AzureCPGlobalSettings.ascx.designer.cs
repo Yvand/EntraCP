@@ -130,6 +130,24 @@ namespace azurecp.ControlTemplates {
         protected global::System.Web.UI.WebControls.Label LabelTestTenantConnectionOK;
         
         /// <summary>
+        /// DDLDirectoryPropertyMemberUsers control.
+        /// </summary>
+        /// <remarks>
+        /// Auto-generated field.
+        /// To modify move field declaration from designer file to code-behind file.
+        /// </remarks>
+        protected global::System.Web.UI.WebControls.DropDownList DDLDirectoryPropertyMemberUsers;
+        
+        /// <summary>
+        /// DDLDirectoryPropertyGuestUsers control.
+        /// </summary>
+        /// <remarks>
+        /// Auto-generated field.
+        /// To modify move field declaration from designer file to code-behind file.
+        /// </remarks>
+        protected global::System.Web.UI.WebControls.DropDownList DDLDirectoryPropertyGuestUsers;
+        
+        /// <summary>
         /// RbIdentityDefault control.
         /// </summary>
         /// <remarks>

@@ -59,15 +59,17 @@ namespace azurecp.ControlTemplates
 
         private void PopulateFields()
         {
-            if (IdentityClaim.DirectoryObjectPropertyToShowAsDisplayText == AzureADObjectProperty.NotSet)
+            if (IdentityCTConfig.DirectoryObjectPropertyToShowAsDisplayText == AzureADObjectProperty.NotSet)
             {
                 this.RbIdentityDefault.Checked = true;
             }
             else
             {
                 this.RbIdentityCustomGraphProperty.Checked = true;
-                this.DDLGraphPropertyToDisplay.Items.FindByValue(((int)IdentityClaim.DirectoryObjectPropertyToShowAsDisplayText).ToString()).Selected = true;
+                this.DDLGraphPropertyToDisplay.Items.FindByValue(((int)IdentityCTConfig.DirectoryObjectPropertyToShowAsDisplayText).ToString()).Selected = true;
             }
+            this.DDLDirectoryPropertyMemberUsers.Items.FindByValue(((int)IdentityCTConfig.DirectoryObjectProperty).ToString()).Selected = true;
+            this.DDLDirectoryPropertyGuestUsers.Items.FindByValue(((int)IdentityCTConfig.DirectoryObjectPropertyForGuestUsers).ToString()).Selected = true;
             this.ChkAlwaysResolveUserInput.Checked = PersistedObject.AlwaysResolveUserInput;
             this.ChkFilterExactMatchOnly.Checked = PersistedObject.FilterExactMatchOnly;
             this.ChkAugmentAADRoles.Checked = PersistedObject.EnableAugmentation;
@@ -85,7 +87,10 @@ namespace azurecp.ControlTemplates
                 if (pi == null) continue;
                 if (pi.PropertyType != typeof(System.String)) continue;
 
+                //System.Web.UI.WebControls.ListItem listItem = new System.Web.UI.WebControls.ListItem(prop.ToString(), ((int)prop).ToString());
                 this.DDLGraphPropertyToDisplay.Items.Add(new System.Web.UI.WebControls.ListItem(prop.ToString(), ((int)prop).ToString()));
+                this.DDLDirectoryPropertyMemberUsers.Items.Add(new System.Web.UI.WebControls.ListItem(prop.ToString(), ((int)prop).ToString()));
+                this.DDLDirectoryPropertyGuestUsers.Items.Add(new System.Web.UI.WebControls.ListItem(prop.ToString(), ((int)prop).ToString()));
             }
         }
 
@@ -110,19 +115,27 @@ namespace azurecp.ControlTemplates
         {
             if (ValidatePrerequisite() != ConfigStatus.AllGood) return false;
 
-            // Handle identity claim type
             if (this.RbIdentityCustomGraphProperty.Checked)
             {
-                IdentityClaim.DirectoryObjectPropertyToShowAsDisplayText = (AzureADObjectProperty)Convert.ToInt32(this.DDLGraphPropertyToDisplay.SelectedValue);
+                IdentityCTConfig.DirectoryObjectPropertyToShowAsDisplayText = (AzureADObjectProperty)Convert.ToInt32(this.DDLGraphPropertyToDisplay.SelectedValue);
             }
             else
             {
-                IdentityClaim.DirectoryObjectPropertyToShowAsDisplayText = AzureADObjectProperty.NotSet;
+                IdentityCTConfig.DirectoryObjectPropertyToShowAsDisplayText = AzureADObjectProperty.NotSet;
             }
+
+            AzureADObjectProperty newUserIdentifier = (AzureADObjectProperty)Convert.ToInt32(this.DDLDirectoryPropertyMemberUsers.SelectedValue);
+            if (newUserIdentifier != AzureADObjectProperty.NotSet)
+                PersistedObject.ClaimTypes.UpdateUserIdentifier(newUserIdentifier);
+
+            AzureADObjectProperty newIdentifierForGuestUsers = (AzureADObjectProperty)Convert.ToInt32(this.DDLDirectoryPropertyGuestUsers.SelectedValue);
+            if (newIdentifierForGuestUsers != AzureADObjectProperty.NotSet)
+                PersistedObject.ClaimTypes.UpdateIdentifierForGuestUsers(newIdentifierForGuestUsers);
 
             PersistedObject.AlwaysResolveUserInput = this.ChkAlwaysResolveUserInput.Checked;
             PersistedObject.FilterExactMatchOnly = this.ChkFilterExactMatchOnly.Checked;
             PersistedObject.EnableAugmentation = this.ChkAugmentAADRoles.Checked;
+
             if (commitChanges) CommitChanges();
             return true;
         }
@@ -164,7 +177,7 @@ namespace azurecp.ControlTemplates
         {
             if (ValidatePrerequisite() != ConfigStatus.AllGood) return;
             if (UpdateConfiguration(true)) Response.Redirect("/Security.aspx", false);
-            else LabelErrorMessage.Text = MostImportantError;
+            else LabelErrorMessage.Text = base.MostImportantError;
         }
 
         protected void BtnResetAzureCPConfig_Click(Object sender, EventArgs e)

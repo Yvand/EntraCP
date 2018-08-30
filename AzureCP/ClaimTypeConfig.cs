@@ -9,6 +9,33 @@ using WIF = System.Security.Claims;
 
 namespace azurecp
 {
+    public class IdentityClaimTypeConfig : ClaimTypeConfig
+    {
+        public AzureADObjectProperty DirectoryObjectPropertyForGuestUsers
+        {
+            get { return (AzureADObjectProperty)Enum.ToObject(typeof(AzureADObjectProperty), _DirectoryObjectPropertyForGuestUsers); }
+            set { _DirectoryObjectPropertyForGuestUsers = (int)value; }
+        }
+        [Persisted]
+        private int _DirectoryObjectPropertyForGuestUsers = (int)AzureADObjectProperty.Mail;
+
+        public static IdentityClaimTypeConfig ConvertClaimTypeConfig(ClaimTypeConfig ctConfig)
+        {
+            IdentityClaimTypeConfig identityCTConfig = new IdentityClaimTypeConfig();
+            identityCTConfig.ClaimType = ctConfig.ClaimType;
+            identityCTConfig.ClaimTypeDisplayName = ctConfig.ClaimTypeDisplayName;
+            identityCTConfig.ClaimValueType = ctConfig.ClaimValueType;
+            identityCTConfig.DirectoryObjectProperty = ctConfig.DirectoryObjectProperty;
+            identityCTConfig.DirectoryObjectPropertyToShowAsDisplayText = ctConfig.DirectoryObjectPropertyToShowAsDisplayText;
+            identityCTConfig.EntityDataKey = ctConfig.EntityDataKey;
+            identityCTConfig.EntityType = ctConfig.EntityType;
+            identityCTConfig.FilterExactMatchOnly = ctConfig.FilterExactMatchOnly;
+            identityCTConfig.PrefixToBypassLookup = ctConfig.PrefixToBypassLookup;
+            identityCTConfig.UseMainClaimTypeOfDirectoryObject = ctConfig.UseMainClaimTypeOfDirectoryObject;
+            return identityCTConfig;
+        }
+    }
+
     /// <summary>
     /// Stores configuration associated to a claim type, and its mapping with the Azure AD attribute (GraphProperty)
     /// </summary>
@@ -133,21 +160,31 @@ namespace azurecp
         [Persisted]
         private bool _FilterExactMatchOnly = false;
 
-        internal ClaimTypeConfig CopyCurrentObject()
+        public ClaimTypeConfig CopyPersistedProperties()
         {
-            ClaimTypeConfig copy = new ClaimTypeConfig()
+            ClaimTypeConfig copy;
+            if (this is IdentityClaimTypeConfig)
             {
-                _ClaimType = this._ClaimType,
-                _DirectoryObjectProperty = this._DirectoryObjectProperty,
-                _DirectoryObjectType = this._DirectoryObjectType,
-                _EntityDataKey = this._EntityDataKey,
-                _ClaimValueType = this._ClaimValueType,
-                _CreateAsIdentityClaim = this._CreateAsIdentityClaim,
-                _PrefixToBypassLookup = this._PrefixToBypassLookup,
-                _DirectoryObjectPropertyToShowAsDisplayText = this._DirectoryObjectPropertyToShowAsDisplayText,
-                _FilterExactMatchOnly = this._FilterExactMatchOnly,
-                _ClaimTypeDisplayName = this._ClaimTypeDisplayName,
-            };
+                copy = new IdentityClaimTypeConfig()
+                {
+                    DirectoryObjectPropertyForGuestUsers = ((IdentityClaimTypeConfig)this).DirectoryObjectPropertyForGuestUsers
+                };
+            }
+            else
+            {
+                copy = new ClaimTypeConfig();
+            }
+
+            copy._ClaimType = this._ClaimType;
+            copy._DirectoryObjectProperty = this._DirectoryObjectProperty;
+            copy._DirectoryObjectType = this._DirectoryObjectType;
+            copy._EntityDataKey = this._EntityDataKey;
+            copy._ClaimValueType = this._ClaimValueType;
+            copy._CreateAsIdentityClaim = this._CreateAsIdentityClaim;
+            copy._PrefixToBypassLookup = this._PrefixToBypassLookup;
+            copy._DirectoryObjectPropertyToShowAsDisplayText = this._DirectoryObjectPropertyToShowAsDisplayText;
+            copy._FilterExactMatchOnly = this._FilterExactMatchOnly;
+            copy._ClaimTypeDisplayName = this._ClaimTypeDisplayName;
             return copy;
         }
 
@@ -263,6 +300,11 @@ namespace azurecp
                 throw new InvalidOperationException($"Prefix '{item.PrefixToBypassLookup}' is already set with another claim type and must be unique");
             }
 
+            if (Contains(item, new ClaimTypeConfigSameDirectoryConfiguration()))
+            {
+                throw new InvalidOperationException($"An item with property '{item.DirectoryObjectProperty}' already exists for the object type '{item.EntityType}'");
+            }
+
             if (Contains(item))
             {
                 if (String.IsNullOrEmpty(item.ClaimType))
@@ -292,10 +334,9 @@ namespace azurecp
             // If SPTrustedLoginProvider is set, additional checks can be done
             if (SPTrust != null)
             {
-                // Specific checks if current claim type is identity claim type
+                // If current claim type is identity claim type: EntityType must be User
                 if (String.Equals(item.ClaimType, SPTrust.IdentityClaimTypeInformation.MappedClaimType, StringComparison.InvariantCultureIgnoreCase))
                 {
-                    // LDAPObjectType must be User
                     if (item.EntityType != DirectoryObjectType.User)
                     {
                         throw new InvalidOperationException($"Identity claim type must be configured with EntityType 'User'");
@@ -340,7 +381,7 @@ namespace azurecp
             ClaimTypeConfigCollection testUpdateCollection = new ClaimTypeConfigCollection();
             foreach (ClaimTypeConfig curCTConfig in innerCol)
             {
-                testUpdateCollection.Add(curCTConfig.CopyCurrentObject(), false);
+                testUpdateCollection.Add(curCTConfig.CopyPersistedProperties(), false);
             }
 
             // Update ClaimTypeConfig in testUpdateCollection
@@ -357,6 +398,62 @@ namespace azurecp
 
             // No error, current collection can safely be updated
             innerCol.First(x => String.Equals(x.ClaimType, oldClaimType, StringComparison.InvariantCultureIgnoreCase)).SetFromObject(newItem);
+        }
+
+        /// <summary>
+        /// Update the DirectoryObjectProperty of the identity ClaimTypeConfig. If new value duplicates an existing item, it will be removed from the collection
+        /// </summary>
+        /// <param name="newIdentifier">new DirectoryObjectProperty</param>
+        /// <returns>True if the identity ClaimTypeConfig was successfully updated</returns>
+        public bool UpdateUserIdentifier(AzureADObjectProperty newIdentifier)
+        {
+            if (newIdentifier == AzureADObjectProperty.NotSet) throw new ArgumentNullException("newIdentifier");
+
+            bool identifierUpdated = false;
+            IdentityClaimTypeConfig identityClaimType = innerCol.FirstOrDefault(x => x is IdentityClaimTypeConfig) as IdentityClaimTypeConfig;
+            if (identityClaimType == null)
+                return identifierUpdated;
+
+            if (identityClaimType.DirectoryObjectProperty == newIdentifier)
+                return identifierUpdated;
+
+            // Check if the new DirectoryObjectProperty duplicates an existing item, and delete it if so
+            for (int i = 0; i < innerCol.Count; i++)
+            {
+                ClaimTypeConfig curCT = (ClaimTypeConfig)innerCol[i];
+                if (curCT.EntityType == DirectoryObjectType.User &&
+                    curCT.DirectoryObjectProperty == newIdentifier)
+                {
+                    innerCol.RemoveAt(i);
+                    break;  // There can be only 1 potential duplicate
+                }
+            }
+            
+            identityClaimType.DirectoryObjectProperty = newIdentifier;
+            identifierUpdated = true;
+            return identifierUpdated;
+        }
+
+        /// <summary>
+        /// Update the DirectoryObjectPropertyForGuestUsers of the identity ClaimTypeConfig.
+        /// </summary>
+        /// <param name="newIdentifier">new DirectoryObjectPropertyForGuestUsers</param>
+        /// <returns></returns>
+        public bool UpdateIdentifierForGuestUsers(AzureADObjectProperty newIdentifier)
+        {
+            if (newIdentifier == AzureADObjectProperty.NotSet) throw new ArgumentNullException("newIdentifier");
+
+            bool identifierUpdated = false;
+            IdentityClaimTypeConfig identityClaimType = innerCol.FirstOrDefault(x => x is IdentityClaimTypeConfig) as IdentityClaimTypeConfig;
+            if (identityClaimType == null)
+                return identifierUpdated;
+
+            if (identityClaimType.DirectoryObjectPropertyForGuestUsers == newIdentifier)
+                return identifierUpdated;
+
+            identityClaimType.DirectoryObjectPropertyForGuestUsers = newIdentifier;
+            identifierUpdated = true;
+            return identifierUpdated;
         }
 
         public void Clear()
@@ -412,6 +509,8 @@ namespace azurecp
 
         public bool Remove(ClaimTypeConfig item)
         {
+            if (SPTrust != null && String.Equals(item.ClaimType, SPTrust.IdentityClaimTypeInformation.MappedClaimType, StringComparison.InvariantCultureIgnoreCase)) throw new InvalidOperationException($"Cannot delete claim type \"{item.ClaimType}\" because it is the identity claim type of \"{SPTrust.Name}\"");
+
             bool result = false;
             for (int i = 0; i < innerCol.Count; i++)
             {
@@ -429,6 +528,8 @@ namespace azurecp
         public bool Remove(string claimType)
         {
             if (String.IsNullOrEmpty(claimType)) throw new ArgumentNullException("claimType");
+            if (SPTrust != null && String.Equals(claimType, SPTrust.IdentityClaimTypeInformation.MappedClaimType, StringComparison.InvariantCultureIgnoreCase)) throw new InvalidOperationException($"Cannot delete claim type \"{claimType}\" because it is the identity claim type of \"{SPTrust.Name}\"");
+
             bool result = false;
             for (int i = 0; i < innerCol.Count; i++)
             {
@@ -450,6 +551,13 @@ namespace azurecp
         IEnumerator IEnumerable.GetEnumerator()
         {
             return new ClaimTypeConfigEnumerator(this);
+        }
+
+        public ClaimTypeConfig GetByClaimType(string claimType)
+        {
+            if (String.IsNullOrEmpty(claimType)) throw new ArgumentNullException("claimType");
+            ClaimTypeConfig ctConfig = innerCol.FirstOrDefault(x => String.Equals(claimType, x.ClaimType, StringComparison.InvariantCultureIgnoreCase));
+            return ctConfig;
         }
     }
 
@@ -623,6 +731,31 @@ namespace azurecp
         public override int GetHashCode(ClaimTypeConfig ct)
         {
             string hCode = ct.ClaimType + ct.EntityType + ct.UseMainClaimTypeOfDirectoryObject.ToString();
+            return hCode.GetHashCode();
+        }
+    }
+
+    /// <summary>
+    /// Check if a given object type (user or group) has 2 ClaimTypeConfig with the same LDAPAttribute and LDAPClass
+    /// </summary>
+    public class ClaimTypeConfigSameDirectoryConfiguration : EqualityComparer<ClaimTypeConfig>
+    {
+        public override bool Equals(ClaimTypeConfig existingCTConfig, ClaimTypeConfig newCTConfig)
+        {
+            if (existingCTConfig.DirectoryObjectProperty == newCTConfig.DirectoryObjectProperty &&
+                existingCTConfig.EntityType == newCTConfig.EntityType)
+            {
+                return true;
+            }
+            else
+            {
+                return false;
+            }
+        }
+
+        public override int GetHashCode(ClaimTypeConfig ct)
+        {
+            string hCode = ct.DirectoryObjectProperty.ToString() + ct.EntityType;
             return hCode.GetHashCode();
         }
     }

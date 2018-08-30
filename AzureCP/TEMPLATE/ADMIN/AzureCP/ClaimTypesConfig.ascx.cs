@@ -371,7 +371,7 @@ namespace azurecp.ControlTemplates
                 return;
             }
 
-            ClaimTypeConfig newCTConfig = existingCTConfig.CopyCurrentObject();
+            ClaimTypeConfig newCTConfig = existingCTConfig.CopyPersistedProperties();
             newCTConfig.ClaimType = newClaimType;
             newCTConfig.EntityType = typeSelected;
             newCTConfig.PrefixToBypassLookup = formData["input_PrefixToBypassLookup_" + itemId];
