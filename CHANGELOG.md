@@ -1,6 +1,6 @@
 # Change log for AzureCP
 
-## AzureCP v13 enhancements & bug-fixes
+## AzureCP v13 enhancements & bug-fixes - Published in August 30, 2018
 
 * Guest users are now fully supported. AzureCP will use the Mail property to search Guest accounts and create their permissions in SharePoint
 * The identity claim type set in the SPTrustedIdentityTokenIssuer is now automatically detected and associated with the property UserPrincipalName
