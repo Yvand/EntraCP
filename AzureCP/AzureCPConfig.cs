@@ -25,6 +25,7 @@ namespace azurecp
         string EntityDisplayTextPrefix { get; set; }
         bool EnableRetry { get; set; }
         int Timeout { get; set; }
+        string CustomData { get; set; }
     }
 
     public class ClaimsProviderConstants
@@ -165,6 +166,17 @@ namespace azurecp
 
         [Persisted]
         private string ClaimsProviderVersion;
+
+        /// <summary>
+        /// This property is not used by AzureCP and is available to developers for their own needs
+        /// </summary>
+        public string CustomData
+        {
+            get => _CustomData;
+            set => _CustomData = value;
+        }
+        [Persisted]
+        private string _CustomData;
 
         public AzureCPConfig(string persistedObjectName, SPPersistedObject parent, string spTrustName) : base(persistedObjectName, parent)
         {
