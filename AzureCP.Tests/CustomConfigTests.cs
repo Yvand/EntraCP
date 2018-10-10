@@ -9,28 +9,9 @@ using System.Security.Claims;
 namespace AzureCP.Tests
 {
     [TestFixture]
-    public class CustomConfigTests
+    public class CustomConfigTests : ModifyConfigBase
     {
         public static string GroupsClaimType = ClaimsProviderConstants.DefaultMainGroupClaimType;
-        private AzureCPConfig Config;
-        private AzureCPConfig BackupConfig;
-
-        [OneTimeSetUp]
-        public void Init()
-        {
-            Console.WriteLine($"Starting custom config test {TestContext.CurrentContext.Test.Name}...");
-            Config = AzureCPConfig.GetConfiguration(UnitTestsHelper.ClaimsProviderConfigName, UnitTestsHelper.SPTrust.Name);
-            BackupConfig = Config.CopyPersistedProperties();
-            Config.ResetClaimTypesList();
-        }
-
-        [OneTimeTearDown]
-        public void Cleanup()
-        {
-            Config.ApplyConfiguration(BackupConfig);
-            Config.Update();
-            Console.WriteLine($"Restored actual configuration.");
-        }
 
         [TestCase("ext:externalUser@contoso.com", 1, "externalUser@contoso.com")]
         [TestCase("ext:", 0, "")]
@@ -69,7 +50,7 @@ namespace AzureCP.Tests
             }
         }
 
-        [Test, TestCaseSource(typeof(ValidateEntityDataSource), "GetTestData")]
+        [Test, TestCaseSource(typeof(ValidateEntityDataSource), "GetTestData", new object[] { UnitTestsHelper.DataFile_ValidationTests })]
         //[Repeat(UnitTestsHelper.TestRepeatCount)]
         public void RequireExactMatchDuringSearch(ValidateEntityData registrationData)
         {

@@ -305,6 +305,7 @@ namespace azurecp
             copy.SPTrustName = this.SPTrustName;
             copy.AzureTenants = new List<AzureTenant>(this.AzureTenants);
             copy.ClaimTypes = new ClaimTypeConfigCollection();
+            copy.ClaimTypes.SPTrust = this.ClaimTypes.SPTrust;
             foreach (ClaimTypeConfig currentObject in this.ClaimTypes)
             {
                 copy.ClaimTypes.Add(currentObject.CopyPersistedProperties(), false);
@@ -383,7 +384,7 @@ namespace azurecp
                 return null;
             }
 
-            return new ClaimTypeConfigCollection
+            ClaimTypeConfigCollection newCTConfigCollection = new ClaimTypeConfigCollection()
             {
                 // Identity claim type. "Name" (http://schemas.xmlsoap.org/ws/2005/05/identity/claims/name) is a reserved claim type in SharePoint that cannot be used in the SPTrust.
                 //new ClaimTypeConfig{EntityType = DirectoryObjectType.User, DirectoryObjectProperty = AzureADObjectProperty.UserPrincipalName, ClaimType = WIF4_5.ClaimTypes.Upn},
@@ -405,6 +406,8 @@ namespace azurecp
                 new ClaimTypeConfig{EntityType = DirectoryObjectType.Group, DirectoryObjectProperty = AzureADObjectProperty.Id, ClaimType = ClaimsProviderConstants.DefaultMainGroupClaimType, DirectoryObjectPropertyToShowAsDisplayText = AzureADObjectProperty.DisplayName},
                 new ClaimTypeConfig{EntityType = DirectoryObjectType.Group, DirectoryObjectProperty = AzureADObjectProperty.DisplayName, UseMainClaimTypeOfDirectoryObject = true, EntityDataKey = PeopleEditorEntityDataKeys.DisplayName},
             };
+            newCTConfigCollection.SPTrust = spTrust;
+            return newCTConfigCollection;
         }
 
         /// <summary>

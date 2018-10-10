@@ -32,6 +32,8 @@ public class UnitTestsHelper
 
     public const string DataFile_SearchTests = @"F:\Data\Dev\AzureCP_SearchTests_Data.csv";
     public const string DataFile_ValidationTests = @"F:\Data\Dev\AzureCP_ValidationTests_Data.csv";
+    public const string DataFile_GuestAccountsSearchTests = @"F:\Data\Dev\AzureCP_SearchGuestAccountsTests_Data.csv";
+    public const string DataFile_GuestAccountsValidationTests = @"F:\Data\Dev\AzureCP_ValidateGuestAccountsTests_Data.csv";
 
     public static SPTrustedLoginProvider SPTrust
     {
@@ -159,9 +161,9 @@ public class SearchEntityDataSourceCollection : IEnumerable
 
 public class SearchEntityDataSource
 {
-    public static IEnumerable<TestCaseData> GetTestData()
+    public static IEnumerable<TestCaseData> GetTestData(string dataFile)
     {
-        DataTable dt = DataTable.New.ReadCsv(UnitTestsHelper.DataFile_SearchTests);
+        DataTable dt = DataTable.New.ReadCsv(dataFile);
 
         foreach (Row row in dt.Rows)
         {
@@ -198,9 +200,9 @@ public class SearchEntityData
 
 public class ValidateEntityDataSource
 {
-    public static IEnumerable<TestCaseData> GetTestData()
+    public static IEnumerable<TestCaseData> GetTestData(string dataFile)
     {
-        DataTable dt = DataTable.New.ReadCsv(UnitTestsHelper.DataFile_ValidationTests);
+        DataTable dt = DataTable.New.ReadCsv(dataFile);
         foreach (Row row in dt.Rows)
         {
             var registrationData = new ValidateEntityData();
