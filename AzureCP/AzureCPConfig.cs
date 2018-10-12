@@ -289,6 +289,7 @@ namespace azurecp
 
         public void ApplyConfiguration(AzureCPConfig configToApply)
         {
+            this.SPTrustName = configToApply.SPTrustName;
             this.AzureTenants = configToApply.AzureTenants;
             this.ClaimTypes = configToApply.ClaimTypes;
             this.AlwaysResolveUserInput = configToApply.AlwaysResolveUserInput;
@@ -297,6 +298,7 @@ namespace azurecp
             this.EntityDisplayTextPrefix = configToApply.EntityDisplayTextPrefix;
             this.EnableRetry = configToApply.EnableRetry;
             this.Timeout = configToApply.Timeout;
+            this.CustomData = configToApply.CustomData;
         }
 
         public AzureCPConfig CopyPersistedProperties()
@@ -316,6 +318,7 @@ namespace azurecp
             copy.EntityDisplayTextPrefix = this.EntityDisplayTextPrefix;
             copy.EnableRetry = this.EnableRetry;
             copy.Timeout = this.Timeout;
+            copy.CustomData = this.CustomData;
             return copy;
         }
 
