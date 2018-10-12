@@ -50,7 +50,7 @@ namespace AzureCP.Tests
             }
         }
 
-        [Test, TestCaseSource(typeof(ValidateEntityDataSource), "GetTestData", new object[] { UnitTestsHelper.DataFile_ValidationTests })]
+        [Test, TestCaseSource(typeof(ValidateEntityDataSource), "GetTestData", new object[] { UnitTestsHelper.DataFile_MemberAccounts_Validate })]
         //[Repeat(UnitTestsHelper.TestRepeatCount)]
         public void RequireExactMatchDuringSearch(ValidateEntityData registrationData)
         {

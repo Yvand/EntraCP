@@ -54,7 +54,8 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="AugmentationTests.cs" />
-    <Compile Include="GuestAccountsTests.cs" />
+    <Compile Include="GuestAccountsEmailTests.cs" />
+    <Compile Include="GuestAccountsUPNTests.cs" />
     <Compile Include="ModifyConfigBase.cs" />
     <Compile Include="UnitTestsHelper.cs" />
     <Compile Include="CustomConfigTests.cs" />

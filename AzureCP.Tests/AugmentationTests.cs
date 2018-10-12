@@ -29,7 +29,7 @@ namespace AzureCP.Tests
             Console.WriteLine($"Restored actual configuration.");
         }
 
-        [Test, TestCaseSource(typeof(ValidateEntityDataSource), "GetTestData", new object[] { UnitTestsHelper.DataFile_ValidationTests })]
+        [Test, TestCaseSource(typeof(ValidateEntityDataSource), "GetTestData", new object[] { UnitTestsHelper.DataFile_MemberAccounts_Validate })]
         [Repeat(UnitTestsHelper.TestRepeatCount)]
         public void AugmentEntity(ValidateEntityData registrationData)
         {

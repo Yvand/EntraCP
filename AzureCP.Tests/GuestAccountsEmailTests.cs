@@ -1,23 +1,37 @@
-﻿using Microsoft.SharePoint.Administration.Claims;
-using Microsoft.SharePoint.WebControls;
+﻿using azurecp;
+using Microsoft.SharePoint.Administration.Claims;
 using NUnit.Framework;
 using System;
+using System.Collections.Generic;
+using System.Linq;
 using System.Security.Claims;
+using System.Text;
+using System.Threading.Tasks;
 
 namespace AzureCP.Tests
 {
+    /// <summary>
+    /// Test guest accounts when their identity claim is the Email
+    /// </summary>
     [TestFixture]
-    [Parallelizable(ParallelScope.Children)]
-    public class PeoplePickerTests
+    public class GuestAccountsEmailTests : ModifyConfigBase
     {
-        [Test, TestCaseSource(typeof(SearchEntityDataSource), "GetTestData", new object[] { UnitTestsHelper.DataFile_MemberAccounts_Search })]
+        public override void Init()
+        {
+            base.Init();
+            
+            // Extra initialization for current test class
+            Config.ClaimTypes.UpdateIdentifierForGuestUsers(AzureADObjectProperty.Mail);
+        }
+
+        [Test, TestCaseSource(typeof(SearchEntityDataSource), "GetTestData", new object[] { UnitTestsHelper.DataFile_GuestAccountsEmail_Search })]
         [Repeat(UnitTestsHelper.TestRepeatCount)]
         public void SearchEntities(SearchEntityData registrationData)
         {
             UnitTestsHelper.TestSearchOperation(registrationData.Input, registrationData.ExpectedResultCount, registrationData.ExpectedEntityClaimValue);
         }
 
-        [Test, TestCaseSource(typeof(ValidateEntityDataSource), "GetTestData", new object[] { UnitTestsHelper.DataFile_MemberAccounts_Validate })]
+        [Test, TestCaseSource(typeof(ValidateEntityDataSource), "GetTestData", new object[] { UnitTestsHelper.DataFile_GuestAccountsEmail_Validate })]
         [MaxTime(UnitTestsHelper.MaxTime)]
         [Repeat(UnitTestsHelper.TestRepeatCount)]
         public void ValidateClaim(ValidateEntityData registrationData)
@@ -26,23 +40,18 @@ namespace AzureCP.Tests
             UnitTestsHelper.TestValidationOperation(inputClaim, registrationData.ShouldValidate, registrationData.ClaimValue);
         }
 
-        //[TestCaseSource(typeof(SearchEntityDataSourceCollection))]
-        public void DEBUG_SearchEntitiesFromCollection(string inputValue, string expectedCount, string expectedClaimValue)
-        {
-            UnitTestsHelper.TestSearchOperation(inputValue, Convert.ToInt32(expectedCount), expectedClaimValue);
-        }
-
-        [TestCase(@"AADGroup1", 1, "5b0f6c56-c87f-44c3-9354-56cba03da433")]
+        [TestCase(@"guest", 0, "GUEST@contoso.com")]
+        [TestCase(@"yvand@mic", 2, "yvand@microsoft.com")]
         public void DEBUG_SearchEntities(string inputValue, int expectedResultCount, string expectedEntityClaimValue)
         {
             UnitTestsHelper.TestSearchOperation(inputValue, expectedResultCount, expectedEntityClaimValue);
         }
 
-        //[TestCase("http://schemas.microsoft.com/ws/2008/06/identity/claims/role", "5b0f6c56-c87f-44c3-9354-56cba03da433", true)]
+        [TestCase("http://schemas.xmlsoap.org/ws/2005/05/identity/claims/emailaddress", "GUEST@contoso.com", false)]
         public void DEBUG_ValidateClaim(string claimType, string claimValue, bool shouldValidate)
         {
             SPClaim inputClaim = new SPClaim(claimType, claimValue, ClaimValueTypes.String, SPOriginalIssuers.Format(SPOriginalIssuerType.TrustedProvider, UnitTestsHelper.SPTrust.Name));
             UnitTestsHelper.TestValidationOperation(inputClaim, shouldValidate, claimValue);
         }
-    }    
+    }
 }

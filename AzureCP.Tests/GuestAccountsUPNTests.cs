@@ -10,8 +10,11 @@ using System.Threading.Tasks;
 
 namespace AzureCP.Tests
 {
+    /// <summary>
+    /// Test guest accounts when their identity claim is the UserPrincipalName
+    /// </summary>
     [TestFixture]
-    public class GuestAccountsTests : ModifyConfigBase
+    public class GuestAccountsUPNTests : ModifyConfigBase
     {
         public override void Init()
         {
@@ -21,14 +24,14 @@ namespace AzureCP.Tests
             Config.ClaimTypes.UpdateIdentifierForGuestUsers(AzureADObjectProperty.UserPrincipalName);
         }
 
-        [Test, TestCaseSource(typeof(SearchEntityDataSource), "GetTestData", new object[] { UnitTestsHelper.DataFile_GuestAccountsSearchTests })]
+        [Test, TestCaseSource(typeof(SearchEntityDataSource), "GetTestData", new object[] { UnitTestsHelper.DataFile_GuestAccountsUPN_Search })]
         [Repeat(UnitTestsHelper.TestRepeatCount)]
         public void SearchEntities(SearchEntityData registrationData)
         {
             UnitTestsHelper.TestSearchOperation(registrationData.Input, registrationData.ExpectedResultCount, registrationData.ExpectedEntityClaimValue);
         }
 
-        [Test, TestCaseSource(typeof(ValidateEntityDataSource), "GetTestData", new object[] { UnitTestsHelper.DataFile_GuestAccountsValidationTests })]
+        [Test, TestCaseSource(typeof(ValidateEntityDataSource), "GetTestData", new object[] { UnitTestsHelper.DataFile_GuestAccountsUPN_Validate })]
         [MaxTime(UnitTestsHelper.MaxTime)]
         [Repeat(UnitTestsHelper.TestRepeatCount)]
         public void ValidateClaim(ValidateEntityData registrationData)
@@ -37,7 +40,7 @@ namespace AzureCP.Tests
             UnitTestsHelper.TestValidationOperation(inputClaim, registrationData.ShouldValidate, registrationData.ClaimValue);
         }
 
-        //[TestCase(@"yvan84", 1, "GUEST.com#EXT#@XXX.onmicrosoft.com")]
+        [TestCase(@"guest", 0, "GUEST.com#EXT#@XXX.onmicrosoft.com")]
         public void DEBUG_SearchEntities(string inputValue, int expectedResultCount, string expectedEntityClaimValue)
         {
             UnitTestsHelper.TestSearchOperation(inputValue, expectedResultCount, expectedEntityClaimValue);
