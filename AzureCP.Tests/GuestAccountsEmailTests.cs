@@ -1,12 +1,7 @@
 ﻿using azurecp;
 using Microsoft.SharePoint.Administration.Claims;
 using NUnit.Framework;
-using System;
-using System.Collections.Generic;
-using System.Linq;
 using System.Security.Claims;
-using System.Text;
-using System.Threading.Tasks;
 
 namespace AzureCP.Tests
 {
@@ -16,9 +11,9 @@ namespace AzureCP.Tests
     [TestFixture]
     public class GuestAccountsEmailTests : ModifyConfigBase
     {
-        public override void Init()
+        public override void InitializeNewConfiguration()
         {
-            base.Init();
+            base.InitializeNewConfiguration();
             
             // Extra initialization for current test class
             Config.ClaimTypes.UpdateIdentifierForGuestUsers(AzureADObjectProperty.Mail);
@@ -40,8 +35,7 @@ namespace AzureCP.Tests
             UnitTestsHelper.TestValidationOperation(inputClaim, registrationData.ShouldValidate, registrationData.ClaimValue);
         }
 
-        [TestCase(@"guest", 0, "GUEST@contoso.com")]
-        [TestCase(@"yvand@mic", 2, "yvand@microsoft.com")]
+        [TestCase(@"xyzguest", 0, "xyzGUEST@contoso.com")]
         public void DEBUG_SearchEntities(string inputValue, int expectedResultCount, string expectedEntityClaimValue)
         {
             UnitTestsHelper.TestSearchOperation(inputValue, expectedResultCount, expectedEntityClaimValue);

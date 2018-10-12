@@ -1,24 +1,31 @@
 ﻿using azurecp;
 using NUnit.Framework;
 using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 
 namespace AzureCP.Tests
 {
+    /// <summary>
+    /// This class creates a backup of current configuration and provides one that can be modified as needed. At the end of the test, initial configuration will be restored.
+    /// </summary>
     public class ModifyConfigBase
     {
         protected AzureCPConfig Config;
         private AzureCPConfig BackupConfig;
 
         [OneTimeSetUp]
-        public virtual void Init()
+        public void Init()
         {
-            Console.WriteLine($"Starting custom config test {TestContext.CurrentContext.Test.Name}...");
+            Console.WriteLine($"Backup initial config and start test {TestContext.CurrentContext.Test.Name}...");
             Config = AzureCPConfig.GetConfiguration(UnitTestsHelper.ClaimsProviderConfigName, UnitTestsHelper.SPTrust.Name);
             BackupConfig = Config.CopyPersistedProperties();
+            InitializeNewConfiguration();
+        }
+
+        /// <summary>
+        /// Initialize new configuration
+        /// </summary>
+        public virtual void InitializeNewConfiguration()
+        {
             Config.ResetClaimTypesList();
         }
 
@@ -27,7 +34,7 @@ namespace AzureCP.Tests
         {
             Config.ApplyConfiguration(BackupConfig);
             Config.Update();
-            Console.WriteLine($"Restored actual configuration.");
+            Console.WriteLine($"Test {TestContext.CurrentContext.Test.Name} finished, restored initial configuration.");
         }
     }
 }

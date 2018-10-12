@@ -19,7 +19,7 @@ public class UnitTestsHelper
     public const string ClaimsProviderConfigName = "AzureCPConfig";
     public static Uri Context = new Uri("http://spsites/sites/AzureCP.UnitTests");
     public const int MaxTime = 50000;
-    public const int TestRepeatCount = 100;
+    public const int TestRepeatCount = 20;
     public const string FarmAdmin = @"i:0#.w|contoso\yvand";
 
     public const string RandomClaimType = "http://schemas.yvand.com/ws/claims/random";
