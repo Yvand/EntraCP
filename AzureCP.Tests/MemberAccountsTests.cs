@@ -1,5 +1,4 @@
 ﻿using Microsoft.SharePoint.Administration.Claims;
-using Microsoft.SharePoint.WebControls;
 using NUnit.Framework;
 using System;
 using System.Security.Claims;
@@ -8,8 +7,15 @@ namespace AzureCP.Tests
 {
     [TestFixture]
     [Parallelizable(ParallelScope.Children)]
-    public class PeoplePickerTests
+    public class MemberAccountsTests : ModifyConfigBase
     {
+        public override void InitializeConfiguration()
+        {
+            base.InitializeConfiguration();
+            Config.EnableAugmentation = true;
+            Config.Update();
+        }
+
         [Test, TestCaseSource(typeof(SearchEntityDataSource), "GetTestData", new object[] { UnitTestsHelper.DataFile_MemberAccounts_Search })]
         [Repeat(UnitTestsHelper.TestRepeatCount)]
         public void SearchEntities(SearchEntityData registrationData)
@@ -24,6 +30,13 @@ namespace AzureCP.Tests
         {
             SPClaim inputClaim = new SPClaim(UnitTestsHelper.SPTrust.IdentityClaimTypeInformation.MappedClaimType, registrationData.ClaimValue, ClaimValueTypes.String, SPOriginalIssuers.Format(SPOriginalIssuerType.TrustedProvider, UnitTestsHelper.SPTrust.Name));
             UnitTestsHelper.TestValidationOperation(inputClaim, registrationData.ShouldValidate, registrationData.ClaimValue);
+        }
+
+        [Test, TestCaseSource(typeof(ValidateEntityDataSource), "GetTestData", new object[] { UnitTestsHelper.DataFile_MemberAccounts_Validate })]
+        [Repeat(UnitTestsHelper.TestRepeatCount)]
+        public void AugmentEntity(ValidateEntityData registrationData)
+        {
+            UnitTestsHelper.TestAugmentationOperation(UnitTestsHelper.SPTrust.IdentityClaimTypeInformation.MappedClaimType, registrationData.ClaimValue, registrationData.IsMemberOfTrustedGroup);
         }
 
         //[TestCaseSource(typeof(SearchEntityDataSourceCollection))]
@@ -44,5 +57,5 @@ namespace AzureCP.Tests
             SPClaim inputClaim = new SPClaim(claimType, claimValue, ClaimValueTypes.String, SPOriginalIssuers.Format(SPOriginalIssuerType.TrustedProvider, UnitTestsHelper.SPTrust.Name));
             UnitTestsHelper.TestValidationOperation(inputClaim, shouldValidate, claimValue);
         }
-    }    
+    }
 }

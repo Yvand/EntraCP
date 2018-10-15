@@ -11,9 +11,9 @@ namespace AzureCP.Tests
     [TestFixture]
     public class GuestAccountsUPNTests : ModifyConfigBase
     {
-        public override void InitializeNewConfiguration()
+        public override void InitializeConfiguration()
         {
-            base.InitializeNewConfiguration();
+            base.InitializeConfiguration();
             
             // Extra initialization for current test class
             Config.ClaimTypes.UpdateIdentifierForGuestUsers(AzureADObjectProperty.UserPrincipalName);
@@ -33,6 +33,13 @@ namespace AzureCP.Tests
         {
             SPClaim inputClaim = new SPClaim(UnitTestsHelper.SPTrust.IdentityClaimTypeInformation.MappedClaimType, registrationData.ClaimValue, ClaimValueTypes.String, SPOriginalIssuers.Format(SPOriginalIssuerType.TrustedProvider, UnitTestsHelper.SPTrust.Name));
             UnitTestsHelper.TestValidationOperation(inputClaim, registrationData.ShouldValidate, registrationData.ClaimValue);
+        }        
+
+        [Test, TestCaseSource(typeof(ValidateEntityDataSource), "GetTestData", new object[] { UnitTestsHelper.DataFile_GuestAccountsUPN_Validate })]
+        [Repeat(UnitTestsHelper.TestRepeatCount)]
+        public void AugmentEntity(ValidateEntityData registrationData)
+        {
+            UnitTestsHelper.TestAugmentationOperation(UnitTestsHelper.SPTrust.IdentityClaimTypeInformation.MappedClaimType, registrationData.ClaimValue, registrationData.IsMemberOfTrustedGroup);
         }
 
         [TestCase(@"xyzguest", 0, "xyzGUEST_contoso.com#EXT#@XXX.onmicrosoft.com")]

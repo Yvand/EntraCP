@@ -18,13 +18,14 @@ namespace AzureCP.Tests
             Console.WriteLine($"Backup initial config and start test {TestContext.CurrentContext.Test.Name}...");
             Config = AzureCPConfig.GetConfiguration(UnitTestsHelper.ClaimsProviderConfigName, UnitTestsHelper.SPTrust.Name);
             BackupConfig = Config.CopyPersistedProperties();
-            InitializeNewConfiguration();
+            //Config.ResetCurrentConfiguration(); // Cannot be done otherwise Azure tenants will be removed
+            InitializeConfiguration();
         }
 
         /// <summary>
-        /// Initialize new configuration
+        /// Initialize configuration
         /// </summary>
-        public virtual void InitializeNewConfiguration()
+        public virtual void InitializeConfiguration()
         {
             Config.ResetClaimTypesList();
         }

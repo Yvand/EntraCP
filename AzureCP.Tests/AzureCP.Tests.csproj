@@ -53,14 +53,13 @@
     <Reference Include="System.Core" />
   </ItemGroup>
   <ItemGroup>
-    <Compile Include="AugmentationTests.cs" />
     <Compile Include="GuestAccountsEmailTests.cs" />
     <Compile Include="GuestAccountsUPNTests.cs" />
     <Compile Include="ModifyConfigBase.cs" />
     <Compile Include="UnitTestsHelper.cs" />
     <Compile Include="CustomConfigTests.cs" />
     <Compile Include="ModifyConfigTests.cs" />
-    <Compile Include="PeoplePickerTests.cs" />
+    <Compile Include="MemberAccountsTests.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
   </ItemGroup>
   <ItemGroup>

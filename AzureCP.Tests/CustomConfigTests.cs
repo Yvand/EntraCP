@@ -1,6 +1,5 @@
 ﻿using azurecp;
 using Microsoft.SharePoint.Administration.Claims;
-using Microsoft.SharePoint.WebControls;
 using NUnit.Framework;
 using System;
 using System.Linq;

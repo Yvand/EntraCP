@@ -11,9 +11,9 @@ namespace AzureCP.Tests
     [TestFixture]
     public class GuestAccountsEmailTests : ModifyConfigBase
     {
-        public override void InitializeNewConfiguration()
+        public override void InitializeConfiguration()
         {
-            base.InitializeNewConfiguration();
+            base.InitializeConfiguration();
             
             // Extra initialization for current test class
             Config.ClaimTypes.UpdateIdentifierForGuestUsers(AzureADObjectProperty.Mail);
@@ -35,6 +35,13 @@ namespace AzureCP.Tests
             UnitTestsHelper.TestValidationOperation(inputClaim, registrationData.ShouldValidate, registrationData.ClaimValue);
         }
 
+        [Test, TestCaseSource(typeof(ValidateEntityDataSource), "GetTestData", new object[] { UnitTestsHelper.DataFile_GuestAccountsEmail_Validate })]
+        [Repeat(UnitTestsHelper.TestRepeatCount)]
+        public void AugmentEntity(ValidateEntityData registrationData)
+        {
+            UnitTestsHelper.TestAugmentationOperation(UnitTestsHelper.SPTrust.IdentityClaimTypeInformation.MappedClaimType, registrationData.ClaimValue, registrationData.IsMemberOfTrustedGroup);
+        }
+
         [TestCase(@"xyzguest", 0, "xyzGUEST@contoso.com")]
         public void DEBUG_SearchEntities(string inputValue, int expectedResultCount, string expectedEntityClaimValue)
         {
@@ -46,6 +53,12 @@ namespace AzureCP.Tests
         {
             SPClaim inputClaim = new SPClaim(claimType, claimValue, ClaimValueTypes.String, SPOriginalIssuers.Format(SPOriginalIssuerType.TrustedProvider, UnitTestsHelper.SPTrust.Name));
             UnitTestsHelper.TestValidationOperation(inputClaim, shouldValidate, claimValue);
+        }
+
+        [TestCase("i:05.t|contoso.local|xydGUEST@FAKE.onmicrosoft.com", false)]
+        public void DEBUG_AugmentEntity(string claimValue, bool shouldHavePermissions)
+        {
+            UnitTestsHelper.TestAugmentationOperation(UnitTestsHelper.SPTrust.IdentityClaimTypeInformation.MappedClaimType, claimValue, shouldHavePermissions);
         }
     }
 }
