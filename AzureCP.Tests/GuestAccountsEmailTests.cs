@@ -17,6 +17,7 @@ namespace AzureCP.Tests
             
             // Extra initialization for current test class
             Config.ClaimTypes.UpdateIdentifierForGuestUsers(AzureADObjectProperty.Mail);
+            Config.EnableAugmentation = true;
             Config.Update();
         }
 
