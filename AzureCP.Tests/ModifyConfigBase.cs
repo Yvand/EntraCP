@@ -1,6 +1,7 @@
 ﻿using azurecp;
 using NUnit.Framework;
 using System;
+using System.Diagnostics;
 
 namespace AzureCP.Tests
 {
@@ -15,10 +16,8 @@ namespace AzureCP.Tests
         [OneTimeSetUp]
         public void Init()
         {
-            Console.WriteLine($"Backup initial config and start test {TestContext.CurrentContext.Test.Name}...");
             Config = AzureCPConfig.GetConfiguration(UnitTestsHelper.ClaimsProviderConfigName, UnitTestsHelper.SPTrust.Name);
             BackupConfig = Config.CopyPersistedProperties();
-            //Config.ResetCurrentConfiguration(); // Cannot be done otherwise Azure tenants will be removed
             InitializeConfiguration();
         }
 
@@ -27,7 +26,7 @@ namespace AzureCP.Tests
         /// </summary>
         public virtual void InitializeConfiguration()
         {
-            Config.ResetClaimTypesList();
+            UnitTestsHelper.InitializeConfiguration(Config);
         }
 
         [OneTimeTearDown]
@@ -35,7 +34,6 @@ namespace AzureCP.Tests
         {
             Config.ApplyConfiguration(BackupConfig);
             Config.Update();
-            Console.WriteLine($"Test {TestContext.CurrentContext.Test.Name} finished, restored initial configuration.");
         }
     }
 }

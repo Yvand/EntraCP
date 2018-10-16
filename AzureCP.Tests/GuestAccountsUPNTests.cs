@@ -14,9 +14,10 @@ namespace AzureCP.Tests
         public override void InitializeConfiguration()
         {
             base.InitializeConfiguration();
-            
+
             // Extra initialization for current test class
             Config.ClaimTypes.UpdateIdentifierForGuestUsers(AzureADObjectProperty.UserPrincipalName);
+            Config.Update();
         }
 
         [Test, TestCaseSource(typeof(SearchEntityDataSource), "GetTestData", new object[] { UnitTestsHelper.DataFile_GuestAccountsUPN_Search })]

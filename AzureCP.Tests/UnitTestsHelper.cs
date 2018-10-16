@@ -4,10 +4,12 @@ using Microsoft.SharePoint;
 using Microsoft.SharePoint.Administration;
 using Microsoft.SharePoint.Administration.Claims;
 using Microsoft.SharePoint.WebControls;
+using Newtonsoft.Json;
 using NUnit.Framework;
 using System;
 using System.Collections;
 using System.Collections.Generic;
+using System.IO;
 using System.Linq;
 using System.Security.Claims;
 
@@ -30,6 +32,7 @@ public class UnitTestsHelper
     public const string TrustedGroupToAdd_ClaimType = "http://schemas.microsoft.com/ws/2008/06/identity/claims/role";
     public static SPClaim TrustedGroup = new SPClaim(TrustedGroupToAdd_ClaimType, TrustedGroupToAdd_ClaimValue, ClaimValueTypes.String, SPOriginalIssuers.Format(SPOriginalIssuerType.TrustedProvider, SPTrust.Name));
 
+    public const string AzureTenantsJsonFile = @"F:\Data\Dev\AzureCP_Tenants.json";
     public const string DataFile_MemberAccounts_Search = @"F:\Data\Dev\AzureCP_Tests_MemberAccounts_Search.csv";
     public const string DataFile_MemberAccounts_Validate = @"F:\Data\Dev\AzureCP_Tests_MemberAccounts_Validate.csv";
     public const string DataFile_GuestAccountsUPN_Search = @"F:\Data\Dev\AzureCP_Tests_GuestAccountsUPN_Search.csv";
@@ -37,15 +40,15 @@ public class UnitTestsHelper
     public const string DataFile_GuestAccountsEmail_Search = @"F:\Data\Dev\AzureCP_Tests_GuestAccountsEmail_Search.csv";
     public const string DataFile_GuestAccountsEmail_Validate = @"F:\Data\Dev\AzureCP_Tests_GuestAccountsEmail_Validate.csv";
 
-    public static SPTrustedLoginProvider SPTrust
-    {
-        get => SPSecurityTokenServiceManager.Local.TrustedLoginProviders.FirstOrDefault(x => String.Equals(x.ClaimProviderName, UnitTestsHelper.ClaimsProviderName, StringComparison.InvariantCultureIgnoreCase));
-    }
+    public static SPTrustedLoginProvider SPTrust => SPSecurityTokenServiceManager.Local.TrustedLoginProviders.FirstOrDefault(x => String.Equals(x.ClaimProviderName, UnitTestsHelper.ClaimsProviderName, StringComparison.InvariantCultureIgnoreCase));
 
     [OneTimeSetUp]
     public static void CheckSiteCollection()
     {
-        //return; // Uncommented when debugging AzureCP code from unit tests
+
+#if DEBUG
+        return; // Uncommented when debugging AzureCP code from unit tests
+#endif
 
         AzureCPConfig config = AzureCPConfig.GetConfiguration(UnitTestsHelper.ClaimsProviderConfigName, UnitTestsHelper.SPTrust.Name);
         if (config == null)
@@ -84,6 +87,20 @@ public class UnitTestsHelper
         {
             Console.WriteLine($"Web app {Context} was NOT found.");
         }
+    }
+
+    public static void InitializeConfiguration(AzureCPConfig config)
+    {
+        config.ResetCurrentConfiguration();
+
+#if DEBUG
+        config.Timeout = 99999;
+#endif
+
+        string json = File.ReadAllText(AzureTenantsJsonFile);
+        List<AzureTenant> azureTenants = JsonConvert.DeserializeObject<List<AzureTenant>>(json);
+        config.AzureTenants = azureTenants;
+        config.Update();
     }
 
     public static void TestSearchOperation(string inputValue, int expectedCount, string expectedClaimValue)
