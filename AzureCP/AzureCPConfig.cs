@@ -747,7 +747,12 @@ namespace azurecp
             this.IncomingEntityClaimTypeConfig = processedClaimTypeConfigList.FirstOrDefault(x =>
                String.Equals(x.ClaimType, this.IncomingEntity.ClaimType, StringComparison.InvariantCultureIgnoreCase) &&
                !x.UseMainClaimTypeOfDirectoryObject);
-            if (this.IncomingEntityClaimTypeConfig == null) return;
+
+            if (this.IncomingEntityClaimTypeConfig == null)
+            {
+                ClaimsProviderLogging.Log($"[{AzureCP._ProviderInternalName}] Unable to validate entity \"{this.IncomingEntity.Value}\" because its claim type \"{this.IncomingEntity.ClaimType}\" was not found in the ClaimTypes list of current configuration.", TraceSeverity.Unexpected, EventSeverity.Error, TraceCategory.Configuration);
+                throw new InvalidOperationException($"[{AzureCP._ProviderInternalName}] Unable validate entity \"{this.IncomingEntity.Value}\" because its claim type \"{this.IncomingEntity.ClaimType}\" was not found in the ClaimTypes list of current configuration.");
+            }
 
             // CurrentClaimTypeConfigList must also be set
             this.CurrentClaimTypeConfigList = new List<ClaimTypeConfig>(1);
@@ -783,6 +788,12 @@ namespace azurecp
             this.IncomingEntityClaimTypeConfig = processedClaimTypeConfigList.FirstOrDefault(x =>
                String.Equals(x.ClaimType, this.IncomingEntity.ClaimType, StringComparison.InvariantCultureIgnoreCase) &&
                !x.UseMainClaimTypeOfDirectoryObject);
+
+            if (this.IncomingEntityClaimTypeConfig == null)
+            {
+                ClaimsProviderLogging.Log($"[{AzureCP._ProviderInternalName}] Unable to augment entity \"{this.IncomingEntity.Value}\" because its claim type \"{this.IncomingEntity.ClaimType}\" was not found in the ClaimTypes list of current configuration.", TraceSeverity.Unexpected, EventSeverity.Error, TraceCategory.Configuration);
+                throw new InvalidOperationException($"[{AzureCP._ProviderInternalName}] Unable to augment entity \"{this.IncomingEntity.Value}\" because its claim type \"{this.IncomingEntity.ClaimType}\" was not found in the ClaimTypes list of current configuration.");
+            }
         }
     }
 

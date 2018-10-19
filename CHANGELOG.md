@@ -1,5 +1,10 @@
 # Change log for AzureCP
 
+## Unreleased
+
+* Fixed bug due to non-URL encoded filter when augmentating guest accounts
+* Added more strict checks on the claim type passed during augmentation and validation, to record a more meaningful error if needed
+
 ## AzureCP v13 enhancements & bug-fixes - Published in August 30, 2018
 
 * Guest users are now fully supported. By default, AzureCP will use the Mail property to search Guest accounts and create their permissions in SharePoint
