@@ -12,20 +12,55 @@ namespace AzureCP.Tests
     {
         public static string GroupsClaimType = ClaimsProviderConstants.DefaultMainGroupClaimType;
 
-        [TestCase("ext:externalUser@contoso.com", 1, "externalUser@contoso.com")]
-        [TestCase("ext:", 0, "")]
-        public void TestPrefixToBypassLookup(string inputValue, int expectedCount, string expectedClaimValue)
+        [TestCase("bypass-user:externalUser@contoso.com", 1, "externalUser@contoso.com")]
+        [TestCase("externalUser@contoso.com", 0, "")]
+        [TestCase("bypass-user:", 0, "")]
+        public void BypassLookupOnIdentityClaimTest(string inputValue, int expectedCount, string expectedClaimValue)
         {
             ClaimTypeConfig ctConfig = Config.ClaimTypes.FirstOrDefault(x => String.Equals(UnitTestsHelper.SPTrust.IdentityClaimTypeInformation.MappedClaimType, x.ClaimType, StringComparison.InvariantCultureIgnoreCase));
-            ctConfig.PrefixToBypassLookup = "ext:";
+            ctConfig.PrefixToBypassLookup = "bypass-user:";
             Config.Update();
 
-            UnitTestsHelper.TestSearchOperation(inputValue, expectedCount, expectedClaimValue);
-
-            if (expectedCount > 0)
+            try
             {
-                SPClaim inputClaim = new SPClaim(UnitTestsHelper.SPTrust.IdentityClaimTypeInformation.MappedClaimType, expectedClaimValue, ClaimValueTypes.String, SPOriginalIssuers.Format(SPOriginalIssuerType.TrustedProvider, UnitTestsHelper.SPTrust.Name));
-                UnitTestsHelper.TestValidationOperation(inputClaim, true, expectedClaimValue);
+                UnitTestsHelper.TestSearchOperation(inputValue, expectedCount, expectedClaimValue);
+
+                if (expectedCount > 0)
+                {
+                    SPClaim inputClaim = new SPClaim(UnitTestsHelper.SPTrust.IdentityClaimTypeInformation.MappedClaimType, expectedClaimValue, ClaimValueTypes.String, SPOriginalIssuers.Format(SPOriginalIssuerType.TrustedProvider, UnitTestsHelper.SPTrust.Name));
+                    UnitTestsHelper.TestValidationOperation(inputClaim, true, expectedClaimValue);
+                }
+            }
+            finally
+            {
+                ctConfig.PrefixToBypassLookup = String.Empty;
+                Config.Update();
+            }
+        }
+
+        [TestCase(@"bypass-group:domain\groupValue", 1, @"domain\groupValue")]
+        [TestCase(@"domain\groupValue", 0, "")]
+        [TestCase("bypass-group:", 0, "")]
+        public void BypassLookupOnGroupClaimTest(string inputValue, int expectedCount, string expectedClaimValue)
+        {
+            ClaimTypeConfig ctConfig = Config.ClaimTypes.FirstOrDefault(x => String.Equals(UnitTestsHelper.TrustedGroupToAdd_ClaimType, x.ClaimType, StringComparison.InvariantCultureIgnoreCase));
+            ctConfig.PrefixToBypassLookup = "bypass-group:";
+            Config.Update();
+
+            try
+            {
+                UnitTestsHelper.TestSearchOperation(inputValue, expectedCount, expectedClaimValue);
+
+                if (expectedCount > 0)
+                {
+                    SPClaim inputClaim = new SPClaim(UnitTestsHelper.TrustedGroupToAdd_ClaimType, expectedClaimValue, ClaimValueTypes.String, SPOriginalIssuers.Format(SPOriginalIssuerType.TrustedProvider, UnitTestsHelper.SPTrust.Name));
+                    UnitTestsHelper.TestValidationOperation(inputClaim, true, expectedClaimValue);
+                }
+            }
+            finally
+            {
+                ctConfig.PrefixToBypassLookup = String.Empty;
+                Config.Update();
             }
         }
 

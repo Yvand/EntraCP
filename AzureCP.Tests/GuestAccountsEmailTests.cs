@@ -50,14 +50,14 @@ namespace AzureCP.Tests
             UnitTestsHelper.TestSearchOperation(inputValue, expectedResultCount, expectedEntityClaimValue);
         }
 
-        [TestCase("http://schemas.xmlsoap.org/ws/2005/05/identity/claims/emailaddress", "GUEST@contoso.com", false)]
+        [TestCase("http://schemas.xmlsoap.org/ws/2005/05/identity/claims/upn", "GUEST@contoso.com", false)]
         public void DEBUG_ValidateClaim(string claimType, string claimValue, bool shouldValidate)
         {
             SPClaim inputClaim = new SPClaim(claimType, claimValue, ClaimValueTypes.String, SPOriginalIssuers.Format(SPOriginalIssuerType.TrustedProvider, UnitTestsHelper.SPTrust.Name));
             UnitTestsHelper.TestValidationOperation(inputClaim, shouldValidate, claimValue);
         }
 
-        [TestCase("i:05.t|contoso.local|xydGUEST@FAKE.onmicrosoft.com", false)]
+        [TestCase("xydGUEST@FAKE.onmicrosoft.com", false)]
         public void DEBUG_AugmentEntity(string claimValue, bool shouldHavePermissions)
         {
             UnitTestsHelper.TestAugmentationOperation(UnitTestsHelper.SPTrust.IdentityClaimTypeInformation.MappedClaimType, claimValue, shouldHavePermissions);

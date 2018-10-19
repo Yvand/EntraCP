@@ -51,10 +51,17 @@ namespace AzureCP.Tests
         }
 
         [TestCase("http://schemas.xmlsoap.org/ws/2005/05/identity/claims/emailaddress", "GUEST.com#EXT#@XXX.onmicrosoft.com", false)]
+        [TestCase("http://schemas.xmlsoap.org/ws/2005/05/identity/claims/upn", "GUEST.com#EXT#@XXX.onmicrosoft.com", false)]
         public void DEBUG_ValidateClaim(string claimType, string claimValue, bool shouldValidate)
         {
             SPClaim inputClaim = new SPClaim(claimType, claimValue, ClaimValueTypes.String, SPOriginalIssuers.Format(SPOriginalIssuerType.TrustedProvider, UnitTestsHelper.SPTrust.Name));
             UnitTestsHelper.TestValidationOperation(inputClaim, shouldValidate, claimValue);
+        }
+
+        [TestCase("xyzGUEST_contoso.com#EXT#@XXX.onmicrosoft.com", false)]
+        public void DEBUG_AugmentEntity(string claimValue, bool shouldHavePermissions)
+        {
+            UnitTestsHelper.TestAugmentationOperation(UnitTestsHelper.SPTrust.IdentityClaimTypeInformation.MappedClaimType, claimValue, shouldHavePermissions);
         }
     }
 }
