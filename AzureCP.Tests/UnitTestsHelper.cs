@@ -43,7 +43,7 @@ public class UnitTestsHelper
     public static SPTrustedLoginProvider SPTrust => SPSecurityTokenServiceManager.Local.TrustedLoginProviders.FirstOrDefault(x => String.Equals(x.ClaimProviderName, UnitTestsHelper.ClaimsProviderName, StringComparison.InvariantCultureIgnoreCase));
 
     [OneTimeSetUp]
-    public static void CheckSiteCollection()
+    public static void InitializeSiteCollection()
     {
 
 #if DEBUG
