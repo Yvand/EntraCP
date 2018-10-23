@@ -949,14 +949,14 @@ namespace azurecp
                         currentContext.Input.StartsWith(x.PrefixToBypassLookup, StringComparison.InvariantCultureIgnoreCase));
                     if (ctConfigWithInputPrefixMatch != null)
                     {
-                        currentContext.Input = currentContext.Input.Substring(ctConfigWithInputPrefixMatch.PrefixToBypassLookup.Length);
-                        if (String.IsNullOrEmpty(currentContext.Input))
+                        string inputWithoutPrefix = currentContext.Input.Substring(ctConfigWithInputPrefixMatch.PrefixToBypassLookup.Length);
+                        if (String.IsNullOrEmpty(inputWithoutPrefix))
                         {
                             // No value in the input after the prefix, return
                             return entities;
                         }
                         PickerEntity entity = CreatePickerEntityForSpecificClaimType(
-                            currentContext.Input,
+                            inputWithoutPrefix,
                             ctConfigWithInputPrefixMatch,
                             true);
                         if (entity != null)
@@ -979,7 +979,7 @@ namespace azurecp
                         // At this stage, it is impossible to know if entity was originally created with the keyword that bypass query to Azure AD
                         // But it should be always validated since property PrefixToBypassLookup is set for current ClaimTypeConfig, so create entity manually
                         PickerEntity entity = CreatePickerEntityForSpecificClaimType(
-                            currentContext.Input,
+                            currentContext.IncomingEntity.Value,
                             currentContext.IncomingEntityClaimTypeConfig,
                             currentContext.InputHasKeyword);
                         if (entity != null)
