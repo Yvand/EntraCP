@@ -63,8 +63,8 @@ namespace azurecp
         /// </summary>
         public List<ClaimTypeConfig> ProcessedClaimTypesList;
         protected IEnumerable<ClaimTypeConfig> MetadataConfig;
-        protected virtual string PickerEntityDisplayText { get { return "({0}) {1}"; } }
-        protected virtual string PickerEntityOnMouseOver { get { return "{0}={1}"; } }
+        protected virtual string PickerEntityDisplayText => "({0}) {1}";
+        protected virtual string PickerEntityOnMouseOver => "{0}={1}";
         protected string IssuerName => SPOriginalIssuers.Format(SPOriginalIssuerType.TrustedProvider, SPTrust.Name);
 
         public AzureCP(string displayName) : base(displayName) { }
@@ -1046,12 +1046,14 @@ namespace azurecp
         /// <param name="currentContext"></param>
         protected virtual void BuildFilter(OperationContext currentContext, List<AzureTenant> azureTenants)
         {
-            //StringBuilder userFilterBuilder = new StringBuilder("( ");
-            StringBuilder userFilterBuilder = new StringBuilder("");
+            StringBuilder userFilterBuilder = new StringBuilder();
             StringBuilder groupFilterBuilder = new StringBuilder();
             StringBuilder userSelectBuilder = new StringBuilder("UserType, Mail, ");    // UserType and Mail are always needed to deal with Guest users
             StringBuilder groupSelectBuilder = new StringBuilder("Id, ");               // Id is always required for groups
-            string memberOnlyUserTypeFilter = " and UserType eq 'Member'";
+
+            //// Microsoft Graph doesn't support operator not equals (ne) on attribute UserType, it can only be queried using equals (eq)
+            //string memberOnlyUserTypeFilter = " and UserType eq 'Member'";
+            //string guestOnlyUserTypeFilter = " and UserType eq 'Guest'";
 
             string preferredFilterPattern;
             string input = currentContext.Input;
@@ -1135,15 +1137,24 @@ namespace azurecp
             string encodedGroupFilter = HttpUtility.UrlEncode(groupFilterBuilder.ToString());
             string encodedUserSelect = HttpUtility.UrlEncode(userSelectBuilder.ToString());
             string encodedgroupSelect = HttpUtility.UrlEncode(groupSelectBuilder.ToString());
-            string encodedMemberOnlyUserTypeFilter = HttpUtility.UrlEncode(memberOnlyUserTypeFilter);
+            //string encodedMemberOnlyUserTypeFilter = HttpUtility.UrlEncode(memberOnlyUserTypeFilter);
+            //string encodedGuestOnlyUserTypeFilter = HttpUtility.UrlEncode(guestOnlyUserTypeFilter);
 
             foreach (AzureTenant tenant in azureTenants)
             {
-                // Reset filters if no corresponding object was found in requestInfo.ClaimTypeConfigList, to detect that tenant should not be actually queried
                 if (firstUserObjectProcessed)
-                    tenant.UserFilter = tenant.MemberUserTypeOnly ? encodedUserFilter + encodedMemberOnlyUserTypeFilter : encodedUserFilter;
+                {
+                    tenant.UserFilter = encodedUserFilter;
+                    //if (tenant.MemberUserTypeOnly)
+                    //    tenant.UserFilter += encodedMemberOnlyUserTypeFilter;
+                    //else if (tenant.ExcludeGuestUsers)
+                    //    tenant.UserFilter += encodedGuestOnlyUserTypeFilter;
+                }
                 else
+                {
+                    // Reset filters if no corresponding object was found in requestInfo.ClaimTypeConfigList, to detect that tenant should not be queried
                     tenant.UserFilter = String.Empty;
+                }
 
                 if (firstGroupObjectProcessed)
                     tenant.GroupFilter = encodedGroupFilter;
@@ -1216,7 +1227,12 @@ namespace azurecp
                             {
                                 lock (lockAddResultToCollection)
                                 {
-                                    tenantResults.UsersAndGroups.AddRange(users.CurrentPage);
+                                    IList<User> usersInCurrentPage = users.CurrentPage;
+                                    if (tenant.ExcludeMemberUsers)
+                                        usersInCurrentPage = users.CurrentPage.Where(x => !String.Equals(x.UserType, ClaimsProviderConstants.MEMBER_USERTYPE, StringComparison.InvariantCultureIgnoreCase)).ToList<User>();
+                                    else if (tenant.ExcludeGuestUsers)
+                                        usersInCurrentPage = users.CurrentPage.Where(x => !String.Equals(x.UserType, ClaimsProviderConstants.GUEST_USERTYPE, StringComparison.InvariantCultureIgnoreCase)).ToList<User>();
+                                    tenantResults.UsersAndGroups.AddRange(usersInCurrentPage);
                                 }
                                 if (users.NextPageRequest != null) users = await users.NextPageRequest.GetAsync().ConfigureAwait(false);
                             }
@@ -1438,12 +1454,12 @@ namespace azurecp
             return processedResults;
         }
 
-        public override string Name { get { return ProviderInternalName; } }
-        public override bool SupportsEntityInformation { get { return true; } }
-        public override bool SupportsHierarchy { get { return true; } }
-        public override bool SupportsResolve { get { return true; } }
-        public override bool SupportsSearch { get { return true; } }
-        public override bool SupportsUserKey { get { return true; } }
+        public override string Name => ProviderInternalName;
+        public override bool SupportsEntityInformation => true;
+        public override bool SupportsHierarchy => true;
+        public override bool SupportsResolve => true;
+        public override bool SupportsSearch => true;
+        public override bool SupportsUserKey => true;
 
         /// <summary>
         /// Return the identity claim type

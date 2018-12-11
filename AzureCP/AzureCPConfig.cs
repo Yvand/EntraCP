@@ -43,6 +43,8 @@ namespace azurecp
         public const bool EnforceOnly1ClaimTypeForGroup = true;     // In AzureCP, only 1 claim type can be used to create group permissions
         public const string DefaultMainGroupClaimType = WIF4_5.ClaimTypes.Role;
         public const string PUBLICSITEURL = "https://yvand.github.io/AzureCP/";
+        public const string GUEST_USERTYPE = "Guest";
+        public const string MEMBER_USERTYPE = "Member";
         public static string ClaimsProviderVersion
         {
             get
@@ -580,8 +582,17 @@ namespace azurecp
         [Persisted]
         public string ClientSecret;
 
+        /// <summary>
+        /// Set to true to return only Member users from this tenant
+        /// </summary>
         [Persisted]
-        public bool MemberUserTypeOnly;
+        public bool ExcludeMemberUsers;
+
+        /// <summary>
+        /// Set to true to return only Guest users from this tenant
+        /// </summary>
+        [Persisted]
+        public bool ExcludeGuestUsers;
 
         /// <summary>
         /// Instance of the IAuthenticationProvider class for this specific Azure AD tenant
@@ -624,8 +635,9 @@ namespace azurecp
             copy.GraphService = this.GraphService;
             copy.GroupFilter = this.GroupFilter;
             copy.GroupSelect = this.GroupSelect;
+            copy.ExcludeGuestUsers = this.ExcludeGuestUsers;
             copy.Id = this.Id;
-            copy.MemberUserTypeOnly = this.MemberUserTypeOnly;
+            copy.ExcludeMemberUsers = this.ExcludeMemberUsers;
             copy.TenantName = this.TenantName;
             copy.UserFilter = this.UserFilter;
             copy.UserSelect = this.UserSelect;
