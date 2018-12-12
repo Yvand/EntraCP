@@ -52,39 +52,6 @@
   </PropertyGroup>
   <ItemGroup>
     <Reference Include="Microsoft.CSharp" />
-    <Reference Include="Microsoft.Graph, Version=1.12.0.0, Culture=neutral, PublicKeyToken=31bf3856ad364e35, processorArchitecture=MSIL">
-      <HintPath>..\packages\Microsoft.Graph.1.12.0\lib\net45\Microsoft.Graph.dll</HintPath>
-    </Reference>
-    <Reference Include="Microsoft.Graph.Core, Version=1.12.0.0, Culture=neutral, PublicKeyToken=31bf3856ad364e35, processorArchitecture=MSIL">
-      <HintPath>..\packages\Microsoft.Graph.Core.1.12.0\lib\net45\Microsoft.Graph.Core.dll</HintPath>
-    </Reference>
-    <Reference Include="Microsoft.IdentityModel.Clients.ActiveDirectory, Version=4.4.1.0, Culture=neutral, PublicKeyToken=31bf3856ad364e35, processorArchitecture=MSIL">
-      <HintPath>..\packages\Microsoft.IdentityModel.Clients.ActiveDirectory.4.4.1\lib\net45\Microsoft.IdentityModel.Clients.ActiveDirectory.dll</HintPath>
-    </Reference>
-    <Reference Include="Microsoft.Threading.Tasks, Version=1.0.12.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a, processorArchitecture=MSIL">
-      <HintPath>..\packages\Microsoft.Bcl.Async.1.0.168\lib\net40\Microsoft.Threading.Tasks.dll</HintPath>
-      <Private>False</Private>
-    </Reference>
-    <Reference Include="Microsoft.Threading.Tasks.Extensions, Version=1.0.12.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a, processorArchitecture=MSIL">
-      <HintPath>..\packages\Microsoft.Bcl.Async.1.0.168\lib\net40\Microsoft.Threading.Tasks.Extensions.dll</HintPath>
-      <Private>False</Private>
-    </Reference>
-    <Reference Include="Microsoft.Threading.Tasks.Extensions.Desktop, Version=1.0.168.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a, processorArchitecture=MSIL">
-      <HintPath>..\packages\Microsoft.Bcl.Async.1.0.168\lib\net40\Microsoft.Threading.Tasks.Extensions.Desktop.dll</HintPath>
-      <Private>False</Private>
-    </Reference>
-    <Reference Include="Newtonsoft.Json, Version=6.0.0.0, Culture=neutral, PublicKeyToken=30ad4fe6b2a6aeed, processorArchitecture=MSIL">
-      <HintPath>..\packages\Newtonsoft.Json.6.0.8\lib\net45\Newtonsoft.Json.dll</HintPath>
-    </Reference>
-    <Reference Include="Nito.AsyncEx, Version=4.0.1.0, Culture=neutral, PublicKeyToken=09d695329ca273b7, processorArchitecture=MSIL">
-      <HintPath>..\packages\Nito.AsyncEx.StrongNamed.4.0.1\lib\net45\Nito.AsyncEx.dll</HintPath>
-    </Reference>
-    <Reference Include="Nito.AsyncEx.Concurrent, Version=4.0.1.0, Culture=neutral, PublicKeyToken=09d695329ca273b7, processorArchitecture=MSIL">
-      <HintPath>..\packages\Nito.AsyncEx.StrongNamed.4.0.1\lib\net45\Nito.AsyncEx.Concurrent.dll</HintPath>
-    </Reference>
-    <Reference Include="Nito.AsyncEx.Enlightenment, Version=4.0.1.0, Culture=neutral, PublicKeyToken=09d695329ca273b7, processorArchitecture=MSIL">
-      <HintPath>..\packages\Nito.AsyncEx.StrongNamed.4.0.1\lib\net45\Nito.AsyncEx.Enlightenment.dll</HintPath>
-    </Reference>
     <Reference Include="System" />
     <Reference Include="System.Core" />
     <Reference Include="System.Data" />
@@ -137,7 +104,6 @@
     <None Include="app.config">
       <SubType>Designer</SubType>
     </None>
-    <None Include="AzureCP strong name key.pfx" />
     <None Include="AzureCP.AdminLinks\SharePointProjectItem.spdata">
       <SharePointProjectItemId>{c15a0bf3-126a-42e6-af6b-5880f2e9af42}</SharePointProjectItemId>
     </None>
@@ -147,9 +113,6 @@
     </None>
     <None Include="Features\AzureCP_Administration\AzureCP_Administration.feature">
       <FeatureId>{b82964c9-f57c-4826-b1dd-f03f63c7f197}</FeatureId>
-    </None>
-    <None Include="packages.config">
-      <SubType>Designer</SubType>
     </None>
     <None Include="Package\Package.package">
       <PackageId>{1db45b9b-2fff-4f07-992b-344dde907316}</PackageId>
@@ -161,7 +124,26 @@
       <SharePointProjectItemId>{aa00a720-1ea7-47a5-8993-73b778baef87}</SharePointProjectItemId>
     </None>
   </ItemGroup>
-  <ItemGroup />
+  <ItemGroup>
+    <PackageReference Include="Microsoft.Bcl.Build">
+      <Version>1.0.21</Version>
+    </PackageReference>
+    <PackageReference Include="Microsoft.Graph">
+      <Version>1.12.0</Version>
+    </PackageReference>
+    <PackageReference Include="Microsoft.IdentityModel.Clients.ActiveDirectory">
+      <Version>4.4.1</Version>
+    </PackageReference>
+    <PackageReference Include="Newtonsoft.Json">
+      <Version>6.0.8</Version>
+    </PackageReference>
+    <PackageReference Include="Nito.AsyncEx.StrongNamed">
+      <Version>4.0.1</Version>
+    </PackageReference>
+    <PackageReference Include="System.Net.Http">
+      <Version>4.3.4</Version>
+    </PackageReference>
+  </ItemGroup>
   <ItemGroup>
     <Content Include="AzureCP.AdminLinks\Elements.xml" />
     <Content Include="TEMPLATE\ADMIN\AzureCP\ClaimTypesConfig.ascx" />
@@ -186,11 +168,4 @@
   <PropertyGroup>
     <PostBuildEvent>"C:\Program Files (x86)\Microsoft SDKs\Windows\v10.0A\bin\NETFX 4.6.1 Tools\x64\gacutil.exe" /f /i "$(TargetPath)"</PostBuildEvent>
   </PropertyGroup>
-  <Import Project="..\packages\Microsoft.Bcl.Build.1.0.21\build\Microsoft.Bcl.Build.targets" Condition="Exists('..\packages\Microsoft.Bcl.Build.1.0.21\build\Microsoft.Bcl.Build.targets')" />
-  <Target Name="EnsureNuGetPackageBuildImports" BeforeTargets="PrepareForBuild">
-    <PropertyGroup>
-      <ErrorText>This project references NuGet package(s) that are missing on this computer. Use NuGet Package Restore to download them.  For more information, see http://go.microsoft.com/fwlink/?LinkID=322105. The missing file is {0}.</ErrorText>
-    </PropertyGroup>
-    <Error Condition="!Exists('..\packages\Microsoft.Bcl.Build.1.0.21\build\Microsoft.Bcl.Build.targets')" Text="$([System.String]::Format('$(ErrorText)', '..\packages\Microsoft.Bcl.Build.1.0.21\build\Microsoft.Bcl.Build.targets'))" />
-  </Target>
 </Project>
