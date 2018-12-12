@@ -586,13 +586,13 @@ namespace azurecp
         /// Set to true to return only Member users from this tenant
         /// </summary>
         [Persisted]
-        public bool ExcludeMemberUsers;
+        public bool ExcludeMemberUsers = false;
 
         /// <summary>
         /// Set to true to return only Guest users from this tenant
         /// </summary>
         [Persisted]
-        public bool ExcludeGuestUsers;
+        public bool ExcludeGuestUsers = false;
 
         /// <summary>
         /// Instance of the IAuthenticationProvider class for this specific Azure AD tenant

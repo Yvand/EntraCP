@@ -21,7 +21,7 @@ public class UnitTestsHelper
     public const string ClaimsProviderConfigName = "AzureCPConfig";
     public static Uri Context = new Uri("http://spsites/sites/AzureCP.UnitTests");
     public const int MaxTime = 50000;
-    public const int TestRepeatCount = 20;
+    public const int TestRepeatCount = 5;
     public const string FarmAdmin = @"i:0#.w|contoso\yvand";
 
     public const string RandomClaimType = "http://schemas.yvand.com/ws/claims/random";
@@ -32,6 +32,9 @@ public class UnitTestsHelper
     public const string TrustedGroupToAdd_ClaimType = "http://schemas.microsoft.com/ws/2008/06/identity/claims/role";
     public static SPClaim TrustedGroup = new SPClaim(TrustedGroupToAdd_ClaimType, TrustedGroupToAdd_ClaimValue, ClaimValueTypes.String, SPOriginalIssuers.Format(SPOriginalIssuerType.TrustedProvider, SPTrust.Name));
 
+    public const string GUEST_USERTYPE = "Guest";
+    public const string MEMBER_USERTYPE = "Member";
+
     public const string AzureTenantsJsonFile = @"F:\Data\Dev\AzureCP_Tenants.json";
     public const string DataFile_MemberAccounts_Search = @"F:\Data\Dev\AzureCP_Tests_MemberAccounts_Search.csv";
     public const string DataFile_MemberAccounts_Validate = @"F:\Data\Dev\AzureCP_Tests_MemberAccounts_Validate.csv";
@@ -39,6 +42,8 @@ public class UnitTestsHelper
     public const string DataFile_GuestAccountsUPN_Validate = @"F:\Data\Dev\AzureCP_Tests_GuestAccountsUPN_Validate.csv";
     public const string DataFile_GuestAccountsEmail_Search = @"F:\Data\Dev\AzureCP_Tests_GuestAccountsEmail_Search.csv";
     public const string DataFile_GuestAccountsEmail_Validate = @"F:\Data\Dev\AzureCP_Tests_GuestAccountsEmail_Validate.csv";
+    public const string DataFile_AllAccounts_Search = @"F:\Data\Dev\AzureCP_Tests_AllAccounts_Search.csv";
+    public const string DataFile_AllAccounts_Validate = @"F:\Data\Dev\AzureCP_Tests_AllAccounts_Validate.csv";
 
     public static SPTrustedLoginProvider SPTrust => SPSecurityTokenServiceManager.Local.TrustedLoginProviders.FirstOrDefault(x => String.Equals(x.ClaimProviderName, UnitTestsHelper.ClaimsProviderName, StringComparison.InvariantCultureIgnoreCase));
 
@@ -190,6 +195,8 @@ public class SearchEntityDataSource
             registrationData.Input = row["Input"];
             registrationData.ExpectedResultCount = Convert.ToInt32(row["ExpectedResultCount"]);
             registrationData.ExpectedEntityClaimValue = row["ExpectedEntityClaimValue"];
+            registrationData.ResultType = row["ResultType"];
+            registrationData.UserType = row["UserType"];
             yield return new TestCaseData(new object[] { registrationData });
         }
     }
@@ -215,6 +222,8 @@ public class SearchEntityData
     public string Input;
     public int ExpectedResultCount;
     public string ExpectedEntityClaimValue;
+    public string ResultType;
+    public string UserType;
 }
 
 public class ValidateEntityDataSource
@@ -228,6 +237,7 @@ public class ValidateEntityDataSource
             registrationData.ClaimValue = row["ClaimValue"];
             registrationData.ShouldValidate = Convert.ToBoolean(row["ShouldValidate"]);
             registrationData.IsMemberOfTrustedGroup = Convert.ToBoolean(row["IsMemberOfTrustedGroup"]);
+            registrationData.UserType = row["UserType"];
             yield return new TestCaseData(new object[] { registrationData });
         }
     }
@@ -238,4 +248,5 @@ public class ValidateEntityData
     public string ClaimValue;
     public bool ShouldValidate;
     public bool IsMemberOfTrustedGroup;
+    public string UserType;
 }

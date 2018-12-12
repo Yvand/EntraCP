@@ -56,13 +56,15 @@
     <Reference Include="System.Core" />
   </ItemGroup>
   <ItemGroup>
-    <Compile Include="GuestAccountsEmailTests.cs" />
+    <Compile Include="ExcludeAllUserAccountsTests.cs" />
+    <Compile Include="UserAccountsTestsBase.cs" />
+    <Compile Include="ExcludeMemberUserAccountsTests.cs" />
+    <Compile Include="ExcludeGuestUserAccountsTests.cs" />
     <Compile Include="GuestAccountsUPNTests.cs" />
     <Compile Include="ModifyConfigBase.cs" />
     <Compile Include="UnitTestsHelper.cs" />
     <Compile Include="CustomConfigTests.cs" />
     <Compile Include="ModifyConfigTests.cs" />
-    <Compile Include="MemberAccountsTests.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
   </ItemGroup>
   <ItemGroup>
