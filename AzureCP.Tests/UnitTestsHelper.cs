@@ -9,6 +9,7 @@ using NUnit.Framework;
 using System;
 using System.Collections;
 using System.Collections.Generic;
+using System.Configuration;
 using System.IO;
 using System.Linq;
 using System.Security.Claims;
@@ -18,32 +19,28 @@ public class UnitTestsHelper
 {
     public static azurecp.AzureCP ClaimsProvider = new azurecp.AzureCP(UnitTestsHelper.ClaimsProviderName);
     public const string ClaimsProviderName = "AzureCP";
-    public const string ClaimsProviderConfigName = "AzureCPConfig";
-    public static Uri Context = new Uri("http://spsites/sites/AzureCP.UnitTests");
+    public static string ClaimsProviderConfigName = ConfigurationManager.AppSettings["ClaimsProviderConfigName"];
+    public static Uri Context = new Uri(ConfigurationManager.AppSettings["TestSiteCollectionUri"]);
     public const int MaxTime = 50000;
     public const int TestRepeatCount = 5;
-    public const string FarmAdmin = @"i:0#.w|contoso\yvand";
+    public static string FarmAdmin = ConfigurationManager.AppSettings["FarmAdmin"];
 
-    public const string RandomClaimType = "http://schemas.yvand.com/ws/claims/random";
+    public const string RandomClaimType = "http://schemas.yvand.net/ws/claims/random";
     public const string RandomClaimValue = "IDoNotExist";
     public const AzureADObjectProperty RandomObjectProperty = AzureADObjectProperty.AccountEnabled;
 
-    public const string TrustedGroupToAdd_ClaimValue = "99abdc91-e6e0-475c-a0ba-5014f91de853";
-    public const string TrustedGroupToAdd_ClaimType = "http://schemas.microsoft.com/ws/2008/06/identity/claims/role";
+    public static string TrustedGroupToAdd_ClaimType = ConfigurationManager.AppSettings["TrustedGroupToAdd_ClaimType"];
+    public static string TrustedGroupToAdd_ClaimValue = ConfigurationManager.AppSettings["TrustedGroupToAdd_ClaimValue"];
     public static SPClaim TrustedGroup = new SPClaim(TrustedGroupToAdd_ClaimType, TrustedGroupToAdd_ClaimValue, ClaimValueTypes.String, SPOriginalIssuers.Format(SPOriginalIssuerType.TrustedProvider, SPTrust.Name));
 
     public const string GUEST_USERTYPE = "Guest";
     public const string MEMBER_USERTYPE = "Member";
 
-    public const string AzureTenantsJsonFile = @"F:\Data\Dev\AzureCP_Tenants.json";
-    public const string DataFile_MemberAccounts_Search = @"F:\Data\Dev\AzureCP_Tests_MemberAccounts_Search.csv";
-    public const string DataFile_MemberAccounts_Validate = @"F:\Data\Dev\AzureCP_Tests_MemberAccounts_Validate.csv";
-    public const string DataFile_GuestAccountsUPN_Search = @"F:\Data\Dev\AzureCP_Tests_GuestAccountsUPN_Search.csv";
-    public const string DataFile_GuestAccountsUPN_Validate = @"F:\Data\Dev\AzureCP_Tests_GuestAccountsUPN_Validate.csv";
-    public const string DataFile_GuestAccountsEmail_Search = @"F:\Data\Dev\AzureCP_Tests_GuestAccountsEmail_Search.csv";
-    public const string DataFile_GuestAccountsEmail_Validate = @"F:\Data\Dev\AzureCP_Tests_GuestAccountsEmail_Validate.csv";
-    public const string DataFile_AllAccounts_Search = @"F:\Data\Dev\AzureCP_Tests_AllAccounts_Search.csv";
-    public const string DataFile_AllAccounts_Validate = @"F:\Data\Dev\AzureCP_Tests_AllAccounts_Validate.csv";
+    public static string AzureTenantsJsonFile = ConfigurationManager.AppSettings["AzureTenantsJsonFile"];
+    public static string DataFile_GuestAccountsUPN_Search = ConfigurationManager.AppSettings["DataFile_GuestAccountsUPN_Search"];
+    public static string DataFile_GuestAccountsUPN_Validate = ConfigurationManager.AppSettings["DataFile_GuestAccountsUPN_Validate"];
+    public static string DataFile_AllAccounts_Search = ConfigurationManager.AppSettings["DataFile_AllAccounts_Search"];
+    public static string DataFile_AllAccounts_Validate = ConfigurationManager.AppSettings["DataFile_AllAccounts_Validate"];
 
     public static SPTrustedLoginProvider SPTrust => SPSecurityTokenServiceManager.Local.TrustedLoginProviders.FirstOrDefault(x => String.Equals(x.ClaimProviderName, UnitTestsHelper.ClaimsProviderName, StringComparison.InvariantCultureIgnoreCase));
 
@@ -183,11 +180,21 @@ public class SearchEntityDataSourceCollection : IEnumerable
     }
 }
 
+public enum EntityDataSourceType
+{
+    AllAccounts,
+    UPNB2BGuestAccounts
+}
+
 public class SearchEntityDataSource
 {
-    public static IEnumerable<TestCaseData> GetTestData(string dataFile)
+    public static IEnumerable<TestCaseData> GetTestData(EntityDataSourceType entityDataSourceType)
     {
-        DataTable dt = DataTable.New.ReadCsv(dataFile);
+        string csvPath = UnitTestsHelper.DataFile_AllAccounts_Search;
+        if (entityDataSourceType == EntityDataSourceType.UPNB2BGuestAccounts)
+            csvPath = UnitTestsHelper.DataFile_GuestAccountsUPN_Search;
+
+        DataTable dt = DataTable.New.ReadCsv(csvPath);
 
         foreach (Row row in dt.Rows)
         {
@@ -228,9 +235,14 @@ public class SearchEntityData
 
 public class ValidateEntityDataSource
 {
-    public static IEnumerable<TestCaseData> GetTestData(string dataFile)
+    public static IEnumerable<TestCaseData> GetTestData(EntityDataSourceType entityDataSourceType)
     {
-        DataTable dt = DataTable.New.ReadCsv(dataFile);
+        string csvPath = UnitTestsHelper.DataFile_AllAccounts_Validate;
+        if (entityDataSourceType == EntityDataSourceType.UPNB2BGuestAccounts)
+            csvPath = UnitTestsHelper.DataFile_GuestAccountsUPN_Validate;
+
+        DataTable dt = DataTable.New.ReadCsv(csvPath);
+
         foreach (Row row in dt.Rows)
         {
             var registrationData = new ValidateEntityData();

@@ -26,9 +26,9 @@ namespace AzureCP.Tests
             Config.Update();
         }
 
-        [Test, TestCaseSource(typeof(SearchEntityDataSource), "GetTestData", new object[] { UnitTestsHelper.DataFile_AllAccounts_Search })]
+        [Test, TestCaseSource(typeof(SearchEntityDataSource), "GetTestData", new object[] { EntityDataSourceType.AllAccounts })]
         [Repeat(UnitTestsHelper.TestRepeatCount)]
-        public void SearchEntities(SearchEntityData registrationData)
+        public virtual void SearchEntities(SearchEntityData registrationData)
         {
             // If current entry does not return only users, cannot reliably test number of results returned if guest and/or members should be excluded
             if (!String.Equals(registrationData.ResultType, "User", StringComparison.InvariantCultureIgnoreCase) &&
@@ -44,10 +44,10 @@ namespace AzureCP.Tests
             UnitTestsHelper.TestSearchOperation(registrationData.Input, expectedResultCount, registrationData.ExpectedEntityClaimValue);
         }
 
-        [Test, TestCaseSource(typeof(ValidateEntityDataSource), "GetTestData", new object[] { UnitTestsHelper.DataFile_AllAccounts_Validate })]
+        [Test, TestCaseSource(typeof(ValidateEntityDataSource), "GetTestData", new object[] { EntityDataSourceType.AllAccounts })]
         [MaxTime(UnitTestsHelper.MaxTime)]
         [Repeat(UnitTestsHelper.TestRepeatCount)]
-        public void ValidateClaim(ValidateEntityData registrationData)
+        public virtual void ValidateClaim(ValidateEntityData registrationData)
         {
             bool shouldValidate = registrationData.ShouldValidate;
             if (ExcludeGuestUsers && String.Equals(registrationData.UserType, UnitTestsHelper.GUEST_USERTYPE, StringComparison.InvariantCultureIgnoreCase))
@@ -59,9 +59,9 @@ namespace AzureCP.Tests
             UnitTestsHelper.TestValidationOperation(inputClaim, shouldValidate, registrationData.ClaimValue);
         }
 
-        [Test, TestCaseSource(typeof(ValidateEntityDataSource), "GetTestData", new object[] { UnitTestsHelper.DataFile_AllAccounts_Validate })]
+        [Test, TestCaseSource(typeof(ValidateEntityDataSource), "GetTestData", new object[] { EntityDataSourceType.AllAccounts })]
         [Repeat(UnitTestsHelper.TestRepeatCount)]
-        public void AugmentEntity(ValidateEntityData registrationData)
+        public virtual void AugmentEntity(ValidateEntityData registrationData)
         {
             UnitTestsHelper.TestAugmentationOperation(UnitTestsHelper.SPTrust.IdentityClaimTypeInformation.MappedClaimType, registrationData.ClaimValue, registrationData.IsMemberOfTrustedGroup);
         }
@@ -80,7 +80,9 @@ namespace AzureCP.Tests
         }
 
         //[TestCase("http://schemas.microsoft.com/ws/2008/06/identity/claims/role", "5b0f6c56-c87f-44c3-9354-56cba03da433", true)]
-        [TestCase("http://schemas.xmlsoap.org/ws/2005/05/identity/claims/upn", "GUEST@contoso.com", false)]
+        [TestCase("http://schemas.xmlsoap.org/ws/2005/05/identity/claims/upn", "FakeGuest@contoso.com", false)]
+        [TestCase("http://schemas.xmlsoap.org/ws/2005/05/identity/claims/emailaddress", "FakeGuest.com#EXT#@XXX.onmicrosoft.com", false)]
+        [TestCase("http://schemas.xmlsoap.org/ws/2005/05/identity/claims/upn", "FakeGuest.com#EXT#@XXX.onmicrosoft.com", false)]
         public void DEBUG_ValidateClaim(string claimType, string claimValue, bool shouldValidate)
         {
             SPClaim inputClaim = new SPClaim(claimType, claimValue, ClaimValueTypes.String, SPOriginalIssuers.Format(SPOriginalIssuerType.TrustedProvider, UnitTestsHelper.SPTrust.Name));
