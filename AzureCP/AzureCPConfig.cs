@@ -632,12 +632,12 @@ namespace azurecp
             copy.AuthenticationProvider = this.AuthenticationProvider;
             copy.ClientId = this.ClientId;
             copy.ClientSecret = this.ClientSecret;
+            copy.ExcludeGuestUsers = this.ExcludeGuestUsers;
+            copy.ExcludeMemberUsers = this.ExcludeMemberUsers;
             copy.GraphService = this.GraphService;
             copy.GroupFilter = this.GroupFilter;
             copy.GroupSelect = this.GroupSelect;
-            copy.ExcludeGuestUsers = this.ExcludeGuestUsers;
             copy.Id = this.Id;
-            copy.ExcludeMemberUsers = this.ExcludeMemberUsers;
             copy.TenantName = this.TenantName;
             copy.UserFilter = this.UserFilter;
             copy.UserSelect = this.UserSelect;

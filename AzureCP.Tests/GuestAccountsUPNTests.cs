@@ -1,7 +1,5 @@
 ﻿using azurecp;
-using Microsoft.SharePoint.Administration.Claims;
 using NUnit.Framework;
-using System.Security.Claims;
 
 namespace AzureCP.Tests
 {
