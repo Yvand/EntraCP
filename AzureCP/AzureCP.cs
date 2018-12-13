@@ -1469,13 +1469,17 @@ namespace azurecp
         /// <returns></returns>
         public override string GetClaimTypeForUserKey()
         {
-            if (!Initialize(null, null))
-                return null;
+            // Initialization may fail because there is no yet configuration (fresh install)
+            // In this case, AzureCP should not return null because it causes null exceptions in SharePoint when users sign-in
+            Initialize(null, null);
 
             this.Lock_Config.EnterReadLock();
             try
             {
-                return IdentityClaimTypeConfig.ClaimType;
+                if (SPTrust == null)
+                    return String.Empty;
+
+                return SPTrust.IdentityClaimTypeInformation.MappedClaimType;
             }
             catch (Exception ex)
             {
@@ -1495,24 +1499,32 @@ namespace azurecp
         /// <returns></returns>
         protected override SPClaim GetUserKeyForEntity(SPClaim entity)
         {
-            if (!Initialize(null, null))
-                return null;
-
-            // There are 2 scenarios:
-            // 1: OriginalIssuer is "SecurityTokenService": Value looks like "05.t|yvanhost|yvand@yvanhost.local", claim type is "http://schemas.microsoft.com/sharepoint/2009/08/claims/userid" and it must be decoded properly
-            // 2: OriginalIssuer is AzureCP: in this case incoming entity is valid and returned as is
-            if (String.Equals(entity.OriginalIssuer, IssuerName, StringComparison.InvariantCultureIgnoreCase))
-                return entity;
-
-            SPClaimProviderManager cpm = SPClaimProviderManager.Local;
-            SPClaim curUser = SPClaimProviderManager.DecodeUserIdentifierClaim(entity);
+            // Initialization may fail because there is no yet configuration (fresh install)
+            // In this case, AzureCP should not return null because it causes null exceptions in SharePoint when users sign-in
+            bool initSucceeded = Initialize(null, null);
 
             this.Lock_Config.EnterReadLock();
             try
             {
+                // If initialization failed but SPTrust is not null, rest of the method can be executed normally
+                // Otherwise return the entity
+                if (!initSucceeded && SPTrust == null)
+                {
+                    return entity;
+                }
+
+                // There are 2 scenarios:
+                // 1: OriginalIssuer is "SecurityTokenService": Value looks like "05.t|yvanhost|yvand@yvanhost.local", claim type is "http://schemas.microsoft.com/sharepoint/2009/08/claims/userid" and it must be decoded properly
+                // 2: OriginalIssuer is AzureCP: in this case incoming entity is valid and returned as is
+                if (String.Equals(entity.OriginalIssuer, IssuerName, StringComparison.InvariantCultureIgnoreCase))
+                    return entity;
+
+                SPClaimProviderManager cpm = SPClaimProviderManager.Local;
+                SPClaim curUser = SPClaimProviderManager.DecodeUserIdentifierClaim(entity);
+
                 ClaimsProviderLogging.Log($"[{ProviderInternalName}] Returning user key for '{entity.Value}'",
                     TraceSeverity.VerboseEx, EventSeverity.Information, TraceCategory.Rehydration);
-                return CreateClaim(IdentityClaimTypeConfig.ClaimType, curUser.Value, curUser.ValueType);
+                return CreateClaim(SPTrust.IdentityClaimTypeInformation.MappedClaimType, curUser.Value, curUser.ValueType);
             }
             catch (Exception ex)
             {
