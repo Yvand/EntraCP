@@ -7,7 +7,7 @@ namespace AzureCP.Tests
     /// Test guest accounts when their identity claim is the UserPrincipalName
     /// </summary>
     [TestFixture]
-    public class GuestAccountsUPNTests : UserAccountsTestsBase
+    public class GuestAccountsUPNTests : EntityTestsBase
     {
         public override void InitializeConfiguration()
         {

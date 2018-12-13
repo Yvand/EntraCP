@@ -47,7 +47,7 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="ExcludeAllUserAccountsTests.cs" />
-    <Compile Include="UserAccountsTestsBase.cs" />
+    <Compile Include="EntityTestsBase.cs" />
     <Compile Include="ExcludeMemberUserAccountsTests.cs" />
     <Compile Include="ExcludeGuestUserAccountsTests.cs" />
     <Compile Include="GuestAccountsUPNTests.cs" />

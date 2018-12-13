@@ -30,7 +30,7 @@ namespace AzureCP.Tests
             ctConfig.DirectoryObjectProperty = UnitTestsHelper.RandomObjectProperty;
             ctConfig.UseMainClaimTypeOfDirectoryObject = true;
             Assert.Throws<InvalidOperationException>(() => Config.ClaimTypes.Add(ctConfig), $"Add a ClaimTypeConfig with UseMainClaimTypeOfDirectoryObject = true and ClaimType set should throw exception InvalidOperationException with this message: \"No claim type should be set if UseMainClaimTypeOfDirectoryObject is set to true\"");
-
+            
             // Add a ClaimTypeConfig with EntityType 'Group' should throw exception InvalidOperationException since 1 already exists by default and AzureCP allows only 1 claim type for EntityType 'Group'
             ctConfig.ClaimType = UnitTestsHelper.RandomClaimType;
             ctConfig.DirectoryObjectProperty = UnitTestsHelper.RandomObjectProperty;

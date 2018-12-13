@@ -22,8 +22,12 @@ public class UnitTestsHelper
     public static string ClaimsProviderConfigName = ConfigurationManager.AppSettings["ClaimsProviderConfigName"];
     public static Uri Context = new Uri(ConfigurationManager.AppSettings["TestSiteCollectionUri"]);
     public const int MaxTime = 50000;
-    public const int TestRepeatCount = 5;
     public static string FarmAdmin = ConfigurationManager.AppSettings["FarmAdmin"];
+#if DEBUG
+    public const int TestRepeatCount = 5;
+#else
+    public const int TestRepeatCount = 50;
+#endif
 
     public const string RandomClaimType = "http://schemas.yvand.net/ws/claims/random";
     public const string RandomClaimValue = "IDoNotExist";

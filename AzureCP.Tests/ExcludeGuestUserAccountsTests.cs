@@ -3,7 +3,7 @@
 namespace AzureCP.Tests
 {
     [TestFixture]
-    public class ExcludeGuestUserAccountsTests : UserAccountsTestsBase
+    public class ExcludeGuestUserAccountsTests : EntityTestsBase
     {
         public override bool ExcludeGuestUsers => true;
         public override bool ExcludeMemberUsers => false;
