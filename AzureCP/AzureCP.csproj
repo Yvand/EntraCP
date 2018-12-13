@@ -101,9 +101,6 @@
     <Compile Include="Properties\AssemblyInfo.cs" />
   </ItemGroup>
   <ItemGroup>
-    <None Include="app.config">
-      <SubType>Designer</SubType>
-    </None>
     <None Include="AzureCP.AdminLinks\SharePointProjectItem.spdata">
       <SharePointProjectItemId>{c15a0bf3-126a-42e6-af6b-5880f2e9af42}</SharePointProjectItemId>
     </None>

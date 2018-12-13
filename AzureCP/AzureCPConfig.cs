@@ -477,7 +477,7 @@ namespace azurecp
                     // If AzureCP was updated from a version < v12, this.ClaimTypes.Count will throw a NullReferenceException
                     int testClaimTypeCollection = this.ClaimTypes.Count;
                 }
-                catch (NullReferenceException ex)
+                catch (NullReferenceException)
                 {
                     this.ClaimTypes = ReturnDefaultClaimTypesConfig(this.SPTrustName);
                     configUpdated = true;
@@ -542,7 +542,7 @@ namespace azurecp
                         ClaimsProviderLogging.Log($"Configuration '{this.Name}' was upgraded in configuration database and some settings were updated or reset to their default configuration",
                             TraceSeverity.High, EventSeverity.Information, TraceCategory.Core);
                     }
-                    catch (Exception ex)
+                    catch (Exception)
                     {
                         // It may fail if current user doesn't have permission to update the object in configuration database
                         ClaimsProviderLogging.Log($"Configuration '{this.Name}' was upgraded locally, but changes could not be applied in configuration database. Please visit admin pages in central administration to upgrade configuration globally.",
