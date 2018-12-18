@@ -2,8 +2,20 @@
 
 ## Unreleased
 
-* Fixed bug due to non-URL encoded filter when augmentating guest accounts
-* Added more strict checks on the claim type passed during augmentation and validation, to record a more meaningful error if needed
+* Fix augmentating failing for guest accounts due to non-URL encoded filter
+* Add more strict checks on the claim type passed during augmentation and validation, to record a more meaningful error if needed
+* Add test to ensure that AzureCP augments only entities issued from the TrustedProvider it is associated with
+* Fix sign-in of users failing if AzureCP configuration does not exist
+* Fix msbuild warnings
+* Improve tests
+* Use Azure DevOps to build AzureCP
+* Remove reference on Microsoft.IdentityModel.Clients.ActiveDirectory.Platform.dll
+* Update NuGet package Microsoft.Graph to v1.12
+* Update NuGet package Microsoft.IdentityModel.Clients.ActiveDirectory to v4.4.2
+* Update NuGet package System.Net.Http to v4.3.4
+* Update NuGet package NUnit to v3.11
+* Update NuGet package NUnit3TestAdapter to v3.11.2
+* Update NuGet package CsvTools to v1.0.12
 
 ## AzureCP v13 enhancements & bug-fixes - Published in August 30, 2018
 
