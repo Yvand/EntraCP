@@ -9,7 +9,6 @@ using NUnit.Framework;
 using System;
 using System.Collections;
 using System.Collections.Generic;
-using System.Configuration;
 using System.IO;
 using System.Linq;
 using System.Security.Claims;
@@ -19,32 +18,32 @@ public class UnitTestsHelper
 {
     public static azurecp.AzureCP ClaimsProvider = new azurecp.AzureCP(UnitTestsHelper.ClaimsProviderName);
     public const string ClaimsProviderName = "AzureCP";
-    public static string ClaimsProviderConfigName = ConfigurationManager.AppSettings["ClaimsProviderConfigName"];
-    public static Uri Context = new Uri(ConfigurationManager.AppSettings["TestSiteCollectionUri"]);
+    public static string ClaimsProviderConfigName = TestContext.Parameters["ClaimsProviderConfigName"];
+    public static Uri Context = new Uri(TestContext.Parameters["TestSiteCollectionUri"]);
     public const int MaxTime = 50000;
-    public static string FarmAdmin = ConfigurationManager.AppSettings["FarmAdmin"];
+    public static string FarmAdmin = TestContext.Parameters["FarmAdmin"];
 #if DEBUG
     public const int TestRepeatCount = 5;
 #else
-    public const int TestRepeatCount = 50;
+    public const int TestRepeatCount = 20;
 #endif
 
     public const string RandomClaimType = "http://schemas.yvand.net/ws/claims/random";
     public const string RandomClaimValue = "IDoNotExist";
     public const AzureADObjectProperty RandomObjectProperty = AzureADObjectProperty.AccountEnabled;
 
-    public static string TrustedGroupToAdd_ClaimType = ConfigurationManager.AppSettings["TrustedGroupToAdd_ClaimType"];
-    public static string TrustedGroupToAdd_ClaimValue = ConfigurationManager.AppSettings["TrustedGroupToAdd_ClaimValue"];
+    public static string TrustedGroupToAdd_ClaimType = TestContext.Parameters["TrustedGroupToAdd_ClaimType"];
+    public static string TrustedGroupToAdd_ClaimValue = TestContext.Parameters["TrustedGroupToAdd_ClaimValue"];
     public static SPClaim TrustedGroup = new SPClaim(TrustedGroupToAdd_ClaimType, TrustedGroupToAdd_ClaimValue, ClaimValueTypes.String, SPOriginalIssuers.Format(SPOriginalIssuerType.TrustedProvider, SPTrust.Name));
 
     public const string GUEST_USERTYPE = "Guest";
     public const string MEMBER_USERTYPE = "Member";
 
-    public static string AzureTenantsJsonFile = ConfigurationManager.AppSettings["AzureTenantsJsonFile"];
-    public static string DataFile_GuestAccountsUPN_Search = ConfigurationManager.AppSettings["DataFile_GuestAccountsUPN_Search"];
-    public static string DataFile_GuestAccountsUPN_Validate = ConfigurationManager.AppSettings["DataFile_GuestAccountsUPN_Validate"];
-    public static string DataFile_AllAccounts_Search = ConfigurationManager.AppSettings["DataFile_AllAccounts_Search"];
-    public static string DataFile_AllAccounts_Validate = ConfigurationManager.AppSettings["DataFile_AllAccounts_Validate"];
+    public static string AzureTenantsJsonFile = TestContext.Parameters["AzureTenantsJsonFile"];
+    public static string DataFile_GuestAccountsUPN_Search = TestContext.Parameters["DataFile_GuestAccountsUPN_Search"];
+    public static string DataFile_GuestAccountsUPN_Validate = TestContext.Parameters["DataFile_GuestAccountsUPN_Validate"];
+    public static string DataFile_AllAccounts_Search = TestContext.Parameters["DataFile_AllAccounts_Search"];
+    public static string DataFile_AllAccounts_Validate = TestContext.Parameters["DataFile_AllAccounts_Validate"];
 
     public static SPTrustedLoginProvider SPTrust => SPSecurityTokenServiceManager.Local.TrustedLoginProviders.FirstOrDefault(x => String.Equals(x.ClaimProviderName, UnitTestsHelper.ClaimsProviderName, StringComparison.InvariantCultureIgnoreCase));
 
@@ -109,6 +108,12 @@ public class UnitTestsHelper
         config.Update();
     }
 
+    /// <summary>
+    /// Start search operation on a specific claims provider
+    /// </summary>
+    /// <param name="inputValue"></param>
+    /// <param name="expectedCount">How many entities are expected to be returned. Set to Int32.MaxValue if exact number is unknown but greater than 0</param>
+    /// <param name="expectedClaimValue"></param>
     public static void TestSearchOperation(string inputValue, int expectedCount, string expectedClaimValue)
     {
         string[] entityTypes = new string[] { "User", "SecGroup", "SharePointGroup", "System", "FormsRole" };
@@ -140,6 +145,10 @@ public class UnitTestsHelper
         {
             Assert.Fail($"Input \"{input}\" returned no entity with claim value \"{expectedClaimValue}\".");
         }
+
+        if (expectedCount == Int32.MaxValue)
+            expectedCount = entities.Count;
+
         Assert.AreEqual(expectedCount, entities.Count, $"Input \"{input}\" should have returned {expectedCount} entities, but it returned {entities.Count} instead.");
     }
 
