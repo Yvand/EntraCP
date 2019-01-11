@@ -92,6 +92,7 @@ namespace AzureCP.Tests
             UnitTestsHelper.TestAugmentationOperation(UnitTestsHelper.SPTrust.IdentityClaimTypeInformation.MappedClaimType, registrationData.ClaimValue, registrationData.IsMemberOfTrustedGroup);
         }
 
+#if DEBUG
         //[TestCaseSource(typeof(SearchEntityDataSourceCollection))]
         public void DEBUG_SearchEntitiesFromCollection(string inputValue, string expectedCount, string expectedClaimValue)
         {
@@ -128,5 +129,6 @@ namespace AzureCP.Tests
 
             UnitTestsHelper.TestAugmentationOperation(UnitTestsHelper.SPTrust.IdentityClaimTypeInformation.MappedClaimType, claimValue, shouldHavePermissions);
         }
+#endif
     }
 }
