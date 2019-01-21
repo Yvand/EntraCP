@@ -14,5 +14,6 @@
     <Parameter name="TrustedGroupToAdd_ClaimType" value="http://schemas.microsoft.com/ws/2008/06/identity/claims/role" />
     <Parameter name="TrustedGroupToAdd_ClaimValue" value="99abdc91-e6e0-475c-a0ba-5014f91de853" />
     <Parameter name="ClaimsProviderConfigName" value="AzureCPConfig" />
+    <Parameter name="TestLogFileName" value="AzureCPIntegrationTests.log" />
   </TestRunParameters>
 </RunSettings>

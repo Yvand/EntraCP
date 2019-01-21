@@ -9,8 +9,10 @@ using NUnit.Framework;
 using System;
 using System.Collections;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.IO;
 using System.Linq;
+using System.Reflection;
 using System.Security.Claims;
 
 [SetUpFixture]
@@ -47,13 +49,29 @@ public class UnitTestsHelper
 
     public static SPTrustedLoginProvider SPTrust => SPSecurityTokenServiceManager.Local.TrustedLoginProviders.FirstOrDefault(x => String.Equals(x.ClaimProviderName, UnitTestsHelper.ClaimsProviderName, StringComparison.InvariantCultureIgnoreCase));
 
+    static TextWriterTraceListener logFileListener;
+
     [OneTimeSetUp]
     public static void InitializeSiteCollection()
     {
 
 #if DEBUG
-        return; // Uncommented when debugging AzureCP code from unit tests
+        //return; // Uncommented when debugging AzureCP code from unit tests
 #endif
+
+        logFileListener = new TextWriterTraceListener(TestContext.Parameters["TestLogFileName"]);
+        Trace.Listeners.Add(logFileListener);
+        Trace.AutoFlush = true;
+        Trace.TraceInformation($"{DateTime.Now.ToString("s")} Start integration tests of {ClaimsProviderName} {FileVersionInfo.GetVersionInfo(Assembly.GetAssembly(typeof(azurecp.AzureCP)).Location).FileVersion}.");
+        Trace.WriteLine($"{DateTime.Now.ToString("s")} DataFile_AllAccounts_Search: {DataFile_AllAccounts_Search}");
+        Trace.WriteLine($"{DateTime.Now.ToString("s")} DataFile_AllAccounts_Validate: {DataFile_AllAccounts_Validate}");
+        Trace.WriteLine($"{DateTime.Now.ToString("s")} DataFile_GuestAccountsUPN_Search: {DataFile_GuestAccountsUPN_Search}");
+        Trace.WriteLine($"{DateTime.Now.ToString("s")} DataFile_GuestAccountsUPN_Validate: {DataFile_GuestAccountsUPN_Validate}");
+        Trace.WriteLine($"{DateTime.Now.ToString("s")} TestSiteCollectionUri: {TestContext.Parameters["TestSiteCollectionUri"]}");
+        if (SPTrust == null)
+            Trace.TraceError($"{DateTime.Now.ToString("s")} SPTrust: is null");
+        else
+            Trace.WriteLine($"{DateTime.Now.ToString("s")} SPTrust: {SPTrust.Name}");
 
         AzureCPConfig config = AzureCPConfig.GetConfiguration(UnitTestsHelper.ClaimsProviderConfigName, UnitTestsHelper.SPTrust.Name);
         if (config == null)
@@ -64,14 +82,14 @@ public class UnitTestsHelper
         SPWebApplication wa = SPWebApplication.Lookup(Context);
         if (wa != null)
         {
-            Console.WriteLine($"Web app {wa.Name} found.");
+            Trace.WriteLine($"{DateTime.Now.ToString("s")} Web application {wa.Name} found, checking if site collection {Context.AbsoluteUri} exists...");
             SPClaimProviderManager claimMgr = SPClaimProviderManager.Local;
             string encodedClaim = claimMgr.EncodeClaim(TrustedGroup);
             SPUserInfo userInfo = new SPUserInfo { LoginName = encodedClaim, Name = TrustedGroupToAdd_ClaimValue };
 
             if (!SPSite.Exists(Context))
             {
-                Console.WriteLine($"Creating site collection {Context.AbsoluteUri}...");
+                Trace.WriteLine($"{DateTime.Now.ToString("s")} Creating site collection {Context.AbsoluteUri}...");
                 SPSite spSite = wa.Sites.Add(Context.AbsoluteUri, ClaimsProviderName, ClaimsProviderName, 1033, "STS#0", FarmAdmin, String.Empty, String.Empty);
                 spSite.RootWeb.CreateDefaultAssociatedGroups(FarmAdmin, FarmAdmin, spSite.RootWeb.Title);
 
@@ -90,8 +108,17 @@ public class UnitTestsHelper
         }
         else
         {
-            Console.WriteLine($"Web app {Context} was NOT found.");
+            Trace.TraceError($"{DateTime.Now.ToString("s")} Web application {Context} was NOT found.");
         }
+    }
+
+    [OneTimeTearDown]
+    public void Cleanup()
+    {
+        Trace.WriteLine($"{DateTime.Now.ToString("s")} Integration tests of {ClaimsProviderName} {FileVersionInfo.GetVersionInfo(Assembly.GetAssembly(typeof(azurecp.AzureCP)).Location).FileVersion} finished.");
+        Trace.Flush();
+        if (logFileListener != null)
+            logFileListener.Dispose();
     }
 
     public static void InitializeConfiguration(AzureCPConfig config)
