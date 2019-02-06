@@ -14,8 +14,8 @@ jobs:
     inputs:
       ConnectedServiceName: '$(Test.AzureConnectionName)'
       LabId: '/subscriptions/$(Test.AzureSubscriptionId)/resourceGroups/$(Test.DevTestLabName)/providers/Microsoft.DevTestLab/labs/$(Test.DevTestLabName)'
-      RepositoryId: '/subscriptions/$(Test.AzureSubscriptionId)/resourcegroups/$(Test.DevTestLabName)/providers/microsoft.devtestlab/labs/$(Test.DevTestLabName)/artifactsources/privaterepo897'
-      TemplateId: '/subscriptions/$(Test.AzureSubscriptionId)/resourceGroups/$(Test.DevTestLabName)/providers/Microsoft.DevTestLab/labs/$(Test.DevTestLabName)/artifactSources/privaterepo897/armTemplates/SharePoint-ADFS-DevTestLabs'
+      RepositoryId: '/subscriptions/$(Test.AzureSubscriptionId)/resourcegroups/$(Test.DevTestLabName)/providers/microsoft.devtestlab/labs/$(Test.DevTestLabName)/artifactsources/privaterepo308'
+      TemplateId: '/subscriptions/$(Test.AzureSubscriptionId)/resourceGroups/$(Test.DevTestLabName)/providers/Microsoft.DevTestLab/labs/$(Test.DevTestLabName)/artifactSources/privaterepo308/armTemplates/SharePoint-ADFS-DevTestLabs'
       EnvironmentName: 'IntegrationTests'
       ParameterOverrides: "-location 'west europe' -provisionSharePoint2013 '$(Test.ProvisionSharePoint2013)' -provisionSharePoint2016 '$(Test.ProvisionSharePoint2016)' -provisionSharePoint2019 '$(Test.ProvisionSharePoint2019)' -enableHybridBenefitServerLicenses 'Yes' -adminUserName '$(Test.AdminUserName)' -adminPassword '$(Test.AdminPassword)' -serviceAccountsPassword '$(Test.ServiceAccountsPassword)'"
       TemplateOutputVariables: true
