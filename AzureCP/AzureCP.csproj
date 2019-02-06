@@ -68,9 +68,6 @@
     <Reference Include="Microsoft.SharePoint">
       <Private>False</Private>
     </Reference>
-    <Reference Include="Microsoft.SharePoint.Client.ServerRuntime">
-      <Private>False</Private>
-    </Reference>
   </ItemGroup>
   <ItemGroup>
     <Compile Include="AADAppOnlyAuthenticationProvider.cs" />
