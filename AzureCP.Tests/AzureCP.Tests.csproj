@@ -50,7 +50,8 @@
     <Compile Include="ExcludeMemberUserAccountsTests.cs" />
     <Compile Include="ExcludeGuestUserAccountsTests.cs" />
     <Compile Include="GuestAccountsUPNTests.cs" />
-    <Compile Include="ModifyConfigBase.cs" />
+    <Compile Include="BackupCurrentConfig.cs" />
+    <Compile Include="RequireExactMatchTests.cs" />
     <Compile Include="UnitTestsHelper.cs" />
     <Compile Include="CustomConfigTests.cs" />
     <Compile Include="ModifyConfigTests.cs" />

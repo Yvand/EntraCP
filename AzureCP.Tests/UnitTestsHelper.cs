@@ -21,7 +21,8 @@ public class UnitTestsHelper
     public static azurecp.AzureCP ClaimsProvider = new azurecp.AzureCP(UnitTestsHelper.ClaimsProviderName);
     public const string ClaimsProviderName = "AzureCP";
     public static string ClaimsProviderConfigName = TestContext.Parameters["ClaimsProviderConfigName"];
-    public static Uri Context = new Uri(TestContext.Parameters["TestSiteCollectionUri"]);
+    public static Uri TestSiteCollUri;
+    public static string TestSiteRelativePath = $"/sites/{TestContext.Parameters["TestSiteCollectionName"]}";
     public const int MaxTime = 50000;
     public static string FarmAdmin = TestContext.Parameters["FarmAdmin"];
 #if DEBUG
@@ -67,7 +68,7 @@ public class UnitTestsHelper
         Trace.WriteLine($"{DateTime.Now.ToString("s")} DataFile_AllAccounts_Validate: {DataFile_AllAccounts_Validate}");
         Trace.WriteLine($"{DateTime.Now.ToString("s")} DataFile_GuestAccountsUPN_Search: {DataFile_GuestAccountsUPN_Search}");
         Trace.WriteLine($"{DateTime.Now.ToString("s")} DataFile_GuestAccountsUPN_Validate: {DataFile_GuestAccountsUPN_Validate}");
-        Trace.WriteLine($"{DateTime.Now.ToString("s")} TestSiteCollectionUri: {TestContext.Parameters["TestSiteCollectionUri"]}");
+        Trace.WriteLine($"{DateTime.Now.ToString("s")} TestSiteCollectionName: {TestContext.Parameters["TestSiteCollectionName"]}");
         if (SPTrust == null)
             Trace.TraceError($"{DateTime.Now.ToString("s")} SPTrust: is null");
         else
@@ -79,18 +80,37 @@ public class UnitTestsHelper
             AzureCPConfig.CreateConfiguration(ClaimsProviderConstants.CONFIG_ID, ClaimsProviderConstants.CONFIG_NAME, SPTrust.Name);
         }
 
-        SPWebApplication wa = SPWebApplication.Lookup(Context);
+        var service = SPFarm.Local.Services.GetValue<SPWebService>(String.Empty);
+        SPWebApplication wa = service.WebApplications.FirstOrDefault();
         if (wa != null)
         {
-            Trace.WriteLine($"{DateTime.Now.ToString("s")} Web application {wa.Name} found, checking if site collection {Context.AbsoluteUri} exists...");
+            Trace.WriteLine($"{DateTime.Now.ToString("s")} Web application {wa.Name} found.");
             SPClaimProviderManager claimMgr = SPClaimProviderManager.Local;
             string encodedClaim = claimMgr.EncodeClaim(TrustedGroup);
             SPUserInfo userInfo = new SPUserInfo { LoginName = encodedClaim, Name = TrustedGroupToAdd_ClaimValue };
 
-            if (!SPSite.Exists(Context))
+            // The root site may not exist, but it must be present for tests to run
+            Uri rootWebAppUri = wa.GetResponseUri(0);
+            if (!SPSite.Exists(rootWebAppUri))
             {
-                Trace.WriteLine($"{DateTime.Now.ToString("s")} Creating site collection {Context.AbsoluteUri}...");
-                SPSite spSite = wa.Sites.Add(Context.AbsoluteUri, ClaimsProviderName, ClaimsProviderName, 1033, "STS#0", FarmAdmin, String.Empty, String.Empty);
+                Trace.WriteLine($"{DateTime.Now.ToString("s")} Creating root site collection {rootWebAppUri.AbsoluteUri}...");
+                SPSite spSite = wa.Sites.Add(rootWebAppUri.AbsoluteUri, "root", "root", 1033, "STS#1", FarmAdmin, String.Empty, String.Empty);
+                spSite.RootWeb.CreateDefaultAssociatedGroups(FarmAdmin, FarmAdmin, spSite.RootWeb.Title);
+
+                SPGroup membersGroup = spSite.RootWeb.AssociatedMemberGroup;
+                membersGroup.AddUser(userInfo.LoginName, userInfo.Email, userInfo.Name, userInfo.Notes);
+                spSite.Dispose();
+            }
+
+            if (!Uri.TryCreate(rootWebAppUri, TestSiteRelativePath, out TestSiteCollUri))
+            {
+                Trace.TraceError($"{DateTime.Now.ToString("s")} Unable to generate Uri of test site collection from Web application Uri {rootWebAppUri.AbsolutePath} and relative path {TestSiteRelativePath}.");
+            }
+
+            if (!SPSite.Exists(TestSiteCollUri))
+            {
+                Trace.WriteLine($"{DateTime.Now.ToString("s")} Creating site collection {TestSiteCollUri.AbsoluteUri}...");
+                SPSite spSite = wa.Sites.Add(TestSiteCollUri.AbsoluteUri, ClaimsProviderName, ClaimsProviderName, 1033, "STS#1", FarmAdmin, String.Empty, String.Empty);
                 spSite.RootWeb.CreateDefaultAssociatedGroups(FarmAdmin, FarmAdmin, spSite.RootWeb.Title);
 
                 SPGroup membersGroup = spSite.RootWeb.AssociatedMemberGroup;
@@ -99,7 +119,7 @@ public class UnitTestsHelper
             }
             else
             {
-                using (SPSite spSite = new SPSite(Context.AbsoluteUri))
+                using (SPSite spSite = new SPSite(TestSiteCollUri.AbsoluteUri))
                 {
                     SPGroup membersGroup = spSite.RootWeb.AssociatedMemberGroup;
                     membersGroup.AddUser(userInfo.LoginName, userInfo.Email, userInfo.Name, userInfo.Notes);
@@ -108,7 +128,7 @@ public class UnitTestsHelper
         }
         else
         {
-            Trace.TraceError($"{DateTime.Now.ToString("s")} Web application {Context} was NOT found.");
+            Trace.TraceError($"{DateTime.Now.ToString("s")} Web application was NOT found.");
         }
     }
 
@@ -145,7 +165,7 @@ public class UnitTestsHelper
     {
         string[] entityTypes = new string[] { "User", "SecGroup", "SharePointGroup", "System", "FormsRole" };
 
-        SPProviderHierarchyTree providerResults = ClaimsProvider.Search(Context, entityTypes, inputValue, null, 30);
+        SPProviderHierarchyTree providerResults = ClaimsProvider.Search(TestSiteCollUri, entityTypes, inputValue, null, 30);
         List<PickerEntity> entities = new List<PickerEntity>();
         foreach (var children in providerResults.Children)
         {
@@ -153,7 +173,7 @@ public class UnitTestsHelper
         }
         VerifySearchTest(entities, inputValue, expectedCount, expectedClaimValue);
 
-        entities = ClaimsProvider.Resolve(Context, entityTypes, inputValue).ToList();
+        entities = ClaimsProvider.Resolve(TestSiteCollUri, entityTypes, inputValue).ToList();
         VerifySearchTest(entities, inputValue, expectedCount, expectedClaimValue);
     }
 
@@ -183,7 +203,7 @@ public class UnitTestsHelper
     {
         string[] entityTypes = new string[] { "User" };
 
-        PickerEntity[] entities = ClaimsProvider.Resolve(Context, entityTypes, inputClaim);
+        PickerEntity[] entities = ClaimsProvider.Resolve(TestSiteCollUri, entityTypes, inputClaim);
 
         int expectedCount = shouldValidate ? 1 : 0;
         Assert.AreEqual(expectedCount, entities.Length, $"Validation of entity \"{inputClaim.Value}\" should have returned {expectedCount} entity, but it returned {entities.Length} instead.");
@@ -196,7 +216,7 @@ public class UnitTestsHelper
     public static void TestAugmentationOperation(string claimType, string claimValue, bool isMemberOfTrustedGroup)
     {
         SPClaim inputClaim = new SPClaim(claimType, claimValue, ClaimValueTypes.String, SPOriginalIssuers.Format(SPOriginalIssuerType.TrustedProvider, UnitTestsHelper.SPTrust.Name));
-        Uri context = new Uri(UnitTestsHelper.Context.AbsoluteUri);
+        Uri context = new Uri(UnitTestsHelper.TestSiteCollUri.AbsoluteUri);
 
         SPClaim[] groups = ClaimsProvider.GetClaimsForEntity(context, inputClaim);
 

@@ -8,7 +8,7 @@ namespace AzureCP.Tests
     /// <summary>
     /// This class creates a backup of current configuration and provides one that can be modified as needed. At the end of the test, initial configuration will be restored.
     /// </summary>
-    public class ModifyConfigBase
+    public class BackupCurrentConfig
     {
         protected AzureCPConfig Config;
         private AzureCPConfig BackupConfig;
