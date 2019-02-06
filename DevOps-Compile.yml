@@ -2,6 +2,7 @@ resources:
 - repo: self
 variables:
   BuildPlatform: 'x64'
+  SolutionFileName: 'AzureCP.sln'
   ProductDescription: 'This claims provider connects SharePoint with Azure Active Directory tenants to provide a great search experience in the people picker and get group membership of Azure AD users'
 jobs:
 - job: Compile
@@ -58,7 +59,7 @@ jobs:
   - task: NuGetCommand@2
     displayName: 'NuGet restore'
     inputs:
-      restoreSolution: '$(Parameters.solution)'
+      restoreSolution: '$(SolutionFileName)'
 
   - task: bleddynrichards.Assembly-Info-Task.Assembly-Info-Task.Assembly-Info-Task@1
     displayName: 'Set $(system.teamProject).dll version'
@@ -78,7 +79,7 @@ jobs:
   - task: VSBuild@1
     displayName: 'Build $(system.teamProject) solution'
     inputs:
-      solution: '$(Parameters.solution)'
+      solution: '$(SolutionFileName)'
       msbuildArgs: '/p:IsPackaging=true'
       platform: '$(BuildPlatform)'
       configuration: '$(BuildConfiguration)'
