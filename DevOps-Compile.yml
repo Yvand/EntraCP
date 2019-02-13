@@ -6,6 +6,15 @@ variables:
   ProductDescription: 'This claims provider connects SharePoint with Azure Active Directory tenants to provide a great search experience in the people picker and get group membership of Azure AD users'
 jobs:
 - job: Compile
+  strategy:
+    maxParallel: 2
+    matrix:
+      debugJob:
+        configuration: debug
+        platform: $(BuildPlatform)
+      releaseJob:
+        configuration: release
+        platform: $(BuildPlatform)
   displayName: Compile
   pool:
     name: Hosted VS2017
@@ -82,7 +91,7 @@ jobs:
       solution: '$(SolutionFileName)'
       msbuildArgs: '/p:IsPackaging=true'
       platform: '$(BuildPlatform)'
-      configuration: '$(BuildConfiguration)'
+      configuration: '$(configuration)'
       msbuildArchitecture: x64
   
   - task: CopyFiles@2
