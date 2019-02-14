@@ -71,18 +71,17 @@ jobs:
       restoreSolution: '$(SolutionFileName)'
 
   - task: bleddynrichards.Assembly-Info-Task.Assembly-Info-Task.Assembly-Info-Task@2
-    displayName: 'Set $(system.teamProject) assembly manifests'
+    displayName: 'Set $(system.teamProject) assemblies manifest'
     inputs:
       FileNames: '**\AssemblyInfo.cs'
       Title: $(system.teamProject)
       Product: $(system.teamProject)
       Description: '$(ProductDescription)'
-      Company: 'GitHub.com/Yvand'
+      Company: GitHub.com/Yvand
       Copyright: 'Copyright © $(date:YYYY) Yvan Duhamel, All rights reserved'
       Trademark: '$(system.teamProject)'
       VersionNumber: 1.0.0.0
-      FileVersionNumber: '$(BuildVersion).$(date:yyyyMMdd).$(Build.BuildId)'
-      InformationalVersion: '$(BuildVersion).$(date:yyyyMMdd).$(Build.BuildId)'
+      FileVersionNumber: '$(BuildVersion).$(date:YYYYMMdd).$(Build.BuildId)'
 
   - task: VSBuild@1
     displayName: 'Build $(system.teamProject) solution'
