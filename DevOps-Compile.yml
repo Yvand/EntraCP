@@ -81,7 +81,7 @@ jobs:
       Company: 'GitHub.com/Yvand'
       Copyright: 'Copyright © $(date:YYYY) Yvan Duhamel, All rights reserved'
       Trademark: '$(system.teamProject)'
-      VersionNumber: '1.0.0.0'
+      VersionNumber: 1.0.0.0
       FileVersionNumber: '$(Build.BuildNumber)'
       InformationalVersion: '$(Build.BuildNumber)'
       AssemblyConfiguration: '$(configuration)'
