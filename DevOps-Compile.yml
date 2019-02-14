@@ -83,6 +83,7 @@ jobs:
       Trademark: '$(system.teamProject)'
       VersionNumber: 1.0.0.0
       FileVersionNumber: '$(Build.BuildNumber)'
+      InformationalVersion: 1.0.0.0
 
   - task: VSBuild@1
     displayName: 'Build $(system.teamProject) solution'
