@@ -98,7 +98,7 @@ jobs:
     displayName: 'Copy binaries to artifacts'
     inputs:
       SourceFolder: '$(Build.SourcesDirectory)'
-      Contents: '**/$(BuildConfiguration)/**/?(*.wsp|*.dll|*.pdb)'
+      Contents: '$(system.teamProject)/bin/$(configuration)/?($(system.teamProject).*)'
       TargetFolder: '$(Build.ArtifactStagingDirectory)'
 
   - task: PublishBuildArtifacts@1
