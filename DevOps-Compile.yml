@@ -78,12 +78,12 @@ jobs:
       Title: $(system.teamProject)
       Product: $(system.teamProject)
       Description: '$(ProductDescription)'
-      Company: GitHub.com/Yvand
-      Copyright: 'Copyright © $(date:yyyy), Yvan Duhamel, All rights reserved'
-      Trademark: $(system.teamProject)
-      VersionNumber: 1.0.0.0
+      Company: 'GitHub.com/Yvand'
+      Copyright: 'Copyright © $(date:YYYY) Yvan Duhamel, All rights reserved'
+      Trademark: '$(system.teamProject)'
+      VersionNumber: '1.0.0.0'
       FileVersionNumber: '$(Build.BuildNumber)'
-      InformationalVersion: 1.0.0.0
+      InformationalVersion: '$(Build.BuildNumber)'
       AssemblyConfiguration: '$(configuration)'
 
   - task: VSBuild@1
