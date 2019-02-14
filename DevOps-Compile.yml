@@ -1,4 +1,3 @@
-name: $(BuildVersion).$(date:yyyyMMdd).$(Build.BuildId)
 resources:
 - repo: self
 variables:
@@ -82,9 +81,8 @@ jobs:
       Copyright: 'Copyright © $(date:YYYY) Yvan Duhamel, All rights reserved'
       Trademark: '$(system.teamProject)'
       VersionNumber: 1.0.0.0
-      FileVersionNumber: '$(Build.BuildNumber)'
-      InformationalVersion: '$(Build.BuildNumber)'
-      AssemblyConfiguration: '$(configuration)'
+      FileVersionNumber: '$(BuildVersion).$(date:yyyyMMdd).$(Build.BuildId)'
+      InformationalVersion: '$(BuildVersion).$(date:yyyyMMdd).$(Build.BuildId)'
 
   - task: VSBuild@1
     displayName: 'Build $(system.teamProject) solution'
