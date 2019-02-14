@@ -1,3 +1,4 @@
+name: $(BuildVersion).$(date:yyyyMMdd).$(Build.BuildId)
 resources:
 - repo: self
 variables:
@@ -6,7 +7,6 @@ variables:
   ProductDescription: 'This claims provider connects SharePoint with Azure Active Directory tenants to provide a great search experience in the people picker and get group membership of Azure AD users'
 jobs:
 - job: Compile
-  name: $(BuildVersion).$(date:yyyyMMdd).$(Build.BuildId)
   strategy:
     maxParallel: 2
     matrix:
