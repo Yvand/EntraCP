@@ -6,6 +6,7 @@ variables:
   ProductDescription: 'This claims provider connects SharePoint with Azure Active Directory tenants to provide a great search experience in the people picker and get group membership of Azure AD users'
 jobs:
 - job: Compile
+  name: $(BuildVersion).$(date:yyyyMMdd).$(Build.BuildId)
   strategy:
     maxParallel: 2
     matrix:
@@ -47,12 +48,12 @@ jobs:
      Get-AzureStorageFileContent –Share $azureShare –Path "$azureStorageBaseDirectory\SharePoint 2013\Microsoft.SharePoint.dll" "$projectLocalPath\Microsoft.SharePoint.dll"
      
      Write-Output ("Copy SPTestServer artifacts content from Azure storage account")
-     $localPath = Join-Path -Path $azureStorageBaseDirectory -ChildPath "SPTestServer artifacts"
-     Get-AzureStorageFile -ShareName $(AzureStorageShareName) -Context $azureContext -Path $localPath | Get-AzureStorageFile | ?{$_.GetType().Name -eq "CloudFile"} | Get-AzureStorageFileContent -Destination $devTestLabsLocalPath
+     $azurePath = Join-Path -Path $azureStorageBaseDirectory -ChildPath "SPTestServer artifacts"
+     Get-AzureStorageFile -ShareName $(AzureStorageShareName) -Context $azureContext -Path $azurePath | Get-AzureStorageFile | ?{$_.GetType().Name -eq "CloudFile"} | Get-AzureStorageFileContent -Destination $devTestLabsLocalPath
      
      Write-Output ("Copy BuildResources content from Azure storage account")
-     $localPath = Join-Path -Path $azureStorageBaseDirectory -ChildPath "BuildPipeline"
-     Get-AzureStorageFile -ShareName $(AzureStorageShareName) -Context $azureContext -Path $localPath | Get-AzureStorageFile | ? {$_.GetType().Name -eq "CloudFile"} | Get-AzureStorageFileContent -Destination $buildResourcesLocalPath
+     $azurePath = Join-Path -Path $azureStorageBaseDirectory -ChildPath "BuildPipeline"
+     Get-AzureStorageFile -ShareName $(AzureStorageShareName) -Context $azureContext -Path $azurePath | Get-AzureStorageFile | ? {$_.GetType().Name -eq "CloudFile"} | Get-AzureStorageFileContent -Destination $buildResourcesLocalPath
      
      Write-Output ("Add assembly Microsoft.SharePoint.dll to the GAC")
      [System.Reflection.Assembly]::Load("System.EnterpriseServices, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a")
@@ -70,11 +71,10 @@ jobs:
     inputs:
       restoreSolution: '$(SolutionFileName)'
 
-  - task: bleddynrichards.Assembly-Info-Task.Assembly-Info-Task.Assembly-Info-Task@1
+  - task: bleddynrichards.Assembly-Info-Task.Assembly-Info-Task.Assembly-Info-Task@2
     displayName: 'Set $(system.teamProject).dll version'
     inputs:
-      FileNames: |
-       AssemblyInfo.cs
+      FileNames: '**\AssemblyInfo.cs'
       Title: $(system.teamProject)
       Product: $(system.teamProject)
       Description: '$(ProductDescription)'
@@ -82,7 +82,7 @@ jobs:
       Copyright: 'Copyright © $(date:yyyy), Yvan Duhamel, All rights reserved'
       Trademark: $(system.teamProject)
       VersionNumber: 1.0.0.0
-      FileVersionNumber: '$(BuildVersion).*.*'
+      FileVersionNumber: '$(Build.BuildNumber)'
       InformationalVersion: 1.0.0.0
 
   - task: VSBuild@1
