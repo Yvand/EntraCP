@@ -72,7 +72,7 @@ jobs:
       restoreSolution: '$(SolutionFileName)'
 
   - task: bleddynrichards.Assembly-Info-Task.Assembly-Info-Task.Assembly-Info-Task@2
-    displayName: 'Set $(system.teamProject).dll version'
+    displayName: 'Set $(system.teamProject) assembly manifests'
     inputs:
       FileNames: '**\AssemblyInfo.cs'
       Title: $(system.teamProject)
@@ -84,6 +84,7 @@ jobs:
       VersionNumber: 1.0.0.0
       FileVersionNumber: '$(Build.BuildNumber)'
       InformationalVersion: 1.0.0.0
+      AssemblyConfiguration: '$(configuration)'
 
   - task: VSBuild@1
     displayName: 'Build $(system.teamProject) solution'
