@@ -1,4 +1,3 @@
-name: $(BuildVersion).$(date:yyyyMMdd).$(Build.BuildId)
 resources:
 - repo: self
 variables:
@@ -71,19 +70,18 @@ jobs:
     inputs:
       restoreSolution: '$(SolutionFileName)'
 
-  - task: bleddynrichards.Assembly-Info-Task.Assembly-Info-Task.Assembly-Info-Task@1
+  - task: bleddynrichards.Assembly-Info-Task.Assembly-Info-Task.Assembly-Info-NetFramework@2
     displayName: 'Set $(system.teamProject) assemblies manifest'
     inputs:
-      FileNames: |
-       AssemblyInfo.cs
+      FileNames: '**\AssemblyInfo.cs'
       Title: $(system.teamProject)
       Product: $(system.teamProject)
       Description: '$(ProductDescription)'
       Company: GitHub.com/Yvand
       Copyright: 'Copyright © $(date:YYYY) Yvan Duhamel, All rights reserved'
-      Trademark: $(system.teamProject)
+      Trademark: '$(system.teamProject)'
       VersionNumber: 1.0.0.0
-      FileVersionNumber: '$(Build.BuildNumber)'
+      FileVersionNumber: '$(BuildVersion).$(Build.BuildId)'
       InformationalVersion: 1.0.0.0
 
   - task: VSBuild@1
