@@ -1,0 +1,102 @@
+resources:
+- repo: self
+
+jobs:
+- job: RunTestSP2013
+  displayName: Run tests on SP2013
+  timeoutInMinutes: 15
+  variables:
+    jobSharePointVersion: 2013
+  pool:
+    name: AzureCP-Tests-2013
+  steps:
+  - task: DownloadBuildArtifacts@0
+    displayName: 'Download Build Artifacts'
+    inputs:
+      artifactName: drop
+      downloadPath: $(Build.ArtifactStagingDirectory)
+      itemPattern: |
+       drop/AzureCP.Tests/bin/Release/*.dll
+       drop/DevTestLabs/*.csv
+
+  - task: VisualStudioTestPlatformInstaller@1
+    displayName: 'Visual Studio Test Platform Installer'
+
+  - task: VSTest@2
+    displayName: 'Run Visual Studio tests'
+    inputs:
+      searchFolder: '$(System.ArtifactsDirectory)\drop'
+      vsTestVersion: toolsInstaller
+      runSettingsFile: AzureCP.Tests/local.runsettings
+      overrideTestrunParameters: '-DataFile_AllAccounts_Search "$(System.ArtifactsDirectory)\drop\DevTestLabs\AzureCP_Tests_AllAccounts_Search.csv" -DataFile_AllAccounts_Validate "$(System.ArtifactsDirectory)\drop\DevTestLabs\AzureCP_Tests_AllAccounts_Validate.csv" -TestSiteCollectionName "AzureCP.$(Build.BuildNumber)"'
+      codeCoverageEnabled: false
+      otherConsoleOptions: '/Platform:x64'
+      testRunTitle: 'AzureCP-Tests-SP$(jobSharePointVersion)'
+      platform: '$(BuildPlatform)'
+      configuration: $(BuildConfiguration)
+
+- job: RunTestSP2016
+  displayName: Run tests on SP2016
+  timeoutInMinutes: 15
+  variables:
+    jobSharePointVersion: 2016
+  pool:
+    name: AzureCP-Tests-2016
+  steps:
+  - task: DownloadBuildArtifacts@0
+    displayName: 'Download Build Artifacts'
+    inputs:
+      artifactName: drop
+      downloadPath: $(Build.ArtifactStagingDirectory)
+      itemPattern: |
+       drop/AzureCP.Tests/bin/Release/*.dll
+       drop/DevTestLabs/*.csv
+
+  - task: VisualStudioTestPlatformInstaller@1
+    displayName: 'Visual Studio Test Platform Installer'
+
+  - task: VSTest@2
+    displayName: 'Run Visual Studio tests'
+    inputs:
+      searchFolder: '$(System.ArtifactsDirectory)\drop'
+      vsTestVersion: toolsInstaller
+      runSettingsFile: AzureCP.Tests/local.runsettings
+      overrideTestrunParameters: '-DataFile_AllAccounts_Search "$(System.ArtifactsDirectory)\drop\DevTestLabs\AzureCP_Tests_AllAccounts_Search.csv" -DataFile_AllAccounts_Validate "$(System.ArtifactsDirectory)\drop\DevTestLabs\AzureCP_Tests_AllAccounts_Validate.csv" -TestSiteCollectionName "AzureCP.$(Build.BuildNumber)"'
+      codeCoverageEnabled: false
+      otherConsoleOptions: '/Platform:x64'
+      testRunTitle: 'AzureCP-Tests-SP$(jobSharePointVersion)'
+      platform: '$(BuildPlatform)'
+      configuration: $(BuildConfiguration)
+
+- job: RunTestSP2019
+  displayName: Run tests on SP2019
+  timeoutInMinutes: 15
+  variables:
+    jobSharePointVersion: 2019
+  pool:
+    name: AzureCP-Tests-2019
+  steps:
+  - task: DownloadBuildArtifacts@0
+    displayName: 'Download Build Artifacts'
+    inputs:
+      artifactName: drop
+      downloadPath: $(Build.ArtifactStagingDirectory)
+      itemPattern: |
+       drop/AzureCP.Tests/bin/Release/*.dll
+       drop/DevTestLabs/*.csv
+
+  - task: VisualStudioTestPlatformInstaller@1
+    displayName: 'Visual Studio Test Platform Installer'
+
+  - task: VSTest@2
+    displayName: 'Run Visual Studio tests'
+    inputs:
+      searchFolder: '$(System.ArtifactsDirectory)\drop'
+      vsTestVersion: toolsInstaller
+      runSettingsFile: AzureCP.Tests/local.runsettings
+      overrideTestrunParameters: '-DataFile_AllAccounts_Search "$(System.ArtifactsDirectory)\drop\DevTestLabs\AzureCP_Tests_AllAccounts_Search.csv" -DataFile_AllAccounts_Validate "$(System.ArtifactsDirectory)\drop\DevTestLabs\AzureCP_Tests_AllAccounts_Validate.csv" -TestSiteCollectionName "AzureCP.$(Build.BuildNumber)"'
+      codeCoverageEnabled: false
+      otherConsoleOptions: '/Platform:x64'
+      testRunTitle: 'AzureCP-Tests-SP$(jobSharePointVersion)'
+      platform: '$(BuildPlatform)'
+      configuration: $(BuildConfiguration)
