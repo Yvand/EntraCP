@@ -3,6 +3,7 @@ resources:
 
 jobs:
 - job: RunTestSP2013
+  condition: eq(variables['Test.ProvisionSharePoint2013'], 'yes')
   displayName: Run tests on SP2013
   timeoutInMinutes: 15
   variables:
@@ -36,6 +37,7 @@ jobs:
       configuration: $(BuildConfiguration)
 
 - job: RunTestSP2016
+  condition: eq(variables['Test.ProvisionSharePoint2016'], 'yes')
   displayName: Run tests on SP2016
   timeoutInMinutes: 15
   variables:
@@ -69,6 +71,7 @@ jobs:
       configuration: $(BuildConfiguration)
 
 - job: RunTestSP2019
+  condition: eq(variables['Test.ProvisionSharePoint2019'], 'yes')
   displayName: Run tests on SP2019
   timeoutInMinutes: 15
   variables:
