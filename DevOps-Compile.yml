@@ -50,7 +50,8 @@ jobs:
      $azureContext = New-AzureStorageContext $(AzureStorageAccountName) $(AzureStorageAccountKey)
      $azureShare = Get-AzureStorageShare $(AzureStorageShareName) –Context $azureContext
      #Get-AzureStorageFileContent –Share $azureShare –Path "$azureStorageBaseDirectory\$(system.teamProject).snk" "$projectLocalPath\$(system.teamProject).snk"
-     Copy-Item "$(DownloadSecureFile.secureFilePath)" -Destination "$azureStorageBaseDirectory"
+     Write-Output ("Copy signing key from $(DownloadSecureFile.secureFilePath) to $projectLocalPath")
+     Copy-Item "$(DownloadSecureFile.secureFilePath)" -Destination "$projectLocalPath"
      Get-AzureStorageFileContent –Share $azureShare –Path "$azureStorageBaseDirectory\SharePoint 2013\Microsoft.SharePoint.dll" "$projectLocalPath\Microsoft.SharePoint.dll"
      
      Write-Output ("Copy SPTestServer artifacts content from Azure storage account")
