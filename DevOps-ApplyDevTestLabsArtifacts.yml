@@ -1,6 +1,9 @@
 resources:
 - repo: self
 
+variables:
+  BuildConfiguration: Release
+
 jobs:
 - job: ApplyArtifactsSP2013
   condition: eq(variables['Test.ProvisionSharePoint2013'], 'yes')
