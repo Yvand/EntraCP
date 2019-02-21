@@ -15,6 +15,9 @@ jobs:
   - task: DownloadBuildArtifacts@0
     displayName: 'Download Build Artifacts'
     inputs:
+      buildType: specific
+      project: '8af08941-9998-40ec-9511-eef1a2f107d4'
+      pipeline: 5
       artifactName: drop
       downloadPath: $(Build.ArtifactStagingDirectory)
 
@@ -47,6 +50,9 @@ jobs:
   - task: DownloadBuildArtifacts@0
     displayName: 'Download Build Artifacts'
     inputs:
+      buildType: specific
+      project: '8af08941-9998-40ec-9511-eef1a2f107d4'
+      pipeline: 5
       artifactName: drop
       downloadPath: $(Build.ArtifactStagingDirectory)
 
@@ -79,6 +85,9 @@ jobs:
   - task: DownloadBuildArtifacts@0
     displayName: 'Download Build Artifacts'
     inputs:
+      buildType: specific
+      project: '8af08941-9998-40ec-9511-eef1a2f107d4'
+      pipeline: 5
       artifactName: drop
       downloadPath: $(Build.ArtifactStagingDirectory)
 
