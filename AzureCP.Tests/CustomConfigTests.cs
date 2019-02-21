@@ -52,6 +52,7 @@ namespace AzureCP.Tests
         }
 
         [Test]
+        [NonParallelizable]
         public void BypassServer()
         {
             Config.AlwaysResolveUserInput = true;
