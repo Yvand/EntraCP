@@ -15,7 +15,7 @@
 * Update NuGet package Microsoft.IdentityModel.Clients.ActiveDirectory to v4.4.2
 * Update NuGet package System.Net.Http to v4.3.4
 * Update NuGet package NUnit to v3.11
-* Update NuGet package NUnit3TestAdapter to v3.11.2
+* Update NuGet package NUnit3TestAdapter to v3.13
 * Update NuGet package CsvTools to v1.0.12
 
 ## AzureCP v13 enhancements & bug-fixes - Published in August 30, 2018
