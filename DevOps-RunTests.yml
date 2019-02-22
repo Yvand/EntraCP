@@ -29,7 +29,7 @@ jobs:
       searchFolder: '$(System.ArtifactsDirectory)\drop'
       vsTestVersion: toolsInstaller
       runSettingsFile: AzureCP.Tests/local.runsettings
-      overrideTestrunParameters: '-DataFile_AllAccounts_Search "$(System.ArtifactsDirectory)\drop\DevTestLabs\AzureCP_Tests_AllAccounts_Search.csv" -DataFile_AllAccounts_Validate "$(System.ArtifactsDirectory)\drop\DevTestLabs\AzureCP_Tests_AllAccounts_Validate.csv" -TestSiteCollectionName "AzureCP.$(Build.BuildNumber)"'
+      overrideTestrunParameters: '-DataFile_AllAccounts_Search "$(System.ArtifactsDirectory)\drop\SPTestServer artifacts\AzureCP_Tests_AllAccounts_Search.csv" -DataFile_AllAccounts_Validate "$(System.ArtifactsDirectory)\drop\SPTestServer artifacts\AzureCP_Tests_AllAccounts_Validate.csv" -TestSiteCollectionName "AzureCP.$(Build.BuildNumber)"'
       codeCoverageEnabled: false
       otherConsoleOptions: '/Platform:x64'
       testRunTitle: 'AzureCP-Tests-SP$(jobSharePointVersion)'
@@ -63,7 +63,7 @@ jobs:
       searchFolder: '$(System.ArtifactsDirectory)\drop'
       vsTestVersion: toolsInstaller
       runSettingsFile: AzureCP.Tests/local.runsettings
-      overrideTestrunParameters: '-DataFile_AllAccounts_Search "$(System.ArtifactsDirectory)\drop\DevTestLabs\AzureCP_Tests_AllAccounts_Search.csv" -DataFile_AllAccounts_Validate "$(System.ArtifactsDirectory)\drop\DevTestLabs\AzureCP_Tests_AllAccounts_Validate.csv" -TestSiteCollectionName "AzureCP.$(Build.BuildNumber)"'
+      overrideTestrunParameters: '-DataFile_AllAccounts_Search "$(System.ArtifactsDirectory)\drop\SPTestServer artifacts\AzureCP_Tests_AllAccounts_Search.csv" -DataFile_AllAccounts_Validate "$(System.ArtifactsDirectory)\drop\SPTestServer artifacts\AzureCP_Tests_AllAccounts_Validate.csv" -TestSiteCollectionName "AzureCP.$(Build.BuildNumber)"'
       codeCoverageEnabled: false
       otherConsoleOptions: '/Platform:x64'
       testRunTitle: 'AzureCP-Tests-SP$(jobSharePointVersion)'
@@ -97,7 +97,7 @@ jobs:
       searchFolder: '$(System.ArtifactsDirectory)\drop'
       vsTestVersion: toolsInstaller
       runSettingsFile: AzureCP.Tests/local.runsettings
-      overrideTestrunParameters: '-DataFile_AllAccounts_Search "$(System.ArtifactsDirectory)\drop\DevTestLabs\AzureCP_Tests_AllAccounts_Search.csv" -DataFile_AllAccounts_Validate "$(System.ArtifactsDirectory)\drop\DevTestLabs\AzureCP_Tests_AllAccounts_Validate.csv" -TestSiteCollectionName "AzureCP.$(Build.BuildNumber)"'
+      overrideTestrunParameters: '-DataFile_AllAccounts_Search "$(System.ArtifactsDirectory)\drop\SPTestServer artifacts\AzureCP_Tests_AllAccounts_Search.csv" -DataFile_AllAccounts_Validate "$(System.ArtifactsDirectory)\drop\SPTestServer artifacts\AzureCP_Tests_AllAccounts_Validate.csv" -TestSiteCollectionName "AzureCP.$(Build.BuildNumber)"'
       codeCoverageEnabled: false
       otherConsoleOptions: '/Platform:x64'
       testRunTitle: 'AzureCP-Tests-SP$(jobSharePointVersion)'

@@ -3,7 +3,7 @@ resources:
 - repo: self
 variables:
   BuildPlatform: 'x64'
-  SolutionFileName: 'AzureCP.sln'
+  SolutionFileName: '$(system.teamProject).sln'
   ProductDescription: 'This claims provider connects SharePoint with Azure Active Directory tenants to provide a great search experience in the people picker and get group membership of Azure AD users'
 jobs:
 - job: Compile
@@ -105,7 +105,9 @@ jobs:
     displayName: 'Copy binaries to artifacts'
     inputs:
       SourceFolder: '$(Build.SourcesDirectory)'
-      Contents: '$(system.teamProject)/bin/$(configuration)/?($(system.teamProject).*)'
+      Contents: |
+       $(system.teamProject)/bin/$(configuration)/?($(system.teamProject).*)
+       $(system.teamProject).Tests/bin/$(configuration)/?(*.dll)
       TargetFolder: '$(Build.ArtifactStagingDirectory)'
 
   - task: PublishBuildArtifacts@1
