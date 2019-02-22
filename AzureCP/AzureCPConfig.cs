@@ -26,6 +26,7 @@ namespace azurecp
         bool EnableRetry { get; set; }
         int Timeout { get; set; }
         string CustomData { get; set; }
+        int MaxSearchResultsCount { get; set; }        
     }
 
     public class ClaimsProviderConstants
@@ -194,6 +195,17 @@ namespace azurecp
         [Persisted]
         private string _CustomData;
 
+        /// <summary>
+        /// Limit number of results returned to SharePoint during a search
+        /// </summary>
+        public int MaxSearchResultsCount
+        {
+            get => _MaxSearchResultsCount;
+            set => _MaxSearchResultsCount = value;
+        }
+        [Persisted]
+        private int _MaxSearchResultsCount = 30; // SharePoint sets maxCount to 30 in method FillSearch
+
         public AzureCPConfig(string persistedObjectName, SPPersistedObject parent, string spTrustName) : base(persistedObjectName, parent)
         {
             this.SPTrustName = spTrustName;
@@ -315,6 +327,7 @@ namespace azurecp
             this.EnableRetry = configToApply.EnableRetry;
             this.Timeout = configToApply.Timeout;
             this.CustomData = configToApply.CustomData;
+            this.MaxSearchResultsCount = configToApply.MaxSearchResultsCount;
         }
 
         public AzureCPConfig CopyPersistedProperties()
@@ -335,6 +348,7 @@ namespace azurecp
             copy.EnableRetry = this.EnableRetry;
             copy.Timeout = this.Timeout;
             copy.CustomData = this.CustomData;
+            copy.MaxSearchResultsCount = this.MaxSearchResultsCount;
             return copy;
         }
 
