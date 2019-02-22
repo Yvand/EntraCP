@@ -9,6 +9,7 @@
 * Fix msbuild warnings
 * Improve tests
 * Use Azure DevOps to build AzureCP
+* Cache result returned by FileVersionInfo.GetVersionInfo() to avoid potential hangs
 * Remove reference on Microsoft.IdentityModel.Clients.ActiveDirectory.Platform.dll
 * Update NuGet package Microsoft.Graph to v1.12
 * Update NuGet package Microsoft.IdentityModel.Clients.ActiveDirectory to v4.4.2

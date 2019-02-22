@@ -45,18 +45,32 @@ namespace azurecp
         public const string PUBLICSITEURL = "https://yvand.github.io/AzureCP/";
         public const string GUEST_USERTYPE = "Guest";
         public const string MEMBER_USERTYPE = "Member";
+        private static object Sync_SetClaimsProviderVersion = new object();
+        private static string _ClaimsProviderVersion;
         public static string ClaimsProviderVersion
         {
             get
             {
-                try
+                if (!String.IsNullOrEmpty(_ClaimsProviderVersion))
+                    return _ClaimsProviderVersion;
+
+                // Method FileVersionInfo.GetVersionInfo() may hang and block all LDAPCP threads, so it is read only 1 time
+                lock (Sync_SetClaimsProviderVersion)
                 {
-                    return FileVersionInfo.GetVersionInfo(Assembly.GetAssembly(typeof(AzureCP)).Location).FileVersion;
-                }
-                // If assembly was removed from the GAC, CLR will throw that a FileNotFoundException
-                catch (System.IO.FileNotFoundException)
-                {
-                    return String.Empty;
+                    if (!String.IsNullOrEmpty(_ClaimsProviderVersion))
+                        return _ClaimsProviderVersion;
+
+                    try
+                    {
+                        _ClaimsProviderVersion = FileVersionInfo.GetVersionInfo(Assembly.GetAssembly(typeof(AzureCP)).Location).FileVersion;
+                    }
+                    // If assembly was removed from the GAC, CLR throws a FileNotFoundException
+                    catch (System.IO.FileNotFoundException)
+                    {
+                        // Current process will never detect if assembly is added to the GAC later, which is fine
+                        _ClaimsProviderVersion = " ";
+                    }
+                    return _ClaimsProviderVersion;
                 }
             }
         }
