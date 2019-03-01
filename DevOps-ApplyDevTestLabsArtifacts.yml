@@ -25,8 +25,9 @@ jobs:
     displayName: 'Download Build Artifacts'
     inputs:
       buildType: specific
-      project: '8af08941-9998-40ec-9511-eef1a2f107d4'
-      pipeline: 5
+      project: '$(System.TeamProjectId)'
+      pipeline: $(Test.BuildArtifactsPipelineID)
+      specificBuildWithTriggering: true
       artifactName: drop
       downloadPath: $(Build.DefaultWorkingDirectory)
 
@@ -67,8 +68,9 @@ jobs:
     displayName: 'Download Build Artifacts'
     inputs:
       buildType: specific
-      project: '8af08941-9998-40ec-9511-eef1a2f107d4'
-      pipeline: 5
+      project: '$(System.TeamProjectId)'
+      pipeline: $(Test.BuildArtifactsPipelineID)
+      specificBuildWithTriggering: true
       artifactName: drop
       downloadPath: $(Build.DefaultWorkingDirectory)
 
@@ -103,8 +105,9 @@ jobs:
     displayName: 'Download Build Artifacts'
     inputs:
       buildType: specific
-      project: '8af08941-9998-40ec-9511-eef1a2f107d4'
-      pipeline: 5
+      project: '$(System.TeamProjectId)'
+      pipeline: $(Test.BuildArtifactsPipelineID)
+      specificBuildWithTriggering: true
       artifactName: drop
       downloadPath: $(Build.DefaultWorkingDirectory)
       
