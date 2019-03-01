@@ -1,10 +1,24 @@
 # AzureCP for SharePoint 2019 / 2016 / 2013
 
-## Please visit [yvand.github.io/AzureCP](https://yvand.github.io/AzureCP/) to download AzureCP and find documentation.
+**Please visit [yvand.github.io/AzureCP](https://yvand.github.io/AzureCP/) to download AzureCP and find documentation.**
 
-This claims provider uses [Microsoft Graph](https://developer.microsoft.com/en-us/graph/) to connect SharePoint 2013 and 2016 with Azure Active Directory and provide a great search experience in the people picker.  
-![People picker with AzureCP](https://github.com/Yvand/AzureCP/raw/gh-pages/assets/people%20picker%20AzureCP_2.png)
+## Branch "dev"
 
-Read [this article](https://docs.microsoft.com/en-us/office365/enterprise/using-azure-ad-for-sharepoint-server-authentication) to see how to federate SharePoint with Azure AD.
+[![Build Status](https://dev.azure.com/YvanDev/AzureCP/_apis/build/status/Compile?branchName=dev)](https://dev.azure.com/YvanDev/AzureCP/_build/latest?definitionId=5&branchName=dev)
 
-dev branch build status: [![Build Status](https://dev.azure.com/YvanDev/AzureCP/_apis/build/status/Compile?branchName=dev)](https://dev.azure.com/YvanDev/AzureCP/_build/latest?definitionId=5&branchName=dev)
+## Latest stable release
+
+![GitHub Release Date](https://img.shields.io/github/release-date/Yvand/AzureCP.svg)
+![GitHub release](https://img.shields.io/github/release/Yvand/AzureCP.svg)
+![Latest release downloads](https://img.shields.io/github/downloads/Yvand/AzureCP/latest/total.svg)
+
+## Latest pre-release
+
+![GitHub (Pre-)Release Date](https://img.shields.io/github/release-date-pre/Yvand/AzureCP.svg)
+![GitHub release](https://img.shields.io/github/release-pre/Yvand/AzureCP.svg)
+
+## Miscellaneous
+
+![GitHub issues](https://img.shields.io/github/issues/Yvand/AzureCP.svg)
+![GitHub](https://img.shields.io/github/license/Yvand/AzureCP.svg) 
+![GitHub code size in bytes](https://img.shields.io/github/languages/code-size/Yvand/AzureCP.svg)
