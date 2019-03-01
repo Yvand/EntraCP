@@ -9,15 +9,19 @@ jobs:
   variables:
     jobSharePointVersion: 2013
   pool:
-    name: AzureCP-Tests-2013
+    name: $(System.TeamProject)-Tests-2013
   steps:
   - task: DownloadBuildArtifacts@0
     displayName: 'Download Build Artifacts'
     inputs:
+      buildType: specific
+      project: '$(System.TeamProjectId)'
+      pipeline: $(Test.BuildArtifactsPipelineID)
+      specificBuildWithTriggering: true
       artifactName: drop
       downloadPath: $(Build.ArtifactStagingDirectory)
       itemPattern: |
-       drop/AzureCP.Tests/bin/Release/*.dll
+       drop/$(System.TeamProject).Tests/bin/Release/*.dll
        drop/DevTestLabs/*.csv
 
   - task: VisualStudioTestPlatformInstaller@1
@@ -28,11 +32,11 @@ jobs:
     inputs:
       searchFolder: '$(System.ArtifactsDirectory)\drop'
       vsTestVersion: toolsInstaller
-      runSettingsFile: AzureCP.Tests/local.runsettings
-      overrideTestrunParameters: '-DataFile_AllAccounts_Search "$(System.ArtifactsDirectory)\drop\SPTestServer artifacts\AzureCP_Tests_AllAccounts_Search.csv" -DataFile_AllAccounts_Validate "$(System.ArtifactsDirectory)\drop\SPTestServer artifacts\AzureCP_Tests_AllAccounts_Validate.csv" -TestSiteCollectionName "AzureCP.$(Build.BuildNumber)"'
+      runSettingsFile: $(System.TeamProject).Tests/local.runsettings
+      overrideTestrunParameters: '-DataFile_AllAccounts_Search "$(System.ArtifactsDirectory)\drop\SPTestServer artifacts\$(System.TeamProject)_Tests_AllAccounts_Search.csv" -DataFile_AllAccounts_Validate "$(System.ArtifactsDirectory)\drop\SPTestServer artifacts\$(System.TeamProject)_Tests_AllAccounts_Validate.csv" -TestSiteCollectionName "$(System.TeamProject).$(Build.BuildNumber)"'
       codeCoverageEnabled: false
       otherConsoleOptions: '/Platform:x64'
-      testRunTitle: 'AzureCP-Tests-SP$(jobSharePointVersion)'
+      testRunTitle: '$(System.TeamProject)-Tests-SP$(jobSharePointVersion)'
       platform: '$(BuildPlatform)'
       configuration: $(BuildConfiguration)
 
@@ -43,15 +47,19 @@ jobs:
   variables:
     jobSharePointVersion: 2016
   pool:
-    name: AzureCP-Tests-2016
+    name: $(System.TeamProject)-Tests-2016
   steps:
   - task: DownloadBuildArtifacts@0
     displayName: 'Download Build Artifacts'
     inputs:
+      buildType: specific
+      project: '$(System.TeamProjectId)'
+      pipeline: $(Test.BuildArtifactsPipelineID)
+      specificBuildWithTriggering: true
       artifactName: drop
       downloadPath: $(Build.ArtifactStagingDirectory)
       itemPattern: |
-       drop/AzureCP.Tests/bin/Release/*.dll
+       drop/$(System.TeamProject).Tests/bin/Release/*.dll
        drop/DevTestLabs/*.csv
 
   - task: VisualStudioTestPlatformInstaller@1
@@ -62,11 +70,11 @@ jobs:
     inputs:
       searchFolder: '$(System.ArtifactsDirectory)\drop'
       vsTestVersion: toolsInstaller
-      runSettingsFile: AzureCP.Tests/local.runsettings
-      overrideTestrunParameters: '-DataFile_AllAccounts_Search "$(System.ArtifactsDirectory)\drop\SPTestServer artifacts\AzureCP_Tests_AllAccounts_Search.csv" -DataFile_AllAccounts_Validate "$(System.ArtifactsDirectory)\drop\SPTestServer artifacts\AzureCP_Tests_AllAccounts_Validate.csv" -TestSiteCollectionName "AzureCP.$(Build.BuildNumber)"'
+      runSettingsFile: $(System.TeamProject).Tests/local.runsettings
+      overrideTestrunParameters: '-DataFile_AllAccounts_Search "$(System.ArtifactsDirectory)\drop\SPTestServer artifacts\$(System.TeamProject)_Tests_AllAccounts_Search.csv" -DataFile_AllAccounts_Validate "$(System.ArtifactsDirectory)\drop\SPTestServer artifacts\$(System.TeamProject)_Tests_AllAccounts_Validate.csv" -TestSiteCollectionName "$(System.TeamProject).$(Build.BuildNumber)"'
       codeCoverageEnabled: false
       otherConsoleOptions: '/Platform:x64'
-      testRunTitle: 'AzureCP-Tests-SP$(jobSharePointVersion)'
+      testRunTitle: '$(System.TeamProject)-Tests-SP$(jobSharePointVersion)'
       platform: '$(BuildPlatform)'
       configuration: $(BuildConfiguration)
 
@@ -77,15 +85,19 @@ jobs:
   variables:
     jobSharePointVersion: 2019
   pool:
-    name: AzureCP-Tests-2019
+    name: $(System.TeamProject)-Tests-2019
   steps:
   - task: DownloadBuildArtifacts@0
     displayName: 'Download Build Artifacts'
     inputs:
+      buildType: specific
+      project: '$(System.TeamProjectId)'
+      pipeline: $(Test.BuildArtifactsPipelineID)
+      specificBuildWithTriggering: true
       artifactName: drop
       downloadPath: $(Build.ArtifactStagingDirectory)
       itemPattern: |
-       drop/AzureCP.Tests/bin/Release/*.dll
+       drop/$(System.TeamProject).Tests/bin/Release/*.dll
        drop/DevTestLabs/*.csv
 
   - task: VisualStudioTestPlatformInstaller@1
@@ -96,10 +108,10 @@ jobs:
     inputs:
       searchFolder: '$(System.ArtifactsDirectory)\drop'
       vsTestVersion: toolsInstaller
-      runSettingsFile: AzureCP.Tests/local.runsettings
-      overrideTestrunParameters: '-DataFile_AllAccounts_Search "$(System.ArtifactsDirectory)\drop\SPTestServer artifacts\AzureCP_Tests_AllAccounts_Search.csv" -DataFile_AllAccounts_Validate "$(System.ArtifactsDirectory)\drop\SPTestServer artifacts\AzureCP_Tests_AllAccounts_Validate.csv" -TestSiteCollectionName "AzureCP.$(Build.BuildNumber)"'
+      runSettingsFile: $(System.TeamProject).Tests/local.runsettings
+      overrideTestrunParameters: '-DataFile_AllAccounts_Search "$(System.ArtifactsDirectory)\drop\SPTestServer artifacts\$(System.TeamProject)_Tests_AllAccounts_Search.csv" -DataFile_AllAccounts_Validate "$(System.ArtifactsDirectory)\drop\SPTestServer artifacts\$(System.TeamProject)_Tests_AllAccounts_Validate.csv" -TestSiteCollectionName "$(System.TeamProject).$(Build.BuildNumber)"'
       codeCoverageEnabled: false
       otherConsoleOptions: '/Platform:x64'
-      testRunTitle: 'AzureCP-Tests-SP$(jobSharePointVersion)'
+      testRunTitle: '$(System.TeamProject)-Tests-SP$(jobSharePointVersion)'
       platform: '$(BuildPlatform)'
       configuration: $(BuildConfiguration)
