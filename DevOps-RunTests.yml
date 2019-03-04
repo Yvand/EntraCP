@@ -11,6 +11,7 @@ jobs:
   pool:
     name: $(System.TeamProject)-Tests-2013
   steps:
+  - checkout: none #skip checking out the default repository resource
   - task: DownloadBuildArtifacts@0
     displayName: 'Download Build Artifacts'
     inputs:
@@ -33,7 +34,7 @@ jobs:
       searchFolder: '$(System.ArtifactsDirectory)\drop'
       vsTestVersion: toolsInstaller
       runSettingsFile: $(System.TeamProject).Tests/local.runsettings
-      overrideTestrunParameters: '-DataFile_AllAccounts_Search "$(System.ArtifactsDirectory)\drop\SPTestServer artifacts\$(System.TeamProject)_Tests_AllAccounts_Search.csv" -DataFile_AllAccounts_Validate "$(System.ArtifactsDirectory)\drop\SPTestServer artifacts\$(System.TeamProject)_Tests_AllAccounts_Validate.csv" -DataFile_GuestAccountsUPN_Search "$(System.ArtifactsDirectory)\drop\SPTestServer artifacts\$(System.TeamProject)_Tests_GuestAccountsUPN_Search.csv" -DataFile_GuestAccountsUPN_Validate "$(System.ArtifactsDirectory)\drop\SPTestServer artifacts\$(System.TeamProject)_Tests_GuestAccountsUPN_Validate.csv" -TestSiteCollectionName "$(System.TeamProject).$(Build.BuildNumber)" -AzureTenantsJsonFile "$(System.ArtifactsDirectory)\drop\SPTestServer artifacts\AzureCP_Tenants.json"'
+      overrideTestrunParameters: '$(Test.OverrideTestrunParameters)'
       codeCoverageEnabled: false
       otherConsoleOptions: '/Platform:x64'
       testRunTitle: '$(System.TeamProject)-Tests-SP$(jobSharePointVersion)'
@@ -49,6 +50,7 @@ jobs:
   pool:
     name: $(System.TeamProject)-Tests-2016
   steps:
+  - checkout: none #skip checking out the default repository resource
   - task: DownloadBuildArtifacts@0
     displayName: 'Download Build Artifacts'
     inputs:
@@ -71,7 +73,7 @@ jobs:
       searchFolder: '$(System.ArtifactsDirectory)\drop'
       vsTestVersion: toolsInstaller
       runSettingsFile: $(System.TeamProject).Tests/local.runsettings
-      overrideTestrunParameters: '-DataFile_AllAccounts_Search "$(System.ArtifactsDirectory)\drop\SPTestServer artifacts\$(System.TeamProject)_Tests_AllAccounts_Search.csv" -DataFile_AllAccounts_Validate "$(System.ArtifactsDirectory)\drop\SPTestServer artifacts\$(System.TeamProject)_Tests_AllAccounts_Validate.csv" -DataFile_GuestAccountsUPN_Search "$(System.ArtifactsDirectory)\drop\SPTestServer artifacts\$(System.TeamProject)_Tests_GuestAccountsUPN_Search.csv" -DataFile_GuestAccountsUPN_Validate "$(System.ArtifactsDirectory)\drop\SPTestServer artifacts\$(System.TeamProject)_Tests_GuestAccountsUPN_Validate.csv" -TestSiteCollectionName "$(System.TeamProject).$(Build.BuildNumber)" -AzureTenantsJsonFile "$(System.ArtifactsDirectory)\drop\SPTestServer artifacts\AzureCP_Tenants.json"'
+      overrideTestrunParameters: '$(Test.OverrideTestrunParameters)'
       codeCoverageEnabled: false
       otherConsoleOptions: '/Platform:x64'
       testRunTitle: '$(System.TeamProject)-Tests-SP$(jobSharePointVersion)'
@@ -87,6 +89,7 @@ jobs:
   pool:
     name: $(System.TeamProject)-Tests-2019
   steps:
+  - checkout: none #skip checking out the default repository resource
   - task: DownloadBuildArtifacts@0
     displayName: 'Download Build Artifacts'
     inputs:
@@ -109,8 +112,8 @@ jobs:
       searchFolder: '$(System.ArtifactsDirectory)\drop'
       vsTestVersion: toolsInstaller
       runSettingsFile: $(System.TeamProject).Tests/local.runsettings
-      overrideTestrunParameters: '-DataFile_AllAccounts_Search "$(System.ArtifactsDirectory)\drop\SPTestServer artifacts\$(System.TeamProject)_Tests_AllAccounts_Search.csv" -DataFile_AllAccounts_Validate "$(System.ArtifactsDirectory)\drop\SPTestServer artifacts\$(System.TeamProject)_Tests_AllAccounts_Validate.csv" -DataFile_GuestAccountsUPN_Search "$(System.ArtifactsDirectory)\drop\SPTestServer artifacts\$(System.TeamProject)_Tests_GuestAccountsUPN_Search.csv" -DataFile_GuestAccountsUPN_Validate "$(System.ArtifactsDirectory)\drop\SPTestServer artifacts\$(System.TeamProject)_Tests_GuestAccountsUPN_Validate.csv" -TestSiteCollectionName "$(System.TeamProject).$(Build.BuildNumber)" -AzureTenantsJsonFile "$(System.ArtifactsDirectory)\drop\SPTestServer artifacts\AzureCP_Tenants.json"'
-      codeCoverageEnabled: false
+      overrideTestrunParameters: '$(Test.OverrideTestrunParameters)'
+      codeCoverageEnabled: true
       otherConsoleOptions: '/Platform:x64'
       testRunTitle: '$(System.TeamProject)-Tests-SP$(jobSharePointVersion)'
       platform: '$(BuildPlatform)'
