@@ -109,9 +109,9 @@ jobs:
   - task: VSTest@2
     displayName: 'Run Visual Studio tests'
     inputs:
-      searchFolder: '$(System.ArtifactsDirectory)\drop'
+      searchFolder: '$(Build.ArtifactStagingDirectory)/drop'
       vsTestVersion: toolsInstaller
-      runSettingsFile: $(System.TeamProject).Tests/local.runsettings
+      runSettingsFile: 'SPTestServer artifacts/local.runsettings'
       overrideTestrunParameters: '$(Test.OverrideTestrunParameters)'
       codeCoverageEnabled: true
       otherConsoleOptions: '/Platform:x64'
