@@ -22,7 +22,7 @@ jobs:
       downloadPath: $(Build.ArtifactStagingDirectory)
       itemPattern: |
        drop/$(System.TeamProject).Tests/bin/Release/*.dll
-       drop/SPTestServer artifacts/*.csv
+       drop/SPTestServer artifacts/?(*.csv|*.json)
 
   - task: VisualStudioTestPlatformInstaller@1
     displayName: 'Visual Studio Test Platform Installer'
@@ -33,7 +33,7 @@ jobs:
       searchFolder: '$(System.ArtifactsDirectory)\drop'
       vsTestVersion: toolsInstaller
       runSettingsFile: $(System.TeamProject).Tests/local.runsettings
-      overrideTestrunParameters: '-DataFile_AllAccounts_Search "$(System.ArtifactsDirectory)\drop\SPTestServer artifacts\$(System.TeamProject)_Tests_AllAccounts_Search.csv" -DataFile_AllAccounts_Validate "$(System.ArtifactsDirectory)\drop\SPTestServer artifacts\$(System.TeamProject)_Tests_AllAccounts_Validate.csv" -TestSiteCollectionName "$(System.TeamProject).$(Build.BuildNumber)"'
+      overrideTestrunParameters: '-DataFile_AllAccounts_Search "$(System.ArtifactsDirectory)\drop\SPTestServer artifacts\$(System.TeamProject)_Tests_AllAccounts_Search.csv" -DataFile_AllAccounts_Validate "$(System.ArtifactsDirectory)\drop\SPTestServer artifacts\$(System.TeamProject)_Tests_AllAccounts_Validate.csv" -DataFile_GuestAccountsUPN_Search "$(System.ArtifactsDirectory)\drop\SPTestServer artifacts\$(System.TeamProject)_Tests_GuestAccountsUPN_Search.csv" -DataFile_GuestAccountsUPN_Validate "$(System.ArtifactsDirectory)\drop\SPTestServer artifacts\$(System.TeamProject)_Tests_GuestAccountsUPN_Validate.csv" -TestSiteCollectionName "$(System.TeamProject).$(Build.BuildNumber)" -AzureTenantsJsonFile "$(System.ArtifactsDirectory)\drop\SPTestServer artifacts\AzureCP_Tenants.json"'
       codeCoverageEnabled: false
       otherConsoleOptions: '/Platform:x64'
       testRunTitle: '$(System.TeamProject)-Tests-SP$(jobSharePointVersion)'
