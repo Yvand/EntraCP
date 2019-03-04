@@ -110,7 +110,7 @@ namespace azurecp.ControlTemplates
             th = GetTableHeaderCell("Claim type");
             th.RowSpan = 2;
             tr.Cells.Add(th);
-            th = GetTableHeaderCell("Directory object details");
+            th = GetTableHeaderCell("Azure AD object details");
             th.ColumnSpan = 3;
             tr.Cells.Add(th);
             th = GetTableHeaderCell("Optional settings");
