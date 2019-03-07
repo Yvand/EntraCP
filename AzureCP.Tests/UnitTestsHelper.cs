@@ -14,6 +14,7 @@ using System.IO;
 using System.Linq;
 using System.Reflection;
 using System.Security.Claims;
+using System.Text;
 
 [SetUpFixture]
 public class UnitTestsHelper
@@ -180,8 +181,11 @@ public class UnitTestsHelper
     public static void VerifySearchTest(List<PickerEntity> entities, string input, int expectedCount, string expectedClaimValue)
     {
         bool entityValueFound = false;
+        StringBuilder detailedLog = new StringBuilder($"It returned {entities.Count.ToString()} entities: ");
+        string entityLogPattern = "entity \"{0}\", claim type: \"{1}\"; ";
         foreach (PickerEntity entity in entities)
         {
+            detailedLog.AppendLine(String.Format(entityLogPattern, entity.Claim.Value, entity.Claim.ClaimType));
             if (String.Equals(expectedClaimValue, entity.Claim.Value, StringComparison.InvariantCultureIgnoreCase))
             {
                 entityValueFound = true;
@@ -190,13 +194,13 @@ public class UnitTestsHelper
 
         if (!entityValueFound && expectedCount > 0)
         {
-            Assert.Fail($"Input \"{input}\" returned no entity with claim value \"{expectedClaimValue}\".");
+            Assert.Fail($"Input \"{input}\" returned no entity with claim value \"{expectedClaimValue}\". {detailedLog.ToString()}");
         }
 
         if (expectedCount == Int32.MaxValue)
             expectedCount = entities.Count;
 
-        Assert.AreEqual(expectedCount, entities.Count, $"Input \"{input}\" should have returned {expectedCount} entities, but it returned {entities.Count} instead.");
+        Assert.AreEqual(expectedCount, entities.Count, $"Input \"{input}\" should have returned {expectedCount} entities, but it returned {entities.Count} instead. {detailedLog.ToString()}");
     }
 
     public static void TestValidationOperation(SPClaim inputClaim, bool shouldValidate, string expectedClaimValue)
