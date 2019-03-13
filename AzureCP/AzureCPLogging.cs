@@ -107,15 +107,12 @@ namespace azurecp
         {
             try
             {
-                TraceSeverity severity;
 #if DEBUG
-                severity = TraceSeverity.VerboseEx;
-                WriteTrace(TraceCategory.Debug, severity, message);
+                WriteTrace(TraceCategory.Debug, TraceSeverity.VerboseEx, message);
                 Debug.WriteLine(message);
 #else
-                severity = TraceSeverity.VerboseEx;
+                // Do nothing
 #endif
-
             }
             catch
             {   // Don't want to do anything if logging goes wrong, just ignore and continue

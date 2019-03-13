@@ -51,7 +51,7 @@ namespace azurecp.ControlTemplates
                 PropertyCollectionBinder pcb = new PropertyCollectionBinder();
                 foreach (AzureTenant tenant in PersistedObject.AzureTenants)
                 {
-                    pcb.AddRow(tenant.Id, tenant.TenantName, tenant.ClientId, tenant.MemberUserTypeOnly);
+                    pcb.AddRow(tenant.Id, tenant.TenantName, tenant.ClientId, tenant.ExcludeMemberUsers);
                 }
                 pcb.BindGrid(grdAzureTenants);
             }
@@ -217,7 +217,7 @@ namespace azurecp.ControlTemplates
                     TenantName = this.TxtTenantName.Text,
                     ClientId = TxtClientId.Text,
                     ClientSecret = this.TxtClientSecret.Text,
-                    MemberUserTypeOnly = this.ChkMemberUserTypeOnly.Checked,
+                    ExcludeMemberUsers = this.ChkMemberUserTypeOnly.Checked,
                 });
 
             CommitChanges();

@@ -25,6 +25,8 @@ namespace azurecp
         string EntityDisplayTextPrefix { get; set; }
         bool EnableRetry { get; set; }
         int Timeout { get; set; }
+        string CustomData { get; set; }
+        int MaxSearchResultsCount { get; set; }        
     }
 
     public class ClaimsProviderConstants
@@ -42,18 +44,34 @@ namespace azurecp
         public const bool EnforceOnly1ClaimTypeForGroup = true;     // In AzureCP, only 1 claim type can be used to create group permissions
         public const string DefaultMainGroupClaimType = WIF4_5.ClaimTypes.Role;
         public const string PUBLICSITEURL = "https://yvand.github.io/AzureCP/";
+        public const string GUEST_USERTYPE = "Guest";
+        public const string MEMBER_USERTYPE = "Member";
+        private static object Sync_SetClaimsProviderVersion = new object();
+        private static string _ClaimsProviderVersion;
         public static string ClaimsProviderVersion
         {
             get
             {
-                try
+                if (!String.IsNullOrEmpty(_ClaimsProviderVersion))
+                    return _ClaimsProviderVersion;
+
+                // Method FileVersionInfo.GetVersionInfo() may hang and block all LDAPCP threads, so it is read only 1 time
+                lock (Sync_SetClaimsProviderVersion)
                 {
-                    return FileVersionInfo.GetVersionInfo(Assembly.GetAssembly(typeof(AzureCP)).Location).FileVersion;
-                }
-                // If assembly was removed from the GAC, CLR will throw that a FileNotFoundException
-                catch (System.IO.FileNotFoundException)
-                {
-                    return String.Empty;
+                    if (!String.IsNullOrEmpty(_ClaimsProviderVersion))
+                        return _ClaimsProviderVersion;
+
+                    try
+                    {
+                        _ClaimsProviderVersion = FileVersionInfo.GetVersionInfo(Assembly.GetAssembly(typeof(AzureCP)).Location).FileVersion;
+                    }
+                    // If assembly was removed from the GAC, CLR throws a FileNotFoundException
+                    catch (System.IO.FileNotFoundException)
+                    {
+                        // Current process will never detect if assembly is added to the GAC later, which is fine
+                        _ClaimsProviderVersion = " ";
+                    }
+                    return _ClaimsProviderVersion;
                 }
             }
         }
@@ -166,6 +184,28 @@ namespace azurecp
         [Persisted]
         private string ClaimsProviderVersion;
 
+        /// <summary>
+        /// This property is not used by AzureCP and is available to developers for their own needs
+        /// </summary>
+        public string CustomData
+        {
+            get => _CustomData;
+            set => _CustomData = value;
+        }
+        [Persisted]
+        private string _CustomData;
+
+        /// <summary>
+        /// Limit number of results returned to SharePoint during a search
+        /// </summary>
+        public int MaxSearchResultsCount
+        {
+            get => _MaxSearchResultsCount;
+            set => _MaxSearchResultsCount = value;
+        }
+        [Persisted]
+        private int _MaxSearchResultsCount = 30; // SharePoint sets maxCount to 30 in method FillSearch
+
         public AzureCPConfig(string persistedObjectName, SPPersistedObject parent, string spTrustName) : base(persistedObjectName, parent)
         {
             this.SPTrustName = spTrustName;
@@ -277,6 +317,7 @@ namespace azurecp
 
         public void ApplyConfiguration(AzureCPConfig configToApply)
         {
+            this.SPTrustName = configToApply.SPTrustName;
             this.AzureTenants = configToApply.AzureTenants;
             this.ClaimTypes = configToApply.ClaimTypes;
             this.AlwaysResolveUserInput = configToApply.AlwaysResolveUserInput;
@@ -285,6 +326,8 @@ namespace azurecp
             this.EntityDisplayTextPrefix = configToApply.EntityDisplayTextPrefix;
             this.EnableRetry = configToApply.EnableRetry;
             this.Timeout = configToApply.Timeout;
+            this.CustomData = configToApply.CustomData;
+            this.MaxSearchResultsCount = configToApply.MaxSearchResultsCount;
         }
 
         public AzureCPConfig CopyPersistedProperties()
@@ -293,6 +336,7 @@ namespace azurecp
             copy.SPTrustName = this.SPTrustName;
             copy.AzureTenants = new List<AzureTenant>(this.AzureTenants);
             copy.ClaimTypes = new ClaimTypeConfigCollection();
+            copy.ClaimTypes.SPTrust = this.ClaimTypes.SPTrust;
             foreach (ClaimTypeConfig currentObject in this.ClaimTypes)
             {
                 copy.ClaimTypes.Add(currentObject.CopyPersistedProperties(), false);
@@ -303,6 +347,8 @@ namespace azurecp
             copy.EntityDisplayTextPrefix = this.EntityDisplayTextPrefix;
             copy.EnableRetry = this.EnableRetry;
             copy.Timeout = this.Timeout;
+            copy.CustomData = this.CustomData;
+            copy.MaxSearchResultsCount = this.MaxSearchResultsCount;
             return copy;
         }
 
@@ -371,7 +417,7 @@ namespace azurecp
                 return null;
             }
 
-            return new ClaimTypeConfigCollection
+            ClaimTypeConfigCollection newCTConfigCollection = new ClaimTypeConfigCollection()
             {
                 // Identity claim type. "Name" (http://schemas.xmlsoap.org/ws/2005/05/identity/claims/name) is a reserved claim type in SharePoint that cannot be used in the SPTrust.
                 //new ClaimTypeConfig{EntityType = DirectoryObjectType.User, DirectoryObjectProperty = AzureADObjectProperty.UserPrincipalName, ClaimType = WIF4_5.ClaimTypes.Upn},
@@ -393,6 +439,8 @@ namespace azurecp
                 new ClaimTypeConfig{EntityType = DirectoryObjectType.Group, DirectoryObjectProperty = AzureADObjectProperty.Id, ClaimType = ClaimsProviderConstants.DefaultMainGroupClaimType, DirectoryObjectPropertyToShowAsDisplayText = AzureADObjectProperty.DisplayName},
                 new ClaimTypeConfig{EntityType = DirectoryObjectType.Group, DirectoryObjectProperty = AzureADObjectProperty.DisplayName, UseMainClaimTypeOfDirectoryObject = true, EntityDataKey = PeopleEditorEntityDataKeys.DisplayName},
             };
+            newCTConfigCollection.SPTrust = spTrust;
+            return newCTConfigCollection;
         }
 
         /// <summary>
@@ -457,7 +505,7 @@ namespace azurecp
                     // If AzureCP was updated from a version < v12, this.ClaimTypes.Count will throw a NullReferenceException
                     int testClaimTypeCollection = this.ClaimTypes.Count;
                 }
-                catch (NullReferenceException ex)
+                catch (NullReferenceException)
                 {
                     this.ClaimTypes = ReturnDefaultClaimTypesConfig(this.SPTrustName);
                     configUpdated = true;
@@ -522,7 +570,7 @@ namespace azurecp
                         ClaimsProviderLogging.Log($"Configuration '{this.Name}' was upgraded in configuration database and some settings were updated or reset to their default configuration",
                             TraceSeverity.High, EventSeverity.Information, TraceCategory.Core);
                     }
-                    catch (Exception ex)
+                    catch (Exception)
                     {
                         // It may fail if current user doesn't have permission to update the object in configuration database
                         ClaimsProviderLogging.Log($"Configuration '{this.Name}' was upgraded locally, but changes could not be applied in configuration database. Please visit admin pages in central administration to upgrade configuration globally.",
@@ -562,8 +610,17 @@ namespace azurecp
         [Persisted]
         public string ClientSecret;
 
+        /// <summary>
+        /// Set to true to return only Member users from this tenant
+        /// </summary>
         [Persisted]
-        public bool MemberUserTypeOnly;
+        public bool ExcludeMemberUsers = false;
+
+        /// <summary>
+        /// Set to true to return only Guest users from this tenant
+        /// </summary>
+        [Persisted]
+        public bool ExcludeGuestUsers = false;
 
         /// <summary>
         /// Instance of the IAuthenticationProvider class for this specific Azure AD tenant
@@ -603,11 +660,12 @@ namespace azurecp
             copy.AuthenticationProvider = this.AuthenticationProvider;
             copy.ClientId = this.ClientId;
             copy.ClientSecret = this.ClientSecret;
+            copy.ExcludeGuestUsers = this.ExcludeGuestUsers;
+            copy.ExcludeMemberUsers = this.ExcludeMemberUsers;
             copy.GraphService = this.GraphService;
             copy.GroupFilter = this.GroupFilter;
             copy.GroupSelect = this.GroupSelect;
             copy.Id = this.Id;
-            copy.MemberUserTypeOnly = this.MemberUserTypeOnly;
             copy.TenantName = this.TenantName;
             copy.UserFilter = this.UserFilter;
             copy.UserSelect = this.UserSelect;
@@ -729,7 +787,12 @@ namespace azurecp
             this.IncomingEntityClaimTypeConfig = processedClaimTypeConfigList.FirstOrDefault(x =>
                String.Equals(x.ClaimType, this.IncomingEntity.ClaimType, StringComparison.InvariantCultureIgnoreCase) &&
                !x.UseMainClaimTypeOfDirectoryObject);
-            if (this.IncomingEntityClaimTypeConfig == null) return;
+
+            if (this.IncomingEntityClaimTypeConfig == null)
+            {
+                ClaimsProviderLogging.Log($"[{AzureCP._ProviderInternalName}] Unable to validate entity \"{this.IncomingEntity.Value}\" because its claim type \"{this.IncomingEntity.ClaimType}\" was not found in the ClaimTypes list of current configuration.", TraceSeverity.Unexpected, EventSeverity.Error, TraceCategory.Configuration);
+                throw new InvalidOperationException($"[{AzureCP._ProviderInternalName}] Unable validate entity \"{this.IncomingEntity.Value}\" because its claim type \"{this.IncomingEntity.ClaimType}\" was not found in the ClaimTypes list of current configuration.");
+            }
 
             // CurrentClaimTypeConfigList must also be set
             this.CurrentClaimTypeConfigList = new List<ClaimTypeConfig>(1);
@@ -765,6 +828,12 @@ namespace azurecp
             this.IncomingEntityClaimTypeConfig = processedClaimTypeConfigList.FirstOrDefault(x =>
                String.Equals(x.ClaimType, this.IncomingEntity.ClaimType, StringComparison.InvariantCultureIgnoreCase) &&
                !x.UseMainClaimTypeOfDirectoryObject);
+
+            if (this.IncomingEntityClaimTypeConfig == null)
+            {
+                ClaimsProviderLogging.Log($"[{AzureCP._ProviderInternalName}] Unable to augment entity \"{this.IncomingEntity.Value}\" because its claim type \"{this.IncomingEntity.ClaimType}\" was not found in the ClaimTypes list of current configuration.", TraceSeverity.Unexpected, EventSeverity.Error, TraceCategory.Configuration);
+                throw new InvalidOperationException($"[{AzureCP._ProviderInternalName}] Unable to augment entity \"{this.IncomingEntity.Value}\" because its claim type \"{this.IncomingEntity.ClaimType}\" was not found in the ClaimTypes list of current configuration.");
+            }
         }
     }
 

@@ -4,44 +4,76 @@ using Microsoft.SharePoint;
 using Microsoft.SharePoint.Administration;
 using Microsoft.SharePoint.Administration.Claims;
 using Microsoft.SharePoint.WebControls;
+using Newtonsoft.Json;
 using NUnit.Framework;
 using System;
 using System.Collections;
 using System.Collections.Generic;
+using System.Diagnostics;
+using System.IO;
 using System.Linq;
+using System.Reflection;
 using System.Security.Claims;
+using System.Text;
 
 [SetUpFixture]
 public class UnitTestsHelper
 {
     public static azurecp.AzureCP ClaimsProvider = new azurecp.AzureCP(UnitTestsHelper.ClaimsProviderName);
     public const string ClaimsProviderName = "AzureCP";
-    public const string ClaimsProviderConfigName = "AzureCPConfig";
-    public static Uri Context = new Uri("http://spsites/sites/AzureCP.UnitTests");
+    public static string ClaimsProviderConfigName = TestContext.Parameters["ClaimsProviderConfigName"];
+    public static Uri TestSiteCollUri;
+    public static string TestSiteRelativePath = $"/sites/{TestContext.Parameters["TestSiteCollectionName"]}";
     public const int MaxTime = 50000;
-    public const int TestRepeatCount = 100;
-    public const string FarmAdmin = @"i:0#.w|contoso\yvand";
+    public static string FarmAdmin = TestContext.Parameters["FarmAdmin"];
+#if DEBUG
+    public const int TestRepeatCount = 5;
+#else
+    public const int TestRepeatCount = 20;
+#endif
 
-    public const string RandomClaimType = "http://schemas.yvand.com/ws/claims/random";
+    public const string RandomClaimType = "http://schemas.yvand.net/ws/claims/random";
     public const string RandomClaimValue = "IDoNotExist";
     public const AzureADObjectProperty RandomObjectProperty = AzureADObjectProperty.AccountEnabled;
 
-    public const string TrustedGroupToAdd_ClaimValue = "99abdc91-e6e0-475c-a0ba-5014f91de853";
-    public const string TrustedGroupToAdd_ClaimType = "http://schemas.microsoft.com/ws/2008/06/identity/claims/role";
+    public static string TrustedGroupToAdd_ClaimType = TestContext.Parameters["TrustedGroupToAdd_ClaimType"];
+    public static string TrustedGroupToAdd_ClaimValue = TestContext.Parameters["TrustedGroupToAdd_ClaimValue"];
     public static SPClaim TrustedGroup = new SPClaim(TrustedGroupToAdd_ClaimType, TrustedGroupToAdd_ClaimValue, ClaimValueTypes.String, SPOriginalIssuers.Format(SPOriginalIssuerType.TrustedProvider, SPTrust.Name));
 
-    public const string DataFile_SearchTests = @"F:\Data\Dev\AzureCP_SearchTests_Data.csv";
-    public const string DataFile_ValidationTests = @"F:\Data\Dev\AzureCP_ValidationTests_Data.csv";
+    public const string GUEST_USERTYPE = "Guest";
+    public const string MEMBER_USERTYPE = "Member";
 
-    public static SPTrustedLoginProvider SPTrust
-    {
-        get => SPSecurityTokenServiceManager.Local.TrustedLoginProviders.FirstOrDefault(x => String.Equals(x.ClaimProviderName, UnitTestsHelper.ClaimsProviderName, StringComparison.InvariantCultureIgnoreCase));
-    }
+    public static string AzureTenantsJsonFile = TestContext.Parameters["AzureTenantsJsonFile"];
+    public static string DataFile_GuestAccountsUPN_Search = TestContext.Parameters["DataFile_GuestAccountsUPN_Search"];
+    public static string DataFile_GuestAccountsUPN_Validate = TestContext.Parameters["DataFile_GuestAccountsUPN_Validate"];
+    public static string DataFile_AllAccounts_Search = TestContext.Parameters["DataFile_AllAccounts_Search"];
+    public static string DataFile_AllAccounts_Validate = TestContext.Parameters["DataFile_AllAccounts_Validate"];
+
+    public static SPTrustedLoginProvider SPTrust => SPSecurityTokenServiceManager.Local.TrustedLoginProviders.FirstOrDefault(x => String.Equals(x.ClaimProviderName, UnitTestsHelper.ClaimsProviderName, StringComparison.InvariantCultureIgnoreCase));
+
+    static TextWriterTraceListener logFileListener;
 
     [OneTimeSetUp]
-    public static void CheckSiteCollection()
+    public static void InitializeSiteCollection()
     {
+
+#if DEBUG
         //return; // Uncommented when debugging AzureCP code from unit tests
+#endif
+
+        logFileListener = new TextWriterTraceListener(TestContext.Parameters["TestLogFileName"]);
+        Trace.Listeners.Add(logFileListener);
+        Trace.AutoFlush = true;
+        Trace.TraceInformation($"{DateTime.Now.ToString("s")} Start integration tests of {ClaimsProviderName} {FileVersionInfo.GetVersionInfo(Assembly.GetAssembly(typeof(azurecp.AzureCP)).Location).FileVersion}.");
+        Trace.WriteLine($"{DateTime.Now.ToString("s")} DataFile_AllAccounts_Search: {DataFile_AllAccounts_Search}");
+        Trace.WriteLine($"{DateTime.Now.ToString("s")} DataFile_AllAccounts_Validate: {DataFile_AllAccounts_Validate}");
+        Trace.WriteLine($"{DateTime.Now.ToString("s")} DataFile_GuestAccountsUPN_Search: {DataFile_GuestAccountsUPN_Search}");
+        Trace.WriteLine($"{DateTime.Now.ToString("s")} DataFile_GuestAccountsUPN_Validate: {DataFile_GuestAccountsUPN_Validate}");
+        Trace.WriteLine($"{DateTime.Now.ToString("s")} TestSiteCollectionName: {TestContext.Parameters["TestSiteCollectionName"]}");
+        if (SPTrust == null)
+            Trace.TraceError($"{DateTime.Now.ToString("s")} SPTrust: is null");
+        else
+            Trace.WriteLine($"{DateTime.Now.ToString("s")} SPTrust: {SPTrust.Name}");
 
         AzureCPConfig config = AzureCPConfig.GetConfiguration(UnitTestsHelper.ClaimsProviderConfigName, UnitTestsHelper.SPTrust.Name);
         if (config == null)
@@ -49,18 +81,37 @@ public class UnitTestsHelper
             AzureCPConfig.CreateConfiguration(ClaimsProviderConstants.CONFIG_ID, ClaimsProviderConstants.CONFIG_NAME, SPTrust.Name);
         }
 
-        SPWebApplication wa = SPWebApplication.Lookup(Context);
+        var service = SPFarm.Local.Services.GetValue<SPWebService>(String.Empty);
+        SPWebApplication wa = service.WebApplications.FirstOrDefault();
         if (wa != null)
         {
-            Console.WriteLine($"Web app {wa.Name} found.");
+            Trace.WriteLine($"{DateTime.Now.ToString("s")} Web application {wa.Name} found.");
             SPClaimProviderManager claimMgr = SPClaimProviderManager.Local;
             string encodedClaim = claimMgr.EncodeClaim(TrustedGroup);
             SPUserInfo userInfo = new SPUserInfo { LoginName = encodedClaim, Name = TrustedGroupToAdd_ClaimValue };
 
-            if (!SPSite.Exists(Context))
+            // The root site may not exist, but it must be present for tests to run
+            Uri rootWebAppUri = wa.GetResponseUri(0);
+            if (!SPSite.Exists(rootWebAppUri))
             {
-                Console.WriteLine($"Creating site collection {Context.AbsoluteUri}...");
-                SPSite spSite = wa.Sites.Add(Context.AbsoluteUri, ClaimsProviderName, ClaimsProviderName, 1033, "STS#0", FarmAdmin, String.Empty, String.Empty);
+                Trace.WriteLine($"{DateTime.Now.ToString("s")} Creating root site collection {rootWebAppUri.AbsoluteUri}...");
+                SPSite spSite = wa.Sites.Add(rootWebAppUri.AbsoluteUri, "root", "root", 1033, "STS#1", FarmAdmin, String.Empty, String.Empty);
+                spSite.RootWeb.CreateDefaultAssociatedGroups(FarmAdmin, FarmAdmin, spSite.RootWeb.Title);
+
+                SPGroup membersGroup = spSite.RootWeb.AssociatedMemberGroup;
+                membersGroup.AddUser(userInfo.LoginName, userInfo.Email, userInfo.Name, userInfo.Notes);
+                spSite.Dispose();
+            }
+
+            if (!Uri.TryCreate(rootWebAppUri, TestSiteRelativePath, out TestSiteCollUri))
+            {
+                Trace.TraceError($"{DateTime.Now.ToString("s")} Unable to generate Uri of test site collection from Web application Uri {rootWebAppUri.AbsolutePath} and relative path {TestSiteRelativePath}.");
+            }
+
+            if (!SPSite.Exists(TestSiteCollUri))
+            {
+                Trace.WriteLine($"{DateTime.Now.ToString("s")} Creating site collection {TestSiteCollUri.AbsoluteUri}...");
+                SPSite spSite = wa.Sites.Add(TestSiteCollUri.AbsoluteUri, ClaimsProviderName, ClaimsProviderName, 1033, "STS#1", FarmAdmin, String.Empty, String.Empty);
                 spSite.RootWeb.CreateDefaultAssociatedGroups(FarmAdmin, FarmAdmin, spSite.RootWeb.Title);
 
                 SPGroup membersGroup = spSite.RootWeb.AssociatedMemberGroup;
@@ -69,7 +120,7 @@ public class UnitTestsHelper
             }
             else
             {
-                using (SPSite spSite = new SPSite(Context.AbsoluteUri))
+                using (SPSite spSite = new SPSite(TestSiteCollUri.AbsoluteUri))
                 {
                     SPGroup membersGroup = spSite.RootWeb.AssociatedMemberGroup;
                     membersGroup.AddUser(userInfo.LoginName, userInfo.Email, userInfo.Name, userInfo.Notes);
@@ -78,15 +129,44 @@ public class UnitTestsHelper
         }
         else
         {
-            Console.WriteLine($"Web app {Context} was NOT found.");
+            Trace.TraceError($"{DateTime.Now.ToString("s")} Web application was NOT found.");
         }
     }
 
+    [OneTimeTearDown]
+    public void Cleanup()
+    {
+        Trace.WriteLine($"{DateTime.Now.ToString("s")} Integration tests of {ClaimsProviderName} {FileVersionInfo.GetVersionInfo(Assembly.GetAssembly(typeof(azurecp.AzureCP)).Location).FileVersion} finished.");
+        Trace.Flush();
+        if (logFileListener != null)
+            logFileListener.Dispose();
+    }
+
+    public static void InitializeConfiguration(AzureCPConfig config)
+    {
+        config.ResetCurrentConfiguration();
+
+#if DEBUG
+        config.Timeout = 99999;
+#endif
+
+        string json = File.ReadAllText(AzureTenantsJsonFile);
+        List<AzureTenant> azureTenants = JsonConvert.DeserializeObject<List<AzureTenant>>(json);
+        config.AzureTenants = azureTenants;
+        config.Update();
+    }
+
+    /// <summary>
+    /// Start search operation on a specific claims provider
+    /// </summary>
+    /// <param name="inputValue"></param>
+    /// <param name="expectedCount">How many entities are expected to be returned. Set to Int32.MaxValue if exact number is unknown but greater than 0</param>
+    /// <param name="expectedClaimValue"></param>
     public static void TestSearchOperation(string inputValue, int expectedCount, string expectedClaimValue)
     {
         string[] entityTypes = new string[] { "User", "SecGroup", "SharePointGroup", "System", "FormsRole" };
 
-        SPProviderHierarchyTree providerResults = ClaimsProvider.Search(Context, entityTypes, inputValue, null, 30);
+        SPProviderHierarchyTree providerResults = ClaimsProvider.Search(TestSiteCollUri, entityTypes, inputValue, null, 30);
         List<PickerEntity> entities = new List<PickerEntity>();
         foreach (var children in providerResults.Children)
         {
@@ -94,15 +174,18 @@ public class UnitTestsHelper
         }
         VerifySearchTest(entities, inputValue, expectedCount, expectedClaimValue);
 
-        entities = ClaimsProvider.Resolve(Context, entityTypes, inputValue).ToList();
+        entities = ClaimsProvider.Resolve(TestSiteCollUri, entityTypes, inputValue).ToList();
         VerifySearchTest(entities, inputValue, expectedCount, expectedClaimValue);
     }
 
     public static void VerifySearchTest(List<PickerEntity> entities, string input, int expectedCount, string expectedClaimValue)
     {
         bool entityValueFound = false;
+        StringBuilder detailedLog = new StringBuilder($"It returned {entities.Count.ToString()} entities: ");
+        string entityLogPattern = "entity \"{0}\", claim type: \"{1}\"; ";
         foreach (PickerEntity entity in entities)
         {
+            detailedLog.AppendLine(String.Format(entityLogPattern, entity.Claim.Value, entity.Claim.ClaimType));
             if (String.Equals(expectedClaimValue, entity.Claim.Value, StringComparison.InvariantCultureIgnoreCase))
             {
                 entityValueFound = true;
@@ -111,16 +194,20 @@ public class UnitTestsHelper
 
         if (!entityValueFound && expectedCount > 0)
         {
-            Assert.Fail($"Input \"{input}\" returned no entity with claim value \"{expectedClaimValue}\".");
+            Assert.Fail($"Input \"{input}\" returned no entity with claim value \"{expectedClaimValue}\". {detailedLog.ToString()}");
         }
-        Assert.AreEqual(expectedCount, entities.Count, $"Input \"{input}\" should have returned {expectedCount} entities, but it returned {entities.Count} instead.");
+
+        if (expectedCount == Int32.MaxValue)
+            expectedCount = entities.Count;
+
+        Assert.AreEqual(expectedCount, entities.Count, $"Input \"{input}\" should have returned {expectedCount} entities, but it returned {entities.Count} instead. {detailedLog.ToString()}");
     }
 
     public static void TestValidationOperation(SPClaim inputClaim, bool shouldValidate, string expectedClaimValue)
     {
         string[] entityTypes = new string[] { "User" };
 
-        PickerEntity[] entities = ClaimsProvider.Resolve(Context, entityTypes, inputClaim);
+        PickerEntity[] entities = ClaimsProvider.Resolve(TestSiteCollUri, entityTypes, inputClaim);
 
         int expectedCount = shouldValidate ? 1 : 0;
         Assert.AreEqual(expectedCount, entities.Length, $"Validation of entity \"{inputClaim.Value}\" should have returned {expectedCount} entity, but it returned {entities.Length} instead.");
@@ -133,7 +220,7 @@ public class UnitTestsHelper
     public static void TestAugmentationOperation(string claimType, string claimValue, bool isMemberOfTrustedGroup)
     {
         SPClaim inputClaim = new SPClaim(claimType, claimValue, ClaimValueTypes.String, SPOriginalIssuers.Format(SPOriginalIssuerType.TrustedProvider, UnitTestsHelper.SPTrust.Name));
-        Uri context = new Uri(UnitTestsHelper.Context.AbsoluteUri);
+        Uri context = new Uri(UnitTestsHelper.TestSiteCollUri.AbsoluteUri);
 
         SPClaim[] groups = ClaimsProvider.GetClaimsForEntity(context, inputClaim);
 
@@ -157,11 +244,21 @@ public class SearchEntityDataSourceCollection : IEnumerable
     }
 }
 
+public enum EntityDataSourceType
+{
+    AllAccounts,
+    UPNB2BGuestAccounts
+}
+
 public class SearchEntityDataSource
 {
-    public static IEnumerable<TestCaseData> GetTestData()
+    public static IEnumerable<TestCaseData> GetTestData(EntityDataSourceType entityDataSourceType)
     {
-        DataTable dt = DataTable.New.ReadCsv(UnitTestsHelper.DataFile_SearchTests);
+        string csvPath = UnitTestsHelper.DataFile_AllAccounts_Search;
+        if (entityDataSourceType == EntityDataSourceType.UPNB2BGuestAccounts)
+            csvPath = UnitTestsHelper.DataFile_GuestAccountsUPN_Search;
+
+        DataTable dt = DataTable.New.ReadCsv(csvPath);
 
         foreach (Row row in dt.Rows)
         {
@@ -169,6 +266,8 @@ public class SearchEntityDataSource
             registrationData.Input = row["Input"];
             registrationData.ExpectedResultCount = Convert.ToInt32(row["ExpectedResultCount"]);
             registrationData.ExpectedEntityClaimValue = row["ExpectedEntityClaimValue"];
+            registrationData.ResultType = row["ResultType"];
+            registrationData.UserType = row["UserType"];
             yield return new TestCaseData(new object[] { registrationData });
         }
     }
@@ -194,19 +293,27 @@ public class SearchEntityData
     public string Input;
     public int ExpectedResultCount;
     public string ExpectedEntityClaimValue;
+    public string ResultType;
+    public string UserType;
 }
 
 public class ValidateEntityDataSource
 {
-    public static IEnumerable<TestCaseData> GetTestData()
+    public static IEnumerable<TestCaseData> GetTestData(EntityDataSourceType entityDataSourceType)
     {
-        DataTable dt = DataTable.New.ReadCsv(UnitTestsHelper.DataFile_ValidationTests);
+        string csvPath = UnitTestsHelper.DataFile_AllAccounts_Validate;
+        if (entityDataSourceType == EntityDataSourceType.UPNB2BGuestAccounts)
+            csvPath = UnitTestsHelper.DataFile_GuestAccountsUPN_Validate;
+
+        DataTable dt = DataTable.New.ReadCsv(csvPath);
+
         foreach (Row row in dt.Rows)
         {
             var registrationData = new ValidateEntityData();
             registrationData.ClaimValue = row["ClaimValue"];
             registrationData.ShouldValidate = Convert.ToBoolean(row["ShouldValidate"]);
             registrationData.IsMemberOfTrustedGroup = Convert.ToBoolean(row["IsMemberOfTrustedGroup"]);
+            registrationData.UserType = row["UserType"];
             yield return new TestCaseData(new object[] { registrationData });
         }
     }
@@ -217,4 +324,5 @@ public class ValidateEntityData
     public string ClaimValue;
     public bool ShouldValidate;
     public bool IsMemberOfTrustedGroup;
+    public string UserType;
 }

@@ -6,20 +6,9 @@ using System.Linq;
 namespace AzureCP.Tests
 {
     [TestFixture]
-    public class ModifyConfigTests
+    public class ModifyConfigTests : BackupCurrentConfig
     {
-        private AzureCPConfig Config;
         const string ConfigUpdateErrorMessage = "Some changes made to list ClaimTypes are invalid and cannot be committed to configuration database. Inspect inner exception for more details about the error.";
-
-        [OneTimeSetUp]
-        public void Init()
-        {
-            AzureCPConfig configFromConfigDB = AzureCPConfig.GetConfiguration(UnitTestsHelper.ClaimsProviderConfigName, UnitTestsHelper.SPTrust.Name);
-            // Create a local copy, otherwise changes will impact the whole process (even without calling Update method)
-            Config = configFromConfigDB.CopyPersistedProperties();
-            // Reset configuration to test its default for the tests
-            Config.ResetCurrentConfiguration();
-        }
 
         [Test]
         public void AddClaimTypeConfig()
@@ -41,7 +30,7 @@ namespace AzureCP.Tests
             ctConfig.DirectoryObjectProperty = UnitTestsHelper.RandomObjectProperty;
             ctConfig.UseMainClaimTypeOfDirectoryObject = true;
             Assert.Throws<InvalidOperationException>(() => Config.ClaimTypes.Add(ctConfig), $"Add a ClaimTypeConfig with UseMainClaimTypeOfDirectoryObject = true and ClaimType set should throw exception InvalidOperationException with this message: \"No claim type should be set if UseMainClaimTypeOfDirectoryObject is set to true\"");
-
+            
             // Add a ClaimTypeConfig with EntityType 'Group' should throw exception InvalidOperationException since 1 already exists by default and AzureCP allows only 1 claim type for EntityType 'Group'
             ctConfig.ClaimType = UnitTestsHelper.RandomClaimType;
             ctConfig.DirectoryObjectProperty = UnitTestsHelper.RandomObjectProperty;

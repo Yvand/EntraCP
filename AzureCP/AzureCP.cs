@@ -63,8 +63,12 @@ namespace azurecp
         /// </summary>
         public List<ClaimTypeConfig> ProcessedClaimTypesList;
         protected IEnumerable<ClaimTypeConfig> MetadataConfig;
-        protected virtual string PickerEntityDisplayText { get { return "({0}) {1}"; } }
-        protected virtual string PickerEntityOnMouseOver { get { return "{0}={1}"; } }
+        protected virtual string PickerEntityDisplayText => "({0}) {1}";
+        protected virtual string PickerEntityOnMouseOver => "{0}={1}";
+
+        /// <summary>
+        /// Returned issuer formatted like the property SPClaim.OriginalIssuer: "TrustedProvider:TrustedProviderName"
+        /// </summary>
         protected string IssuerName => SPOriginalIssuers.Format(SPOriginalIssuerType.TrustedProvider, SPTrust.Name);
 
         public AzureCP(string displayName) : base(displayName) { }
@@ -154,7 +158,9 @@ namespace azurecp
                     // This copy is unique to current object instance to avoid thread safety issues
                     this.CurrentConfiguration = ((AzureCPConfig)globalConfiguration).CopyPersistedProperties();
 
+#pragma warning disable CS0618 // Type or member is obsolete
                     SetCustomConfiguration(context, entityTypes);
+#pragma warning restore CS0618 // Type or member is obsolete
                     if (this.CurrentConfiguration.ClaimTypes == null)
                     {
                         ClaimsProviderLogging.Log($"[{ProviderInternalName}] List if claim types was set to null in method SetCustomConfiguration for configuration '{PersistedObjectName}'.", TraceSeverity.Unexpected, EventSeverity.Error, TraceCategory.Core);
@@ -615,6 +621,9 @@ namespace azurecp
             this.Lock_Config.EnterReadLock();
             try
             {
+                // There can be multiple TrustedProvider on the farm, but AzureCP should only do augmentation if current entity is from TrustedProvider it is associated with
+                if (!String.Equals(decodedEntity.OriginalIssuer, IssuerName, StringComparison.InvariantCultureIgnoreCase)) return;
+
                 if (!this.CurrentConfiguration.EnableAugmentation) return;
 
                 ClaimsProviderLogging.Log($"[{ProviderInternalName}] Starting augmentation for user '{decodedEntity.Value}'.", TraceSeverity.Verbose, EventSeverity.Information, TraceCategory.Augmentation);
@@ -688,7 +697,9 @@ namespace azurecp
         protected async Task<List<SPClaim>> GetGroupMembershipFromAzureADAsync(OperationContext currentContext, ClaimTypeConfig groupClaimTypeConfig, AzureTenant tenant)
         {
             List<SPClaim> claims = new List<SPClaim>();
-            IGraphServiceUsersCollectionPage userResult = await tenant.GraphService.Users.Request().Filter($"{currentContext.IncomingEntityClaimTypeConfig.DirectoryObjectProperty} eq '{currentContext.IncomingEntity.Value}'").GetAsync().ConfigureAwait(false);
+            // URL encode the filter to prevent that it gets truncated like this: "UserPrincipalName eq 'guest_contoso.com" instead of "UserPrincipalName eq 'guest_contoso.com#EXT#@TENANT.onmicrosoft.com'"
+            string filter = HttpUtility.UrlEncode($"{currentContext.IncomingEntityClaimTypeConfig.DirectoryObjectProperty} eq '{currentContext.IncomingEntity.Value}'");
+            IGraphServiceUsersCollectionPage userResult = await tenant.GraphService.Users.Request().Filter(filter).GetAsync().ConfigureAwait(false);
             User user = userResult.FirstOrDefault();
 
             if (user == null)
@@ -838,8 +849,7 @@ namespace azurecp
             this.Lock_Config.EnterReadLock();
             try
             {
-                int maxCount = 30;  // SharePoint sets maxCount to 30 in method FillSearch
-                OperationContext currentContext = new OperationContext(CurrentConfiguration, OperationType.Search, ProcessedClaimTypesList, resolveInput, null, context, entityTypes, null, maxCount);
+                OperationContext currentContext = new OperationContext(CurrentConfiguration, OperationType.Search, ProcessedClaimTypesList, resolveInput, null, context, entityTypes, null, CurrentConfiguration.MaxSearchResultsCount);
                 List<PickerEntity> entities = SearchOrValidate(currentContext);
                 FillEntities(currentContext, ref entities);
                 if (entities == null || entities.Count == 0) return;
@@ -875,7 +885,7 @@ namespace azurecp
             this.Lock_Config.EnterReadLock();
             try
             {
-                OperationContext currentContext = new OperationContext(CurrentConfiguration, OperationType.Search, ProcessedClaimTypesList, searchPattern, null, context, entityTypes, hierarchyNodeID, maxCount);
+                OperationContext currentContext = new OperationContext(CurrentConfiguration, OperationType.Search, ProcessedClaimTypesList, searchPattern, null, context, entityTypes, hierarchyNodeID, CurrentConfiguration.MaxSearchResultsCount);
                 List<PickerEntity> entities = SearchOrValidate(currentContext);
                 FillEntities(currentContext, ref entities);
                 if (entities == null || entities.Count == 0) return;
@@ -947,14 +957,14 @@ namespace azurecp
                         currentContext.Input.StartsWith(x.PrefixToBypassLookup, StringComparison.InvariantCultureIgnoreCase));
                     if (ctConfigWithInputPrefixMatch != null)
                     {
-                        currentContext.Input = currentContext.Input.Substring(ctConfigWithInputPrefixMatch.PrefixToBypassLookup.Length);
-                        if (String.IsNullOrEmpty(currentContext.Input))
+                        string inputWithoutPrefix = currentContext.Input.Substring(ctConfigWithInputPrefixMatch.PrefixToBypassLookup.Length);
+                        if (String.IsNullOrEmpty(inputWithoutPrefix))
                         {
                             // No value in the input after the prefix, return
                             return entities;
                         }
                         PickerEntity entity = CreatePickerEntityForSpecificClaimType(
-                            currentContext.Input,
+                            inputWithoutPrefix,
                             ctConfigWithInputPrefixMatch,
                             true);
                         if (entity != null)
@@ -977,7 +987,7 @@ namespace azurecp
                         // At this stage, it is impossible to know if entity was originally created with the keyword that bypass query to Azure AD
                         // But it should be always validated since property PrefixToBypassLookup is set for current ClaimTypeConfig, so create entity manually
                         PickerEntity entity = CreatePickerEntityForSpecificClaimType(
-                            currentContext.Input,
+                            currentContext.IncomingEntity.Value,
                             currentContext.IncomingEntityClaimTypeConfig,
                             currentContext.InputHasKeyword);
                         if (entity != null)
@@ -1044,12 +1054,14 @@ namespace azurecp
         /// <param name="currentContext"></param>
         protected virtual void BuildFilter(OperationContext currentContext, List<AzureTenant> azureTenants)
         {
-            //StringBuilder userFilterBuilder = new StringBuilder("( ");
-            StringBuilder userFilterBuilder = new StringBuilder("");
+            StringBuilder userFilterBuilder = new StringBuilder();
             StringBuilder groupFilterBuilder = new StringBuilder();
             StringBuilder userSelectBuilder = new StringBuilder("UserType, Mail, ");    // UserType and Mail are always needed to deal with Guest users
             StringBuilder groupSelectBuilder = new StringBuilder("Id, ");               // Id is always required for groups
-            string memberOnlyUserTypeFilter = " and UserType eq 'Member'";
+
+            //// Microsoft Graph doesn't support operator not equals (ne) on attribute UserType, it can only be queried using equals (eq)
+            //string memberOnlyUserTypeFilter = " and UserType eq 'Member'";
+            //string guestOnlyUserTypeFilter = " and UserType eq 'Guest'";
 
             string preferredFilterPattern;
             string input = currentContext.Input;
@@ -1133,15 +1145,24 @@ namespace azurecp
             string encodedGroupFilter = HttpUtility.UrlEncode(groupFilterBuilder.ToString());
             string encodedUserSelect = HttpUtility.UrlEncode(userSelectBuilder.ToString());
             string encodedgroupSelect = HttpUtility.UrlEncode(groupSelectBuilder.ToString());
-            string encodedMemberOnlyUserTypeFilter = HttpUtility.UrlEncode(memberOnlyUserTypeFilter);
+            //string encodedMemberOnlyUserTypeFilter = HttpUtility.UrlEncode(memberOnlyUserTypeFilter);
+            //string encodedGuestOnlyUserTypeFilter = HttpUtility.UrlEncode(guestOnlyUserTypeFilter);
 
             foreach (AzureTenant tenant in azureTenants)
             {
-                // Reset filters if no corresponding object was found in requestInfo.ClaimTypeConfigList, to detect that tenant should not be actually queried
                 if (firstUserObjectProcessed)
-                    tenant.UserFilter = tenant.MemberUserTypeOnly ? encodedUserFilter + encodedMemberOnlyUserTypeFilter : encodedUserFilter;
+                {
+                    tenant.UserFilter = encodedUserFilter;
+                    //if (tenant.MemberUserTypeOnly)
+                    //    tenant.UserFilter += encodedMemberOnlyUserTypeFilter;
+                    //else if (tenant.ExcludeGuestUsers)
+                    //    tenant.UserFilter += encodedGuestOnlyUserTypeFilter;
+                }
                 else
+                {
+                    // Reset filters if no corresponding object was found in requestInfo.ClaimTypeConfigList, to detect that tenant should not be queried
                     tenant.UserFilter = String.Empty;
+                }
 
                 if (firstGroupObjectProcessed)
                     tenant.GroupFilter = encodedGroupFilter;
@@ -1214,7 +1235,12 @@ namespace azurecp
                             {
                                 lock (lockAddResultToCollection)
                                 {
-                                    tenantResults.UsersAndGroups.AddRange(users.CurrentPage);
+                                    IList<User> usersInCurrentPage = users.CurrentPage;
+                                    if (tenant.ExcludeMemberUsers)
+                                        usersInCurrentPage = users.CurrentPage.Where(x => !String.Equals(x.UserType, ClaimsProviderConstants.MEMBER_USERTYPE, StringComparison.InvariantCultureIgnoreCase)).ToList<User>();
+                                    else if (tenant.ExcludeGuestUsers)
+                                        usersInCurrentPage = users.CurrentPage.Where(x => !String.Equals(x.UserType, ClaimsProviderConstants.GUEST_USERTYPE, StringComparison.InvariantCultureIgnoreCase)).ToList<User>();
+                                    tenantResults.UsersAndGroups.AddRange(usersInCurrentPage);
                                 }
                                 if (users.NextPageRequest != null) users = await users.NextPageRequest.GetAsync().ConfigureAwait(false);
                             }
@@ -1436,12 +1462,12 @@ namespace azurecp
             return processedResults;
         }
 
-        public override string Name { get { return ProviderInternalName; } }
-        public override bool SupportsEntityInformation { get { return true; } }
-        public override bool SupportsHierarchy { get { return true; } }
-        public override bool SupportsResolve { get { return true; } }
-        public override bool SupportsSearch { get { return true; } }
-        public override bool SupportsUserKey { get { return true; } }
+        public override string Name => ProviderInternalName;
+        public override bool SupportsEntityInformation => true;
+        public override bool SupportsHierarchy => true;
+        public override bool SupportsResolve => true;
+        public override bool SupportsSearch => true;
+        public override bool SupportsUserKey => true;
 
         /// <summary>
         /// Return the identity claim type
@@ -1449,13 +1475,17 @@ namespace azurecp
         /// <returns></returns>
         public override string GetClaimTypeForUserKey()
         {
-            if (!Initialize(null, null))
-                return null;
+            // Initialization may fail because there is no yet configuration (fresh install)
+            // In this case, AzureCP should not return null because it causes null exceptions in SharePoint when users sign-in
+            Initialize(null, null);
 
             this.Lock_Config.EnterReadLock();
             try
             {
-                return IdentityClaimTypeConfig.ClaimType;
+                if (SPTrust == null)
+                    return String.Empty;
+
+                return SPTrust.IdentityClaimTypeInformation.MappedClaimType;
             }
             catch (Exception ex)
             {
@@ -1475,24 +1505,30 @@ namespace azurecp
         /// <returns></returns>
         protected override SPClaim GetUserKeyForEntity(SPClaim entity)
         {
-            if (!Initialize(null, null))
-                return null;
-
-            // There are 2 scenarios:
-            // 1: OriginalIssuer is "SecurityTokenService": Value looks like "05.t|yvanhost|yvand@yvanhost.local", claim type is "http://schemas.microsoft.com/sharepoint/2009/08/claims/userid" and it must be decoded properly
-            // 2: OriginalIssuer is AzureCP: in this case incoming entity is valid and returned as is
-            if (String.Equals(entity.OriginalIssuer, IssuerName, StringComparison.InvariantCultureIgnoreCase))
-                return entity;
-
-            SPClaimProviderManager cpm = SPClaimProviderManager.Local;
-            SPClaim curUser = SPClaimProviderManager.DecodeUserIdentifierClaim(entity);
+            // Initialization may fail because there is no yet configuration (fresh install)
+            // In this case, AzureCP should not return null because it causes null exceptions in SharePoint when users sign-in
+            bool initSucceeded = Initialize(null, null);
 
             this.Lock_Config.EnterReadLock();
             try
             {
+                // If initialization failed but SPTrust is not null, rest of the method can be executed normally
+                // Otherwise return the entity
+                if (!initSucceeded && SPTrust == null)
+                    return entity;
+
+                // There are 2 scenarios:
+                // 1: OriginalIssuer is "SecurityTokenService": Value looks like "05.t|yvanhost|yvand@yvanhost.local", claim type is "http://schemas.microsoft.com/sharepoint/2009/08/claims/userid" and it must be decoded properly
+                // 2: OriginalIssuer is AzureCP: in this case incoming entity is valid and returned as is
+                if (String.Equals(entity.OriginalIssuer, IssuerName, StringComparison.InvariantCultureIgnoreCase))
+                    return entity;
+
+                SPClaimProviderManager cpm = SPClaimProviderManager.Local;
+                SPClaim curUser = SPClaimProviderManager.DecodeUserIdentifierClaim(entity);
+
                 ClaimsProviderLogging.Log($"[{ProviderInternalName}] Returning user key for '{entity.Value}'",
                     TraceSeverity.VerboseEx, EventSeverity.Information, TraceCategory.Rehydration);
-                return CreateClaim(IdentityClaimTypeConfig.ClaimType, curUser.Value, curUser.ValueType);
+                return CreateClaim(SPTrust.IdentityClaimTypeInformation.MappedClaimType, curUser.Value, curUser.ValueType);
             }
             catch (Exception ex)
             {
