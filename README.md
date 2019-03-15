@@ -2,7 +2,7 @@
 
 **Please visit [yvand.github.io/AzureCP](https://yvand.github.io/AzureCP/) to download AzureCP and find documentation.**
 
-## Branch "dev"
+## Build status of version in development
 
 [![Build Status](https://dev.azure.com/YvanDev/AzureCP/_apis/build/status/Compile?branchName=dev)](https://dev.azure.com/YvanDev/AzureCP/_build/latest?definitionId=5&branchName=dev)
 
