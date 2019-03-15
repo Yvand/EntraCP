@@ -1,6 +1,6 @@
 # Change log for AzureCP
 
-## Unreleased
+## AzureCP 14.0.20190307.660 enhancements & bug-fixes - Published in March 13, 2019
 
 * Fix augmentating failing for guest accounts due to non-URL encoded filter
 * Add more strict checks on the claim type passed during augmentation and validation, to record a more meaningful error if needed
