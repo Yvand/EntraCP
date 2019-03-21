@@ -2,20 +2,17 @@
 
 **Please visit [yvand.github.io/AzureCP](https://yvand.github.io/AzureCP/) to download AzureCP and find documentation.**
 
-## Build status of version in development
-
-[![Build Status](https://dev.azure.com/YvanDev/AzureCP/_apis/build/status/Compile?branchName=dev)](https://dev.azure.com/YvanDev/AzureCP/_build/latest?definitionId=5&branchName=dev)
-
 ## Latest stable release
 
 ![GitHub Release Date](https://img.shields.io/github/release-date/Yvand/AzureCP.svg)
 ![GitHub release](https://img.shields.io/github/release/Yvand/AzureCP.svg)
 ![Latest release downloads](https://img.shields.io/github/downloads/Yvand/AzureCP/latest/total.svg)
 
-## Latest pre-release
+## Version in development
 
 ![GitHub (Pre-)Release Date](https://img.shields.io/github/release-date-pre/Yvand/AzureCP.svg)
 ![GitHub release](https://img.shields.io/github/release-pre/Yvand/AzureCP.svg)
+[![Build Status](https://dev.azure.com/YvanDev/AzureCP/_apis/build/status/Compile?branchName=dev)](https://dev.azure.com/YvanDev/AzureCP/_build/latest?definitionId=5&branchName=dev)
 
 ## Miscellaneous
 
