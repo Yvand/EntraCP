@@ -1,5 +1,9 @@
 # Change log for AzureCP
 
+## Unreleased
+
+* Update NuGet package Microsoft.Graph to 1.14
+
 ## AzureCP 14.0.20190307.660 enhancements & bug-fixes - Published in March 13, 2019
 
 * Fix augmentating failing for guest accounts due to non-URL encoded filter
