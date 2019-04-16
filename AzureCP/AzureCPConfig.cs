@@ -166,10 +166,10 @@ namespace azurecp
         private int _Timeout = ClaimsProviderConstants.DEFAULT_TIMEOUT;
 
         /// <summary>
-        /// Name of the SPTrustedLoginProvider where LDAPCP is enabled
+        /// Name of the SPTrustedLoginProvider where AzureCP is enabled
         /// </summary>
         [Persisted]
-        private string SPTrustName;
+        public string SPTrustName;
 
         private SPTrustedLoginProvider _SPTrust;
         private SPTrustedLoginProvider SPTrust
@@ -315,23 +315,40 @@ namespace azurecp
             CheckAndCleanConfiguration(String.Empty);
         }
 
+        /// <summary>
+        /// Apply configuration in parameter to current object. It does not copy SharePoint base class members
+        /// </summary>
+        /// <param name="configToApply"></param>
         public void ApplyConfiguration(AzureCPConfig configToApply)
         {
-            this.SPTrustName = configToApply.SPTrustName;
-            this.AzureTenants = configToApply.AzureTenants;
-            this.ClaimTypes = configToApply.ClaimTypes;
-            this.AlwaysResolveUserInput = configToApply.AlwaysResolveUserInput;
-            this.FilterExactMatchOnly = configToApply.FilterExactMatchOnly;
-            this.EnableAugmentation = configToApply.EnableAugmentation;
-            this.EntityDisplayTextPrefix = configToApply.EntityDisplayTextPrefix;
-            this.EnableRetry = configToApply.EnableRetry;
-            this.Timeout = configToApply.Timeout;
-            this.CustomData = configToApply.CustomData;
-            this.MaxSearchResultsCount = configToApply.MaxSearchResultsCount;
+            // Copy non-inherited public fields
+            // This copies persisted field SPTrustName (it doesn't have a corresponding property).
+            // Private fields should not be retrieved here, since their corresponding properties are retrieved just after.
+            FieldInfo[] fieldsToCopy = this.GetType().GetFields(BindingFlags.Public | BindingFlags.Instance | BindingFlags.DeclaredOnly);
+            foreach (FieldInfo field in fieldsToCopy)
+            {
+                field.SetValue(this, field.GetValue(configToApply));
+            }
+            // Copy non-inherited public properties
+            PropertyInfo[] propertiesToCopy = this.GetType().GetProperties(BindingFlags.Public | BindingFlags.Instance | BindingFlags.DeclaredOnly);
+            foreach (PropertyInfo property in propertiesToCopy)
+            {
+                if (property.CanWrite)
+                {
+                    object value = property.GetValue(configToApply);
+                    if (value != null)
+                        property.SetValue(this, value);
+                }
+            }
         }
 
-        public AzureCPConfig CopyPersistedProperties()
+        /// <summary>
+        /// Returns a copy of the current object. This copy does not have any member of the base SharePoint base class set
+        /// </summary>
+        /// <returns></returns>
+        public AzureCPConfig CopyConfiguration()
         {
+            // Cannot use reflection here to copy object because of the calls to methods CopyConfiguration() on some properties
             AzureCPConfig copy = new AzureCPConfig();
             copy.SPTrustName = this.SPTrustName;
             copy.AzureTenants = new List<AzureTenant>(this.AzureTenants);
@@ -339,7 +356,7 @@ namespace azurecp
             copy.ClaimTypes.SPTrust = this.ClaimTypes.SPTrust;
             foreach (ClaimTypeConfig currentObject in this.ClaimTypes)
             {
-                copy.ClaimTypes.Add(currentObject.CopyPersistedProperties(), false);
+                copy.ClaimTypes.Add(currentObject.CopyConfiguration(), false);
             }
             copy.AlwaysResolveUserInput = this.AlwaysResolveUserInput;
             copy.FilterExactMatchOnly = this.FilterExactMatchOnly;
@@ -654,21 +671,19 @@ namespace azurecp
             }
         }
 
-        internal AzureTenant CopyPersistedProperties()
+        /// <summary>
+        /// Returns a copy of the current object. This copy does not have any member of the base SharePoint base class set
+        /// </summary>
+        /// <returns></returns>
+        internal AzureTenant CopyConfiguration()
         {
             AzureTenant copy = new AzureTenant();
-            copy.AuthenticationProvider = this.AuthenticationProvider;
-            copy.ClientId = this.ClientId;
-            copy.ClientSecret = this.ClientSecret;
-            copy.ExcludeGuestUsers = this.ExcludeGuestUsers;
-            copy.ExcludeMemberUsers = this.ExcludeMemberUsers;
-            copy.GraphService = this.GraphService;
-            copy.GroupFilter = this.GroupFilter;
-            copy.GroupSelect = this.GroupSelect;
-            copy.Id = this.Id;
-            copy.TenantName = this.TenantName;
-            copy.UserFilter = this.UserFilter;
-            copy.UserSelect = this.UserSelect;
+            // Copy non-inherited public fields
+            FieldInfo[] fieldsToCopy = this.GetType().GetFields(BindingFlags.Public | BindingFlags.Instance | BindingFlags.DeclaredOnly);
+            foreach (FieldInfo field in fieldsToCopy)
+            {
+                field.SetValue(copy, field.GetValue(this));
+            }
             return copy;
         }
     }

@@ -156,7 +156,7 @@ namespace azurecp
 
                     // Create local persisted object that will never be saved in config DB, it's just a local copy
                     // This copy is unique to current object instance to avoid thread safety issues
-                    this.CurrentConfiguration = ((AzureCPConfig)globalConfiguration).CopyPersistedProperties();
+                    this.CurrentConfiguration = ((AzureCPConfig)globalConfiguration).CopyConfiguration();
 
 #pragma warning disable CS0618 // Type or member is obsolete
                     SetCustomConfiguration(context, entityTypes);
@@ -1017,7 +1017,7 @@ namespace azurecp
             List<AzureTenant> azureTenants = new List<AzureTenant>(this.CurrentConfiguration.AzureTenants.Count);
             foreach (AzureTenant tenant in this.CurrentConfiguration.AzureTenants)
             {
-                azureTenants.Add(tenant.CopyPersistedProperties());
+                azureTenants.Add(tenant.CopyConfiguration());
             }
 
             BuildFilter(currentContext, azureTenants);

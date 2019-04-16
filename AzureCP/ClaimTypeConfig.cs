@@ -5,6 +5,7 @@ using System.Collections;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Linq;
+using System.Reflection;
 using WIF = System.Security.Claims;
 
 namespace azurecp
@@ -160,46 +161,48 @@ namespace azurecp
         [Persisted]
         private bool _FilterExactMatchOnly = false;
 
-        public ClaimTypeConfig CopyPersistedProperties()
+        /// <summary>
+        /// Returns a copy of the current object. This copy does not have any member of the base SharePoint base class set
+        /// </summary>
+        /// <returns></returns>
+        public ClaimTypeConfig CopyConfiguration()
         {
             ClaimTypeConfig copy;
             if (this is IdentityClaimTypeConfig)
             {
-                copy = new IdentityClaimTypeConfig()
+                copy = new IdentityClaimTypeConfig();
+                FieldInfo[] fieldsToCopyFromInheritedClass = typeof(IdentityClaimTypeConfig).GetFields(BindingFlags.NonPublic | BindingFlags.Instance | BindingFlags.DeclaredOnly);
+                foreach (FieldInfo field in fieldsToCopyFromInheritedClass)
                 {
-                    DirectoryObjectPropertyForGuestUsers = ((IdentityClaimTypeConfig)this).DirectoryObjectPropertyForGuestUsers
-                };
+                    field.SetValue(copy, field.GetValue(this));
+                }
             }
             else
             {
                 copy = new ClaimTypeConfig();
             }
 
-            copy._ClaimType = this._ClaimType;
-            copy._DirectoryObjectProperty = this._DirectoryObjectProperty;
-            copy._DirectoryObjectType = this._DirectoryObjectType;
-            copy._EntityDataKey = this._EntityDataKey;
-            copy._ClaimValueType = this._ClaimValueType;
-            copy._CreateAsIdentityClaim = this._CreateAsIdentityClaim;
-            copy._PrefixToBypassLookup = this._PrefixToBypassLookup;
-            copy._DirectoryObjectPropertyToShowAsDisplayText = this._DirectoryObjectPropertyToShowAsDisplayText;
-            copy._FilterExactMatchOnly = this._FilterExactMatchOnly;
-            copy._ClaimTypeDisplayName = this._ClaimTypeDisplayName;
+            // Copy non-inherited private fields
+            FieldInfo[] fieldsToCopy = typeof(ClaimTypeConfig).GetFields(BindingFlags.NonPublic | BindingFlags.Instance | BindingFlags.DeclaredOnly);
+            foreach (FieldInfo field in fieldsToCopy)
+            {
+                field.SetValue(copy, field.GetValue(this));
+            }
             return copy;
         }
 
-        internal void SetFromObject(ClaimTypeConfig objectToCopy)
+        /// <summary>
+        /// Apply configuration in parameter to current object. It does not copy SharePoint base class members
+        /// </summary>
+        /// <param name="configToApply"></param>
+        internal void ApplyConfiguration(ClaimTypeConfig configToApply)
         {
-            _ClaimType = objectToCopy._ClaimType;
-            _DirectoryObjectProperty = objectToCopy._DirectoryObjectProperty;
-            _DirectoryObjectType = objectToCopy._DirectoryObjectType;
-            _EntityDataKey = objectToCopy._EntityDataKey;
-            _ClaimValueType = objectToCopy._ClaimValueType;
-            _CreateAsIdentityClaim = objectToCopy._CreateAsIdentityClaim;
-            _PrefixToBypassLookup = objectToCopy._PrefixToBypassLookup;
-            _DirectoryObjectPropertyToShowAsDisplayText = objectToCopy._DirectoryObjectPropertyToShowAsDisplayText;
-            _FilterExactMatchOnly = objectToCopy._FilterExactMatchOnly;
-            _ClaimTypeDisplayName = objectToCopy._ClaimTypeDisplayName;
+            // Copy non-inherited private fields
+            FieldInfo[] fieldsToCopy = this.GetType().GetFields(BindingFlags.NonPublic | BindingFlags.Instance | BindingFlags.DeclaredOnly);
+            foreach (FieldInfo field in fieldsToCopy)
+            {
+                field.SetValue(this, field.GetValue(configToApply));
+            }
         }
 
         public bool Equals(ClaimTypeConfig other)
@@ -381,12 +384,12 @@ namespace azurecp
             ClaimTypeConfigCollection testUpdateCollection = new ClaimTypeConfigCollection();
             foreach (ClaimTypeConfig curCTConfig in innerCol)
             {
-                testUpdateCollection.Add(curCTConfig.CopyPersistedProperties(), false);
+                testUpdateCollection.Add(curCTConfig.CopyConfiguration(), false);
             }
 
             // Update ClaimTypeConfig in testUpdateCollection
             ClaimTypeConfig ctConfigToUpdate = testUpdateCollection.First(x => String.Equals(x.ClaimType, oldClaimType, StringComparison.InvariantCultureIgnoreCase));
-            ctConfigToUpdate.SetFromObject(newItem);
+            ctConfigToUpdate.ApplyConfiguration(newItem);
 
             // Test change in testUpdateCollection by adding all items in a new temp collection
             ClaimTypeConfigCollection testNewItemCollection = new ClaimTypeConfigCollection();
@@ -397,7 +400,7 @@ namespace azurecp
             }
 
             // No error, current collection can safely be updated
-            innerCol.First(x => String.Equals(x.ClaimType, oldClaimType, StringComparison.InvariantCultureIgnoreCase)).SetFromObject(newItem);
+            innerCol.First(x => String.Equals(x.ClaimType, oldClaimType, StringComparison.InvariantCultureIgnoreCase)).ApplyConfiguration(newItem);
         }
 
         /// <summary>

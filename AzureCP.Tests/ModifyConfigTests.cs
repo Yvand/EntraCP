@@ -140,7 +140,7 @@ namespace AzureCP.Tests
         public void ModifyUserIdentifier()
         {
             IdentityClaimTypeConfig backupIdentityCTConfig = Config.ClaimTypes.FirstOrDefault(x => x is IdentityClaimTypeConfig) as IdentityClaimTypeConfig;
-            backupIdentityCTConfig = backupIdentityCTConfig.CopyPersistedProperties() as IdentityClaimTypeConfig;
+            backupIdentityCTConfig = backupIdentityCTConfig.CopyConfiguration() as IdentityClaimTypeConfig;
 
             // Member UserType
             Assert.Throws<ArgumentNullException>(() => Config.ClaimTypes.UpdateUserIdentifier(AzureADObjectProperty.NotSet), $"Update user identifier with value NotSet should throw exception ArgumentNullException");

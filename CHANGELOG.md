@@ -3,6 +3,7 @@
 ## Unreleased
 
 * Update NuGet package Microsoft.Graph to 1.14
+* Use reflection to copy configuration objects, whenever possible
 
 ## AzureCP 14.0.20190307.660 enhancements & bug-fixes - Published in March 13, 2019
 
