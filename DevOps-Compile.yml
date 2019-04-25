@@ -46,11 +46,11 @@ jobs:
      
      Write-Output ("Copy files to build $(system.teamProject) from Azure storage account")
      $azureContext = New-AzureStorageContext $(AzureStorageAccountName) $(AzureStorageAccountKey)
-     $azureShare = Get-AzureStorageShare $(AzureStorageShareName) –Context $azureContext
-     #Get-AzureStorageFileContent –Share $azureShare –Path "$azureStorageBaseDirectory\$(system.teamProject).snk" "$projectLocalPath\$(system.teamProject).snk"
+     $azureShare = Get-AzureStorageShare $(AzureStorageShareName) -Context $azureContext
+     #Get-AzureStorageFileContent -Share $azureShare -Path "$azureStorageBaseDirectory\$(system.teamProject).snk" "$projectLocalPath\$(system.teamProject).snk"
      Write-Output ("Copy signing key from $(DownloadSecureFile.secureFilePath) to $projectLocalPath")
      Copy-Item "$(DownloadSecureFile.secureFilePath)" -Destination "$projectLocalPath"
-     Get-AzureStorageFileContent –Share $azureShare –Path "$azureStorageBaseDirectory\SharePoint 2013\Microsoft.SharePoint.dll" "$projectLocalPath\Microsoft.SharePoint.dll"
+     Get-AzureStorageFileContent -Share $azureShare -Path "$azureStorageBaseDirectory\SharePoint 2013\Microsoft.SharePoint.dll" "$projectLocalPath\Microsoft.SharePoint.dll"
      
      Write-Output ("Copy SPTestServer artifacts content from Azure storage account")
      $azurePath = Join-Path -Path $azureStorageBaseDirectory -ChildPath "SPTestServer artifacts"
