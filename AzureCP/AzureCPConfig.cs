@@ -26,7 +26,8 @@ namespace azurecp
         bool EnableRetry { get; set; }
         int Timeout { get; set; }
         string CustomData { get; set; }
-        int MaxSearchResultsCount { get; set; }        
+        int MaxSearchResultsCount { get; set; }
+        bool FilterSecurityEnabledGroupsOnly { get; set; }
     }
 
     public class ClaimsProviderConstants
@@ -206,6 +207,17 @@ namespace azurecp
         [Persisted]
         private int _MaxSearchResultsCount = 30; // SharePoint sets maxCount to 30 in method FillSearch
 
+        /// <summary>
+        /// Set if only AAD groups with securityEnabled = true should be returned - https://docs.microsoft.com/en-us/graph/api/resources/groups-overview?view=graph-rest-1.0
+        /// </summary>
+        public bool FilterSecurityEnabledGroupsOnly
+        {
+            get => _FilterSecurityEnabledGroupsOnly;
+            set => _FilterSecurityEnabledGroupsOnly = value;
+        }
+        [Persisted]
+        private bool _FilterSecurityEnabledGroupsOnly = false;
+
         public AzureCPConfig(string persistedObjectName, SPPersistedObject parent, string spTrustName) : base(persistedObjectName, parent)
         {
             this.SPTrustName = spTrustName;
@@ -366,6 +378,7 @@ namespace azurecp
             copy.Timeout = this.Timeout;
             copy.CustomData = this.CustomData;
             copy.MaxSearchResultsCount = this.MaxSearchResultsCount;
+            copy.FilterSecurityEnabledGroupsOnly = this.FilterSecurityEnabledGroupsOnly;
             return copy;
         }
 

@@ -130,18 +130,18 @@
 				<wssawc:EncodedLiteral runat="server" text="Azure AD tenants registered." EncodeMethod='HtmlEncodeAllowSimpleTextFormatting'/>
 			</template_description>
         <template_inputformcontrols>
-				<tr><td>
-				<wssawc:SPGridView runat="server" ID="grdAzureTenants" AutoGenerateColumns="false" OnRowDeleting="grdAzureTenants_RowDeleting">
-					<Columns>
-						<asp:BoundField DataField="Id" ItemStyle-CssClass="Azurecp-HideCol" HeaderStyle-CssClass="Azurecp-HideCol"/>
-						<asp:BoundField HeaderText="Tenant name" DataField="TenantName"/>
-						<asp:BoundField HeaderText="Application ID" DataField="ClientID"/>
-                        <asp:BoundField HeaderText="Filter out Guest users" DataField="MemberUserTypeOnly" />
-						<asp:CommandField HeaderText="Action" ButtonType="Button" DeleteText="Remove" ShowDeleteButton="True" />
-					</Columns>
-				</wssawc:SPGridView>
-				</td></tr>
-			</template_inputformcontrols>
+			<tr><td>
+			<wssawc:SPGridView runat="server" ID="grdAzureTenants" AutoGenerateColumns="false" OnRowDeleting="grdAzureTenants_RowDeleting">
+				<Columns>
+					<asp:BoundField DataField="Id" ItemStyle-CssClass="Azurecp-HideCol" HeaderStyle-CssClass="Azurecp-HideCol"/>
+					<asp:BoundField HeaderText="Tenant name" DataField="TenantName"/>
+					<asp:BoundField HeaderText="Application ID" DataField="ClientID"/>
+                    <asp:BoundField HeaderText="Filter out Guest users" DataField="MemberUserTypeOnly" />
+					<asp:CommandField HeaderText="Action" ButtonType="Button" DeleteText="Remove" ShowDeleteButton="True" />
+				</Columns>
+			</wssawc:SPGridView>
+			</td></tr>
+		</template_inputformcontrols>
     </wssuc:inputformsection>
     <wssuc:inputformsection title="New Azure Active Directory tenant" runat="server">
         <template_description>
@@ -200,49 +200,59 @@
     </wssuc:inputformsection>
     <wssuc:inputformsection runat="server" title="Display of user identifier results" description="Configure how entities created with identity claim type are shown in the people picker.<br/>It does not change the actual value of the entity, that is the user identifier.">
         <template_inputformcontrols>
-				<wssawc:InputFormRadioButton id="RbIdentityDefault"
-					LabelText="Show the user identifier value"
-					Checked="true"
-					GroupName="RbIdentityDisplay"
-					CausesValidation="false"
-					runat="server" >
-                </wssawc:InputFormRadioButton>
-				<wssawc:InputFormRadioButton id="RbIdentityCustomGraphProperty"
-					LabelText="Show the value of another property, e.g the display name:"
-					GroupName="RbIdentityDisplay"
-					CausesValidation="false"
-					runat="server" >
-                <wssuc:InputFormControl LabelText="InputFormControlLabelText">
-					<Template_control>
-                        <asp:DropDownList runat="server" ID="DDLGraphPropertyToDisplay" onclick="window.Azurecp.AzurecpSettingsPage.CheckRbIdentityCustomGraphProperty()" class="ms-input" />
-					</Template_control>
-				</wssuc:InputFormControl>
-				</wssawc:InputFormRadioButton>
-			</template_inputformcontrols>
+			<wssawc:InputFormRadioButton id="RbIdentityDefault"
+				LabelText="Show the user identifier value"
+				Checked="true"
+				GroupName="RbIdentityDisplay"
+				CausesValidation="false"
+				runat="server" >
+            </wssawc:InputFormRadioButton>
+			<wssawc:InputFormRadioButton id="RbIdentityCustomGraphProperty"
+				LabelText="Show the value of another property, e.g the display name:"
+				GroupName="RbIdentityDisplay"
+				CausesValidation="false"
+				runat="server" >
+            <wssuc:InputFormControl LabelText="InputFormControlLabelText">
+				<Template_control>
+                    <asp:DropDownList runat="server" ID="DDLGraphPropertyToDisplay" onclick="window.Azurecp.AzurecpSettingsPage.CheckRbIdentityCustomGraphProperty()" class="ms-input" />
+				</Template_control>
+			</wssuc:InputFormControl>
+			</wssawc:InputFormRadioButton>
+		</template_inputformcontrols>
     </wssuc:inputformsection>
     <wssuc:inputformsection runat="server" title="Bypass Azure AD lookup" description="Completely bypass Azure AD lookup and consider any input as valid.<br/><br/>This can be useful to keep people picker working even if connectivity with Azure tenant is lost.">
         <template_inputformcontrols>
-                <asp:Checkbox Runat="server" Name="ChkAlwaysResolveUserInput" ID="ChkAlwaysResolveUserInput" Text="Bypass Azure AD lookup" />
-			</template_inputformcontrols>
+            <asp:Checkbox Runat="server" Name="ChkAlwaysResolveUserInput" ID="ChkAlwaysResolveUserInput" Text="Bypass Azure AD lookup" />
+		</template_inputformcontrols>
     </wssuc:inputformsection>
     <wssuc:inputformsection runat="server" title="Require exact match" description="Set to only return results that exactly match the user input (case-insensitive).">
         <template_inputformcontrols>
-				<asp:Checkbox Runat="server" Name="ChkFilterExactMatchOnly" ID="ChkFilterExactMatchOnly" Text="Require exact match" />
-			</template_inputformcontrols>
+			<asp:Checkbox Runat="server" Name="ChkFilterExactMatchOnly" ID="ChkFilterExactMatchOnly" Text="Require exact match" />
+		</template_inputformcontrols>
     </wssuc:inputformsection>
     <wssuc:inputformsection runat="server" title="Augmentation" description="Enable augmentation to let AzureCP get group membership of Azure AD users.<br/><br/>If not enabled, permissions granted on Azure AD groups may not work.">
         <template_inputformcontrols>
-				<asp:Checkbox Runat="server" Name="ChkAugmentAADRoles" ID="ChkAugmentAADRoles" Text="Retrieve Azure AD groups" />
-			</template_inputformcontrols>
+			<asp:Checkbox Runat="server" Name="ChkAugmentAADRoles" ID="ChkAugmentAADRoles" Text="Retrieve Azure AD groups" />
+		</template_inputformcontrols>
+    </wssuc:inputformsection>
+    <wssuc:inputformsection runat="server" title="Type of groups">
+        <template_description>
+			<wssawc:EncodedLiteral runat="server" text="Set if all " EncodeMethod='HtmlEncodeAllowSimpleTextFormatting'/>
+			<a href="https://docs.microsoft.com/en-us/graph/api/resources/groups-overview?view=graph-rest-1.0" target="_blank"><wssawc:EncodedLiteral runat="server" text="type of groups" EncodeMethod='HtmlEncodeAllowSimpleTextFormatting'/></a>
+			<wssawc:EncodedLiteral runat="server" text="should be returned, including Office 365 unified groups, or only those that are security-enabled." EncodeMethod='HtmlEncodeAllowSimpleTextFormatting'/>
+		</template_description>
+        <template_inputformcontrols>
+			<asp:Checkbox Runat="server" Name="ChkFilterSecurityEnabledGroupsOnly" ID="ChkFilterSecurityEnabledGroupsOnly" Text="Return <a href='https://docs.microsoft.com/en-us/graph/api/resources/groups-overview?view=graph-rest-1.0' target='_blank'>security-enabled</a> groups only" />
+		</template_inputformcontrols>
     </wssuc:inputformsection>
     <wssuc:inputformsection runat="server" title="Reset AzureCP configuration" description="Restore configuration to its default values. Every changes, including claim types configuration, will be reset.">
         <template_inputformcontrols>
-				<asp:Button runat="server" ID="BtnResetAzureCPConfig" Text="Reset AzureCP configuration" onclick="BtnResetAzureCPConfig_Click" class="ms-ButtonHeightWidth" OnClientClick="return confirm('Do you really want to reset AzureCP configuration?');" />
-			</template_inputformcontrols>
+			<asp:Button runat="server" ID="BtnResetAzureCPConfig" Text="Reset AzureCP configuration" onclick="BtnResetAzureCPConfig_Click" class="ms-ButtonHeightWidth" OnClientClick="return confirm('Do you really want to reset AzureCP configuration?');" />
+		</template_inputformcontrols>
     </wssuc:inputformsection>
     <wssuc:buttonsection runat="server">
         <template_buttons>
-			    <asp:Button UseSubmitBehavior="false" runat="server" class="ms-ButtonHeightWidth" OnClick="BtnOK_Click" Text="<%$Resources:wss,multipages_okbutton_text%>" id="BtnOK" accesskey="<%$Resources:wss,okbutton_accesskey%>"/>
-		    </template_buttons>
+			<asp:Button UseSubmitBehavior="false" runat="server" class="ms-ButtonHeightWidth" OnClick="BtnOK_Click" Text="<%$Resources:wss,multipages_okbutton_text%>" id="BtnOK" accesskey="<%$Resources:wss,okbutton_accesskey%>"/>
+		</template_buttons>
     </wssuc:buttonsection>
 </table>

@@ -716,7 +716,7 @@ namespace azurecp
                 // POST to /v1.0/users/user@TENANT.onmicrosoft.com/microsoft.graph.getMemberGroups is the preferred way to return security groups as it includes nested groups
                 // But it returns only the group IDs so it can be used only if groupClaimTypeConfig.DirectoryObjectProperty == AzureADObjectProperty.Id
                 // For Guest users, it must be the id: POST to /v1.0/users/18ff6ae9-dd01-4008-a786-aabf71f1492a/microsoft.graph.getMemberGroups
-                IDirectoryObjectGetMemberGroupsCollectionPage groupIDs = await tenant.GraphService.Users[user.Id].GetMemberGroups(true).Request().PostAsync().ConfigureAwait(false);
+                IDirectoryObjectGetMemberGroupsCollectionPage groupIDs = await tenant.GraphService.Users[user.Id].GetMemberGroups(CurrentConfiguration.FilterSecurityEnabledGroupsOnly).Request().PostAsync().ConfigureAwait(false);
                 bool morePages = groupIDs?.Count > 0;
                 while (morePages)
                 {
@@ -1113,7 +1113,10 @@ namespace azurecp
                 else
                 {
                     // else assume it's a Group
-                    if (!firstGroupObjectProcessed) firstGroupObjectProcessed = true;
+                    if (!firstGroupObjectProcessed)
+                    {
+                        firstGroupObjectProcessed = true;
+                    }
                     else
                     {
                         currentFilter = " or " + currentFilter;
@@ -1346,7 +1349,7 @@ namespace azurecp
                 DirectoryObjectType objectType;
                 if (userOrGroup is User)
                 {
-                    // This section has become irrelevant since the specific handling of guest users done lower in the filtering, introduced in v13
+                    // This section has become irrelevant since the specific handling of guest users is done lower in the filtering, introduced in v13
                     //// Always exclude shadow users: UserType is Guest and his mail matches a verified domain in any Azure AD tenant
                     //string userType = ((User)userOrGroup).UserType;
                     //if (String.Equals(userType, AzureADUserTypeHelper.GuestUserType, StringComparison.InvariantCultureIgnoreCase))
@@ -1374,6 +1377,17 @@ namespace azurecp
                 {
                     currentObject = userOrGroup;
                     objectType = DirectoryObjectType.Group;
+
+                    if (CurrentConfiguration.FilterSecurityEnabledGroupsOnly)
+                    {
+                        Group group = (Group)userOrGroup;
+                        // If Group.SecurityEnabled is not set, assume the group is not SecurityEnabled - verified per tests, it is not documentated in https://docs.microsoft.com/en-us/graph/api/resources/group?view=graph-rest-1.0
+                        bool isSecurityEnabled = group.SecurityEnabled ?? false;
+                        if (!isSecurityEnabled)
+                        {
+                            continue;
+                        }
+                    }
                 }
 
                 foreach (ClaimTypeConfig ctConfig in ctConfigs.Where(x => x.EntityType == objectType))

@@ -73,6 +73,7 @@ namespace azurecp.ControlTemplates
             this.ChkAlwaysResolveUserInput.Checked = PersistedObject.AlwaysResolveUserInput;
             this.ChkFilterExactMatchOnly.Checked = PersistedObject.FilterExactMatchOnly;
             this.ChkAugmentAADRoles.Checked = PersistedObject.EnableAugmentation;
+            this.ChkFilterSecurityEnabledGroupsOnly.Checked = PersistedObject.FilterSecurityEnabledGroupsOnly;
         }
 
         private void BuildGraphPropertyDDL()
@@ -135,6 +136,7 @@ namespace azurecp.ControlTemplates
             PersistedObject.AlwaysResolveUserInput = this.ChkAlwaysResolveUserInput.Checked;
             PersistedObject.FilterExactMatchOnly = this.ChkFilterExactMatchOnly.Checked;
             PersistedObject.EnableAugmentation = this.ChkAugmentAADRoles.Checked;
+            PersistedObject.FilterSecurityEnabledGroupsOnly = this.ChkFilterSecurityEnabledGroupsOnly.Checked;
 
             if (commitChanges) CommitChanges();
             return true;
