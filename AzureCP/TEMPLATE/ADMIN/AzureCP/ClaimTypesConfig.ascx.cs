@@ -127,7 +127,7 @@ namespace azurecp.ControlTemplates
             tr.Cells.Add(th);
             th = GetTableHeaderCell("Property to display");
             tr.Cells.Add(th);
-            th = GetTableHeaderCell("<a href='http://msdn.microsoft.com/en-us/library/office/microsoft.sharepoint.webcontrols.peopleeditorentitydatakeys_members(v=office.15).aspx' target='_blank'>PickerEntity Metadata</a>");
+            th = GetTableHeaderCell("<a href='http://msdn.microsoft.com/en-us/library/office/microsoft.sharepoint.webcontrols.peopleeditorentitydatakeys_members(v=office.15).aspx' target='_blank'>PickerEntity metadata</a>");
             tr.Cells.Add(th);
 
             th = GetTableHeaderCell("Prefix to bypass lookup");
@@ -196,11 +196,11 @@ namespace azurecp.ControlTemplates
                     {
                         if (!attr.Value.UseMainClaimTypeOfDirectoryObject)
                         {
-                            c = GetTableCell("Map property with a PickerEntity metadata");
+                            c = GetTableCell("Azure AD object property linked to a PickerEntity metadata");
                         }
                         else
                         {
-                            c = GetTableCell($"Use main claim type of object {attr.Value.EntityType}");
+                            c = GetTableCell($"Azure AD property linked to the main mapping for object {attr.Value.EntityType}");
                             if (attr.Value.EntityType == DirectoryObjectType.User)
                             {
                                 tr.CssClass = "azurecp-rowUserProperty";
