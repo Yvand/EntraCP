@@ -17,5 +17,6 @@
 ## Miscellaneous
 
 ![GitHub issues](https://img.shields.io/github/issues/Yvand/AzureCP.svg)
-![GitHub](https://img.shields.io/github/license/Yvand/AzureCP.svg) 
+![GitHub](https://img.shields.io/github/license/Yvand/AzureCP.svg)
 ![GitHub code size in bytes](https://img.shields.io/github/languages/code-size/Yvand/AzureCP.svg)
+[![Codacy Badge](https://api.codacy.com/project/badge/Grade/85714471b5164dda84c4e53b7f5b85a9)](https://www.codacy.com/app/Yvand/AzureCP?utm_source=github.com&amp;utm_medium=referral&amp;utm_content=Yvand/AzureCP&amp;utm_campaign=Badge_Grade)

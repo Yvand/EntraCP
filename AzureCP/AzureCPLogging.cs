@@ -4,6 +4,7 @@ using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
+using System.Text;
 
 namespace azurecp
 {
@@ -69,7 +70,7 @@ namespace azurecp
             {
                 if (ex is AggregateException)
                 {
-                    string message = String.Format ("[{0}] Unexpected error(s) occurred {1}:", ProviderInternalName, faultyAction);
+                    StringBuilder message = new StringBuilder($"[{ProviderInternalName}] Unexpected error(s) occurred {faultyAction}:");
                     string excetpionMessage = Environment.NewLine + "[EXCEPTION {0}]: {1}: {2}. Callstack: {3}";
                     var aggEx = ex as AggregateException;
                     int count = 1;
@@ -77,20 +78,28 @@ namespace azurecp
                     {
                         string currentMessage;
                         if (innerEx.InnerException != null)
+                        {
                             currentMessage = String.Format(excetpionMessage, count++.ToString(), innerEx.InnerException.GetType().FullName, innerEx.InnerException.Message, innerEx.InnerException.StackTrace);
+                        }
                         else
+                        {
                             currentMessage = String.Format(excetpionMessage, count++.ToString(), innerEx.GetType().FullName, innerEx.Message, innerEx.StackTrace);
-                        message += currentMessage;
+                        }
+                        message.Append(currentMessage);
                     }
-                    WriteTrace(category, TraceSeverity.Unexpected, message);
+                    WriteTrace(category, TraceSeverity.Unexpected, message.ToString());
                 }
                 else
                 {
                     string message = "[{0}] Unexpected error occurred {1}: {2}: {3}, Callstack: {4}";
                     if (ex.InnerException != null)
+                    {
                         message = String.Format(message, ProviderInternalName, faultyAction, ex.InnerException.GetType().FullName, ex.InnerException.Message, ex.InnerException.StackTrace);
+                    }
                     else
+                    {
                         message = String.Format(message, ProviderInternalName, faultyAction, ex.GetType().FullName, ex.Message, ex.StackTrace);
+                    }
                     WriteTrace(category, TraceSeverity.Unexpected, message);
                 }
             }

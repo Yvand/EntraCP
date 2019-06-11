@@ -50,7 +50,10 @@ namespace AzureCP.Tests
         [Repeat(UnitTestsHelper.TestRepeatCount)]
         public virtual void SearchEntities(SearchEntityData registrationData)
         {
-            if (!TestSearch) return;
+            if (!TestSearch)
+            {
+                return;
+            }
 
             // If current entry does not return only users, cannot reliably test number of results returned if guest and/or members should be excluded
             if (!String.Equals(registrationData.ResultType, "User", StringComparison.InvariantCultureIgnoreCase) &&
@@ -61,7 +64,7 @@ namespace AzureCP.Tests
             if (ExcludeGuestUsers && String.Equals(registrationData.UserType, UnitTestsHelper.GUEST_USERTYPE, StringComparison.InvariantCultureIgnoreCase))
                 expectedResultCount = 0;
             if (ExcludeMemberUsers && String.Equals(registrationData.UserType, UnitTestsHelper.MEMBER_USERTYPE, StringComparison.InvariantCultureIgnoreCase))
-                expectedResultCount = 0;                
+                expectedResultCount = 0;
 
             UnitTestsHelper.TestSearchOperation(registrationData.Input, expectedResultCount, registrationData.ExpectedEntityClaimValue);
         }

@@ -77,7 +77,7 @@ namespace azurecp
                 AuthContext = new AuthenticationContext(AuthorityUri);
                 Creds = new ClientCredential(ClientId, ClientSecret);
                 Task<AuthenticationResult> acquireTokenTask = AuthContext.AcquireTokenAsync(ClaimsProviderConstants.GraphAPIResource, Creds);
-                AuthNResult = await TaskHelper.TimeoutAfter<AuthenticationResult>(acquireTokenTask, new TimeSpan(0, 0, 0, 0, timeout));
+                AuthNResult = await TaskHelper.TimeoutAfter<AuthenticationResult>(acquireTokenTask, new TimeSpan(0, 0, 0, 0, timeout)).ConfigureAwait(false);
 
                 TimeSpan duration = new TimeSpan(AuthNResult.ExpiresOn.UtcTicks - DateTime.Now.ToUniversalTime().Ticks);
                 ClaimsProviderLogging.Log($"[{ClaimsProviderName}] Got new access token for tenant '{Tenant}', valid for {Math.Round((duration.TotalHours), 1)} hour(s) and retrieved in {timer.ElapsedMilliseconds.ToString()} ms", TraceSeverity.High, EventSeverity.Information, TraceCategory.Core);
@@ -125,7 +125,7 @@ namespace azurecp
                 if (completedTask == task)
                 {
                     timeoutCancellationTokenSource.Cancel();
-                    return await task;  // Very important in order to propagate exceptions
+                    return await task.ConfigureAwait(false);  // Very important in order to propagate exceptions
                 }
                 else
                 {
