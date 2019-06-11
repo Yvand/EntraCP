@@ -24,7 +24,7 @@ jobs:
       itemPattern: |
        drop/$(System.TeamProject)/bin/Release/$(System.TeamProject).pdb
        drop/$(System.TeamProject).Tests/bin/Release/*.dll
-       drop/SPTestServer artifacts/?(*.csv|*.json|*.runsettings)
+       drop/$(Tests.DataFolderName)/?(*.csv|*.json|*.runsettings)
 
   - task: VisualStudioTestPlatformInstaller@1
     displayName: 'Visual Studio Test Platform Installer'
@@ -34,9 +34,9 @@ jobs:
     inputs:
       searchFolder: '$(Build.ArtifactStagingDirectory)/drop/$(System.TeamProject).Tests/bin/Release'
       vsTestVersion: toolsInstaller
-      runSettingsFile: '$(Build.ArtifactStagingDirectory)/drop/SPTestServer artifacts/DTLServer.runsettings'
-      overrideTestrunParameters: '$(Deployment.OverrideTestrunParameters)'
-      codeCoverageEnabled: true
+      runSettingsFile: '$(Build.ArtifactStagingDirectory)/drop/$(Tests.DataFolderName)/DTLServer.runsettings'
+      overrideTestrunParameters: '$(Tests.OverrideTestrunParameters)'
+      codeCoverageEnabled: $(Tests.CodeCoverageEnabled)
       otherConsoleOptions: '/Platform:x64'
       testRunTitle: '$(System.TeamProject)-Tests-SP$(jobSharePointVersion)'
       platform: '$(BuildPlatform)'
@@ -64,7 +64,7 @@ jobs:
       itemPattern: |
        drop/$(System.TeamProject)/bin/Release/$(System.TeamProject).pdb
        drop/$(System.TeamProject).Tests/bin/Release/*.dll
-       drop/SPTestServer artifacts/?(*.csv|*.json|*.runsettings)
+       drop/$(Tests.DataFolderName)/?(*.csv|*.json|*.runsettings)
 
   - task: VisualStudioTestPlatformInstaller@1
     displayName: 'Visual Studio Test Platform Installer'
@@ -74,9 +74,9 @@ jobs:
     inputs:
       searchFolder: '$(Build.ArtifactStagingDirectory)/drop/$(System.TeamProject).Tests/bin/Release'
       vsTestVersion: toolsInstaller
-      runSettingsFile: '$(Build.ArtifactStagingDirectory)/drop/SPTestServer artifacts/DTLServer.runsettings'
-      overrideTestrunParameters: '$(Deployment.OverrideTestrunParameters)'
-      codeCoverageEnabled: true
+      runSettingsFile: '$(Build.ArtifactStagingDirectory)/drop/$(Tests.DataFolderName)/DTLServer.runsettings'
+      overrideTestrunParameters: '$(Tests.OverrideTestrunParameters)'
+      codeCoverageEnabled: $(Tests.CodeCoverageEnabled)
       otherConsoleOptions: '/Platform:x64'
       testRunTitle: '$(System.TeamProject)-Tests-SP$(jobSharePointVersion)'
       platform: '$(BuildPlatform)'
@@ -104,7 +104,7 @@ jobs:
       itemPattern: |
        drop/$(System.TeamProject)/bin/Release/$(System.TeamProject).pdb
        drop/$(System.TeamProject).Tests/bin/Release/*.dll
-       drop/SPTestServer artifacts/?(*.csv|*.json|*.runsettings)
+       drop/$(Tests.DataFolderName)/?(*.csv|*.json|*.runsettings)
 
   - task: VisualStudioTestPlatformInstaller@1
     displayName: 'Visual Studio Test Platform Installer'
@@ -114,9 +114,9 @@ jobs:
     inputs:
       searchFolder: '$(Build.ArtifactStagingDirectory)/drop/$(System.TeamProject).Tests/bin/Release'
       vsTestVersion: toolsInstaller
-      runSettingsFile: '$(Build.ArtifactStagingDirectory)/drop/SPTestServer artifacts/DTLServer.runsettings'
-      overrideTestrunParameters: '$(Deployment.OverrideTestrunParameters)'
-      codeCoverageEnabled: true
+      runSettingsFile: '$(Build.ArtifactStagingDirectory)/drop/$(Tests.DataFolderName)/DTLServer.runsettings'
+      overrideTestrunParameters: '$(Tests.OverrideTestrunParameters)'
+      codeCoverageEnabled: $(Tests.CodeCoverageEnabled)
       otherConsoleOptions: '/Platform:x64'
       testRunTitle: '$(System.TeamProject)-Tests-SP$(jobSharePointVersion)'
       platform: '$(BuildPlatform)'
