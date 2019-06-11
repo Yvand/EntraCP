@@ -40,8 +40,8 @@ public class UnitTestsHelper
     public static readonly string TrustedGroupToAdd_ClaimValue = TestContext.Parameters["TrustedGroupToAdd_ClaimValue"];
     public static readonly SPClaim TrustedGroup = new SPClaim(TrustedGroupToAdd_ClaimType, TrustedGroupToAdd_ClaimValue, ClaimValueTypes.String, SPOriginalIssuers.Format(SPOriginalIssuerType.TrustedProvider, SPTrust.Name));
 
-    public static string GUEST_USERTYPE => "Guest";
-    public static string MEMBER_USERTYPE => "Member";
+    public static string GUEST_USERTYPE => ClaimsProviderConstants.GUEST_USERTYPE;
+    public static string MEMBER_USERTYPE => ClaimsProviderConstants.MEMBER_USERTYPE;
 
     public static readonly string AzureTenantsJsonFile = TestContext.Parameters["AzureTenantsJsonFile"];
     public static readonly string DataFile_GuestAccountsUPN_Search = TestContext.Parameters["DataFile_GuestAccountsUPN_Search"];

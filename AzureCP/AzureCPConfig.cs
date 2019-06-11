@@ -32,21 +32,21 @@ namespace azurecp
 
     public class ClaimsProviderConstants
     {
-        public const string CONFIG_ID = "0E9F8FB6-B314-4CCC-866D-DEC0BE76C237";
-        public const string CONFIG_NAME = "AzureCPConfig";
-        public const string GraphAPIResource = "https://graph.microsoft.com/";
-        public const string AuthorityUriTemplate = "https://login.windows.net/{0}";
-        public const string ResourceUrl = "https://graph.windows.net";
-        public const string SearchPatternEquals = "{0} eq '{1}'";
-        public const string SearchPatternStartsWith = "startswith({0}, '{1}')";
-        public const string IdentityConfigSearchPatternEquals = "({0} eq '{1}' and UserType eq '{2}')";
-        public const string IdentityConfigSearchPatternStartsWith = "(startswith({0}, '{1}') and UserType eq '{2}')";
+        public static string CONFIG_ID => "0E9F8FB6-B314-4CCC-866D-DEC0BE76C237";
+        public static string CONFIG_NAME => "AzureCPConfig";
+        public static string GraphAPIResource => "https://graph.microsoft.com/";
+        public static string AuthorityUriTemplate => "https://login.windows.net/{0}";
+        public static string ResourceUrl => "https://graph.windows.net";
+        public static string SearchPatternEquals => "{0} eq '{1}'";
+        public static string SearchPatternStartsWith => "startswith({0}, '{1}')";
+        public static string IdentityConfigSearchPatternEquals => "({0} eq '{1}' and UserType eq '{2}')";
+        public static string IdentityConfigSearchPatternStartsWith => "(startswith({0}, '{1}') and UserType eq '{2}')";
         public static string GroupClaimEntityType = SPClaimEntityTypes.FormsRole;
-        public const bool EnforceOnly1ClaimTypeForGroup = true;     // In AzureCP, only 1 claim type can be used to create group permissions
-        public const string DefaultMainGroupClaimType = WIF4_5.ClaimTypes.Role;
-        public const string PUBLICSITEURL = "https://yvand.github.io/AzureCP/";
-        public const string GUEST_USERTYPE = "Guest";
-        public const string MEMBER_USERTYPE = "Member";
+        public static bool EnforceOnly1ClaimTypeForGroup => true;     // In AzureCP, only 1 claim type can be used to create group permissions
+        public static string DefaultMainGroupClaimType => WIF4_5.ClaimTypes.Role;
+        public static string PUBLICSITEURL => "https://yvand.github.io/AzureCP/";
+        public static string GUEST_USERTYPE => "Guest";
+        public static string MEMBER_USERTYPE => "Member";
         private static object Sync_SetClaimsProviderVersion = new object();
         private static string _ClaimsProviderVersion;
         public static string ClaimsProviderVersion
@@ -78,9 +78,9 @@ namespace azurecp
         }
 
 #if DEBUG
-        public const int DEFAULT_TIMEOUT = 10000;
+        public static int DEFAULT_TIMEOUT => 10000;
 #else
-        public const int DEFAULT_TIMEOUT = 4000;    // 4 secs
+        public static int DEFAULT_TIMEOUT => 4000;    // 4 secs
 #endif
     }
 
@@ -177,7 +177,10 @@ namespace azurecp
         {
             get
             {
-                if (_SPTrust == null) _SPTrust = SPSecurityTokenServiceManager.Local.TrustedLoginProviders.GetProviderByName(SPTrustName);
+                if (_SPTrust == null)
+                {
+                    _SPTrust = SPSecurityTokenServiceManager.Local.TrustedLoginProviders.GetProviderByName(SPTrustName);
+                }
                 return _SPTrust;
             }
         }
@@ -306,7 +309,7 @@ namespace azurecp
         public static AzureCPConfig ResetConfiguration(string persistedObjectName)
         {
             AzureCPConfig previousConfig = GetConfiguration(persistedObjectName, String.Empty);
-            if (previousConfig == null) return null;
+            if (previousConfig == null) { return null; }
             Guid configId = previousConfig.Id;
             string spTrustName = previousConfig.SPTrustName;
             DeleteConfiguration(persistedObjectName);
@@ -349,7 +352,9 @@ namespace azurecp
                 {
                     object value = property.GetValue(configToApply);
                     if (value != null)
+                    {
                         property.SetValue(this, value);
+                    }
                 }
             }
         }
@@ -438,7 +443,10 @@ namespace azurecp
         /// <returns></returns>
         public static ClaimTypeConfigCollection ReturnDefaultClaimTypesConfig(string spTrustName)
         {
-            if (String.IsNullOrWhiteSpace(spTrustName)) throw new ArgumentNullException("spTrustName cannot be null.");
+            if (String.IsNullOrWhiteSpace(spTrustName))
+            {
+                throw new ArgumentNullException("spTrustName cannot be null.");
+            }
 
             SPTrustedLoginProvider spTrust = SPSecurityTokenServiceManager.Local.TrustedLoginProviders.GetProviderByName(spTrustName);
             if (spTrust == null)
@@ -499,7 +507,9 @@ namespace azurecp
         {
             // ClaimsProviderConstants.ClaimsProviderVersion can be null if assembly was removed from GAC
             if (String.IsNullOrEmpty(ClaimsProviderConstants.ClaimsProviderVersion))
+            {
                 return false;
+            }
 
             bool configUpdated = false;
 
@@ -580,9 +590,13 @@ namespace azurecp
                     {
                         ClaimTypeConfig ctConfigToDelete = null;
                         if (SPTrust != null && entityType == DirectoryObjectType.User)
+                        {
                             ctConfigToDelete = this.ClaimTypes.FirstOrDefault(x => x.DirectoryObjectProperty == duplicatedProperty.DirectoryObjectProperty && x.EntityType == entityType && !String.Equals(x.ClaimType, SPTrust.IdentityClaimTypeInformation.MappedClaimType, StringComparison.InvariantCultureIgnoreCase));
+                        }
                         else
+                        {
                             ctConfigToDelete = this.ClaimTypes.FirstOrDefault(x => x.DirectoryObjectProperty == duplicatedProperty.DirectoryObjectProperty && x.EntityType == entityType);
+                        }
 
                         this.ClaimTypes.Remove(ctConfigToDelete);
                         configUpdated = true;
@@ -596,7 +610,7 @@ namespace azurecp
                     try
                     {
                         // SPContext may be null if code does not run in a SharePoint process (e.g. in unit tests process)
-                        if (SPContext.Current != null) SPContext.Current.Web.AllowUnsafeUpdates = true;
+                        if (SPContext.Current != null) { SPContext.Current.Web.AllowUnsafeUpdates = true; }
                         this.Update();
                         ClaimsProviderLogging.Log($"Configuration '{this.Name}' was upgraded in configuration database and some settings were updated or reset to their default configuration",
                             TraceSeverity.High, EventSeverity.Information, TraceCategory.Core);
@@ -609,7 +623,7 @@ namespace azurecp
                     }
                     finally
                     {
-                        if (SPContext.Current != null) SPContext.Current.Web.AllowUnsafeUpdates = false;
+                        if (SPContext.Current != null) { SPContext.Current.Web.AllowUnsafeUpdates = false; }
                     }
                 }
             }
@@ -768,9 +782,13 @@ namespace azurecp
             {
                 List<DirectoryObjectType> aadEntityTypes = new List<DirectoryObjectType>();
                 if (entityTypes.Contains(SPClaimEntityTypes.User))
+                {
                     aadEntityTypes.Add(DirectoryObjectType.User);
+                }
                 if (entityTypes.Contains(ClaimsProviderConstants.GroupClaimEntityType))
+                {
                     aadEntityTypes.Add(DirectoryObjectType.Group);
+                }
                 this.DirectoryObjectTypes = aadEntityTypes.ToArray();
             }
 
@@ -812,7 +830,7 @@ namespace azurecp
         /// <param name="processedClaimTypeConfigList"></param>
         protected void InitializeValidation(List<ClaimTypeConfig> processedClaimTypeConfigList)
         {
-            if (this.IncomingEntity == null) throw new ArgumentNullException("IncomingEntity");
+            if (this.IncomingEntity == null) { throw new ArgumentNullException("IncomingEntity"); }
             this.IncomingEntityClaimTypeConfig = processedClaimTypeConfigList.FirstOrDefault(x =>
                String.Equals(x.ClaimType, this.IncomingEntity.ClaimType, StringComparison.InvariantCultureIgnoreCase) &&
                !x.UseMainClaimTypeOfDirectoryObject);
@@ -853,7 +871,7 @@ namespace azurecp
 
         protected void InitializeAugmentation(List<ClaimTypeConfig> processedClaimTypeConfigList)
         {
-            if (this.IncomingEntity == null) throw new ArgumentNullException("IncomingEntity");
+            if (this.IncomingEntity == null) { throw new ArgumentNullException("IncomingEntity"); }
             this.IncomingEntityClaimTypeConfig = processedClaimTypeConfigList.FirstOrDefault(x =>
                String.Equals(x.ClaimType, this.IncomingEntity.ClaimType, StringComparison.InvariantCultureIgnoreCase) &&
                !x.UseMainClaimTypeOfDirectoryObject);

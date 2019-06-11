@@ -596,7 +596,10 @@ namespace azurecp
 
         public void Reset() { curIndex = -1; }
 
-        void IDisposable.Dispose() { }
+        void IDisposable.Dispose()
+        {
+            // Not implemented
+        }
 
         public ClaimTypeConfig Current
         {
