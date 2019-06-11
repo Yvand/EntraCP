@@ -30,18 +30,13 @@ namespace azurecp
         bool FilterSecurityEnabledGroupsOnly { get; set; }
     }
 
-    public class ClaimsProviderConstants
+    public static class ClaimsProviderConstants
     {
         public static string CONFIG_ID => "0E9F8FB6-B314-4CCC-866D-DEC0BE76C237";
         public static string CONFIG_NAME => "AzureCPConfig";
         public static string GraphAPIResource => "https://graph.microsoft.com/";
         public static string AuthorityUriTemplate => "https://login.windows.net/{0}";
-        public static string ResourceUrl => "https://graph.windows.net";
-        public static string SearchPatternEquals => "{0} eq '{1}'";
-        public static string SearchPatternStartsWith => "startswith({0}, '{1}')";
-        public static string IdentityConfigSearchPatternEquals => "({0} eq '{1}' and UserType eq '{2}')";
-        public static string IdentityConfigSearchPatternStartsWith => "(startswith({0}, '{1}') and UserType eq '{2}')";
-        public static string GroupClaimEntityType = SPClaimEntityTypes.FormsRole;
+        public static string GroupClaimEntityType { get; set; } = SPClaimEntityTypes.FormsRole;
         public static bool EnforceOnly1ClaimTypeForGroup => true;     // In AzureCP, only 1 claim type can be used to create group permissions
         public static string DefaultMainGroupClaimType => WIF4_5.ClaimTypes.Role;
         public static string PUBLICSITEURL => "https://yvand.github.io/AzureCP/";
@@ -54,13 +49,17 @@ namespace azurecp
             get
             {
                 if (!String.IsNullOrEmpty(_ClaimsProviderVersion))
+                {
                     return _ClaimsProviderVersion;
+                }
 
                 // Method FileVersionInfo.GetVersionInfo() may hang and block all LDAPCP threads, so it is read only 1 time
                 lock (Sync_SetClaimsProviderVersion)
                 {
                     if (!String.IsNullOrEmpty(_ClaimsProviderVersion))
+                    {
                         return _ClaimsProviderVersion;
+                    }
 
                     try
                     {

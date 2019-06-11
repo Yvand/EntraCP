@@ -1087,6 +1087,11 @@ namespace azurecp
         /// <param name="currentContext"></param>
         protected virtual void BuildFilter(OperationContext currentContext, List<AzureTenant> azureTenants)
         {
+            string searchPatternEquals = "{0} eq '{1}'";
+            string searchPatternStartsWith = "startswith({0}, '{1}')";
+            string identityConfigSearchPatternEquals = "({0} eq '{1}' and UserType eq '{2}')";
+            string identityConfigSearchPatternStartsWith = "(startswith({0}, '{1}') and UserType eq '{2}')";
+
             StringBuilder userFilterBuilder = new StringBuilder();
             StringBuilder groupFilterBuilder = new StringBuilder();
             StringBuilder userSelectBuilder = new StringBuilder("UserType, Mail, ");    // UserType and Mail are always needed to deal with Guest users
@@ -1100,11 +1105,11 @@ namespace azurecp
             string input = currentContext.Input;
             if (currentContext.ExactSearch)
             {
-                preferredFilterPattern = String.Format(ClaimsProviderConstants.SearchPatternEquals, "{0}", input);
+                preferredFilterPattern = String.Format(searchPatternEquals, "{0}", input);
             }
             else
             {
-                preferredFilterPattern = String.Format(ClaimsProviderConstants.SearchPatternStartsWith, "{0}", input);
+                preferredFilterPattern = String.Format(searchPatternStartsWith, "{0}", input);
             }
 
             bool firstUserObjectProcessed = false;
@@ -1115,7 +1120,7 @@ namespace azurecp
                 string currentFilter;
                 if (!ctConfig.SupportsWildcard)
                 {
-                    currentFilter = String.Format(ClaimsProviderConstants.SearchPatternEquals, currentPropertyString, input);
+                    currentFilter = String.Format(searchPatternEquals, currentPropertyString, input);
                 }
                 else
                 {
@@ -1132,7 +1137,7 @@ namespace azurecp
                     }
                     else
                     {
-                        currentFilter = String.Format(ClaimsProviderConstants.SearchPatternEquals, currentPropertyString, idGuid.ToString());
+                        currentFilter = String.Format(searchPatternEquals, currentPropertyString, idGuid.ToString());
                     }
                 }
 
@@ -1143,17 +1148,17 @@ namespace azurecp
                         IdentityClaimTypeConfig identityClaimTypeConfig = ctConfig as IdentityClaimTypeConfig;
                         if (!ctConfig.SupportsWildcard)
                         {
-                            currentFilter = "( " + String.Format(ClaimsProviderConstants.IdentityConfigSearchPatternEquals, currentPropertyString, input, AzureADUserTypeHelper.MemberUserType) + " or " + String.Format(ClaimsProviderConstants.IdentityConfigSearchPatternEquals, identityClaimTypeConfig.DirectoryObjectPropertyForGuestUsers, input, AzureADUserTypeHelper.GuestUserType) + " )";
+                            currentFilter = "( " + String.Format(identityConfigSearchPatternEquals, currentPropertyString, input, AzureADUserTypeHelper.MemberUserType) + " or " + String.Format(identityConfigSearchPatternEquals, identityClaimTypeConfig.DirectoryObjectPropertyForGuestUsers, input, AzureADUserTypeHelper.GuestUserType) + " )";
                         }
                         else
                         {
                             if (currentContext.ExactSearch)
                             {
-                                currentFilter = "( " + String.Format(ClaimsProviderConstants.IdentityConfigSearchPatternEquals, currentPropertyString, input, AzureADUserTypeHelper.MemberUserType) + " or " + String.Format(ClaimsProviderConstants.IdentityConfigSearchPatternEquals, identityClaimTypeConfig.DirectoryObjectPropertyForGuestUsers, input, AzureADUserTypeHelper.GuestUserType) + " )";
+                                currentFilter = "( " + String.Format(identityConfigSearchPatternEquals, currentPropertyString, input, AzureADUserTypeHelper.MemberUserType) + " or " + String.Format(identityConfigSearchPatternEquals, identityClaimTypeConfig.DirectoryObjectPropertyForGuestUsers, input, AzureADUserTypeHelper.GuestUserType) + " )";
                             }
                             else
                             {
-                                currentFilter = "( " + String.Format(ClaimsProviderConstants.IdentityConfigSearchPatternStartsWith, currentPropertyString, input, AzureADUserTypeHelper.MemberUserType) + " or " + String.Format(ClaimsProviderConstants.IdentityConfigSearchPatternStartsWith, identityClaimTypeConfig.DirectoryObjectPropertyForGuestUsers, input, AzureADUserTypeHelper.GuestUserType) + " )";
+                                currentFilter = "( " + String.Format(identityConfigSearchPatternStartsWith, currentPropertyString, input, AzureADUserTypeHelper.MemberUserType) + " or " + String.Format(identityConfigSearchPatternStartsWith, identityClaimTypeConfig.DirectoryObjectPropertyForGuestUsers, input, AzureADUserTypeHelper.GuestUserType) + " )";
                             }
                         }
                     }

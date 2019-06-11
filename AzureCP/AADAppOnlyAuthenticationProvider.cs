@@ -14,15 +14,13 @@ namespace azurecp
 {
     public class AADAppOnlyAuthenticationProvider : IAuthenticationProvider
     {
-        private string Tenant;
-        private string ClientId;
-        private string ClientSecret;
-        private string AuthorityUri;
-        private string ClaimsProviderName;
-        private int Timeout;
+        private readonly string Tenant;
+        private readonly string ClientId;
+        private readonly string ClientSecret;
+        private readonly string AuthorityUri;
+        private readonly string ClaimsProviderName;
+        private readonly int Timeout;
 
-        private AuthenticationContext AuthContext;
-        private ClientCredential Creds;
         private AuthenticationResult AuthNResult;
         private AsyncLock GetAccessTokenLock = new AsyncLock();
 
@@ -74,9 +72,9 @@ namespace azurecp
 
             try
             {
-                AuthContext = new AuthenticationContext(AuthorityUri);
-                Creds = new ClientCredential(ClientId, ClientSecret);
-                Task<AuthenticationResult> acquireTokenTask = AuthContext.AcquireTokenAsync(ClaimsProviderConstants.GraphAPIResource, Creds);
+                AuthenticationContext authContext = new AuthenticationContext(AuthorityUri);
+                ClientCredential creds = new ClientCredential(ClientId, ClientSecret);
+                Task<AuthenticationResult> acquireTokenTask = authContext.AcquireTokenAsync(ClaimsProviderConstants.GraphAPIResource, creds);
                 AuthNResult = await TaskHelper.TimeoutAfter<AuthenticationResult>(acquireTokenTask, new TimeSpan(0, 0, 0, 0, timeout)).ConfigureAwait(false);
 
                 TimeSpan duration = new TimeSpan(AuthNResult.ExpiresOn.UtcTicks - DateTime.Now.ToUniversalTime().Ticks);
@@ -86,19 +84,19 @@ namespace azurecp
             {
                 ClaimsProviderLogging.Log($"[{ClaimsProviderName}] Unable to get access token for tenant '{Tenant}': {ex.Message}", TraceSeverity.Unexpected, EventSeverity.Error, TraceCategory.Core);
                 success = false;
-                if (throwExceptionIfFail) throw ex;
+                if (throwExceptionIfFail) { throw; }
             }
-            catch (TimeoutException ex)
+            catch (TimeoutException)
             {
                 ClaimsProviderLogging.Log($"[{ClaimsProviderName}] Could not get access token before timeout of {timeout.ToString()} ms for tenant '{Tenant}'", TraceSeverity.Unexpected, EventSeverity.Error, TraceCategory.Core);
                 success = false;
-                if (throwExceptionIfFail) throw ex;
+                if (throwExceptionIfFail) { throw; }
             }
             catch (Exception ex)
             {
                 ClaimsProviderLogging.LogException(ClaimsProviderName, $"while getting access token for tenant '{Tenant}'", TraceCategory.Lookup, ex);
                 success = false;
-                if (throwExceptionIfFail) throw ex;
+                if (throwExceptionIfFail) { throw; }
             }
             finally
             {
@@ -121,7 +119,7 @@ namespace azurecp
         {
             using (var timeoutCancellationTokenSource = new CancellationTokenSource())
             {
-                var completedTask = await Task.WhenAny(task, Task.Delay(timeout, timeoutCancellationTokenSource.Token));
+                var completedTask = await Task.WhenAny(task, Task.Delay(timeout, timeoutCancellationTokenSource.Token)).ConfigureAwait(false);
                 if (completedTask == task)
                 {
                     timeoutCancellationTokenSource.Cancel();
