@@ -15,9 +15,9 @@ namespace azurecp.ControlTemplates
 {
     public partial class AzureCPGlobalSettings : AzureCPUserControl
     {
-        string TextErrorAzureTenantFieldsMissing = "Some mandatory fields are missing.";
-        string TextErrorTestAzureADConnection = "Unable to get access token for tenant '{0}': {1}";
-        string TextConnectionSuccessful = "Connection successful.";
+        readonly string TextErrorAzureTenantFieldsMissing = "Some mandatory fields are missing.";
+        readonly string TextErrorTestAzureADConnection = "Unable to get access token for tenant '{0}': {1}";
+        readonly string TextConnectionSuccessful = "Connection successful.";
 
         protected void Page_Load(object sender, EventArgs e)
         {
@@ -32,7 +32,8 @@ namespace azurecp.ControlTemplates
             if (ValidatePrerequisite() != ConfigStatus.AllGood)
             {
                 this.LabelErrorMessage.Text = base.MostImportantError;
-                this.BtnOK.Enabled = this.BtnOKTop.Enabled = false;
+                this.BtnOK.Enabled = false;
+                this.BtnOKTop.Enabled = false;
                 return;
             }
 
@@ -81,14 +82,13 @@ namespace azurecp.ControlTemplates
             foreach (AzureADObjectProperty prop in Enum.GetValues(typeof(AzureADObjectProperty)))
             {
                 // Ensure property exists for the User object type
-                if (AzureCP.GetPropertyValue(new User(), prop.ToString()) == null) continue;
+                if (AzureCP.GetPropertyValue(new User(), prop.ToString()) == null) { continue; }
 
                 // Ensure property is of type System.String
                 PropertyInfo pi = typeof(User).GetProperty(prop.ToString());
-                if (pi == null) continue;
-                if (pi.PropertyType != typeof(System.String)) continue;
+                if (pi == null) { continue; }
+                if (pi.PropertyType != typeof(System.String)) { continue; }
 
-                //System.Web.UI.WebControls.ListItem listItem = new System.Web.UI.WebControls.ListItem(prop.ToString(), ((int)prop).ToString());
                 this.DDLGraphPropertyToDisplay.Items.Add(new System.Web.UI.WebControls.ListItem(prop.ToString(), ((int)prop).ToString()));
                 this.DDLDirectoryPropertyMemberUsers.Items.Add(new System.Web.UI.WebControls.ListItem(prop.ToString(), ((int)prop).ToString()));
                 this.DDLDirectoryPropertyGuestUsers.Items.Add(new System.Web.UI.WebControls.ListItem(prop.ToString(), ((int)prop).ToString()));
@@ -97,8 +97,8 @@ namespace azurecp.ControlTemplates
 
         protected void grdAzureTenants_RowDeleting(object sender, GridViewDeleteEventArgs e)
         {
-            if (ValidatePrerequisite() != ConfigStatus.AllGood) return;
-            if (PersistedObject.AzureTenants == null) return;
+            if (ValidatePrerequisite() != ConfigStatus.AllGood) { return; }
+            if (PersistedObject.AzureTenants == null) { return; }
 
             GridViewRow rowToDelete = grdAzureTenants.Rows[e.RowIndex];
             Guid Id = new Guid(rowToDelete.Cells[0].Text);
@@ -114,7 +114,7 @@ namespace azurecp.ControlTemplates
 
         protected bool UpdateConfiguration(bool commitChanges)
         {
-            if (ValidatePrerequisite() != ConfigStatus.AllGood) return false;
+            if (ValidatePrerequisite() != ConfigStatus.AllGood) { return false; }
 
             if (this.RbIdentityCustomGraphProperty.Checked)
             {
@@ -127,18 +127,22 @@ namespace azurecp.ControlTemplates
 
             AzureADObjectProperty newUserIdentifier = (AzureADObjectProperty)Convert.ToInt32(this.DDLDirectoryPropertyMemberUsers.SelectedValue);
             if (newUserIdentifier != AzureADObjectProperty.NotSet)
+            {
                 PersistedObject.ClaimTypes.UpdateUserIdentifier(newUserIdentifier);
+            }
 
             AzureADObjectProperty newIdentifierForGuestUsers = (AzureADObjectProperty)Convert.ToInt32(this.DDLDirectoryPropertyGuestUsers.SelectedValue);
             if (newIdentifierForGuestUsers != AzureADObjectProperty.NotSet)
+            {
                 PersistedObject.ClaimTypes.UpdateIdentifierForGuestUsers(newIdentifierForGuestUsers);
+            }
 
             PersistedObject.AlwaysResolveUserInput = this.ChkAlwaysResolveUserInput.Checked;
             PersistedObject.FilterExactMatchOnly = this.ChkFilterExactMatchOnly.Checked;
             PersistedObject.EnableAugmentation = this.ChkAugmentAADRoles.Checked;
             PersistedObject.FilterSecurityEnabledGroupsOnly = this.ChkFilterSecurityEnabledGroupsOnly.Checked;
 
-            if (commitChanges) CommitChanges();
+            if (commitChanges) { CommitChanges(); }
             return true;
         }
 
@@ -177,9 +181,15 @@ namespace azurecp.ControlTemplates
 
         protected void BtnOK_Click(Object sender, EventArgs e)
         {
-            if (ValidatePrerequisite() != ConfigStatus.AllGood) return;
-            if (UpdateConfiguration(true)) Response.Redirect("/Security.aspx", false);
-            else LabelErrorMessage.Text = base.MostImportantError;
+            if (ValidatePrerequisite() != ConfigStatus.AllGood) { return; }
+            if (UpdateConfiguration(true))
+            {
+                Response.Redirect("/Security.aspx", false);
+            }
+            else
+            {
+                LabelErrorMessage.Text = base.MostImportantError;
+            }
         }
 
         protected void BtnResetAzureCPConfig_Click(Object sender, EventArgs e)
@@ -188,7 +198,7 @@ namespace azurecp.ControlTemplates
             Response.Redirect(Request.RawUrl, false);
         }
 
-        private TableCell GetTableCell(string Value)
+        private static TableCell GetTableCell(string Value)
         {
             TableCell tc = new TableCell();
             tc.Text = Value;
@@ -205,14 +215,17 @@ namespace azurecp.ControlTemplates
         /// </summary>
         void AddTenantConnection()
         {
-            if (ValidatePrerequisite() != ConfigStatus.AllGood) return;
+            if (ValidatePrerequisite() != ConfigStatus.AllGood) { return; }
             if (this.TxtTenantName.Text == String.Empty || this.TxtClientId.Text == String.Empty || this.TxtClientSecret.Text == String.Empty)
             {
                 this.LabelErrorTestLdapConnection.Text = TextErrorAzureTenantFieldsMissing;
                 return;
             }
 
-            if (PersistedObject.AzureTenants == null) PersistedObject.AzureTenants = new List<AzureTenant>();
+            if (PersistedObject.AzureTenants == null)
+            {
+                PersistedObject.AzureTenants = new List<AzureTenant>();
+            }
             this.PersistedObject.AzureTenants.Add(
                 new AzureTenant
                 {
@@ -227,7 +240,8 @@ namespace azurecp.ControlTemplates
 
             PopulateConnectionsGrid();
             this.TxtTenantName.Text = "TENANTNAME.onMicrosoft.com";
-            this.TxtClientId.Text = this.TxtClientSecret.Text = String.Empty;
+            this.TxtClientId.Text = String.Empty;
+            this.TxtClientSecret.Text = String.Empty;
         }
     }
 

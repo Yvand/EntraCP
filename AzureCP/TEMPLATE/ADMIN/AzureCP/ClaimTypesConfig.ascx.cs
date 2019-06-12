@@ -18,18 +18,18 @@ namespace azurecp.ControlTemplates
         public bool HideAllContent = false;
         public string TrustName = String.Empty; // This must be a field to be accessible from marup code, it cannot be a property
 
-        string TextErrorFieldsMissing = "Some mandatory fields are missing.";
-        string TextErrorUpdateEmptyClaimType = "Claim type must be set.";
+        readonly string TextErrorFieldsMissing = "Some mandatory fields are missing.";
+        readonly string TextErrorUpdateEmptyClaimType = "Claim type must be set.";
 
-        string HtmlCellClaimType = "<span name=\"span_claimtype_{1}\" id=\"span_claimtype_{1}\">{0}</span><input name=\"input_claimtype_{1}\" id=\"input_claimtype_{1}\" style=\"display: none; width: 90%;\" value=\"{0}\"></input>";
-        string HtmlCellGraphProperty = "<span name=\"span_graphproperty_{1}\" id=\"span_graphproperty_{1}\">{0}</span><select name=\"list_graphproperty_{1}\" id=\"list_graphproperty_{1}\" style=\"display:none;\" value=\"{0}\">{2}</select>";
-        string HtmlCellGraphPropertyToDisplay = "<span name=\"span_GraphPropertyToDisplay_{1}\" id=\"span_GraphPropertyToDisplay_{1}\">{0}</span><select name=\"list_GraphPropertyToDisplay_{1}\" id=\"list_GraphPropertyToDisplay_{1}\" style=\"display:none;\" value=\"{0}\">{2}</select>";
-        string HtmlCellMetadata = "<span name=\"span_Metadata_{1}\" id=\"span_Metadata_{1}\">{0}</span><select name=\"list_Metadata_{1}\" id=\"list_Metadata_{1}\" style=\"display:none;\">{2}</select>";
-        string HtmlCellPrefixToBypassLookup = "<span name=\"span_PrefixToBypassLookup_{1}\" id=\"span_PrefixToBypassLookup_{1}\">{0}</span><input name=\"input_PrefixToBypassLookup_{1}\" id=\"input_PrefixToBypassLookup_{1}\" style=\"display:none;\" value=\"{0}\"></input>";
-        string HtmlCellDirectoryObjectType = "<span name=\"span_ClaimEntityType_{1}\" id=\"span_ClaimEntityType_{1}\">{0}</span><select name=\"list_ClaimEntityType_{1}\" id=\"list_ClaimEntityType_{1}\" style=\"display:none;\">{2}</select>";
+        readonly string HtmlCellClaimType = "<span name=\"span_claimtype_{1}\" id=\"span_claimtype_{1}\">{0}</span><input name=\"input_claimtype_{1}\" id=\"input_claimtype_{1}\" style=\"display: none; width: 90%;\" value=\"{0}\"></input>";
+        readonly string HtmlCellGraphProperty = "<span name=\"span_graphproperty_{1}\" id=\"span_graphproperty_{1}\">{0}</span><select name=\"list_graphproperty_{1}\" id=\"list_graphproperty_{1}\" style=\"display:none;\" value=\"{0}\">{2}</select>";
+        readonly string HtmlCellGraphPropertyToDisplay = "<span name=\"span_GraphPropertyToDisplay_{1}\" id=\"span_GraphPropertyToDisplay_{1}\">{0}</span><select name=\"list_GraphPropertyToDisplay_{1}\" id=\"list_GraphPropertyToDisplay_{1}\" style=\"display:none;\" value=\"{0}\">{2}</select>";
+        readonly string HtmlCellMetadata = "<span name=\"span_Metadata_{1}\" id=\"span_Metadata_{1}\">{0}</span><select name=\"list_Metadata_{1}\" id=\"list_Metadata_{1}\" style=\"display:none;\">{2}</select>";
+        readonly string HtmlCellPrefixToBypassLookup = "<span name=\"span_PrefixToBypassLookup_{1}\" id=\"span_PrefixToBypassLookup_{1}\">{0}</span><input name=\"input_PrefixToBypassLookup_{1}\" id=\"input_PrefixToBypassLookup_{1}\" style=\"display:none;\" value=\"{0}\"></input>";
+        readonly string HtmlCellDirectoryObjectType = "<span name=\"span_ClaimEntityType_{1}\" id=\"span_ClaimEntityType_{1}\">{0}</span><select name=\"list_ClaimEntityType_{1}\" id=\"list_ClaimEntityType_{1}\" style=\"display:none;\">{2}</select>";
 
-        string HtmlEditLink = "<a name=\"editLink_{0}\" id=\"editLink_{0}\" href=\"javascript:Azurecp.ClaimsTablePage.EditItem('{0}')\">Edit</a>";
-        string HtmlCancelEditLink = "<a name=\"cancelLink_{0}\" id=\"cancelLink_{0}\" href=\"javascript:Azurecp.ClaimsTablePage.CancelEditItem('{0}')\" style=\"display:none;\">Cancel</a>";
+        readonly string HtmlEditLink = "<a name=\"editLink_{0}\" id=\"editLink_{0}\" href=\"javascript:Azurecp.ClaimsTablePage.EditItem('{0}')\">Edit</a>";
+        readonly string HtmlCancelEditLink = "<a name=\"cancelLink_{0}\" id=\"cancelLink_{0}\" href=\"javascript:Azurecp.ClaimsTablePage.CancelEditItem('{0}')\" style=\"display:none;\">Cancel</a>";
 
         protected void Page_Load(object sender, EventArgs e)
         {
@@ -72,7 +72,7 @@ namespace azurecp.ControlTemplates
                 foreach (object field in typeof(AzureADObjectProperty).GetFields())
                 {
                     string prop = ((System.Reflection.FieldInfo)field).Name;
-                    if (AzureCP.GetPropertyValue(new User(), prop) == null) continue;
+                    if (AzureCP.GetPropertyValue(new User(), prop) == null) { continue; }
                     //if (AzureCP.GetGraphPropertyValue(new Group(), prop) == null) continue;
                     //if (AzureCP.GetGraphPropertyValue(new Role(), prop) == null) continue;
 
@@ -120,7 +120,6 @@ namespace azurecp.ControlTemplates
 
             // SECONDE ROW HEADERS
             tr = new TableRow();
-            th = new TableHeaderCell();
             th = GetTableHeaderCell("Object type");
             tr.Cells.Add(th);
             th = GetTableHeaderCell("Property to query");
@@ -142,7 +141,10 @@ namespace azurecp.ControlTemplates
                 // ACTIONS
                 // LinkButton must always be created otherwise event receiver will not fire on postback
                 TableCell tc = new TableCell();
-                if (allowEditItem) tc.Controls.Add(new LiteralControl(String.Format(HtmlEditLink, attr.Key) + "&nbsp;&nbsp;"));
+                if (allowEditItem)
+                {
+                    tc.Controls.Add(new LiteralControl(String.Format(HtmlEditLink, attr.Key) + "&nbsp;&nbsp;"));
+                }
                 // But we don't allow to delete identity claim
                 if (!String.Equals(attr.Value.ClaimType, CurrentTrustedLoginProvider.IdentityClaimTypeInformation.MappedClaimType, StringComparison.InvariantCultureIgnoreCase))
                 {
@@ -152,7 +154,10 @@ namespace azurecp.ControlTemplates
                     LnkDeleteItem.CommandArgument = attr.Key.ToString();
                     LnkDeleteItem.Text = "Delete";
                     LnkDeleteItem.OnClientClick = "javascript:return confirm('This will delete this item. Do you want to continue?');";
-                    if (pendingUpdate) LnkDeleteItem.Visible = false;
+                    if (pendingUpdate)
+                    {
+                        LnkDeleteItem.Visible = false;
+                    }
                     tc.Controls.Add(LnkDeleteItem);
                 }
                 LinkButton LnkUpdateItem = new LinkButton();
@@ -161,7 +166,10 @@ namespace azurecp.ControlTemplates
                 LnkUpdateItem.CommandArgument = attr.Key.ToString();
                 LnkUpdateItem.Text = "Save";
                 LnkUpdateItem.Style.Add("display", "none");
-                if (pendingUpdate) LnkUpdateItem.Visible = false;
+                if (pendingUpdate)
+                {
+                    LnkUpdateItem.Visible = false;
+                }
 
                 tc.Controls.Add(LnkUpdateItem);
                 tc.Controls.Add(new LiteralControl("&nbsp;&nbsp;" + String.Format(HtmlCancelEditLink, attr.Key)));
@@ -177,7 +185,6 @@ namespace azurecp.ControlTemplates
                     {
                         html = String.Format(HtmlCellClaimType, attr.Value.ClaimType, attr.Key);
                         c = GetTableCell(html);
-                        allowEditItem = true;
                         if (String.Equals(CurrentTrustedLoginProvider.IdentityClaimTypeInformation.MappedClaimType, attr.Value.ClaimType, StringComparison.InvariantCultureIgnoreCase) && !attr.Value.UseMainClaimTypeOfDirectoryObject)
                         {
                             tr.CssClass = "azurecp-rowidentityclaim";
@@ -245,7 +252,7 @@ namespace azurecp.ControlTemplates
             }
         }
 
-        private string BuildDDLFromTypeMembers(string htmlCell, KeyValuePair<int, ClaimTypeConfig> attr, string propertyToCheck, MemberInfo[] members, bool addEmptyChoice)
+        private static string BuildDDLFromTypeMembers(string htmlCell, KeyValuePair<int, ClaimTypeConfig> attr, string propertyToCheck, MemberInfo[] members, bool addEmptyChoice)
         {
             string option = "<option value=\"{0}\" {1}>{2}</option>";
             string selected = String.Empty;
@@ -263,7 +270,10 @@ namespace azurecp.ControlTemplates
                     selected = "selected";
                     metadataFound = true;
                 }
-                else selected = String.Empty;
+                else
+                {
+                    selected = String.Empty;
+                }
                 options.Append(String.Format(option, member.Name, selected, member.Name));
             }
 
@@ -297,11 +307,11 @@ namespace azurecp.ControlTemplates
                 // Ensure property exists for the current object type
                 if (azureObject.Value.EntityType == DirectoryObjectType.User)
                 {
-                    if (AzureCP.GetPropertyValue(new User(), prop.ToString()) == null) continue;
+                    if (AzureCP.GetPropertyValue(new User(), prop.ToString()) == null) { continue; }
                 }
                 else
                 {
-                    if (AzureCP.GetPropertyValue(new Group(), prop.ToString()) == null) continue;
+                    if (AzureCP.GetPropertyValue(new Group(), prop.ToString()) == null) { continue; }
                 }
 
                 graphPropertySelected = azureObject.Value.DirectoryObjectProperty == prop ? "selected" : String.Empty;
@@ -311,7 +321,10 @@ namespace azurecp.ControlTemplates
                     graphPropertyToDisplaySelected = "selected";
                     graphPropertyToDisplayFound = true;
                 }
-                else graphPropertyToDisplaySelected = String.Empty;
+                else
+                {
+                    graphPropertyToDisplaySelected = String.Empty;
+                }
 
                 graphPropertyOptions.Append(String.Format(option, prop.ToString(), graphPropertySelected, prop.ToString()));
                 graphPropertyToDisplayOptions.Append(String.Format(option, prop.ToString(), graphPropertyToDisplaySelected, prop.ToString()));
@@ -327,13 +340,13 @@ namespace azurecp.ControlTemplates
             htmlCellDirectoryObjectType = String.Format(HtmlCellDirectoryObjectType, azureObject.Value.EntityType, azureObject.Key, directoryObjectTypeOptions.ToString());
         }
 
-        private TableHeaderCell GetTableHeaderCell(string Value)
+        private static TableHeaderCell GetTableHeaderCell(string Value)
         {
             TableHeaderCell tc = new TableHeaderCell();
             tc.Text = Value;
             return tc;
         }
-        private TableCell GetTableCell(string Value)
+        private static TableCell GetTableCell(string Value)
         {
             TableCell tc = new TableCell();
             tc.Text = Value;
@@ -342,7 +355,7 @@ namespace azurecp.ControlTemplates
 
         void LnkDeleteItem_Command(object sender, CommandEventArgs e)
         {
-            if (ValidatePrerequisite() != ConfigStatus.AllGood && Status != ConfigStatus.NoIdentityClaimType) return;
+            if (ValidatePrerequisite() != ConfigStatus.AllGood && Status != ConfigStatus.NoIdentityClaimType) { return; }
 
             string itemId = e.CommandArgument.ToString();
             ClaimTypeConfig ctConfig = ClaimsMapping.Find(x => x.Key == Convert.ToInt32(itemId)).Value;
@@ -353,7 +366,7 @@ namespace azurecp.ControlTemplates
 
         void LnkUpdateItem_Command(object sender, CommandEventArgs e)
         {
-            if (ValidatePrerequisite() != ConfigStatus.AllGood && Status != ConfigStatus.NoIdentityClaimType) return;
+            if (ValidatePrerequisite() != ConfigStatus.AllGood && Status != ConfigStatus.NoIdentityClaimType) { return; }
 
             string itemId = e.CommandArgument.ToString();
             ClaimTypeConfig existingCTConfig = ClaimsMapping.Find(x => x.Key == Convert.ToInt32(itemId)).Value;
@@ -379,9 +392,15 @@ namespace azurecp.ControlTemplates
 
             AzureADObjectProperty prop;
             bool convertSuccess = Enum.TryParse<AzureADObjectProperty>(formData["list_graphproperty_" + itemId], out prop);
-            if (convertSuccess) newCTConfig.DirectoryObjectProperty = prop;
+            if (convertSuccess)
+            {
+                newCTConfig.DirectoryObjectProperty = prop;
+            }
             convertSuccess = Enum.TryParse<AzureADObjectProperty>(formData["list_GraphPropertyToDisplay_" + itemId], out prop);
-            if (convertSuccess) newCTConfig.DirectoryObjectPropertyToShowAsDisplayText = prop;
+            if (convertSuccess)
+            {
+                newCTConfig.DirectoryObjectPropertyToShowAsDisplayText = prop;
+            }
 
             try
             {
