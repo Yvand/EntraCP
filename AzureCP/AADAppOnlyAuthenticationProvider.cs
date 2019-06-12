@@ -52,7 +52,7 @@ namespace azurecp
 
                 if (getAccessToken)
                 {
-                    bool success = await GetAccessToken(false);
+                    bool success = await GetAccessToken(false).ConfigureAwait(false);
                 }
 
                 if (AuthNResult != null && !String.IsNullOrEmpty(AuthNResult.AccessToken))
