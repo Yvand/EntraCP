@@ -198,13 +198,6 @@ namespace azurecp.ControlTemplates
             Response.Redirect(Request.RawUrl, false);
         }
 
-        private static TableCell GetTableCell(string Value)
-        {
-            TableCell tc = new TableCell();
-            tc.Text = Value;
-            return tc;
-        }
-
         protected void BtnAddAzureTenant_Click(object sender, EventArgs e)
         {
             AddTenantConnection();

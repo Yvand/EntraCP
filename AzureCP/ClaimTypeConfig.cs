@@ -249,7 +249,12 @@ namespace azurecp
         /// <summary>
         /// If set, more checks can be done when collection is changed
         /// </summary>
-        public SPTrustedLoginProvider SPTrust;
+        public SPTrustedLoginProvider SPTrust
+        {
+            get => _SPTrust;
+            set => _SPTrust = value;
+        }
+        private SPTrustedLoginProvider _SPTrust;
 
         public ClaimTypeConfigCollection()
         {

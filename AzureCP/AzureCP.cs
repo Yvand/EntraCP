@@ -41,7 +41,12 @@ namespace azurecp
         /// <summary>
         /// Contains configuration currently used by claims provider
         /// </summary>
-        public IAzureCPConfiguration CurrentConfiguration;
+        public IAzureCPConfiguration CurrentConfiguration
+        {
+            get => _CurrentConfiguration;
+            set => _CurrentConfiguration = value;
+        }
+        private IAzureCPConfiguration _CurrentConfiguration;
 
         /// <summary>
         /// SPTrust associated with the claims provider
@@ -61,7 +66,13 @@ namespace azurecp
         /// <summary>
         /// Processed list to use. It is guarranted to never contain an empty ClaimType
         /// </summary>
-        public List<ClaimTypeConfig> ProcessedClaimTypesList;
+        public List<ClaimTypeConfig> ProcessedClaimTypesList
+        {
+            get => _ProcessedClaimTypesList;
+            set => _ProcessedClaimTypesList = value;
+        }
+        private List<ClaimTypeConfig> _ProcessedClaimTypesList;
+
         protected IEnumerable<ClaimTypeConfig> MetadataConfig;
         protected virtual string PickerEntityDisplayText => "({0}) {1}";
         protected virtual string PickerEntityOnMouseOver => "{0}={1}";
@@ -744,21 +755,24 @@ namespace azurecp
                 // But it returns only the group IDs so it can be used only if groupClaimTypeConfig.DirectoryObjectProperty == AzureADObjectProperty.Id
                 // For Guest users, it must be the id: POST to /v1.0/users/18ff6ae9-dd01-4008-a786-aabf71f1492a/microsoft.graph.getMemberGroups
                 IDirectoryObjectGetMemberGroupsCollectionPage groupIDs = await tenant.GraphService.Users[user.Id].GetMemberGroups(CurrentConfiguration.FilterSecurityEnabledGroupsOnly).Request().PostAsync().ConfigureAwait(false);
-                bool morePages = groupIDs?.Count > 0;
-                while (morePages)
+                if (groupIDs != null)
                 {
-                    foreach (string groupID in groupIDs)
+                    bool morePages = groupIDs.Count > 0;
+                    while (morePages)
                     {
-                        claims.Add(CreateClaim(groupClaimTypeConfig.ClaimType, groupID, groupClaimTypeConfig.ClaimValueType));
-                    }
+                        foreach (string groupID in groupIDs)
+                        {
+                            claims.Add(CreateClaim(groupClaimTypeConfig.ClaimType, groupID, groupClaimTypeConfig.ClaimValueType));
+                        }
 
-                    if (groupIDs.NextPageRequest != null)
-                    {
-                        groupIDs = await groupIDs.NextPageRequest.PostAsync().ConfigureAwait(false);
-                    }
-                    else
-                    {
-                        morePages = false;
+                        if (groupIDs.NextPageRequest != null)
+                        {
+                            groupIDs = await groupIDs.NextPageRequest.PostAsync().ConfigureAwait(false);
+                        }
+                        else
+                        {
+                            morePages = false;
+                        }
                     }
                 }
             }
@@ -766,21 +780,24 @@ namespace azurecp
             {
                 // Fallback to GET to /v1.0/users/user@TENANT.onmicrosoft.com/memberOf, which returns all group properties but does not return nested groups
                 IUserMemberOfCollectionWithReferencesPage groups = await tenant.GraphService.Users[user.Id].MemberOf.Request().GetAsync().ConfigureAwait(false);
-                bool morePages = groups?.Count > 0;
-                while (morePages)
+                if (groups != null)
                 {
-                    foreach (Group group in groups.OfType<Group>())
+                    bool morePages = groups.Count > 0;
+                    while (morePages)
                     {
-                        string groupClaimValue = GetPropertyValue(group, groupClaimTypeConfig.DirectoryObjectProperty.ToString());
-                        claims.Add(CreateClaim(groupClaimTypeConfig.ClaimType, groupClaimValue, groupClaimTypeConfig.ClaimValueType));
-                    }
-                    if (groups.NextPageRequest != null)
-                    {
-                        groups = await groups.NextPageRequest.GetAsync().ConfigureAwait(false);
-                    }
-                    else
-                    {
-                        morePages = false;
+                        foreach (Group group in groups.OfType<Group>())
+                        {
+                            string groupClaimValue = GetPropertyValue(group, groupClaimTypeConfig.DirectoryObjectProperty.ToString());
+                            claims.Add(CreateClaim(groupClaimTypeConfig.ClaimType, groupClaimValue, groupClaimTypeConfig.ClaimValueType));
+                        }
+                        if (groups.NextPageRequest != null)
+                        {
+                            groups = await groups.NextPageRequest.GetAsync().ConfigureAwait(false);
+                        }
+                        else
+                        {
+                            morePages = false;
+                        }
                     }
                 }
             }
@@ -799,8 +816,7 @@ namespace azurecp
             if (entityTypes.Contains(SPClaimEntityTypes.User)) { aadEntityTypes.Add(DirectoryObjectType.User); }
             if (entityTypes.Contains(ClaimsProviderConstants.GroupClaimEntityType)) { aadEntityTypes.Add(DirectoryObjectType.Group); }
 
-            if (!Initialize(context, entityTypes))
-                return;
+            if (!Initialize(context, entityTypes)) { return; }
 
             this.Lock_Config.EnterReadLock();
             try
@@ -1305,7 +1321,7 @@ namespace azurecp
                         }
                         IGraphServiceUsersCollectionPage users = await tenant.GraphService.Users.Request().Select(tenant.UserSelect).Filter(tenant.UserFilter).Top(currentContext.MaxCount).GetAsync().ConfigureAwait(false);
                         ClaimsProviderLogging.Log($"[{ProviderInternalName}] Query to tenant '{tenant.TenantName}' returned {users.Count} user(s) with filter \"{HttpUtility.UrlDecode(tenant.UserFilter)}\"", TraceSeverity.VerboseEx, EventSeverity.Information, TraceCategory.Lookup);
-                        if (users?.Count > 0)
+                        if (users != null && users.Count > 0)
                         {
                             do
                             {
@@ -1335,7 +1351,7 @@ namespace azurecp
                         if (String.IsNullOrEmpty(tenant.GroupFilter)) return;
                         IGraphServiceGroupsCollectionPage groups = await tenant.GraphService.Groups.Request().Select(tenant.GroupSelect).Filter(tenant.GroupFilter).Top(currentContext.MaxCount).GetAsync().ConfigureAwait(false);
                         ClaimsProviderLogging.Log($"[{ProviderInternalName}] Query to tenant '{tenant.TenantName}' returned {groups.Count} group(s) with filter \"{HttpUtility.UrlDecode(tenant.GroupFilter)}\"", TraceSeverity.VerboseEx, EventSeverity.Information, TraceCategory.Lookup);
-                        if (groups?.Count > 0)
+                        if (groups != null && groups.Count > 0)
                         {
                             do
                             {
@@ -1650,8 +1666,19 @@ namespace azurecp
 
     public class AzureADResult
     {
-        public List<DirectoryObject> UsersAndGroups;
-        public List<string> DomainsRegisteredInAzureADTenant;
+        public List<DirectoryObject> UsersAndGroups
+        {
+            get => _UsersAndGroups;
+            set => _UsersAndGroups = value;
+        }
+        private List<DirectoryObject> _UsersAndGroups;
+
+        public List<string> DomainsRegisteredInAzureADTenant
+        {
+            get => _DomainsRegisteredInAzureADTenant;
+            set => _DomainsRegisteredInAzureADTenant = value;
+        }
+        private List<string> _DomainsRegisteredInAzureADTenant;
         //public string TenantName;
 
         public AzureADResult()
@@ -1667,7 +1694,7 @@ namespace azurecp
     /// </summary>
     public class AzureCPResult
     {
-        public DirectoryObject UserOrGroupResult;
+        public readonly DirectoryObject UserOrGroupResult;
         public ClaimTypeConfig ClaimTypeConfig;
         public PickerEntity PickerEntity;
         public string PermissionValue;

@@ -170,7 +170,7 @@ public class UnitTestsHelper
     /// <param name="expectedClaimValue"></param>
     public static void TestSearchOperation(string inputValue, int expectedCount, string expectedClaimValue)
     {
-        var entityTypes = new string[] { "User", "SecGroup", "SharePointGroup", "System", "FormsRole" };
+        var entityTypes = new [] { "User", "SecGroup", "SharePointGroup", "System", "FormsRole" };
 
         SPProviderHierarchyTree providerResults = ClaimsProvider.Search(TestSiteCollUri, entityTypes, inputValue, null, 30);
         List<PickerEntity> entities = new List<PickerEntity>();
@@ -213,7 +213,7 @@ public class UnitTestsHelper
 
     public static void TestValidationOperation(SPClaim inputClaim, bool shouldValidate, string expectedClaimValue)
     {
-        var entityTypes = new string[] { "User" };
+        var entityTypes = new [] { "User" };
 
         PickerEntity[] entities = ClaimsProvider.Resolve(TestSiteCollUri, entityTypes, inputClaim);
 

@@ -728,12 +728,22 @@ namespace azurecp
         /// <summary>
         /// Set only if request is a validation or an augmentation, to the incoming entity provided by SharePoint
         /// </summary>
-        public SPClaim IncomingEntity;
+        public SPClaim IncomingEntity
+        {
+            get => _IncomingEntity;
+            set => _IncomingEntity = value;
+        }
+        private SPClaim _IncomingEntity;
 
         /// <summary>
         /// User submitting the query in the poeple picker, retrieved from HttpContext. Can be null
         /// </summary>
-        public SPClaim UserInHttpContext;
+        public SPClaim UserInHttpContext
+        {
+            get => _UserInHttpContext;
+            set => _UserInHttpContext = value;
+        }
+        private SPClaim _UserInHttpContext;
 
         /// <summary>
         /// Uri provided by SharePoint
@@ -743,9 +753,21 @@ namespace azurecp
         /// <summary>
         /// EntityTypes expected by SharePoint in the entities returned
         /// </summary>
-        public DirectoryObjectType[] DirectoryObjectTypes;
+        public DirectoryObjectType[] DirectoryObjectTypes
+        {
+            get => _DirectoryObjectTypes;
+            set => _DirectoryObjectTypes = value;
+        }
+        private DirectoryObjectType[] _DirectoryObjectTypes;
+
         public string HierarchyNodeID;
-        public int MaxCount;
+
+        public int MaxCount
+        {
+            get => _MaxCount;
+            set => _MaxCount = value;
+        }
+        private int _MaxCount;
 
         /// <summary>
         /// If request is a validation: contains the value of the SPClaim. If request is a search: contains the input

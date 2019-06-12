@@ -14,19 +14,16 @@ namespace azurecp.ControlTemplates
     public abstract class AzureCPUserControl : UserControl
     {
         /// <summary>
-        /// This is an attribute that must be set in the markup code, with the name of the claims provider
+        /// This member is used in the markup code and cannot be made as a property
         /// </summary>
         public string ClaimsProviderName;
 
         /// <summary>
-        /// This is an attribute that must be set in the markup code, with the name of the persisted object that holds the configuration
+        /// This member is used in the markup code and cannot be made as a property
         /// </summary>
         public string PersistedObjectName;
 
         private Guid _PersistedObjectID;
-        /// <summary>
-        /// This is an attribute that must be set in the markup code, with the GUID of the persisted object that holds the configuration
-        /// </summary>
         public string PersistedObjectID
         {
             get
@@ -194,7 +191,7 @@ namespace azurecp.ControlTemplates
             PersistedObject.ClaimTypes.SPTrust = CurrentTrustedLoginProvider;
             if (IdentityCTConfig == null && Status == ConfigStatus.AllGood)
             {
-                IdentityCTConfig = this.IdentityCTConfig = PersistedObject.ClaimTypes.FirstOrDefault(x => String.Equals(CurrentTrustedLoginProvider.IdentityClaimTypeInformation.MappedClaimType, x.ClaimType, StringComparison.InvariantCultureIgnoreCase) && !x.UseMainClaimTypeOfDirectoryObject) as IdentityClaimTypeConfig;
+                IdentityCTConfig = PersistedObject.ClaimTypes.FirstOrDefault(x => String.Equals(CurrentTrustedLoginProvider.IdentityClaimTypeInformation.MappedClaimType, x.ClaimType, StringComparison.InvariantCultureIgnoreCase) && !x.UseMainClaimTypeOfDirectoryObject) as IdentityClaimTypeConfig;
                 if (IdentityCTConfig == null)
                 {
                     Status |= ConfigStatus.NoIdentityClaimType;

@@ -14,7 +14,7 @@ namespace azurecp
     [System.Runtime.InteropServices.GuidAttribute("3DD2C709-C860-4A20-8AF2-0FDDAA9C406B")]
     public class ClaimsProviderLogging : SPDiagnosticsServiceBase
     {
-        public static string DiagnosticsAreaName = "AzureCP";
+        public readonly static string DiagnosticsAreaName = "AzureCP";
 
         public enum TraceCategory
         {
