@@ -335,14 +335,6 @@ namespace azurecp
         /// <param name="configToApply"></param>
         public void ApplyConfiguration(AzureCPConfig configToApply)
         {
-            // Copy non-inherited public fields
-            // This copies persisted field SPTrustName (it doesn't have a corresponding property).
-            // Private fields should not be retrieved here, since their corresponding properties are retrieved just after.
-            FieldInfo[] fieldsToCopy = this.GetType().GetFields(BindingFlags.Public | BindingFlags.Instance | BindingFlags.DeclaredOnly);
-            foreach (FieldInfo field in fieldsToCopy)
-            {
-                field.SetValue(this, field.GetValue(configToApply));
-            }
             // Copy non-inherited public properties
             PropertyInfo[] propertiesToCopy = this.GetType().GetProperties(BindingFlags.Public | BindingFlags.Instance | BindingFlags.DeclaredOnly);
             foreach (PropertyInfo property in propertiesToCopy)
@@ -356,6 +348,9 @@ namespace azurecp
                     }
                 }
             }
+
+            // Member SPTrustName is not exposed through a property, so it must be set explicitly
+            this.SPTrustName = configToApply.SPTrustName;
         }
 
         /// <summary>
@@ -633,50 +628,80 @@ namespace azurecp
 
     public class AzureTenant : SPAutoSerializingObject
     {
+        public Guid Identifier
+        {
+            get => Id;
+            set => Id = value;
+        }
         [Persisted]
-        public Guid Id = Guid.NewGuid();
+        private Guid Id = Guid.NewGuid();
 
         /// <summary>
         /// Name of the tenant, e.g. TENANTNAME.onMicrosoft.com
         /// </summary>
+        public string Name
+        {
+            get => TenantName;
+            set => TenantName = value;
+        }
         [Persisted]
-        public string TenantName;
+        private string TenantName;
 
         /// <summary>
         /// Application ID of the application created in Azure AD tenant to authorize AzureCP
         /// </summary>
+        public string ApplicationId
+        {
+            get => ClientId;
+            set => ClientId = value;
+        }
         [Persisted]
-        public string ClientId;
+        private string ClientId;
 
         /// <summary>
         /// Password of the application
         /// </summary>
+        public string ApplicationSecret
+        {
+            get => ClientSecret;
+            set => ClientSecret = value;
+        }
         [Persisted]
         public string ClientSecret;
 
         /// <summary>
         /// Set to true to return only Member users from this tenant
         /// </summary>
+        public bool ExcludeMembers
+        {
+            get => ExcludeMemberUsers;
+            set => ExcludeMemberUsers = value;
+        }
         [Persisted]
         public bool ExcludeMemberUsers = false;
 
         /// <summary>
         /// Set to true to return only Guest users from this tenant
         /// </summary>
+        public bool ExcludeGuests
+        {
+            get => ExcludeGuestUsers;
+            set => ExcludeGuestUsers = value;
+        }
         [Persisted]
         public bool ExcludeGuestUsers = false;
 
         /// <summary>
         /// Instance of the IAuthenticationProvider class for this specific Azure AD tenant
         /// </summary>
-        private AADAppOnlyAuthenticationProvider AuthenticationProvider;
+        private AADAppOnlyAuthenticationProvider AuthenticationProvider { get; set; }
 
-        public GraphServiceClient GraphService;
+        public GraphServiceClient GraphService { get; set; }
 
-        public string UserFilter;
-        public string GroupFilter;
-        public string UserSelect;
-        public string GroupSelect;
+        public string UserFilter { get; set; }
+        public string GroupFilter { get; set; }
+        public string UserSelect { get; set; }
+        public string GroupSelect { get; set; }
 
         public AzureTenant()
         {
@@ -689,12 +714,12 @@ namespace azurecp
         {
             try
             {
-                this.AuthenticationProvider = new AADAppOnlyAuthenticationProvider(ClaimsProviderConstants.AuthorityUriTemplate, this.TenantName, this.ClientId, this.ClientSecret, claimsProviderName, timeout);
+                this.AuthenticationProvider = new AADAppOnlyAuthenticationProvider(ClaimsProviderConstants.AuthorityUriTemplate, this.Name, this.ApplicationId, this.ApplicationSecret, claimsProviderName, timeout);
                 this.GraphService = new GraphServiceClient(this.AuthenticationProvider);
             }
             catch (Exception ex)
             {
-                ClaimsProviderLogging.LogException(AzureCP._ProviderInternalName, $"while setting client context for tenant '{this.TenantName}'.", TraceCategory.Core, ex);
+                ClaimsProviderLogging.LogException(AzureCP._ProviderInternalName, $"while setting client context for tenant '{this.Name}'.", TraceCategory.Core, ex);
             }
         }
 
@@ -705,11 +730,16 @@ namespace azurecp
         internal AzureTenant CopyConfiguration()
         {
             AzureTenant copy = new AzureTenant();
-            // Copy non-inherited public fields
-            FieldInfo[] fieldsToCopy = this.GetType().GetFields(BindingFlags.Public | BindingFlags.Instance | BindingFlags.DeclaredOnly);
-            foreach (FieldInfo field in fieldsToCopy)
+            // Copy non-inherited public properties
+            PropertyInfo[] propertiesToCopy = this.GetType().GetProperties(BindingFlags.Public | BindingFlags.Instance | BindingFlags.DeclaredOnly);
+            foreach (PropertyInfo property in propertiesToCopy)
             {
-                field.SetValue(copy, field.GetValue(this));
+                if (property.CanWrite)
+                {
+                    object value = property.GetValue(this);
+                    if (value != null)
+                        property.SetValue(copy, value);
+                }
             }
             return copy;
         }
@@ -723,7 +753,12 @@ namespace azurecp
         /// <summary>
         /// Indicates what kind of operation SharePoint is requesting
         /// </summary>
-        public OperationType OperationType;
+        public OperationType OperationType
+        {
+            get => _OperationType;
+            set => _OperationType = value;
+        }
+        private OperationType _OperationType;
 
         /// <summary>
         /// Set only if request is a validation or an augmentation, to the incoming entity provided by SharePoint
@@ -748,7 +783,12 @@ namespace azurecp
         /// <summary>
         /// Uri provided by SharePoint
         /// </summary>
-        public Uri UriContext;
+        public Uri UriContext
+        {
+            get => _UriContext;
+            set => _UriContext = value;
+        }
+        private Uri _UriContext;
 
         /// <summary>
         /// EntityTypes expected by SharePoint in the entities returned
@@ -760,7 +800,12 @@ namespace azurecp
         }
         private DirectoryObjectType[] _DirectoryObjectTypes;
 
-        public string HierarchyNodeID;
+        public string HierarchyNodeID
+        {
+            get => _HierarchyNodeID;
+            set => _HierarchyNodeID = value;
+        }
+        private string _HierarchyNodeID;
 
         public int MaxCount
         {
@@ -772,23 +817,49 @@ namespace azurecp
         /// <summary>
         /// If request is a validation: contains the value of the SPClaim. If request is a search: contains the input
         /// </summary>
-        public string Input;
-        public bool InputHasKeyword;
+        public string Input
+        {
+            get => _Input;
+            set => _Input = value;
+        }
+        private string _Input;
+
+        public bool InputHasKeyword
+        {
+            get => _InputHasKeyword;
+            set => _InputHasKeyword = value;
+        }
+        private bool _InputHasKeyword;
 
         /// <summary>
         /// Indicates if search operation should return only results that exactly match the Input
         /// </summary>
-        public bool ExactSearch;
+        public bool ExactSearch
+        {
+            get => _ExactSearch;
+            set => _ExactSearch = value;
+        }
+        private bool _ExactSearch;
 
         /// <summary>
         /// Set only if request is a validation or an augmentation, to the ClaimTypeConfig that matches the ClaimType of the incoming entity
         /// </summary>
-        public ClaimTypeConfig IncomingEntityClaimTypeConfig;
+        public ClaimTypeConfig IncomingEntityClaimTypeConfig
+        {
+            get => _IncomingEntityClaimTypeConfig;
+            set => _IncomingEntityClaimTypeConfig = value;
+        }
+        private ClaimTypeConfig _IncomingEntityClaimTypeConfig;
 
         /// <summary>
         /// Contains the relevant list of ClaimTypeConfig for every type of request. In case of validation or augmentation, it will contain only 1 item.
         /// </summary>
-        public List<ClaimTypeConfig> CurrentClaimTypeConfigList;
+        public List<ClaimTypeConfig> CurrentClaimTypeConfigList
+        {
+            get => _CurrentClaimTypeConfigList;
+            set => _CurrentClaimTypeConfigList = value;
+        }
+        private List<ClaimTypeConfig> _CurrentClaimTypeConfigList;
 
         public OperationContext(IAzureCPConfiguration currentConfiguration, OperationType currentRequestType, List<ClaimTypeConfig> processedClaimTypeConfigList, string input, SPClaim incomingEntity, Uri context, string[] entityTypes, string hierarchyNodeID, int maxCount)
         {

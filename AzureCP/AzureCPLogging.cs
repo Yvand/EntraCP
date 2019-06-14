@@ -135,7 +135,9 @@ namespace azurecp
                 var LogSvc = SPDiagnosticsServiceBase.GetLocal<ClaimsProviderLogging>();
                 // if the Logging Service is registered, just return it.
                 if (LogSvc != null)
+                {
                     return LogSvc;
+                }
 
                 ClaimsProviderLogging svc = null;
                 SPSecurity.RunWithElevatedPrivileges(delegate ()
@@ -194,7 +196,7 @@ namespace azurecp
             {
                 return new SPDiagnosticsArea(
                     DiagnosticsAreaName,
-                    new List<SPDiagnosticsCategory>()
+                    new List<SPDiagnosticsCategory>
                     {
                         CreateCategory(TraceCategory.Claims_Picking),
                         CreateCategory(TraceCategory.Configuration),

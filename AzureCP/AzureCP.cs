@@ -1276,7 +1276,7 @@ namespace azurecp
                 }
                 catch (Exception ex)
                 {
-                    ClaimsProviderLogging.LogException(ProviderInternalName, $"in QueryAzureADTenantsAsync while querying tenant '{tenant.TenantName}'", TraceCategory.Lookup, ex);
+                    ClaimsProviderLogging.LogException(ProviderInternalName, $"in QueryAzureADTenantsAsync while querying tenant '{tenant.Name}'", TraceCategory.Lookup, ex);
                 }
                 finally
                 {
@@ -1284,11 +1284,11 @@ namespace azurecp
                 }
                 if (tenantResult != null)
                 {
-                    ClaimsProviderLogging.Log($"[{ProviderInternalName}] Got {tenantResult.UsersAndGroups.Count().ToString()} users/groups in {timer.ElapsedMilliseconds.ToString()} ms from '{tenant.TenantName}' with input '{currentContext.Input}'", TraceSeverity.Medium, EventSeverity.Information, TraceCategory.Lookup);
+                    ClaimsProviderLogging.Log($"[{ProviderInternalName}] Got {tenantResult.UsersAndGroups.Count().ToString()} users/groups in {timer.ElapsedMilliseconds.ToString()} ms from '{tenant.Name}' with input '{currentContext.Input}'", TraceSeverity.Medium, EventSeverity.Information, TraceCategory.Lookup);
                 }
                 else
                 {
-                    ClaimsProviderLogging.Log($"[{ProviderInternalName}] Got no result from '{tenant.TenantName}' with input '{currentContext.Input}', search took {timer.ElapsedMilliseconds.ToString()} ms", TraceSeverity.Medium, EventSeverity.Information, TraceCategory.Lookup);
+                    ClaimsProviderLogging.Log($"[{ProviderInternalName}] Got no result from '{tenant.Name}' with input '{currentContext.Input}', search took {timer.ElapsedMilliseconds.ToString()} ms", TraceSeverity.Medium, EventSeverity.Information, TraceCategory.Lookup);
                 }
                 return tenantResult;
             });
@@ -1302,14 +1302,14 @@ namespace azurecp
         {
             if (tenant.UserFilter == null && tenant.GroupFilter == null) { return null; }
 
-            ClaimsProviderLogging.Log($"[{ProviderInternalName}] Querying Azure AD tenant '{tenant.TenantName}' for users/groups/domains, with input '{currentContext.Input}'", TraceSeverity.VerboseEx, EventSeverity.Information, TraceCategory.Lookup);
+            ClaimsProviderLogging.Log($"[{ProviderInternalName}] Querying Azure AD tenant '{tenant.Name}' for users/groups/domains, with input '{currentContext.Input}'", TraceSeverity.VerboseEx, EventSeverity.Information, TraceCategory.Lookup);
             AzureADResult tenantResults = new AzureADResult();
             bool tryAgain = false;
             object lockAddResultToCollection = new object();
             CancellationTokenSource cts = new CancellationTokenSource(this.CurrentConfiguration.Timeout);
             try
             {
-                using (new SPMonitoredScope($"[{ProviderInternalName}] Querying Azure AD tenant '{tenant.TenantName}' for users/groups/domains, with input '{currentContext.Input}'", 1000))
+                using (new SPMonitoredScope($"[{ProviderInternalName}] Querying Azure AD tenant '{tenant.Name}' for users/groups/domains, with input '{currentContext.Input}'", 1000))
                 {
                     // No need to lock here: as per https://stackoverflow.com/questions/49108179/need-advice-on-getting-access-token-with-multiple-task-in-microsoft-graph:
                     // The Graph client object is thread-safe and re-entrant
@@ -1320,7 +1320,7 @@ namespace azurecp
                             return;
                         }
                         IGraphServiceUsersCollectionPage users = await tenant.GraphService.Users.Request().Select(tenant.UserSelect).Filter(tenant.UserFilter).Top(currentContext.MaxCount).GetAsync().ConfigureAwait(false);
-                        ClaimsProviderLogging.Log($"[{ProviderInternalName}] Query to tenant '{tenant.TenantName}' returned {users.Count} user(s) with filter \"{HttpUtility.UrlDecode(tenant.UserFilter)}\"", TraceSeverity.VerboseEx, EventSeverity.Information, TraceCategory.Lookup);
+                        ClaimsProviderLogging.Log($"[{ProviderInternalName}] Query to tenant '{tenant.Name}' returned {users.Count} user(s) with filter \"{HttpUtility.UrlDecode(tenant.UserFilter)}\"", TraceSeverity.VerboseEx, EventSeverity.Information, TraceCategory.Lookup);
                         if (users != null && users.Count > 0)
                         {
                             do
@@ -1328,11 +1328,11 @@ namespace azurecp
                                 lock (lockAddResultToCollection)
                                 {
                                     IList<User> usersInCurrentPage = users.CurrentPage;
-                                    if (tenant.ExcludeMemberUsers)
+                                    if (tenant.ExcludeMembers)
                                     {
                                         usersInCurrentPage = users.CurrentPage.Where(x => !String.Equals(x.UserType, ClaimsProviderConstants.MEMBER_USERTYPE, StringComparison.InvariantCultureIgnoreCase)).ToList<User>();
                                     }
-                                    else if (tenant.ExcludeGuestUsers)
+                                    else if (tenant.ExcludeGuests)
                                     {
                                         usersInCurrentPage = users.CurrentPage.Where(x => !String.Equals(x.UserType, ClaimsProviderConstants.GUEST_USERTYPE, StringComparison.InvariantCultureIgnoreCase)).ToList<User>();
                                     }
@@ -1350,7 +1350,7 @@ namespace azurecp
                     {
                         if (String.IsNullOrEmpty(tenant.GroupFilter)) return;
                         IGraphServiceGroupsCollectionPage groups = await tenant.GraphService.Groups.Request().Select(tenant.GroupSelect).Filter(tenant.GroupFilter).Top(currentContext.MaxCount).GetAsync().ConfigureAwait(false);
-                        ClaimsProviderLogging.Log($"[{ProviderInternalName}] Query to tenant '{tenant.TenantName}' returned {groups.Count} group(s) with filter \"{HttpUtility.UrlDecode(tenant.GroupFilter)}\"", TraceSeverity.VerboseEx, EventSeverity.Information, TraceCategory.Lookup);
+                        ClaimsProviderLogging.Log($"[{ProviderInternalName}] Query to tenant '{tenant.Name}' returned {groups.Count} group(s) with filter \"{HttpUtility.UrlDecode(tenant.GroupFilter)}\"", TraceSeverity.VerboseEx, EventSeverity.Information, TraceCategory.Lookup);
                         if (groups != null && groups.Count > 0)
                         {
                             do
@@ -1386,7 +1386,7 @@ namespace azurecp
                         //ClaimsProviderLogging.Log($"[{ProviderInternalName}] DEBUG: Exceeded Timeout on Azure AD tenant '{tenant.TenantName}', cancelling token.", TraceSeverity.Unexpected, EventSeverity.Error, TraceCategory.Lookup);
                         cts.Cancel();
                         // For some reason, Cancel() doesn't make Task.WaitAll to throw an OperationCanceledException
-                        ClaimsProviderLogging.Log($"[{ProviderInternalName}] Queries on Azure AD tenant '{tenant.TenantName}' exceeded Timeout of {this.CurrentConfiguration.Timeout} ms and were cancelled.", TraceSeverity.Unexpected, EventSeverity.Error, TraceCategory.Lookup);
+                        ClaimsProviderLogging.Log($"[{ProviderInternalName}] Queries on Azure AD tenant '{tenant.Name}' exceeded Timeout of {this.CurrentConfiguration.Timeout} ms and were cancelled.", TraceSeverity.Unexpected, EventSeverity.Error, TraceCategory.Lookup);
                         tryAgain = true;
                     }
                     //await Task.WhenAll(userQueryTask, groupQueryTask).ConfigureAwait(false);
@@ -1394,18 +1394,18 @@ namespace azurecp
             }
             catch (OperationCanceledException)
             {
-                ClaimsProviderLogging.Log($"[{ProviderInternalName}] Queries on Azure AD tenant '{tenant.TenantName}' exceeded timeout of {this.CurrentConfiguration.Timeout} ms and were cancelled.", TraceSeverity.Unexpected, EventSeverity.Error, TraceCategory.Lookup);
+                ClaimsProviderLogging.Log($"[{ProviderInternalName}] Queries on Azure AD tenant '{tenant.Name}' exceeded timeout of {this.CurrentConfiguration.Timeout} ms and were cancelled.", TraceSeverity.Unexpected, EventSeverity.Error, TraceCategory.Lookup);
                 tryAgain = true;
             }
             catch (AggregateException ex)
             {
                 // Task.WaitAll throws an AggregateException, which contains all exceptions thrown by tasks it waited on
-                ClaimsProviderLogging.LogException(ProviderInternalName, $"while querying Azure AD tenant '{tenant.TenantName}'", TraceCategory.Lookup, ex);
+                ClaimsProviderLogging.LogException(ProviderInternalName, $"while querying Azure AD tenant '{tenant.Name}'", TraceCategory.Lookup, ex);
                 tryAgain = true;
             }
             finally
             {
-                ClaimsProviderLogging.LogDebug($"[{ProviderInternalName}] Finished queries on Azure AD tenant '{tenant.TenantName}'");
+                ClaimsProviderLogging.LogDebug($"[{ProviderInternalName}] Finished queries on Azure AD tenant '{tenant.Name}'");
                 cts.Dispose();
             }
 
@@ -1413,7 +1413,7 @@ namespace azurecp
 
             if (firstAttempt && tryAgain)
             {
-                ClaimsProviderLogging.Log($"[{ProviderInternalName}] Doing new attempt to query Azure AD tenant '{tenant.TenantName}'...",
+                ClaimsProviderLogging.Log($"[{ProviderInternalName}] Doing new attempt to query Azure AD tenant '{tenant.Name}'...",
                     TraceSeverity.Medium, EventSeverity.Information, TraceCategory.Lookup);
                 tenantResults = await QueryAzureADTenantAsync(currentContext, tenant, false).ConfigureAwait(false);
             }

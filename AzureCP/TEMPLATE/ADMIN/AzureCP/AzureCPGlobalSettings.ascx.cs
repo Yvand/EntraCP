@@ -52,7 +52,7 @@ namespace azurecp.ControlTemplates
                 PropertyCollectionBinder pcb = new PropertyCollectionBinder();
                 foreach (AzureTenant tenant in PersistedObject.AzureTenants)
                 {
-                    pcb.AddRow(tenant.Id, tenant.TenantName, tenant.ClientId, tenant.ExcludeMemberUsers);
+                    pcb.AddRow(tenant.Identifier, tenant.Name, tenant.ApplicationId, tenant.ExcludeMembers);
                 }
                 pcb.BindGrid(grdAzureTenants);
             }
@@ -102,12 +102,12 @@ namespace azurecp.ControlTemplates
 
             GridViewRow rowToDelete = grdAzureTenants.Rows[e.RowIndex];
             Guid Id = new Guid(rowToDelete.Cells[0].Text);
-            AzureTenant tenantToRemove = PersistedObject.AzureTenants.FirstOrDefault(x => x.Id == Id);
+            AzureTenant tenantToRemove = PersistedObject.AzureTenants.FirstOrDefault(x => x.Identifier == Id);
             if (tenantToRemove != null)
             {
                 PersistedObject.AzureTenants.Remove(tenantToRemove);
                 CommitChanges();
-                ClaimsProviderLogging.Log($"Azure AD tenant '{tenantToRemove.TenantName}' was successfully removed from configuration '{PersistedObjectName}'", TraceSeverity.Medium, EventSeverity.Information, TraceCategory.Configuration);
+                ClaimsProviderLogging.Log($"Azure AD tenant '{tenantToRemove.Name}' was successfully removed from configuration '{PersistedObjectName}'", TraceSeverity.Medium, EventSeverity.Information, TraceCategory.Configuration);
                 PopulateConnectionsGrid();
             }
         }
@@ -222,10 +222,10 @@ namespace azurecp.ControlTemplates
             this.PersistedObject.AzureTenants.Add(
                 new AzureTenant
                 {
-                    TenantName = this.TxtTenantName.Text,
-                    ClientId = TxtClientId.Text,
-                    ClientSecret = this.TxtClientSecret.Text,
-                    ExcludeMemberUsers = this.ChkMemberUserTypeOnly.Checked,
+                    Name = this.TxtTenantName.Text,
+                    ApplicationId = TxtClientId.Text,
+                    ApplicationSecret = this.TxtClientSecret.Text,
+                    ExcludeMembers = this.ChkMemberUserTypeOnly.Checked,
                 });
 
             CommitChanges();
