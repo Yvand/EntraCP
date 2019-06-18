@@ -738,7 +738,9 @@ namespace azurecp
                 {
                     object value = property.GetValue(this);
                     if (value != null)
+                    {
                         property.SetValue(copy, value);
+                    }
                 }
             }
             return copy;
