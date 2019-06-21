@@ -2,9 +2,16 @@
 
 ## Unreleased
 
-* Update NuGet package Microsoft.Graph to 1.14
-* Use reflection to copy configuration objects, whenever possible
-* Add mapping to populate the email of groups
+* Add a default mapping to populate the email of groups
+* Update text in claims mapping page to better explain settings
+* Add an option to return only security-enabled groups
+* Update DevOps build pipelines
+* Improve code quality as per Codacy's static code analysis
+* Update NuGet package Microsoft.Graph to 1.15
+* Update NuGet package Microsoft.IdentityModel.Clients.ActiveDirectory to 5.0.5
+* Update NuGet package NUnit from 3.11 to 3.12
+* Make most of public members privates and replace them with public properties, to meet best practices
+* Use reflection to copy configuration objects, whenever possible, to avoid misses when new properties are added
 
 ## AzureCP 14.0.20190307.660 enhancements & bug-fixes - Published in March 13, 2019
 
