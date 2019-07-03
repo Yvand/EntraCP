@@ -1,6 +1,6 @@
 # Change log for AzureCP
 
-## Unreleased
+## AzureCP 15.0.20190621.906 enhancements & bug-fixes - Published in June 21, 2019
 
 * Add a default mapping to populate the email of groups
 * Update text in claims mapping page to better explain settings
