@@ -5,6 +5,7 @@ using System.Collections;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Linq;
+using System.Reflection;
 using WIF = System.Security.Claims;
 
 namespace azurecp
@@ -160,46 +161,48 @@ namespace azurecp
         [Persisted]
         private bool _FilterExactMatchOnly = false;
 
-        public ClaimTypeConfig CopyPersistedProperties()
+        /// <summary>
+        /// Returns a copy of the current object. This copy does not have any member of the base SharePoint base class set
+        /// </summary>
+        /// <returns></returns>
+        public ClaimTypeConfig CopyConfiguration()
         {
             ClaimTypeConfig copy;
             if (this is IdentityClaimTypeConfig)
             {
-                copy = new IdentityClaimTypeConfig()
+                copy = new IdentityClaimTypeConfig();
+                FieldInfo[] fieldsToCopyFromInheritedClass = typeof(IdentityClaimTypeConfig).GetFields(BindingFlags.NonPublic | BindingFlags.Instance | BindingFlags.DeclaredOnly);
+                foreach (FieldInfo field in fieldsToCopyFromInheritedClass)
                 {
-                    DirectoryObjectPropertyForGuestUsers = ((IdentityClaimTypeConfig)this).DirectoryObjectPropertyForGuestUsers
-                };
+                    field.SetValue(copy, field.GetValue(this));
+                }
             }
             else
             {
                 copy = new ClaimTypeConfig();
             }
 
-            copy._ClaimType = this._ClaimType;
-            copy._DirectoryObjectProperty = this._DirectoryObjectProperty;
-            copy._DirectoryObjectType = this._DirectoryObjectType;
-            copy._EntityDataKey = this._EntityDataKey;
-            copy._ClaimValueType = this._ClaimValueType;
-            copy._CreateAsIdentityClaim = this._CreateAsIdentityClaim;
-            copy._PrefixToBypassLookup = this._PrefixToBypassLookup;
-            copy._DirectoryObjectPropertyToShowAsDisplayText = this._DirectoryObjectPropertyToShowAsDisplayText;
-            copy._FilterExactMatchOnly = this._FilterExactMatchOnly;
-            copy._ClaimTypeDisplayName = this._ClaimTypeDisplayName;
+            // Copy non-inherited private fields
+            FieldInfo[] fieldsToCopy = typeof(ClaimTypeConfig).GetFields(BindingFlags.NonPublic | BindingFlags.Instance | BindingFlags.DeclaredOnly);
+            foreach (FieldInfo field in fieldsToCopy)
+            {
+                field.SetValue(copy, field.GetValue(this));
+            }
             return copy;
         }
 
-        internal void SetFromObject(ClaimTypeConfig objectToCopy)
+        /// <summary>
+        /// Apply configuration in parameter to current object. It does not copy SharePoint base class members
+        /// </summary>
+        /// <param name="configToApply"></param>
+        internal void ApplyConfiguration(ClaimTypeConfig configToApply)
         {
-            _ClaimType = objectToCopy._ClaimType;
-            _DirectoryObjectProperty = objectToCopy._DirectoryObjectProperty;
-            _DirectoryObjectType = objectToCopy._DirectoryObjectType;
-            _EntityDataKey = objectToCopy._EntityDataKey;
-            _ClaimValueType = objectToCopy._ClaimValueType;
-            _CreateAsIdentityClaim = objectToCopy._CreateAsIdentityClaim;
-            _PrefixToBypassLookup = objectToCopy._PrefixToBypassLookup;
-            _DirectoryObjectPropertyToShowAsDisplayText = objectToCopy._DirectoryObjectPropertyToShowAsDisplayText;
-            _FilterExactMatchOnly = objectToCopy._FilterExactMatchOnly;
-            _ClaimTypeDisplayName = objectToCopy._ClaimTypeDisplayName;
+            // Copy non-inherited private fields
+            FieldInfo[] fieldsToCopy = this.GetType().GetFields(BindingFlags.NonPublic | BindingFlags.Instance | BindingFlags.DeclaredOnly);
+            foreach (FieldInfo field in fieldsToCopy)
+            {
+                field.SetValue(this, field.GetValue(configToApply));
+            }
         }
 
         public bool Equals(ClaimTypeConfig other)
@@ -246,7 +249,12 @@ namespace azurecp
         /// <summary>
         /// If set, more checks can be done when collection is changed
         /// </summary>
-        public SPTrustedLoginProvider SPTrust;
+        public SPTrustedLoginProvider SPTrust
+        {
+            get => _SPTrust;
+            set => _SPTrust = value;
+        }
+        private SPTrustedLoginProvider _SPTrust;
 
         public ClaimTypeConfigCollection()
         {
@@ -308,9 +316,13 @@ namespace azurecp
             if (Contains(item))
             {
                 if (String.IsNullOrEmpty(item.ClaimType))
+                {
                     throw new InvalidOperationException($"This configuration with DirectoryObjectProperty '{item.DirectoryObjectProperty}' and EntityType '{item.EntityType}' already exists in the collection");
+                }
                 else
+                {
                     throw new InvalidOperationException($"This configuration with claim type '{item.ClaimType}' already exists in the collection");
+                }
             }
 
             if (ClaimsProviderConstants.EnforceOnly1ClaimTypeForGroup && item.EntityType == DirectoryObjectType.Group)
@@ -354,8 +366,8 @@ namespace azurecp
         /// <param name="newItem">New version of ClaimTypeConfig object</param>
         public void Update(string oldClaimType, ClaimTypeConfig newItem)
         {
-            if (String.IsNullOrEmpty(oldClaimType)) throw new ArgumentNullException("oldClaimType");
-            if (newItem == null) throw new ArgumentNullException("newItem");
+            if (String.IsNullOrEmpty(oldClaimType)) { throw new ArgumentNullException("oldClaimType"); }
+            if (newItem == null) { throw new ArgumentNullException("newItem"); }
 
             // If SPTrustedLoginProvider is set, additional checks can be done
             if (SPTrust != null)
@@ -381,12 +393,12 @@ namespace azurecp
             ClaimTypeConfigCollection testUpdateCollection = new ClaimTypeConfigCollection();
             foreach (ClaimTypeConfig curCTConfig in innerCol)
             {
-                testUpdateCollection.Add(curCTConfig.CopyPersistedProperties(), false);
+                testUpdateCollection.Add(curCTConfig.CopyConfiguration(), false);
             }
 
             // Update ClaimTypeConfig in testUpdateCollection
             ClaimTypeConfig ctConfigToUpdate = testUpdateCollection.First(x => String.Equals(x.ClaimType, oldClaimType, StringComparison.InvariantCultureIgnoreCase));
-            ctConfigToUpdate.SetFromObject(newItem);
+            ctConfigToUpdate.ApplyConfiguration(newItem);
 
             // Test change in testUpdateCollection by adding all items in a new temp collection
             ClaimTypeConfigCollection testNewItemCollection = new ClaimTypeConfigCollection();
@@ -397,7 +409,7 @@ namespace azurecp
             }
 
             // No error, current collection can safely be updated
-            innerCol.First(x => String.Equals(x.ClaimType, oldClaimType, StringComparison.InvariantCultureIgnoreCase)).SetFromObject(newItem);
+            innerCol.First(x => String.Equals(x.ClaimType, oldClaimType, StringComparison.InvariantCultureIgnoreCase)).ApplyConfiguration(newItem);
         }
 
         /// <summary>
@@ -407,15 +419,19 @@ namespace azurecp
         /// <returns>True if the identity ClaimTypeConfig was successfully updated</returns>
         public bool UpdateUserIdentifier(AzureADObjectProperty newIdentifier)
         {
-            if (newIdentifier == AzureADObjectProperty.NotSet) throw new ArgumentNullException("newIdentifier");
+            if (newIdentifier == AzureADObjectProperty.NotSet) { throw new ArgumentNullException("newIdentifier"); }
 
             bool identifierUpdated = false;
             IdentityClaimTypeConfig identityClaimType = innerCol.FirstOrDefault(x => x is IdentityClaimTypeConfig) as IdentityClaimTypeConfig;
             if (identityClaimType == null)
+            {
                 return identifierUpdated;
+            }
 
             if (identityClaimType.DirectoryObjectProperty == newIdentifier)
+            {
                 return identifierUpdated;
+            }
 
             // Check if the new DirectoryObjectProperty duplicates an existing item, and delete it if so
             for (int i = 0; i < innerCol.Count; i++)
@@ -428,7 +444,7 @@ namespace azurecp
                     break;  // There can be only 1 potential duplicate
                 }
             }
-            
+
             identityClaimType.DirectoryObjectProperty = newIdentifier;
             identifierUpdated = true;
             return identifierUpdated;
@@ -441,15 +457,19 @@ namespace azurecp
         /// <returns></returns>
         public bool UpdateIdentifierForGuestUsers(AzureADObjectProperty newIdentifier)
         {
-            if (newIdentifier == AzureADObjectProperty.NotSet) throw new ArgumentNullException("newIdentifier");
+            if (newIdentifier == AzureADObjectProperty.NotSet) { throw new ArgumentNullException("newIdentifier"); }
 
             bool identifierUpdated = false;
             IdentityClaimTypeConfig identityClaimType = innerCol.FirstOrDefault(x => x is IdentityClaimTypeConfig) as IdentityClaimTypeConfig;
             if (identityClaimType == null)
+            {
                 return identifierUpdated;
+            }
 
             if (identityClaimType.DirectoryObjectPropertyForGuestUsers == newIdentifier)
+            {
                 return identifierUpdated;
+            }
 
             identityClaimType.DirectoryObjectPropertyForGuestUsers = newIdentifier;
             identifierUpdated = true;
@@ -494,12 +514,9 @@ namespace azurecp
 
         public void CopyTo(ClaimTypeConfig[] array, int arrayIndex)
         {
-            if (array == null)
-                throw new ArgumentNullException("The array cannot be null.");
-            if (arrayIndex < 0)
-                throw new ArgumentOutOfRangeException("The starting array index cannot be negative.");
-            if (Count > array.Length - arrayIndex + 1)
-                throw new ArgumentException("The destination array has fewer elements than the collection.");
+            if (array == null) { throw new ArgumentNullException("The array cannot be null."); }
+            if (arrayIndex < 0) { throw new ArgumentOutOfRangeException("The starting array index cannot be negative."); }
+            if (Count > array.Length - arrayIndex + 1) { throw new ArgumentException("The destination array has fewer elements than the collection."); }
 
             for (int i = 0; i < innerCol.Count; i++)
             {
@@ -509,7 +526,10 @@ namespace azurecp
 
         public bool Remove(ClaimTypeConfig item)
         {
-            if (SPTrust != null && String.Equals(item.ClaimType, SPTrust.IdentityClaimTypeInformation.MappedClaimType, StringComparison.InvariantCultureIgnoreCase)) throw new InvalidOperationException($"Cannot delete claim type \"{item.ClaimType}\" because it is the identity claim type of \"{SPTrust.Name}\"");
+            if (SPTrust != null && String.Equals(item.ClaimType, SPTrust.IdentityClaimTypeInformation.MappedClaimType, StringComparison.InvariantCultureIgnoreCase))
+            {
+                throw new InvalidOperationException($"Cannot delete claim type \"{item.ClaimType}\" because it is the identity claim type of \"{SPTrust.Name}\"");
+            }
 
             bool result = false;
             for (int i = 0; i < innerCol.Count; i++)
@@ -527,8 +547,14 @@ namespace azurecp
 
         public bool Remove(string claimType)
         {
-            if (String.IsNullOrEmpty(claimType)) throw new ArgumentNullException("claimType");
-            if (SPTrust != null && String.Equals(claimType, SPTrust.IdentityClaimTypeInformation.MappedClaimType, StringComparison.InvariantCultureIgnoreCase)) throw new InvalidOperationException($"Cannot delete claim type \"{claimType}\" because it is the identity claim type of \"{SPTrust.Name}\"");
+            if (String.IsNullOrEmpty(claimType))
+            {
+                throw new ArgumentNullException("claimType");
+            }
+            if (SPTrust != null && String.Equals(claimType, SPTrust.IdentityClaimTypeInformation.MappedClaimType, StringComparison.InvariantCultureIgnoreCase))
+            {
+                throw new InvalidOperationException($"Cannot delete claim type \"{claimType}\" because it is the identity claim type of \"{SPTrust.Name}\"");
+            }
 
             bool result = false;
             for (int i = 0; i < innerCol.Count; i++)
@@ -555,7 +581,7 @@ namespace azurecp
 
         public ClaimTypeConfig GetByClaimType(string claimType)
         {
-            if (String.IsNullOrEmpty(claimType)) throw new ArgumentNullException("claimType");
+            if (String.IsNullOrEmpty(claimType)) { throw new ArgumentNullException("claimType"); }
             ClaimTypeConfig ctConfig = innerCol.FirstOrDefault(x => String.Equals(claimType, x.ClaimType, StringComparison.InvariantCultureIgnoreCase));
             return ctConfig;
         }
@@ -593,7 +619,10 @@ namespace azurecp
 
         public void Reset() { curIndex = -1; }
 
-        void IDisposable.Dispose() { }
+        void IDisposable.Dispose()
+        {
+            // Not implemented
+        }
 
         public ClaimTypeConfig Current
         {

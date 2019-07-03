@@ -19,35 +19,35 @@ using System.Text;
 [SetUpFixture]
 public class UnitTestsHelper
 {
-    public static azurecp.AzureCP ClaimsProvider = new azurecp.AzureCP(UnitTestsHelper.ClaimsProviderName);
-    public const string ClaimsProviderName = "AzureCP";
-    public static string ClaimsProviderConfigName = TestContext.Parameters["ClaimsProviderConfigName"];
-    public static Uri TestSiteCollUri;
-    public static string TestSiteRelativePath = $"/sites/{TestContext.Parameters["TestSiteCollectionName"]}";
+    public static readonly azurecp.AzureCP ClaimsProvider = new azurecp.AzureCP(UnitTestsHelper.ClaimsProviderName);
+    public static string ClaimsProviderName => "AzureCP";
+    public static readonly string ClaimsProviderConfigName = TestContext.Parameters["ClaimsProviderConfigName"];
+    private static Uri TestSiteCollUri;
+    public static readonly string TestSiteRelativePath = $"/sites/{TestContext.Parameters["TestSiteCollectionName"]}";
     public const int MaxTime = 50000;
-    public static string FarmAdmin = TestContext.Parameters["FarmAdmin"];
+    public static readonly string FarmAdmin = TestContext.Parameters["FarmAdmin"];
 #if DEBUG
     public const int TestRepeatCount = 5;
 #else
     public const int TestRepeatCount = 20;
 #endif
 
-    public const string RandomClaimType = "http://schemas.yvand.net/ws/claims/random";
-    public const string RandomClaimValue = "IDoNotExist";
-    public const AzureADObjectProperty RandomObjectProperty = AzureADObjectProperty.AccountEnabled;
+    public static string RandomClaimType => "http://schemas.yvand.net/ws/claims/random";
+    public static string RandomClaimValue => "IDoNotExist";
+    public static AzureADObjectProperty RandomObjectProperty => AzureADObjectProperty.AccountEnabled;
 
-    public static string TrustedGroupToAdd_ClaimType = TestContext.Parameters["TrustedGroupToAdd_ClaimType"];
-    public static string TrustedGroupToAdd_ClaimValue = TestContext.Parameters["TrustedGroupToAdd_ClaimValue"];
-    public static SPClaim TrustedGroup = new SPClaim(TrustedGroupToAdd_ClaimType, TrustedGroupToAdd_ClaimValue, ClaimValueTypes.String, SPOriginalIssuers.Format(SPOriginalIssuerType.TrustedProvider, SPTrust.Name));
+    public static readonly string TrustedGroupToAdd_ClaimType = TestContext.Parameters["TrustedGroupToAdd_ClaimType"];
+    public static readonly string TrustedGroupToAdd_ClaimValue = TestContext.Parameters["TrustedGroupToAdd_ClaimValue"];
+    public static readonly SPClaim TrustedGroup = new SPClaim(TrustedGroupToAdd_ClaimType, TrustedGroupToAdd_ClaimValue, ClaimValueTypes.String, SPOriginalIssuers.Format(SPOriginalIssuerType.TrustedProvider, SPTrust.Name));
 
-    public const string GUEST_USERTYPE = "Guest";
-    public const string MEMBER_USERTYPE = "Member";
+    public static string GUEST_USERTYPE => ClaimsProviderConstants.GUEST_USERTYPE;
+    public static string MEMBER_USERTYPE => ClaimsProviderConstants.MEMBER_USERTYPE;
 
-    public static string AzureTenantsJsonFile = TestContext.Parameters["AzureTenantsJsonFile"];
-    public static string DataFile_GuestAccountsUPN_Search = TestContext.Parameters["DataFile_GuestAccountsUPN_Search"];
-    public static string DataFile_GuestAccountsUPN_Validate = TestContext.Parameters["DataFile_GuestAccountsUPN_Validate"];
-    public static string DataFile_AllAccounts_Search = TestContext.Parameters["DataFile_AllAccounts_Search"];
-    public static string DataFile_AllAccounts_Validate = TestContext.Parameters["DataFile_AllAccounts_Validate"];
+    public static readonly string AzureTenantsJsonFile = TestContext.Parameters["AzureTenantsJsonFile"];
+    public static readonly string DataFile_GuestAccountsUPN_Search = TestContext.Parameters["DataFile_GuestAccountsUPN_Search"];
+    public static readonly string DataFile_GuestAccountsUPN_Validate = TestContext.Parameters["DataFile_GuestAccountsUPN_Validate"];
+    public static readonly string DataFile_AllAccounts_Search = TestContext.Parameters["DataFile_AllAccounts_Search"];
+    public static readonly string DataFile_AllAccounts_Validate = TestContext.Parameters["DataFile_AllAccounts_Validate"];
 
     public static SPTrustedLoginProvider SPTrust => SPSecurityTokenServiceManager.Local.TrustedLoginProviders.FirstOrDefault(x => String.Equals(x.ClaimProviderName, UnitTestsHelper.ClaimsProviderName, StringComparison.InvariantCultureIgnoreCase));
 
@@ -71,9 +71,13 @@ public class UnitTestsHelper
         Trace.WriteLine($"{DateTime.Now.ToString("s")} DataFile_GuestAccountsUPN_Validate: {DataFile_GuestAccountsUPN_Validate}");
         Trace.WriteLine($"{DateTime.Now.ToString("s")} TestSiteCollectionName: {TestContext.Parameters["TestSiteCollectionName"]}");
         if (SPTrust == null)
+        {
             Trace.TraceError($"{DateTime.Now.ToString("s")} SPTrust: is null");
+        }
         else
+        {
             Trace.WriteLine($"{DateTime.Now.ToString("s")} SPTrust: {SPTrust.Name}");
+        }
 
         AzureCPConfig config = AzureCPConfig.GetConfiguration(UnitTestsHelper.ClaimsProviderConfigName, UnitTestsHelper.SPTrust.Name);
         if (config == null)
@@ -134,12 +138,14 @@ public class UnitTestsHelper
     }
 
     [OneTimeTearDown]
-    public void Cleanup()
+    public static void Cleanup()
     {
         Trace.WriteLine($"{DateTime.Now.ToString("s")} Integration tests of {ClaimsProviderName} {FileVersionInfo.GetVersionInfo(Assembly.GetAssembly(typeof(azurecp.AzureCP)).Location).FileVersion} finished.");
         Trace.Flush();
         if (logFileListener != null)
+        {
             logFileListener.Dispose();
+        }
     }
 
     public static void InitializeConfiguration(AzureCPConfig config)
@@ -164,7 +170,7 @@ public class UnitTestsHelper
     /// <param name="expectedClaimValue"></param>
     public static void TestSearchOperation(string inputValue, int expectedCount, string expectedClaimValue)
     {
-        string[] entityTypes = new string[] { "User", "SecGroup", "SharePointGroup", "System", "FormsRole" };
+        var entityTypes = new [] { "User", "SecGroup", "SharePointGroup", "System", "FormsRole" };
 
         SPProviderHierarchyTree providerResults = ClaimsProvider.Search(TestSiteCollUri, entityTypes, inputValue, null, 30);
         List<PickerEntity> entities = new List<PickerEntity>();
@@ -198,14 +204,16 @@ public class UnitTestsHelper
         }
 
         if (expectedCount == Int32.MaxValue)
+        {
             expectedCount = entities.Count;
+        }
 
         Assert.AreEqual(expectedCount, entities.Count, $"Input \"{input}\" should have returned {expectedCount} entities, but it returned {entities.Count} instead. {detailedLog.ToString()}");
     }
 
     public static void TestValidationOperation(SPClaim inputClaim, bool shouldValidate, string expectedClaimValue)
     {
-        string[] entityTypes = new string[] { "User" };
+        var entityTypes = new [] { "User" };
 
         PickerEntity[] entities = ClaimsProvider.Resolve(TestSiteCollUri, entityTypes, inputClaim);
 
@@ -226,23 +234,29 @@ public class UnitTestsHelper
 
         bool groupFound = false;
         if (groups != null && groups.Contains(TrustedGroup))
+        {
             groupFound = true;
+        }
 
         if (isMemberOfTrustedGroup)
+        {
             Assert.IsTrue(groupFound, $"Entity \"{claimValue}\" should be member of group \"{TrustedGroupToAdd_ClaimValue}\", but this group was not found in the claims returned by the claims provider.");
+        }
         else
+        {
             Assert.IsFalse(groupFound, $"Entity \"{claimValue}\" should NOT be member of group \"{TrustedGroupToAdd_ClaimValue}\", but this group was found in the claims returned by the claims provider.");
+        }
     }
 }
 
-public class SearchEntityDataSourceCollection : IEnumerable
-{
-    public IEnumerator GetEnumerator()
-    {
-        yield return new[] { "AADGroup1", "1", "5b0f6c56-c87f-44c3-9354-56cba03da433" };
-        yield return new[] { "AADGroupTes", "1", "99abdc91-e6e0-475c-a0ba-5014f91de853" };
-    }
-}
+//public class SearchEntityDataSourceCollection : IEnumerable
+//{
+//    public IEnumerator GetEnumerator()
+//    {
+//        yield return new[] { "AADGroup1", "1", "5b0f6c56-c87f-44c3-9354-56cba03da433" };
+//        yield return new[] { "AADGroupTes", "1", "99abdc91-e6e0-475c-a0ba-5014f91de853" };
+//    }
+//}
 
 public enum EntityDataSourceType
 {
@@ -256,7 +270,9 @@ public class SearchEntityDataSource
     {
         string csvPath = UnitTestsHelper.DataFile_AllAccounts_Search;
         if (entityDataSourceType == EntityDataSourceType.UPNB2BGuestAccounts)
+        {
             csvPath = UnitTestsHelper.DataFile_GuestAccountsUPN_Search;
+        }
 
         DataTable dt = DataTable.New.ReadCsv(csvPath);
 
@@ -303,7 +319,9 @@ public class ValidateEntityDataSource
     {
         string csvPath = UnitTestsHelper.DataFile_AllAccounts_Validate;
         if (entityDataSourceType == EntityDataSourceType.UPNB2BGuestAccounts)
+        {
             csvPath = UnitTestsHelper.DataFile_GuestAccountsUPN_Validate;
+        }
 
         DataTable dt = DataTable.New.ReadCsv(csvPath);
 

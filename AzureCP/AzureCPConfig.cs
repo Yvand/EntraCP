@@ -26,26 +26,22 @@ namespace azurecp
         bool EnableRetry { get; set; }
         int Timeout { get; set; }
         string CustomData { get; set; }
-        int MaxSearchResultsCount { get; set; }        
+        int MaxSearchResultsCount { get; set; }
+        bool FilterSecurityEnabledGroupsOnly { get; set; }
     }
 
-    public class ClaimsProviderConstants
+    public static class ClaimsProviderConstants
     {
-        public const string CONFIG_ID = "0E9F8FB6-B314-4CCC-866D-DEC0BE76C237";
-        public const string CONFIG_NAME = "AzureCPConfig";
-        public const string GraphAPIResource = "https://graph.microsoft.com/";
-        public const string AuthorityUriTemplate = "https://login.windows.net/{0}";
-        public const string ResourceUrl = "https://graph.windows.net";
-        public const string SearchPatternEquals = "{0} eq '{1}'";
-        public const string SearchPatternStartsWith = "startswith({0}, '{1}')";
-        public const string IdentityConfigSearchPatternEquals = "({0} eq '{1}' and UserType eq '{2}')";
-        public const string IdentityConfigSearchPatternStartsWith = "(startswith({0}, '{1}') and UserType eq '{2}')";
-        public static string GroupClaimEntityType = SPClaimEntityTypes.FormsRole;
-        public const bool EnforceOnly1ClaimTypeForGroup = true;     // In AzureCP, only 1 claim type can be used to create group permissions
-        public const string DefaultMainGroupClaimType = WIF4_5.ClaimTypes.Role;
-        public const string PUBLICSITEURL = "https://yvand.github.io/AzureCP/";
-        public const string GUEST_USERTYPE = "Guest";
-        public const string MEMBER_USERTYPE = "Member";
+        public static string CONFIG_ID => "0E9F8FB6-B314-4CCC-866D-DEC0BE76C237";
+        public static string CONFIG_NAME => "AzureCPConfig";
+        public static string GraphAPIResource => "https://graph.microsoft.com/";
+        public static string AuthorityUriTemplate => "https://login.windows.net/{0}";
+        public static string GroupClaimEntityType { get; set; } = SPClaimEntityTypes.FormsRole;
+        public static bool EnforceOnly1ClaimTypeForGroup => true;     // In AzureCP, only 1 claim type can be used to create group permissions
+        public static string DefaultMainGroupClaimType => WIF4_5.ClaimTypes.Role;
+        public static string PUBLICSITEURL => "https://yvand.github.io/AzureCP/";
+        public static string GUEST_USERTYPE => "Guest";
+        public static string MEMBER_USERTYPE => "Member";
         private static object Sync_SetClaimsProviderVersion = new object();
         private static string _ClaimsProviderVersion;
         public static string ClaimsProviderVersion
@@ -53,13 +49,17 @@ namespace azurecp
             get
             {
                 if (!String.IsNullOrEmpty(_ClaimsProviderVersion))
+                {
                     return _ClaimsProviderVersion;
+                }
 
                 // Method FileVersionInfo.GetVersionInfo() may hang and block all LDAPCP threads, so it is read only 1 time
                 lock (Sync_SetClaimsProviderVersion)
                 {
                     if (!String.IsNullOrEmpty(_ClaimsProviderVersion))
+                    {
                         return _ClaimsProviderVersion;
+                    }
 
                     try
                     {
@@ -77,9 +77,9 @@ namespace azurecp
         }
 
 #if DEBUG
-        public const int DEFAULT_TIMEOUT = 10000;
+        public static int DEFAULT_TIMEOUT => 10000;
 #else
-        public const int DEFAULT_TIMEOUT = 4000;    // 4 secs
+        public static int DEFAULT_TIMEOUT => 4000;    // 4 secs
 #endif
     }
 
@@ -166,17 +166,20 @@ namespace azurecp
         private int _Timeout = ClaimsProviderConstants.DEFAULT_TIMEOUT;
 
         /// <summary>
-        /// Name of the SPTrustedLoginProvider where LDAPCP is enabled
+        /// Name of the SPTrustedLoginProvider where AzureCP is enabled
         /// </summary>
         [Persisted]
-        private string SPTrustName;
+        public string SPTrustName;
 
         private SPTrustedLoginProvider _SPTrust;
         private SPTrustedLoginProvider SPTrust
         {
             get
             {
-                if (_SPTrust == null) _SPTrust = SPSecurityTokenServiceManager.Local.TrustedLoginProviders.GetProviderByName(SPTrustName);
+                if (_SPTrust == null)
+                {
+                    _SPTrust = SPSecurityTokenServiceManager.Local.TrustedLoginProviders.GetProviderByName(SPTrustName);
+                }
                 return _SPTrust;
             }
         }
@@ -205,6 +208,17 @@ namespace azurecp
         }
         [Persisted]
         private int _MaxSearchResultsCount = 30; // SharePoint sets maxCount to 30 in method FillSearch
+
+        /// <summary>
+        /// Set if only AAD groups with securityEnabled = true should be returned - https://docs.microsoft.com/en-us/graph/api/resources/groups-overview?view=graph-rest-1.0
+        /// </summary>
+        public bool FilterSecurityEnabledGroupsOnly
+        {
+            get => _FilterSecurityEnabledGroupsOnly;
+            set => _FilterSecurityEnabledGroupsOnly = value;
+        }
+        [Persisted]
+        private bool _FilterSecurityEnabledGroupsOnly = false;
 
         public AzureCPConfig(string persistedObjectName, SPPersistedObject parent, string spTrustName) : base(persistedObjectName, parent)
         {
@@ -294,7 +308,7 @@ namespace azurecp
         public static AzureCPConfig ResetConfiguration(string persistedObjectName)
         {
             AzureCPConfig previousConfig = GetConfiguration(persistedObjectName, String.Empty);
-            if (previousConfig == null) return null;
+            if (previousConfig == null) { return null; }
             Guid configId = previousConfig.Id;
             string spTrustName = previousConfig.SPTrustName;
             DeleteConfiguration(persistedObjectName);
@@ -315,23 +329,37 @@ namespace azurecp
             CheckAndCleanConfiguration(String.Empty);
         }
 
+        /// <summary>
+        /// Apply configuration in parameter to current object. It does not copy SharePoint base class members
+        /// </summary>
+        /// <param name="configToApply"></param>
         public void ApplyConfiguration(AzureCPConfig configToApply)
         {
+            // Copy non-inherited public properties
+            PropertyInfo[] propertiesToCopy = this.GetType().GetProperties(BindingFlags.Public | BindingFlags.Instance | BindingFlags.DeclaredOnly);
+            foreach (PropertyInfo property in propertiesToCopy)
+            {
+                if (property.CanWrite)
+                {
+                    object value = property.GetValue(configToApply);
+                    if (value != null)
+                    {
+                        property.SetValue(this, value);
+                    }
+                }
+            }
+
+            // Member SPTrustName is not exposed through a property, so it must be set explicitly
             this.SPTrustName = configToApply.SPTrustName;
-            this.AzureTenants = configToApply.AzureTenants;
-            this.ClaimTypes = configToApply.ClaimTypes;
-            this.AlwaysResolveUserInput = configToApply.AlwaysResolveUserInput;
-            this.FilterExactMatchOnly = configToApply.FilterExactMatchOnly;
-            this.EnableAugmentation = configToApply.EnableAugmentation;
-            this.EntityDisplayTextPrefix = configToApply.EntityDisplayTextPrefix;
-            this.EnableRetry = configToApply.EnableRetry;
-            this.Timeout = configToApply.Timeout;
-            this.CustomData = configToApply.CustomData;
-            this.MaxSearchResultsCount = configToApply.MaxSearchResultsCount;
         }
 
-        public AzureCPConfig CopyPersistedProperties()
+        /// <summary>
+        /// Returns a copy of the current object. This copy does not have any member of the base SharePoint base class set
+        /// </summary>
+        /// <returns></returns>
+        public AzureCPConfig CopyConfiguration()
         {
+            // Cannot use reflection here to copy object because of the calls to methods CopyConfiguration() on some properties
             AzureCPConfig copy = new AzureCPConfig();
             copy.SPTrustName = this.SPTrustName;
             copy.AzureTenants = new List<AzureTenant>(this.AzureTenants);
@@ -339,7 +367,7 @@ namespace azurecp
             copy.ClaimTypes.SPTrust = this.ClaimTypes.SPTrust;
             foreach (ClaimTypeConfig currentObject in this.ClaimTypes)
             {
-                copy.ClaimTypes.Add(currentObject.CopyPersistedProperties(), false);
+                copy.ClaimTypes.Add(currentObject.CopyConfiguration(), false);
             }
             copy.AlwaysResolveUserInput = this.AlwaysResolveUserInput;
             copy.FilterExactMatchOnly = this.FilterExactMatchOnly;
@@ -349,6 +377,7 @@ namespace azurecp
             copy.Timeout = this.Timeout;
             copy.CustomData = this.CustomData;
             copy.MaxSearchResultsCount = this.MaxSearchResultsCount;
+            copy.FilterSecurityEnabledGroupsOnly = this.FilterSecurityEnabledGroupsOnly;
             return copy;
         }
 
@@ -408,7 +437,10 @@ namespace azurecp
         /// <returns></returns>
         public static ClaimTypeConfigCollection ReturnDefaultClaimTypesConfig(string spTrustName)
         {
-            if (String.IsNullOrWhiteSpace(spTrustName)) throw new ArgumentNullException("spTrustName cannot be null.");
+            if (String.IsNullOrWhiteSpace(spTrustName))
+            {
+                throw new ArgumentNullException("spTrustName cannot be null.");
+            }
 
             SPTrustedLoginProvider spTrust = SPSecurityTokenServiceManager.Local.TrustedLoginProviders.GetProviderByName(spTrustName);
             if (spTrust == null)
@@ -438,6 +470,7 @@ namespace azurecp
                 // Group
                 new ClaimTypeConfig{EntityType = DirectoryObjectType.Group, DirectoryObjectProperty = AzureADObjectProperty.Id, ClaimType = ClaimsProviderConstants.DefaultMainGroupClaimType, DirectoryObjectPropertyToShowAsDisplayText = AzureADObjectProperty.DisplayName},
                 new ClaimTypeConfig{EntityType = DirectoryObjectType.Group, DirectoryObjectProperty = AzureADObjectProperty.DisplayName, UseMainClaimTypeOfDirectoryObject = true, EntityDataKey = PeopleEditorEntityDataKeys.DisplayName},
+                new ClaimTypeConfig{EntityType = DirectoryObjectType.Group, DirectoryObjectProperty = AzureADObjectProperty.Mail, EntityDataKey = PeopleEditorEntityDataKeys.Email},
             };
             newCTConfigCollection.SPTrust = spTrust;
             return newCTConfigCollection;
@@ -468,7 +501,9 @@ namespace azurecp
         {
             // ClaimsProviderConstants.ClaimsProviderVersion can be null if assembly was removed from GAC
             if (String.IsNullOrEmpty(ClaimsProviderConstants.ClaimsProviderVersion))
+            {
                 return false;
+            }
 
             bool configUpdated = false;
 
@@ -549,9 +584,13 @@ namespace azurecp
                     {
                         ClaimTypeConfig ctConfigToDelete = null;
                         if (SPTrust != null && entityType == DirectoryObjectType.User)
+                        {
                             ctConfigToDelete = this.ClaimTypes.FirstOrDefault(x => x.DirectoryObjectProperty == duplicatedProperty.DirectoryObjectProperty && x.EntityType == entityType && !String.Equals(x.ClaimType, SPTrust.IdentityClaimTypeInformation.MappedClaimType, StringComparison.InvariantCultureIgnoreCase));
+                        }
                         else
+                        {
                             ctConfigToDelete = this.ClaimTypes.FirstOrDefault(x => x.DirectoryObjectProperty == duplicatedProperty.DirectoryObjectProperty && x.EntityType == entityType);
+                        }
 
                         this.ClaimTypes.Remove(ctConfigToDelete);
                         configUpdated = true;
@@ -565,7 +604,7 @@ namespace azurecp
                     try
                     {
                         // SPContext may be null if code does not run in a SharePoint process (e.g. in unit tests process)
-                        if (SPContext.Current != null) SPContext.Current.Web.AllowUnsafeUpdates = true;
+                        if (SPContext.Current != null) { SPContext.Current.Web.AllowUnsafeUpdates = true; }
                         this.Update();
                         ClaimsProviderLogging.Log($"Configuration '{this.Name}' was upgraded in configuration database and some settings were updated or reset to their default configuration",
                             TraceSeverity.High, EventSeverity.Information, TraceCategory.Core);
@@ -578,7 +617,7 @@ namespace azurecp
                     }
                     finally
                     {
-                        if (SPContext.Current != null) SPContext.Current.Web.AllowUnsafeUpdates = false;
+                        if (SPContext.Current != null) { SPContext.Current.Web.AllowUnsafeUpdates = false; }
                     }
                 }
             }
@@ -589,50 +628,80 @@ namespace azurecp
 
     public class AzureTenant : SPAutoSerializingObject
     {
+        public Guid Identifier
+        {
+            get => Id;
+            set => Id = value;
+        }
         [Persisted]
-        public Guid Id = Guid.NewGuid();
+        private Guid Id = Guid.NewGuid();
 
         /// <summary>
         /// Name of the tenant, e.g. TENANTNAME.onMicrosoft.com
         /// </summary>
+        public string Name
+        {
+            get => TenantName;
+            set => TenantName = value;
+        }
         [Persisted]
-        public string TenantName;
+        private string TenantName;
 
         /// <summary>
         /// Application ID of the application created in Azure AD tenant to authorize AzureCP
         /// </summary>
+        public string ApplicationId
+        {
+            get => ClientId;
+            set => ClientId = value;
+        }
         [Persisted]
-        public string ClientId;
+        private string ClientId;
 
         /// <summary>
         /// Password of the application
         /// </summary>
+        public string ApplicationSecret
+        {
+            get => ClientSecret;
+            set => ClientSecret = value;
+        }
         [Persisted]
         public string ClientSecret;
 
         /// <summary>
         /// Set to true to return only Member users from this tenant
         /// </summary>
+        public bool ExcludeMembers
+        {
+            get => ExcludeMemberUsers;
+            set => ExcludeMemberUsers = value;
+        }
         [Persisted]
         public bool ExcludeMemberUsers = false;
 
         /// <summary>
         /// Set to true to return only Guest users from this tenant
         /// </summary>
+        public bool ExcludeGuests
+        {
+            get => ExcludeGuestUsers;
+            set => ExcludeGuestUsers = value;
+        }
         [Persisted]
         public bool ExcludeGuestUsers = false;
 
         /// <summary>
         /// Instance of the IAuthenticationProvider class for this specific Azure AD tenant
         /// </summary>
-        private AADAppOnlyAuthenticationProvider AuthenticationProvider;
+        private AADAppOnlyAuthenticationProvider AuthenticationProvider { get; set; }
 
-        public GraphServiceClient GraphService;
+        public GraphServiceClient GraphService { get; set; }
 
-        public string UserFilter;
-        public string GroupFilter;
-        public string UserSelect;
-        public string GroupSelect;
+        public string UserFilter { get; set; }
+        public string GroupFilter { get; set; }
+        public string UserSelect { get; set; }
+        public string GroupSelect { get; set; }
 
         public AzureTenant()
         {
@@ -645,30 +714,35 @@ namespace azurecp
         {
             try
             {
-                this.AuthenticationProvider = new AADAppOnlyAuthenticationProvider(ClaimsProviderConstants.AuthorityUriTemplate, this.TenantName, this.ClientId, this.ClientSecret, claimsProviderName, timeout);
+                this.AuthenticationProvider = new AADAppOnlyAuthenticationProvider(ClaimsProviderConstants.AuthorityUriTemplate, this.Name, this.ApplicationId, this.ApplicationSecret, claimsProviderName, timeout);
                 this.GraphService = new GraphServiceClient(this.AuthenticationProvider);
             }
             catch (Exception ex)
             {
-                ClaimsProviderLogging.LogException(AzureCP._ProviderInternalName, $"while setting client context for tenant '{this.TenantName}'.", TraceCategory.Core, ex);
+                ClaimsProviderLogging.LogException(AzureCP._ProviderInternalName, $"while setting client context for tenant '{this.Name}'.", TraceCategory.Core, ex);
             }
         }
 
-        internal AzureTenant CopyPersistedProperties()
+        /// <summary>
+        /// Returns a copy of the current object. This copy does not have any member of the base SharePoint base class set
+        /// </summary>
+        /// <returns></returns>
+        internal AzureTenant CopyConfiguration()
         {
             AzureTenant copy = new AzureTenant();
-            copy.AuthenticationProvider = this.AuthenticationProvider;
-            copy.ClientId = this.ClientId;
-            copy.ClientSecret = this.ClientSecret;
-            copy.ExcludeGuestUsers = this.ExcludeGuestUsers;
-            copy.ExcludeMemberUsers = this.ExcludeMemberUsers;
-            copy.GraphService = this.GraphService;
-            copy.GroupFilter = this.GroupFilter;
-            copy.GroupSelect = this.GroupSelect;
-            copy.Id = this.Id;
-            copy.TenantName = this.TenantName;
-            copy.UserFilter = this.UserFilter;
-            copy.UserSelect = this.UserSelect;
+            // Copy non-inherited public properties
+            PropertyInfo[] propertiesToCopy = this.GetType().GetProperties(BindingFlags.Public | BindingFlags.Instance | BindingFlags.DeclaredOnly);
+            foreach (PropertyInfo property in propertiesToCopy)
+            {
+                if (property.CanWrite)
+                {
+                    object value = property.GetValue(this);
+                    if (value != null)
+                    {
+                        property.SetValue(copy, value);
+                    }
+                }
+            }
             return copy;
         }
     }
@@ -681,50 +755,113 @@ namespace azurecp
         /// <summary>
         /// Indicates what kind of operation SharePoint is requesting
         /// </summary>
-        public OperationType OperationType;
+        public OperationType OperationType
+        {
+            get => _OperationType;
+            set => _OperationType = value;
+        }
+        private OperationType _OperationType;
 
         /// <summary>
         /// Set only if request is a validation or an augmentation, to the incoming entity provided by SharePoint
         /// </summary>
-        public SPClaim IncomingEntity;
+        public SPClaim IncomingEntity
+        {
+            get => _IncomingEntity;
+            set => _IncomingEntity = value;
+        }
+        private SPClaim _IncomingEntity;
 
         /// <summary>
         /// User submitting the query in the poeple picker, retrieved from HttpContext. Can be null
         /// </summary>
-        public SPClaim UserInHttpContext;
+        public SPClaim UserInHttpContext
+        {
+            get => _UserInHttpContext;
+            set => _UserInHttpContext = value;
+        }
+        private SPClaim _UserInHttpContext;
 
         /// <summary>
         /// Uri provided by SharePoint
         /// </summary>
-        public Uri UriContext;
+        public Uri UriContext
+        {
+            get => _UriContext;
+            set => _UriContext = value;
+        }
+        private Uri _UriContext;
 
         /// <summary>
         /// EntityTypes expected by SharePoint in the entities returned
         /// </summary>
-        public DirectoryObjectType[] DirectoryObjectTypes;
-        public string HierarchyNodeID;
-        public int MaxCount;
+        public DirectoryObjectType[] DirectoryObjectTypes
+        {
+            get => _DirectoryObjectTypes;
+            set => _DirectoryObjectTypes = value;
+        }
+        private DirectoryObjectType[] _DirectoryObjectTypes;
+
+        public string HierarchyNodeID
+        {
+            get => _HierarchyNodeID;
+            set => _HierarchyNodeID = value;
+        }
+        private string _HierarchyNodeID;
+
+        public int MaxCount
+        {
+            get => _MaxCount;
+            set => _MaxCount = value;
+        }
+        private int _MaxCount;
 
         /// <summary>
         /// If request is a validation: contains the value of the SPClaim. If request is a search: contains the input
         /// </summary>
-        public string Input;
-        public bool InputHasKeyword;
+        public string Input
+        {
+            get => _Input;
+            set => _Input = value;
+        }
+        private string _Input;
+
+        public bool InputHasKeyword
+        {
+            get => _InputHasKeyword;
+            set => _InputHasKeyword = value;
+        }
+        private bool _InputHasKeyword;
 
         /// <summary>
         /// Indicates if search operation should return only results that exactly match the Input
         /// </summary>
-        public bool ExactSearch;
+        public bool ExactSearch
+        {
+            get => _ExactSearch;
+            set => _ExactSearch = value;
+        }
+        private bool _ExactSearch;
 
         /// <summary>
         /// Set only if request is a validation or an augmentation, to the ClaimTypeConfig that matches the ClaimType of the incoming entity
         /// </summary>
-        public ClaimTypeConfig IncomingEntityClaimTypeConfig;
+        public ClaimTypeConfig IncomingEntityClaimTypeConfig
+        {
+            get => _IncomingEntityClaimTypeConfig;
+            set => _IncomingEntityClaimTypeConfig = value;
+        }
+        private ClaimTypeConfig _IncomingEntityClaimTypeConfig;
 
         /// <summary>
         /// Contains the relevant list of ClaimTypeConfig for every type of request. In case of validation or augmentation, it will contain only 1 item.
         /// </summary>
-        public List<ClaimTypeConfig> CurrentClaimTypeConfigList;
+        public List<ClaimTypeConfig> CurrentClaimTypeConfigList
+        {
+            get => _CurrentClaimTypeConfigList;
+            set => _CurrentClaimTypeConfigList = value;
+        }
+        private List<ClaimTypeConfig> _CurrentClaimTypeConfigList;
 
         public OperationContext(IAzureCPConfiguration currentConfiguration, OperationType currentRequestType, List<ClaimTypeConfig> processedClaimTypeConfigList, string input, SPClaim incomingEntity, Uri context, string[] entityTypes, string hierarchyNodeID, int maxCount)
         {
@@ -739,9 +876,13 @@ namespace azurecp
             {
                 List<DirectoryObjectType> aadEntityTypes = new List<DirectoryObjectType>();
                 if (entityTypes.Contains(SPClaimEntityTypes.User))
+                {
                     aadEntityTypes.Add(DirectoryObjectType.User);
+                }
                 if (entityTypes.Contains(ClaimsProviderConstants.GroupClaimEntityType))
+                {
                     aadEntityTypes.Add(DirectoryObjectType.Group);
+                }
                 this.DirectoryObjectTypes = aadEntityTypes.ToArray();
             }
 
@@ -783,7 +924,7 @@ namespace azurecp
         /// <param name="processedClaimTypeConfigList"></param>
         protected void InitializeValidation(List<ClaimTypeConfig> processedClaimTypeConfigList)
         {
-            if (this.IncomingEntity == null) throw new ArgumentNullException("IncomingEntity");
+            if (this.IncomingEntity == null) { throw new ArgumentNullException("IncomingEntity"); }
             this.IncomingEntityClaimTypeConfig = processedClaimTypeConfigList.FirstOrDefault(x =>
                String.Equals(x.ClaimType, this.IncomingEntity.ClaimType, StringComparison.InvariantCultureIgnoreCase) &&
                !x.UseMainClaimTypeOfDirectoryObject);
@@ -824,7 +965,7 @@ namespace azurecp
 
         protected void InitializeAugmentation(List<ClaimTypeConfig> processedClaimTypeConfigList)
         {
-            if (this.IncomingEntity == null) throw new ArgumentNullException("IncomingEntity");
+            if (this.IncomingEntity == null) { throw new ArgumentNullException("IncomingEntity"); }
             this.IncomingEntityClaimTypeConfig = processedClaimTypeConfigList.FirstOrDefault(x =>
                String.Equals(x.ClaimType, this.IncomingEntity.ClaimType, StringComparison.InvariantCultureIgnoreCase) &&
                !x.UseMainClaimTypeOfDirectoryObject);

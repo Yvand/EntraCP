@@ -202,6 +202,15 @@ namespace azurecp.ControlTemplates {
         protected global::System.Web.UI.WebControls.CheckBox ChkAugmentAADRoles;
         
         /// <summary>
+        /// ChkFilterSecurityEnabledGroupsOnly control.
+        /// </summary>
+        /// <remarks>
+        /// Auto-generated field.
+        /// To modify move field declaration from designer file to code-behind file.
+        /// </remarks>
+        protected global::System.Web.UI.WebControls.CheckBox ChkFilterSecurityEnabledGroupsOnly;
+        
+        /// <summary>
         /// BtnResetAzureCPConfig control.
         /// </summary>
         /// <remarks>

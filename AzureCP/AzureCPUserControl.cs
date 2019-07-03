@@ -14,19 +14,16 @@ namespace azurecp.ControlTemplates
     public abstract class AzureCPUserControl : UserControl
     {
         /// <summary>
-        /// This is an attribute that must be set in the markup code, with the name of the claims provider
+        /// This member is used in the markup code and cannot be made as a property
         /// </summary>
         public string ClaimsProviderName;
 
         /// <summary>
-        /// This is an attribute that must be set in the markup code, with the name of the persisted object that holds the configuration
+        /// This member is used in the markup code and cannot be made as a property
         /// </summary>
         public string PersistedObjectName;
 
         private Guid _PersistedObjectID;
-        /// <summary>
-        /// This is an attribute that must be set in the markup code, with the GUID of the persisted object that holds the configuration
-        /// </summary>
         public string PersistedObjectID
         {
             get
@@ -81,41 +78,58 @@ namespace azurecp.ControlTemplates
         {
             get
             {
-                if (Status == ConfigStatus.AllGood) return String.Empty;
+                if (Status == ConfigStatus.AllGood)
+                {
+                    return String.Empty;
+                }
 
                 if ((Status & ConfigStatus.NoSPTrustAssociation) == ConfigStatus.NoSPTrustAssociation)
+                {
                     return String.Format(TextErrorNoSPTrustAssociation, SPEncode.HtmlEncode(ClaimsProviderName));
+                }
 
                 if ((Status & ConfigStatus.PersistedObjectNotFound) == ConfigStatus.PersistedObjectNotFound)
+                {
                     return TextErrorPersistedObjectNotFound;
+                }
 
                 if ((Status & ConfigStatus.NoIdentityClaimType) == ConfigStatus.NoIdentityClaimType)
+                {
                     return String.Format(TextErrorNoIdentityClaimType, CurrentTrustedLoginProvider.DisplayName, CurrentTrustedLoginProvider.IdentityClaimTypeInformation.MappedClaimType);
+                }
 
                 if ((Status & ConfigStatus.PersistedObjectStale) == ConfigStatus.PersistedObjectStale)
+                {
                     return TextErrorPersistedObjectStale;
+                }
 
                 if ((Status & ConfigStatus.ClaimsProviderNamePropNotSet) == ConfigStatus.ClaimsProviderNamePropNotSet)
+                {
                     return TextErrorClaimsProviderNameNotSet;
+                }
 
                 if ((Status & ConfigStatus.PersistedObjectNamePropNotSet) == ConfigStatus.PersistedObjectNamePropNotSet)
+                {
                     return TextErrorPersistedObjectNameNotSet;
+                }
 
                 if ((Status & ConfigStatus.PersistedObjectIDPropNotSet) == ConfigStatus.PersistedObjectIDPropNotSet)
+                {
                     return TextErrorPersistedObjectIDNotSet;
+                }
 
                 return String.Empty;
             }
         }
 
-        protected static string ViewStatePersistedObjectVersionKey = "PersistedObjectVersion";
-        protected static string TextErrorPersistedObjectNotFound = "PersistedObject cannot be found.";
-        protected static string TextErrorPersistedObjectStale = "Modifications were not applied because the persisted object was modified after this page was loaded. Please refresh the page and try again.";
-        protected static string TextErrorNoSPTrustAssociation = "{0} is currently not associated with any TrustedLoginProvider, which is required to create entities.<br/>Visit <a href=\"" + ClaimsProviderConstants.PUBLICSITEURL + "\" target=\"_blank\">AzureCP site</a> for more information.<br/>Refresh this page once '{0}' is associated with a TrustedLoginProvider.";
-        protected static string TextErrorNoIdentityClaimType = "The TrustedLoginProvider {0} is set with identity claim type '{1}', but is not set in claim types configuration list.<br/>Please visit claim types configuration page to add it.";
-        protected static string TextErrorClaimsProviderNameNotSet = "The attribute 'ClaimsProviderName' must be set in the user control.";
-        protected static string TextErrorPersistedObjectNameNotSet = "The attribute 'PersistedObjectName' must be set in the user control.";
-        protected static string TextErrorPersistedObjectIDNotSet = "The attribute 'PersistedObjectID' must be set in the user control.";
+        protected static readonly string ViewStatePersistedObjectVersionKey = "PersistedObjectVersion";
+        protected static readonly string TextErrorPersistedObjectNotFound = "PersistedObject cannot be found.";
+        protected static readonly string TextErrorPersistedObjectStale = "Modifications were not applied because the persisted object was modified after this page was loaded. Please refresh the page and try again.";
+        protected static readonly string TextErrorNoSPTrustAssociation = "{0} is currently not associated with any TrustedLoginProvider, which is required to create entities.<br/>Visit <a href=\"" + ClaimsProviderConstants.PUBLICSITEURL + "\" target=\"_blank\">AzureCP site</a> for more information.<br/>Refresh this page once '{0}' is associated with a TrustedLoginProvider.";
+        protected static readonly string TextErrorNoIdentityClaimType = "The TrustedLoginProvider {0} is set with identity claim type '{1}', but is not set in claim types configuration list.<br/>Please visit claim types configuration page to add it.";
+        protected static readonly string TextErrorClaimsProviderNameNotSet = "The attribute 'ClaimsProviderName' must be set in the user control.";
+        protected static readonly string TextErrorPersistedObjectNameNotSet = "The attribute 'PersistedObjectName' must be set in the user control.";
+        protected static readonly string TextErrorPersistedObjectIDNotSet = "The attribute 'PersistedObjectID' must be set in the user control.";
 
         /// <summary>
         /// Ensures configuration is valid to proceed
@@ -140,9 +154,9 @@ namespace azurecp.ControlTemplates
             }
 
             Status = ConfigStatus.AllGood;
-            if (String.IsNullOrEmpty(ClaimsProviderName)) Status |= ConfigStatus.ClaimsProviderNamePropNotSet;
-            if (String.IsNullOrEmpty(PersistedObjectName)) Status |= ConfigStatus.PersistedObjectNamePropNotSet;
-            if (String.IsNullOrEmpty(PersistedObjectID)) Status |= ConfigStatus.PersistedObjectIDPropNotSet;
+            if (String.IsNullOrEmpty(ClaimsProviderName)) { Status |= ConfigStatus.ClaimsProviderNamePropNotSet; }
+            if (String.IsNullOrEmpty(PersistedObjectName)) { Status |= ConfigStatus.PersistedObjectNamePropNotSet; }
+            if (String.IsNullOrEmpty(PersistedObjectID)) { Status |= ConfigStatus.PersistedObjectIDPropNotSet; }
             if (Status != ConfigStatus.AllGood)
             {
                 ClaimsProviderLogging.Log($"[{ClaimsProviderName}] {MostImportantError}", TraceSeverity.Unexpected, EventSeverity.Error, TraceCategory.Configuration);
@@ -177,15 +191,21 @@ namespace azurecp.ControlTemplates
             PersistedObject.ClaimTypes.SPTrust = CurrentTrustedLoginProvider;
             if (IdentityCTConfig == null && Status == ConfigStatus.AllGood)
             {
-                IdentityCTConfig = this.IdentityCTConfig = PersistedObject.ClaimTypes.FirstOrDefault(x => String.Equals(CurrentTrustedLoginProvider.IdentityClaimTypeInformation.MappedClaimType, x.ClaimType, StringComparison.InvariantCultureIgnoreCase) && !x.UseMainClaimTypeOfDirectoryObject) as IdentityClaimTypeConfig;
-                if (IdentityCTConfig == null) Status |= ConfigStatus.NoIdentityClaimType;
+                IdentityCTConfig = PersistedObject.ClaimTypes.FirstOrDefault(x => String.Equals(CurrentTrustedLoginProvider.IdentityClaimTypeInformation.MappedClaimType, x.ClaimType, StringComparison.InvariantCultureIgnoreCase) && !x.UseMainClaimTypeOfDirectoryObject) as IdentityClaimTypeConfig;
+                if (IdentityCTConfig == null)
+                {
+                    Status |= ConfigStatus.NoIdentityClaimType;
+                }
             }
             if (PersistedObjectVersion != PersistedObject.Version)
             {
                 Status |= ConfigStatus.PersistedObjectStale;
             }
 
-            if (Status != ConfigStatus.AllGood) ClaimsProviderLogging.Log($"[{ClaimsProviderName}] {MostImportantError}", TraceSeverity.Unexpected, EventSeverity.Error, TraceCategory.Configuration);
+            if (Status != ConfigStatus.AllGood)
+            {
+                ClaimsProviderLogging.Log($"[{ClaimsProviderName}] {MostImportantError}", TraceSeverity.Unexpected, EventSeverity.Error, TraceCategory.Configuration);
+            }
             return Status;
         }
 

@@ -22,7 +22,7 @@ namespace AzureCP.Tests
                 Trace.TraceWarning($"{DateTime.Now.ToString("s")} Configuration {UnitTestsHelper.ClaimsProviderConfigName} does not exist, create it with default settings...");
                 Config = AzureCPConfig.CreateConfiguration(ClaimsProviderConstants.CONFIG_ID, ClaimsProviderConstants.CONFIG_NAME, UnitTestsHelper.SPTrust.Name);
             }
-            BackupConfig = Config.CopyPersistedProperties();
+            BackupConfig = Config.CopyConfiguration();
             InitializeConfiguration();
         }
 
