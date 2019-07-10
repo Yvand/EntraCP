@@ -39,14 +39,19 @@ namespace azurecp
                 {
                     ClaimsProviderLogging svc = ClaimsProviderLogging.Local;
                     ClaimsProviderLogging.Log($"[{AzureCP._ProviderInternalName}] Activating farm-scoped feature for claims provider \"{AzureCP._ProviderInternalName}\"", TraceSeverity.High, EventSeverity.Information, ClaimsProviderLogging.TraceCategory.Configuration);
-                    AzureCPConfig existingConfig = AzureCPConfig.GetConfiguration(ClaimsProviderConstants.CONFIG_NAME);
-                    if (existingConfig == null)
+
+                    var spTrust = AzureCP.GetSPTrustAssociatedWithCP(AzureCP._ProviderInternalName);
+                    if (spTrust != null)
                     {
-                        AzureCPConfig.CreateDefaultConfiguration();
-                    }
-                    else
-                    {
-                        ClaimsProviderLogging.Log($"[{AzureCP._ProviderInternalName}] Use configuration \"{ClaimsProviderConstants.CONFIG_NAME}\" found in the configuration database", TraceSeverity.High, EventSeverity.Information, ClaimsProviderLogging.TraceCategory.Configuration);
+                        AzureCPConfig existingConfig = AzureCPConfig.GetConfiguration(ClaimsProviderConstants.CONFIG_NAME);
+                        if (existingConfig == null)
+                        {
+                            AzureCPConfig.CreateConfiguration(ClaimsProviderConstants.CONFIG_ID, ClaimsProviderConstants.CONFIG_NAME, spTrust.Name);
+                        }
+                        else
+                        {
+                            ClaimsProviderLogging.Log($"[{AzureCP._ProviderInternalName}] Use configuration \"{ClaimsProviderConstants.CONFIG_NAME}\" found in the configuration database", TraceSeverity.High, EventSeverity.Information, ClaimsProviderLogging.TraceCategory.Configuration);
+                        }
                     }
                 }
                 catch (Exception ex)
