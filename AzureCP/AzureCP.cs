@@ -150,6 +150,19 @@ namespace azurecp
                     {
                         refreshConfig = true;
                     }
+
+                    // If config is already initialized, double check that property GraphService is not null as it is required to query AAD tenants
+                    if (!refreshConfig)
+                    {
+                        foreach (var tenant in this.CurrentConfiguration.AzureTenants)
+                        {
+                            if (tenant.GraphService == null)
+                            {
+                                // Mark config to be refreshed in the write lock
+                                refreshConfig = true;
+                            }
+                        }
+                    }
                 }
                 catch (Exception ex)
                 {
@@ -1301,6 +1314,12 @@ namespace azurecp
         protected virtual async Task<AzureADResult> QueryAzureADTenantAsync(OperationContext currentContext, AzureTenant tenant, bool firstAttempt)
         {
             if (tenant.UserFilter == null && tenant.GroupFilter == null) { return null; }
+
+            if (tenant.GraphService == null)
+            {
+                ClaimsProviderLogging.Log($"[{ProviderInternalName}] Cannot query Azure AD tenant '{tenant.Name}' because it was not initialized", TraceSeverity.Unexpected, EventSeverity.Error, TraceCategory.Lookup);
+                return null;
+            }
 
             ClaimsProviderLogging.Log($"[{ProviderInternalName}] Querying Azure AD tenant '{tenant.Name}' for users/groups/domains, with input '{currentContext.Input}'", TraceSeverity.VerboseEx, EventSeverity.Information, TraceCategory.Lookup);
             AzureADResult tenantResults = new AzureADResult();
