@@ -168,6 +168,7 @@ copy /Y "$(TargetDir)Nito.AsyncEx.Enlightenment.dll" $(ProjectDir)\bin
 copy /Y "$(TargetDir)Microsoft.Graph.Core.dll" $(ProjectDir)\bin
 copy /Y "$(TargetDir)Microsoft.Graph.dll" $(ProjectDir)\bin
 copy /Y "$(TargetDir)Newtonsoft.Json.dll" $(ProjectDir)\bin
+copy /Y "$(TargetDir)System.ValueTuple.dll" $(ProjectDir)\bin
 </PostBuildEvent>
   </PropertyGroup>
 </Project>
