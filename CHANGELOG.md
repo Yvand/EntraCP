@@ -1,6 +1,6 @@
 # Change log for AzureCP
 
-## AzureCP 15.1
+## AzureCP 15.1.20190715.926 enhancements & bug-fixes - Published in July 16, 2019
 
 * Add missing assembly System.ValueTuple.dll as it became a dependency of Microsoft.Graph.Core 1.15.0
 
