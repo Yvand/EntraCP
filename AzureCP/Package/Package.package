@@ -8,6 +8,7 @@
     <customAssembly location="Microsoft.Graph.Core.dll" deploymentTarget="GlobalAssemblyCache" sourcePath="bin\Microsoft.Graph.Core.dll" />
     <customAssembly location="Microsoft.Graph.dll" deploymentTarget="GlobalAssemblyCache" sourcePath="bin\Microsoft.Graph.dll" />
     <customAssembly location="Newtonsoft.Json.dll" deploymentTarget="GlobalAssemblyCache" sourcePath="bin\Newtonsoft.Json.dll" />
+    <customAssembly location="System.ValueTuple.dll" deploymentTarget="GlobalAssemblyCache" sourcePath="bin\System.ValueTuple.dll" />
   </assemblies>
   <features>
     <featureReference itemId="70b104e2-19df-4cb1-9802-c98eaf14d84e" />

@@ -1,5 +1,9 @@
 # Change log for AzureCP
 
+## AzureCP 15.1
+
+* Add missing assembly System.ValueTuple.dll as it became a dependency of Microsoft.Graph.Core 1.15.0
+
 ## AzureCP 15.0.20190621.906 enhancements & bug-fixes - Published in June 21, 2019
 
 * Add a default mapping to populate the email of groups
