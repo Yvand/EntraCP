@@ -20,9 +20,18 @@ namespace azurecp
         [Persisted]
         private int _DirectoryObjectPropertyForGuestUsers = (int)AzureADObjectProperty.Mail;
 
+        public IdentityClaimTypeConfig()
+        {
+        }
+
+        public IdentityClaimTypeConfig(ClaimTypeConfig ctConfig)
+        {
+            this.DirectoryObjectPropertyForGuestUsers = ((IdentityClaimTypeConfig)ctConfig).DirectoryObjectPropertyForGuestUsers;
+        }
+
         public static IdentityClaimTypeConfig ConvertClaimTypeConfig(ClaimTypeConfig ctConfig)
         {
-            IdentityClaimTypeConfig identityCTConfig = new IdentityClaimTypeConfig();
+            IdentityClaimTypeConfig identityCTConfig = new IdentityClaimTypeConfig(ctConfig);
             identityCTConfig.ClaimType = ctConfig.ClaimType;
             identityCTConfig.ClaimTypeDisplayName = ctConfig.ClaimTypeDisplayName;
             identityCTConfig.ClaimValueType = ctConfig.ClaimValueType;
