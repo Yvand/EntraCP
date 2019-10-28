@@ -2,6 +2,7 @@
 
 ## Unreleased
 
+* Fix a bug where guest users are not returned correctly due to bad initialization of IdentityClaimTypeConfig
 * Add method AzureCPConfig.CreateDefaultConfiguration
 * Update NuGet package Microsoft.Graph to v1.18
 * Update NuGet package Microsoft.IdentityModel.Clients.ActiveDirectory to v5.2.3
