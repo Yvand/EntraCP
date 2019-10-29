@@ -244,7 +244,10 @@ namespace azurecp
                         !x.UseMainClaimTypeOfDirectoryObject &&
                         x.DirectoryObjectProperty != AzureADObjectProperty.NotSet);
 
-                    if (claimTypeConfig == null) continue;
+                    if (claimTypeConfig == null)
+                    { 
+                        continue;
+                    }
                     claimTypeConfig.ClaimTypeDisplayName = claimTypeInformation.DisplayName;
                     claimTypesSetInTrust.Add(claimTypeConfig);
                     if (String.Equals(SPTrust.IdentityClaimTypeInformation.MappedClaimType, claimTypeConfig.ClaimType, StringComparison.InvariantCultureIgnoreCase))
@@ -278,7 +281,10 @@ namespace azurecp
                     else
                     {
                         // If not a user, it must be a group
-                        if (MainGroupClaimTypeConfig == null) continue;
+                        if (MainGroupClaimTypeConfig == null)
+                        {
+                            continue;
+                        }
                         claimTypeConfig.ClaimType = MainGroupClaimTypeConfig.ClaimType;
                         claimTypeConfig.DirectoryObjectPropertyToShowAsDisplayText = MainGroupClaimTypeConfig.DirectoryObjectPropertyToShowAsDisplayText;
                         claimTypeConfig.ClaimTypeDisplayName = MainGroupClaimTypeConfig.ClaimTypeDisplayName;
