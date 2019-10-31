@@ -390,16 +390,34 @@ namespace azurecp
         }
 
         /// <summary>
+        /// If AzureCP is associated with a SPTrustedLoginProvider, create its configuration with default settings and save it into configuration database. If it already exists, it will be replaced.
+        /// </summary>
+        /// <returns></returns>
+        public static AzureCPConfig CreateDefaultConfiguration()
+        {
+            SPTrustedLoginProvider spTrust = AzureCP.GetSPTrustAssociatedWithCP(AzureCP._ProviderInternalName);
+            if (spTrust == null)
+            {
+                return null;
+            }
+            else
+            {
+                return CreateConfiguration(ClaimsProviderConstants.CONFIG_ID, ClaimsProviderConstants.CONFIG_NAME, spTrust.Name);
+            }
+        }
+
+        /// <summary>
         /// Create a persisted object with default configuration of AzureCP.
         /// </summary>
-        /// <param name="persistedObjectID"></param>
-        /// <param name="persistedObjectName"></param>
+        /// <param name="persistedObjectID">GUID of the configuration, stored as a persisted object into SharePoint configuration database</param>
+        /// <param name="persistedObjectName">Name of the configuration, stored as a persisted object into SharePoint configuration database</param>
+        /// <param name="spTrustName">Name of the SPTrustedLoginProvider that claims provider is associated with</param>
         /// <returns></returns>
         public static AzureCPConfig CreateConfiguration(string persistedObjectID, string persistedObjectName, string spTrustName)
         {
             if (String.IsNullOrEmpty(spTrustName))
             {
-                throw new ArgumentNullException("spTrust");
+                throw new ArgumentNullException("spTrustName");
             }
 
             // Ensure it doesn't already exists and delete it if so

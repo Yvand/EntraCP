@@ -1,5 +1,13 @@
 # Change log for AzureCP
 
+## AzureCP 15.2.20191031.1012 enhancements & bug-fixes - Published in October 31, 2019
+
+* Fix a bug where guest users are not returned correctly due to bad initialization of IdentityClaimTypeConfig
+* Add method AzureCPConfig.CreateDefaultConfiguration
+* Update NuGet package Microsoft.Graph to v1.18
+* Update NuGet package Microsoft.IdentityModel.Clients.ActiveDirectory to v5.2.3
+* Update NuGet package NUnit3TestAdapter to v3.15.1
+
 ## AzureCP 15.1.20190715.926 enhancements & bug-fixes - Published in July 16, 2019
 
 * Add missing assembly System.ValueTuple.dll as it became a dependency of Microsoft.Graph.Core 1.15.0
