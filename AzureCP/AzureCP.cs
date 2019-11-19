@@ -1159,7 +1159,8 @@ namespace azurecp
                 }
                 else
                 {
-                    currentFilter = String.Format(preferredFilterPattern, currentPropertyString);
+                    //currentFilter = String.Format(preferredFilterPattern, currentPropertyString);
+                    currentFilter = preferredFilterPattern.Replace("{0}", currentPropertyString);
                 }
 
                 // Id needs a specific check: input must be a valid GUID AND equals filter must be used, otherwise Azure AD will throw an error
