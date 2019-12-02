@@ -1,6 +1,6 @@
 # Change log for AzureCP
 
-## Unreleased
+## AzureCP 15.3.20191120.1028 enhancements & bug-fixes - Published in November 20, 2019
 
 * Fix a bug where search fails if input contains a '{'
 
