@@ -116,6 +116,7 @@ namespace AzureCP.Tests
 
         [TestCase(@"AADGroup1", 1, "5b0f6c56-c87f-44c3-9354-56cba03da433")]
         [TestCase(@"xyzguest", 0, "xyzGUEST@contoso.com")]
+        [TestCase(@"AzureGr}", 1, "141cfd15-3941-4cbc-859f-d7125938fb72")]
         public void DEBUG_SearchEntities(string inputValue, int expectedResultCount, string expectedEntityClaimValue)
         {
             if (!TestSearch) { return; }

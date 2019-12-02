@@ -1,5 +1,9 @@
 # Change log for AzureCP
 
+## Unreleased
+
+* Fix a bug where search fails if input contains a '{'
+
 ## AzureCP 15.2.20191031.1012 enhancements & bug-fixes - Published in October 31, 2019
 
 * Fix a bug where guest users are not returned correctly due to bad initialization of IdentityClaimTypeConfig

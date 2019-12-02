@@ -58,7 +58,8 @@ public class UnitTestsHelper
     {
 
 #if DEBUG
-        //return; // Uncommented when debugging AzureCP code from unit tests
+        TestSiteCollUri = new Uri("http://spsites/sites/" + TestContext.Parameters["TestSiteCollectionName"]);
+        return; // Uncommented when debugging AzureCP code from unit tests
 #endif
 
         logFileListener = new TextWriterTraceListener(TestContext.Parameters["TestLogFileName"]);
