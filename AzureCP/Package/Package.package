@@ -9,6 +9,10 @@
     <customAssembly location="Microsoft.Graph.dll" deploymentTarget="GlobalAssemblyCache" sourcePath="bin\Microsoft.Graph.dll" />
     <customAssembly location="Newtonsoft.Json.dll" deploymentTarget="GlobalAssemblyCache" sourcePath="bin\Newtonsoft.Json.dll" />
     <customAssembly location="System.ValueTuple.dll" deploymentTarget="GlobalAssemblyCache" sourcePath="bin\System.ValueTuple.dll" />
+    <customAssembly location="System.Buffers.dll" deploymentTarget="GlobalAssemblyCache" sourcePath="bin\System.Buffers.dll" />
+    <customAssembly location="System.Diagnostics.DiagnosticSource.dll" deploymentTarget="GlobalAssemblyCache" sourcePath="bin\System.Diagnostics.DiagnosticSource.dll" />
+    <customAssembly location="System.Memory.dll" deploymentTarget="GlobalAssemblyCache" sourcePath="bin\System.Memory.dll" />
+    <customAssembly location="System.Runtime.CompilerServices.Unsafe.dll" deploymentTarget="GlobalAssemblyCache" sourcePath="bin\System.Runtime.CompilerServices.Unsafe.dll" />
   </assemblies>
   <features>
     <featureReference itemId="70b104e2-19df-4cb1-9802-c98eaf14d84e" />

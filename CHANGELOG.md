@@ -1,5 +1,17 @@
 # Change log for AzureCP
 
+## Unreleased
+
+* Update NuGet package Microsoft.Graph.1.18.0 -> Microsoft.Graph.1.21.0
+* Update NuGet package Microsoft.Graph.Core.1.18.0 -> Microsoft.Graph.Core.1.19.0
+* Update NuGet package Microsoft.IdentityModel.Clients.ActiveDirectory.5.2.3 -> Microsoft.IdentityModel.Clients.ActiveDirectory.5.2.6
+* Update NuGet package NUnit3TestAdapter.3.15.1 -> NUnit3TestAdapter.3.16.1
+* Update NuGet package Newtonsoft.Json.12.0.2 -> Newtonsoft.Json.12.0.3 in AzureCP.Tests project only
+* Add assembly dependency introduced by Microsoft.Graph.Core.1.19.0 -> System.Buffers.4.4.0
+* Add assembly dependency introduced by Microsoft.Graph.Core.1.19.0 -> System.Diagnostics.DiagnosticSource.4.6.0
+* Add assembly dependency introduced by Microsoft.Graph.Core.1.19.0 -> System.Memory.4.5.3
+* Add assembly dependency introduced by Microsoft.Graph.Core.1.19.0 -> System.Runtime.CompilerServices.Unsafe.4.5.2
+
 ## AzureCP 15.3.20191120.1028 enhancements & bug-fixes - Published in November 20, 2019
 
 * Fix a bug where search fails if input contains a '{'
