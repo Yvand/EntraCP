@@ -245,7 +245,7 @@ namespace azurecp
                         x.DirectoryObjectProperty != AzureADObjectProperty.NotSet);
 
                     if (claimTypeConfig == null)
-                    { 
+                    {
                         continue;
                     }
                     claimTypeConfig.ClaimTypeDisplayName = claimTypeInformation.DisplayName;
@@ -756,14 +756,19 @@ namespace azurecp
             List<SPClaim> claims = new List<SPClaim>();
             // URL encode the filter to prevent that it gets truncated like this: "UserPrincipalName eq 'guest_contoso.com" instead of "UserPrincipalName eq 'guest_contoso.com#EXT#@TENANT.onmicrosoft.com'"
             string filter = HttpUtility.UrlEncode($"{currentContext.IncomingEntityClaimTypeConfig.DirectoryObjectProperty} eq '{currentContext.IncomingEntity.Value}'");
-            IGraphServiceUsersCollectionPage userResult = await tenant.GraphService.Users.Request().Filter(filter).GetAsync().ConfigureAwait(false);
+
+            // In this method, awaiting on the async task hangs in some scenario (reproduced only in multi-server 2019 farm in the w3wp of a site while using "check permissions" feature)
+            // Workaround: Instead of awaiting on the async task directly, run it in a parent task, and await on the parent task.
+            //IGraphServiceUsersCollectionPage userResult = await tenant.GraphService.Users.Request().Filter(filter).GetAsync().ConfigureAwait(false);
+            IGraphServiceUsersCollectionPage userResult = await Task.Run(() => tenant.GraphService.Users.Request().Filter(filter).GetAsync()).ConfigureAwait(false);
             User user = userResult.FirstOrDefault();
 
             if (user == null)
             {
                 // If user was not found, he might be a Guest user. Query to check this: /users?$filter=userType eq 'Guest' and mail eq 'guest@live.com'&$select=userPrincipalName, Id
                 string guestFilter = HttpUtility.UrlEncode($"userType eq 'Guest' and {IdentityClaimTypeConfig.DirectoryObjectPropertyForGuestUsers} eq '{currentContext.IncomingEntity.Value}'");
-                userResult = await tenant.GraphService.Users.Request().Filter(guestFilter).Select(HttpUtility.UrlEncode("userPrincipalName, Id")).GetAsync().ConfigureAwait(false);
+                //userResult = await tenant.GraphService.Users.Request().Filter(guestFilter).Select(HttpUtility.UrlEncode("userPrincipalName, Id")).GetAsync().ConfigureAwait(false);
+                userResult = await Task.Run(() => tenant.GraphService.Users.Request().Filter(guestFilter).Select(HttpUtility.UrlEncode("userPrincipalName, Id")).GetAsync()).ConfigureAwait(false);
                 user = userResult.FirstOrDefault();
                 if (user == null) { return claims; }
             }
@@ -773,7 +778,8 @@ namespace azurecp
                 // POST to /v1.0/users/user@TENANT.onmicrosoft.com/microsoft.graph.getMemberGroups is the preferred way to return security groups as it includes nested groups
                 // But it returns only the group IDs so it can be used only if groupClaimTypeConfig.DirectoryObjectProperty == AzureADObjectProperty.Id
                 // For Guest users, it must be the id: POST to /v1.0/users/18ff6ae9-dd01-4008-a786-aabf71f1492a/microsoft.graph.getMemberGroups
-                IDirectoryObjectGetMemberGroupsCollectionPage groupIDs = await tenant.GraphService.Users[user.Id].GetMemberGroups(CurrentConfiguration.FilterSecurityEnabledGroupsOnly).Request().PostAsync().ConfigureAwait(false);
+                //IDirectoryObjectGetMemberGroupsCollectionPage groupIDs = await tenant.GraphService.Users[user.Id].GetMemberGroups(CurrentConfiguration.FilterSecurityEnabledGroupsOnly).Request().PostAsync().ConfigureAwait(false);
+                IDirectoryObjectGetMemberGroupsCollectionPage groupIDs = await Task.Run(() => tenant.GraphService.Users[user.Id].GetMemberGroups(CurrentConfiguration.FilterSecurityEnabledGroupsOnly).Request().PostAsync()).ConfigureAwait(false);
                 if (groupIDs != null)
                 {
                     bool morePages = groupIDs.Count > 0;
@@ -786,7 +792,8 @@ namespace azurecp
 
                         if (groupIDs.NextPageRequest != null)
                         {
-                            groupIDs = await groupIDs.NextPageRequest.PostAsync().ConfigureAwait(false);
+                            //groupIDs = await groupIDs.NextPageRequest.PostAsync().ConfigureAwait(false);
+                            groupIDs = await Task.Run(() => groupIDs.NextPageRequest.PostAsync()).ConfigureAwait(false);
                         }
                         else
                         {
@@ -798,7 +805,8 @@ namespace azurecp
             else
             {
                 // Fallback to GET to /v1.0/users/user@TENANT.onmicrosoft.com/memberOf, which returns all group properties but does not return nested groups
-                IUserMemberOfCollectionWithReferencesPage groups = await tenant.GraphService.Users[user.Id].MemberOf.Request().GetAsync().ConfigureAwait(false);
+                //IUserMemberOfCollectionWithReferencesPage groups = await tenant.GraphService.Users[user.Id].MemberOf.Request().GetAsync().ConfigureAwait(false);
+                IUserMemberOfCollectionWithReferencesPage groups = await Task.Run(() => tenant.GraphService.Users[user.Id].MemberOf.Request().GetAsync()).ConfigureAwait(false);
                 if (groups != null)
                 {
                     bool morePages = groups.Count > 0;
@@ -811,7 +819,8 @@ namespace azurecp
                         }
                         if (groups.NextPageRequest != null)
                         {
-                            groups = await groups.NextPageRequest.GetAsync().ConfigureAwait(false);
+                            //groups = await groups.NextPageRequest.GetAsync().ConfigureAwait(false);
+                            groups = await Task.Run(() => groups.NextPageRequest.GetAsync()).ConfigureAwait(false);
                         }
                         else
                         {
