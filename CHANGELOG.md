@@ -2,6 +2,7 @@
 
 ## Unreleased
 
+* Fix hang while using "check permissions" feature - https://github.com/Yvand/AzureCP/issues/78
 * Update NuGet package Microsoft.Graph.1.18.0 -> Microsoft.Graph.1.21.0
 * Update NuGet package Microsoft.Graph.Core.1.18.0 -> Microsoft.Graph.Core.1.19.0
 * Update NuGet package Microsoft.IdentityModel.Clients.ActiveDirectory.5.2.3 -> Microsoft.IdentityModel.Clients.ActiveDirectory.5.2.6
