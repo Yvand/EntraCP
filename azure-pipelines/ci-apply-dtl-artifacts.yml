@@ -19,7 +19,7 @@ jobs:
       DestinationFolder: '$(System.DefaultWorkingDirectory)\scripts'
   
   - task: AzurePowerShell@3
-    displayName: 'Apply artifact "Azure Pipelines Agent"'
+    displayName: 'Create and register a VSTS agent in DevOps agent pools by applying artifact "Azure Pipelines Agent"'
     inputs:
       azureSubscription: '$(DevTestLabs.AzureConnectionName)'
       ScriptPath: '$(System.DefaultWorkingDirectory)\scripts\apply-dtl-artifact.ps1'
@@ -51,7 +51,7 @@ jobs:
       DestinationFolder: '$(System.DefaultWorkingDirectory)\scripts'
   
   - task: AzurePowerShell@3
-    displayName: 'Apply artifact "Azure Pipelines Agent"'
+    displayName: 'Create and register a VSTS agent in DevOps agent pools by applying artifact "Azure Pipelines Agent"'
     inputs:
       azureSubscription: '$(DevTestLabs.AzureConnectionName)'
       ScriptPath: '$(System.DefaultWorkingDirectory)\scripts\apply-dtl-artifact.ps1'
@@ -83,7 +83,7 @@ jobs:
       DestinationFolder: '$(System.DefaultWorkingDirectory)\scripts'
   
   - task: AzurePowerShell@3
-    displayName: 'Apply artifact "Azure Pipelines Agent"'
+    displayName: 'Create and register a VSTS agent in DevOps agent pools by applying artifact "Azure Pipelines Agent"'
     inputs:
       azureSubscription: '$(DevTestLabs.AzureConnectionName)'
       ScriptPath: '$(System.DefaultWorkingDirectory)\scripts\apply-dtl-artifact.ps1'
