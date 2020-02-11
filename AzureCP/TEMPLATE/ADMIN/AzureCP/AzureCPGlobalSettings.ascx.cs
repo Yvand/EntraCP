@@ -79,7 +79,9 @@ namespace azurecp.ControlTemplates
 
         private void BuildGraphPropertyDDL()
         {
-            foreach (AzureADObjectProperty prop in Enum.GetValues(typeof(AzureADObjectProperty)))
+            AzureADObjectProperty[] aadPropValues = (AzureADObjectProperty[])Enum.GetValues(typeof(AzureADObjectProperty));
+            IEnumerable<AzureADObjectProperty> aadPropValuesSorted = aadPropValues.OrderBy(v => v.ToString());
+            foreach (AzureADObjectProperty prop in aadPropValuesSorted)
             {
                 // Ensure property exists for the User object type
                 if (AzureCP.GetPropertyValue(new User(), prop.ToString()) == null) { continue; }

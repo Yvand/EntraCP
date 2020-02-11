@@ -1010,7 +1010,33 @@ namespace azurecp
         OfficeLocation,
         Surname,
         UserPrincipalName,
-        UserType
+        UserType,
+        // https://github.com/Yvand/AzureCP/issues/77: Include all other String properties of class User - https://docs.microsoft.com/en-us/graph/api/resources/user?view=graph-rest-1.0#properties
+        AgeGroup,
+        City,
+        CompanyName,
+        ConsentProvidedForMinor,
+        Country,
+        EmployeeId,
+        FaxNumber,
+        LegalAgeGroupClassification,
+        MailNickname,
+        OnPremisesDistinguishedName,
+        OnPremisesImmutableId,
+        OnPremisesSecurityIdentifier,
+        OnPremisesDomainName,
+        OnPremisesSamAccountName,
+        OnPremisesUserPrincipalName,
+        PasswordPolicies,
+        PostalCode,
+        PreferredLanguage,
+        State,
+        StreetAddress,
+        UsageLocation,
+        AboutMe,
+        MySite,
+        PreferredName,
+        ODataType
     }
 
     public enum DirectoryObjectType
