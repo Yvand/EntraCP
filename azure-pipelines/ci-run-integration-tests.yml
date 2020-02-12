@@ -15,8 +15,8 @@ jobs:
       OnSharePoint2019:
         deployThisSharePointVersion: variables['Deployment.ProvisionSharePoint2019']
         sharePointVersion: 2019
-  displayName: Run integration tests for SharePoint $(sharePointVersion)
-  #condition: eq(variables['deployThisSharePointVersion'], 'yes')
+  displayName: Run integration tests
+  #condition: eq(variables['deployThisSharePointVersion'], 'yes') # Not working: variables['deployThisSharePointVersion'] is evaluated to Null
   timeoutInMinutes: 15
   pool:
     name: $(System.TeamProject)-Tests-$(sharePointVersion)
