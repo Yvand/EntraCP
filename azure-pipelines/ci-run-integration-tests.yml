@@ -15,7 +15,7 @@ jobs:
       OnSharePoint2019:
         deployThisSharePointVersion: variables['Deployment.ProvisionSharePoint2019']
         sharePointVersion: 2019
-  displayName: Run integration tests
+  displayName: Run integration tests for SharePoint $(sharePointVersion)
   #condition: eq(variables['deployThisSharePointVersion'], 'yes')
   timeoutInMinutes: 15
   pool:
