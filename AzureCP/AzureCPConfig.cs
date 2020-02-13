@@ -9,6 +9,8 @@ using System.Collections.ObjectModel;
 using System.Diagnostics;
 using System.Linq;
 using System.Reflection;
+using System.Security.Cryptography;
+using System.Security.Cryptography.X509Certificates;
 using System.Web;
 using static azurecp.ClaimsProviderLogging;
 using WIF4_5 = System.Security.Claims;
@@ -44,6 +46,7 @@ namespace azurecp
         public static string MEMBER_USERTYPE => "Member";
         private static object Sync_SetClaimsProviderVersion = new object();
         private static string _ClaimsProviderVersion;
+        public static readonly string ClientCertificatePrivateKeyPassword = "YVANDwRrEHVHQ57ge?uda";
         public static string ClaimsProviderVersion
         {
             get
@@ -685,7 +688,7 @@ namespace azurecp
             set => ClientSecret = value;
         }
         [Persisted]
-        public string ClientSecret;
+        private string ClientSecret;
 
         /// <summary>
         /// Set to true to return only Member users from this tenant
@@ -696,7 +699,7 @@ namespace azurecp
             set => ExcludeMemberUsers = value;
         }
         [Persisted]
-        public bool ExcludeMemberUsers = false;
+        private bool ExcludeMemberUsers = false;
 
         /// <summary>
         /// Set to true to return only Guest users from this tenant
@@ -707,7 +710,23 @@ namespace azurecp
             set => ExcludeGuestUsers = value;
         }
         [Persisted]
-        public bool ExcludeGuestUsers = false;
+        private bool ExcludeGuestUsers = false;
+
+        public X509Certificate2 ClientCertificatePrivateKey
+        {
+            get
+            {
+                return m_ClientCertificatePrivateKey;
+            }
+            set
+            {
+                m_ClientCertificatePrivateKey = value;
+                m_ClientCertificatePrivateKeyRawData = value.Export(X509ContentType.Pkcs12, ClaimsProviderConstants.ClientCertificatePrivateKeyPassword);
+            }
+        }
+        private X509Certificate2 m_ClientCertificatePrivateKey;
+        [Persisted]
+        private byte[] m_ClientCertificatePrivateKeyRawData;
 
         /// <summary>
         /// Instance of the IAuthenticationProvider class for this specific Azure AD tenant
@@ -725,6 +744,22 @@ namespace azurecp
         {
         }
 
+        protected override void OnDeserialization()
+        {
+            if (m_ClientCertificatePrivateKeyRawData != null)
+            {
+                try
+                {
+                    // Flag UserKeySet avoid access denied error. Flag Exportable allows to export the certificate with its private key
+                    m_ClientCertificatePrivateKey = new X509Certificate2(m_ClientCertificatePrivateKeyRawData, ClaimsProviderConstants.ClientCertificatePrivateKeyPassword, X509KeyStorageFlags.Exportable | X509KeyStorageFlags.UserKeySet);
+                }
+                catch (CryptographicException ex)
+                {
+                    ClaimsProviderLogging.LogException(AzureCP._ProviderInternalName, $"while deserializating client certificate for tenant '{this.Name}'.", TraceCategory.Core, ex);
+                }
+            }
+        }
+
         /// <summary>
         /// Set properties AuthenticationProvider and GraphService
         /// </summary>
@@ -732,7 +767,14 @@ namespace azurecp
         {
             try
             {
-                this.AuthenticationProvider = new AADAppOnlyAuthenticationProvider(ClaimsProviderConstants.AuthorityUriTemplate, this.Name, this.ApplicationId, this.ApplicationSecret, claimsProviderName, timeout);
+                if (!String.IsNullOrWhiteSpace(ClientSecret))
+                {
+                    this.AuthenticationProvider = new AADAppOnlyAuthenticationProvider(ClaimsProviderConstants.AuthorityUriTemplate, this.Name, this.ApplicationId, this.ApplicationSecret, claimsProviderName, timeout);
+                }
+                else
+                {
+                    this.AuthenticationProvider = new AADAppOnlyAuthenticationProvider(ClaimsProviderConstants.AuthorityUriTemplate, this.Name, this.ApplicationId, this.ClientCertificatePrivateKey, claimsProviderName, timeout);
+                }
                 this.GraphService = new GraphServiceClient(this.AuthenticationProvider);
             }
             catch (Exception ex)

@@ -6,6 +6,7 @@ using System;
 using System.Diagnostics;
 using System.Globalization;
 using System.Net.Http;
+using System.Security.Cryptography.X509Certificates;
 using System.Threading;
 using System.Threading.Tasks;
 using static azurecp.ClaimsProviderLogging;
@@ -20,6 +21,7 @@ namespace azurecp
         private readonly string AuthorityUri;
         private readonly string ClaimsProviderName;
         private readonly int Timeout;
+        private readonly X509Certificate2 ClientCertificate;
 
         private AuthenticationResult AuthNResult;
         private AsyncLock GetAccessTokenLock = new AsyncLock();
@@ -29,6 +31,16 @@ namespace azurecp
             this.Tenant = tenant;
             this.ClientId = clientId;
             this.ClientSecret = appKey;
+            this.AuthorityUri = String.Format(CultureInfo.InvariantCulture, authorityUriTemplate, tenant);
+            this.ClaimsProviderName = claimsProviderName;
+            this.Timeout = timeout;
+        }
+
+        public AADAppOnlyAuthenticationProvider(string authorityUriTemplate, string tenant, string clientId, X509Certificate2 ClientCertificate, string claimsProviderName, int timeout)
+        {
+            this.Tenant = tenant;
+            this.ClientId = clientId;
+            this.ClientCertificate = ClientCertificate;
             this.AuthorityUri = String.Format(CultureInfo.InvariantCulture, authorityUriTemplate, tenant);
             this.ClaimsProviderName = claimsProviderName;
             this.Timeout = timeout;
@@ -64,19 +76,29 @@ namespace azurecp
 
         public async Task<bool> GetAccessToken(bool throwExceptionIfFail)
         {
-            ClaimsProviderLogging.Log($"[{ClaimsProviderName}] Getting new access token for tenant '{Tenant}'", TraceSeverity.Verbose, EventSeverity.Information, TraceCategory.Core);
             bool success = true;
             Stopwatch timer = new Stopwatch();
             timer.Start();
             int timeout = this.Timeout;
-
             try
             {
                 AuthenticationContext authContext = new AuthenticationContext(AuthorityUri);
-                ClientCredential creds = new ClientCredential(ClientId, ClientSecret);
-                Task<AuthenticationResult> acquireTokenTask = authContext.AcquireTokenAsync(ClaimsProviderConstants.GraphAPIResource, creds);
+                Task<AuthenticationResult> acquireTokenTask = null;
+                if (!String.IsNullOrWhiteSpace(ClientSecret))
+                {
+                    // Get bearer token using a client secret
+                    ClaimsProviderLogging.Log($"[{ClaimsProviderName}] Getting new access token for tenant '{Tenant}' using client ID {ClientId} and a client secret.", TraceSeverity.Verbose, EventSeverity.Information, TraceCategory.Core);
+                    ClientCredential creds = new ClientCredential(ClientId, ClientSecret);
+                    acquireTokenTask = authContext.AcquireTokenAsync(ClaimsProviderConstants.GraphAPIResource, creds);
+                }
+                else
+                {
+                    // Get bearer token using a client certificate
+                    ClaimsProviderLogging.Log($"[{ClaimsProviderName}] Getting new access token for tenant '{Tenant}' using client ID {ClientId} and a client certificate.", TraceSeverity.Verbose, EventSeverity.Information, TraceCategory.Core);
+                    ClientAssertionCertificate certCreds = new ClientAssertionCertificate(ClientId, ClientCertificate);
+                    acquireTokenTask = authContext.AcquireTokenAsync(ClaimsProviderConstants.GraphAPIResource, certCreds);
+                }
                 AuthNResult = await TaskHelper.TimeoutAfter<AuthenticationResult>(acquireTokenTask, new TimeSpan(0, 0, 0, 0, timeout)).ConfigureAwait(false);
-
                 TimeSpan duration = new TimeSpan(AuthNResult.ExpiresOn.UtcTicks - DateTime.Now.ToUniversalTime().Ticks);
                 ClaimsProviderLogging.Log($"[{ClaimsProviderName}] Got new access token for tenant '{Tenant}', valid for {Math.Round((duration.TotalHours), 1)} hour(s) and retrieved in {timer.ElapsedMilliseconds.ToString()} ms", TraceSeverity.High, EventSeverity.Information, TraceCategory.Core);
             }
