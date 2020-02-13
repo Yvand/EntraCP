@@ -94,7 +94,7 @@ namespace azurecp
                 else
                 {
                     // Get bearer token using a client certificate
-                    ClaimsProviderLogging.Log($"[{ClaimsProviderName}] Getting new access token for tenant '{Tenant}' using client ID {ClientId} and a client certificate.", TraceSeverity.Verbose, EventSeverity.Information, TraceCategory.Core);
+                    ClaimsProviderLogging.Log($"[{ClaimsProviderName}] Getting new access token for tenant '{Tenant}' using client ID {ClientId} and a client certificate with thumbprint {ClientCertificate.Thumbprint}.", TraceSeverity.Verbose, EventSeverity.Information, TraceCategory.Core);
                     ClientAssertionCertificate certCreds = new ClientAssertionCertificate(ClientId, ClientCertificate);
                     acquireTokenTask = authContext.AcquireTokenAsync(ClaimsProviderConstants.GraphAPIResource, certCreds);
                 }

@@ -720,8 +720,18 @@ namespace azurecp
             }
             set
             {
-                m_ClientCertificatePrivateKey = value;
-                m_ClientCertificatePrivateKeyRawData = value.Export(X509ContentType.Pkcs12, ClaimsProviderConstants.ClientCertificatePrivateKeyPassword);
+                try
+                {
+                    // To get the raw data with the private key, it is required to call method Export() instead of just reading the property RawData
+                    // If the certificate submitted does not have its private key exportable, Export() will throw a CryptographicException "Key not valid for use in specified state."
+                    m_ClientCertificatePrivateKeyRawData = value.Export(X509ContentType.Pkcs12, ClaimsProviderConstants.ClientCertificatePrivateKeyPassword);
+                    m_ClientCertificatePrivateKey = value;
+                }
+                catch (CryptographicException ex)
+                {
+                    ClaimsProviderLogging.LogException(AzureCP._ProviderInternalName, $"while setting the certificate for tenant '{this.Name}'. Is the private key of the certificate exportable?", TraceCategory.Core, ex);
+                    throw;  // The caller should be informed that the certificate could not be set
+                }
             }
         }
         private X509Certificate2 m_ClientCertificatePrivateKey;
@@ -755,7 +765,7 @@ namespace azurecp
                 }
                 catch (CryptographicException ex)
                 {
-                    ClaimsProviderLogging.LogException(AzureCP._ProviderInternalName, $"while deserializating client certificate for tenant '{this.Name}'.", TraceCategory.Core, ex);
+                    ClaimsProviderLogging.LogException(AzureCP._ProviderInternalName, $"while deserializating the certificate for tenant '{this.Name}'.", TraceCategory.Core, ex);
                 }
             }
         }
