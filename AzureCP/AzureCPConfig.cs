@@ -738,6 +738,14 @@ namespace azurecp
         [Persisted]
         private byte[] m_ClientCertificatePrivateKeyRawData;
 
+        public string AuthenticationMode
+        {
+            get
+            {
+                return String.IsNullOrWhiteSpace(this.ClientSecret) ? "ClientCertificate" : "ClientSecret";
+            }
+        }
+
         /// <summary>
         /// Instance of the IAuthenticationProvider class for this specific Azure AD tenant
         /// </summary>

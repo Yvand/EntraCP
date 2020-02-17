@@ -145,8 +145,8 @@
     </wssuc:inputformsection>
     <wssuc:inputformsection title="New Azure Active Directory tenant" runat="server">
         <template_description>
-				<wssawc:EncodedLiteral runat="server" text="Register a new Azure AD tenant." EncodeMethod='HtmlEncodeAllowSimpleTextFormatting'/>
-			</template_description>
+			<wssawc:EncodedLiteral runat="server" text="<p>Type here the information about the app registration you created in Azure AD for AzureCP.<br />AzureCP can authenticate in Azure AD either using a client secret or a client certificate (but not both).<br /><br/>Read <a href='https://yvand.github.io/AzureCP/Register-App-In-AAD.html' target='_blank'>this article</a> to register the application in Azure AD.</p>" EncodeMethod='NoEncode' />
+		</template_description>
         <template_inputformcontrols>
 			<tr><td>
 				<div id="divNewLdapConnection">
@@ -158,12 +158,26 @@
 						<wssawc:InputFormTextBox title="Azure tenant name" class="ms-input" ID="TxtTenantName" Columns="50" Runat="server" MaxLength="255" Text="TENANTNAME.onMicrosoft.com" />
 					</li>
 					<li>
-						<label for="<%= TxtClientId.ClientID %>">Application ID: <em>*</em></label>
+						<label for="<%= TxtClientId.ClientID %>">Client ID: <em>*</em></label>
 						<wssawc:InputFormTextBox title="Password" class="ms-input" ID="TxtClientId" Columns="50" Runat="server" MaxLength="255" />
 					</li>
 					<li>
-						<label for="<%= TxtClientSecret.ClientID %>">Application secret: <em>*</em></label>
+						<p style="margin-bottom: 0px; margin-top: 0px">Enter either a client ID or a client certificate (but not both):</p>
+					</li>
+					<li>
+						<label for="<%= TxtClientSecret.ClientID %>">Client secret:</label>
 						<wssawc:InputFormTextBox title="Password" class="ms-input" ID="TxtClientSecret" Columns="50" Runat="server" MaxLength="255" TextMode="Password" />
+					</li>
+                    <li>
+						<label for="<%= InputClientCertFile.ClientID %>">Client certificate (with exportable private key):</label>
+                        <span dir="ltr">
+					        <input id="InputClientCertFile"
+						        title="Client certificate file"
+						        runat="server"
+						        type="file"
+						        size="40"
+						        class="ms-fileinput"/>
+				        </span>
 					</li>
 					<li>
 						<label for="<%=ChkMemberUserTypeOnly.ClientID %>">Filter out <a href="https://docs.microsoft.com/en-us/azure/active-directory/active-directory-b2b-user-properties" target="_blank">Guest users</a> on this tenant:</label>

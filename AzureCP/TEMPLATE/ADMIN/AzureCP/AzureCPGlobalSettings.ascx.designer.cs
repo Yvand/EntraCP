@@ -7,11 +7,13 @@
 // </auto-generated>
 //------------------------------------------------------------------------------
 
-namespace azurecp.ControlTemplates {
-    
-    
-    public partial class AzureCPGlobalSettings {
-        
+namespace azurecp.ControlTemplates
+{
+
+
+    public partial class AzureCPGlobalSettings
+    {
+
         /// <summary>
         /// LabelMessage control.
         /// </summary>
@@ -20,7 +22,7 @@ namespace azurecp.ControlTemplates {
         /// To modify move field declaration from designer file to code-behind file.
         /// </remarks>
         protected global::System.Web.UI.WebControls.Label LabelMessage;
-        
+
         /// <summary>
         /// LabelErrorMessage control.
         /// </summary>
@@ -29,7 +31,7 @@ namespace azurecp.ControlTemplates {
         /// To modify move field declaration from designer file to code-behind file.
         /// </remarks>
         protected global::System.Web.UI.WebControls.Label LabelErrorMessage;
-        
+
         /// <summary>
         /// ValSummary control.
         /// </summary>
@@ -38,7 +40,7 @@ namespace azurecp.ControlTemplates {
         /// To modify move field declaration from designer file to code-behind file.
         /// </remarks>
         protected global::System.Web.UI.WebControls.ValidationSummary ValSummary;
-        
+
         /// <summary>
         /// BtnOKTop control.
         /// </summary>
@@ -47,7 +49,7 @@ namespace azurecp.ControlTemplates {
         /// To modify move field declaration from designer file to code-behind file.
         /// </remarks>
         protected global::System.Web.UI.WebControls.Button BtnOKTop;
-        
+
         /// <summary>
         /// grdAzureTenants control.
         /// </summary>
@@ -56,7 +58,7 @@ namespace azurecp.ControlTemplates {
         /// To modify move field declaration from designer file to code-behind file.
         /// </remarks>
         protected global::Microsoft.SharePoint.WebControls.SPGridView grdAzureTenants;
-        
+
         /// <summary>
         /// TxtTenantName control.
         /// </summary>
@@ -65,7 +67,7 @@ namespace azurecp.ControlTemplates {
         /// To modify move field declaration from designer file to code-behind file.
         /// </remarks>
         protected global::Microsoft.SharePoint.WebControls.InputFormTextBox TxtTenantName;
-        
+
         /// <summary>
         /// TxtClientId control.
         /// </summary>
@@ -74,7 +76,7 @@ namespace azurecp.ControlTemplates {
         /// To modify move field declaration from designer file to code-behind file.
         /// </remarks>
         protected global::Microsoft.SharePoint.WebControls.InputFormTextBox TxtClientId;
-        
+
         /// <summary>
         /// TxtClientSecret control.
         /// </summary>
@@ -83,7 +85,16 @@ namespace azurecp.ControlTemplates {
         /// To modify move field declaration from designer file to code-behind file.
         /// </remarks>
         protected global::Microsoft.SharePoint.WebControls.InputFormTextBox TxtClientSecret;
-        
+
+        /// <summary>
+        /// InputClientCertFile control.
+        /// </summary>
+        /// <remarks>
+        /// Auto-generated field.
+        /// To modify move field declaration from designer file to code-behind file.
+        /// </remarks>
+        protected global::System.Web.UI.HtmlControls.HtmlInputFile InputClientCertFile;
+
         /// <summary>
         /// ChkMemberUserTypeOnly control.
         /// </summary>
@@ -92,7 +103,7 @@ namespace azurecp.ControlTemplates {
         /// To modify move field declaration from designer file to code-behind file.
         /// </remarks>
         protected global::Microsoft.SharePoint.WebControls.InputFormCheckBox ChkMemberUserTypeOnly;
-        
+
         /// <summary>
         /// BtnTestAzureTenantConnection control.
         /// </summary>
@@ -101,7 +112,7 @@ namespace azurecp.ControlTemplates {
         /// To modify move field declaration from designer file to code-behind file.
         /// </remarks>
         protected global::System.Web.UI.WebControls.Button BtnTestAzureTenantConnection;
-        
+
         /// <summary>
         /// BtnAddLdapConnection control.
         /// </summary>
@@ -110,7 +121,7 @@ namespace azurecp.ControlTemplates {
         /// To modify move field declaration from designer file to code-behind file.
         /// </remarks>
         protected global::System.Web.UI.WebControls.Button BtnAddLdapConnection;
-        
+
         /// <summary>
         /// LabelErrorTestLdapConnection control.
         /// </summary>
@@ -119,7 +130,7 @@ namespace azurecp.ControlTemplates {
         /// To modify move field declaration from designer file to code-behind file.
         /// </remarks>
         protected global::System.Web.UI.WebControls.Label LabelErrorTestLdapConnection;
-        
+
         /// <summary>
         /// LabelTestTenantConnectionOK control.
         /// </summary>
@@ -128,7 +139,7 @@ namespace azurecp.ControlTemplates {
         /// To modify move field declaration from designer file to code-behind file.
         /// </remarks>
         protected global::System.Web.UI.WebControls.Label LabelTestTenantConnectionOK;
-        
+
         /// <summary>
         /// DDLDirectoryPropertyMemberUsers control.
         /// </summary>
@@ -137,7 +148,7 @@ namespace azurecp.ControlTemplates {
         /// To modify move field declaration from designer file to code-behind file.
         /// </remarks>
         protected global::System.Web.UI.WebControls.DropDownList DDLDirectoryPropertyMemberUsers;
-        
+
         /// <summary>
         /// DDLDirectoryPropertyGuestUsers control.
         /// </summary>
@@ -146,7 +157,7 @@ namespace azurecp.ControlTemplates {
         /// To modify move field declaration from designer file to code-behind file.
         /// </remarks>
         protected global::System.Web.UI.WebControls.DropDownList DDLDirectoryPropertyGuestUsers;
-        
+
         /// <summary>
         /// RbIdentityDefault control.
         /// </summary>
@@ -155,7 +166,7 @@ namespace azurecp.ControlTemplates {
         /// To modify move field declaration from designer file to code-behind file.
         /// </remarks>
         protected global::Microsoft.SharePoint.WebControls.InputFormRadioButton RbIdentityDefault;
-        
+
         /// <summary>
         /// RbIdentityCustomGraphProperty control.
         /// </summary>
@@ -164,7 +175,7 @@ namespace azurecp.ControlTemplates {
         /// To modify move field declaration from designer file to code-behind file.
         /// </remarks>
         protected global::Microsoft.SharePoint.WebControls.InputFormRadioButton RbIdentityCustomGraphProperty;
-        
+
         /// <summary>
         /// DDLGraphPropertyToDisplay control.
         /// </summary>
@@ -173,7 +184,7 @@ namespace azurecp.ControlTemplates {
         /// To modify move field declaration from designer file to code-behind file.
         /// </remarks>
         protected global::System.Web.UI.WebControls.DropDownList DDLGraphPropertyToDisplay;
-        
+
         /// <summary>
         /// ChkAlwaysResolveUserInput control.
         /// </summary>
@@ -182,7 +193,7 @@ namespace azurecp.ControlTemplates {
         /// To modify move field declaration from designer file to code-behind file.
         /// </remarks>
         protected global::System.Web.UI.WebControls.CheckBox ChkAlwaysResolveUserInput;
-        
+
         /// <summary>
         /// ChkFilterExactMatchOnly control.
         /// </summary>
@@ -191,7 +202,7 @@ namespace azurecp.ControlTemplates {
         /// To modify move field declaration from designer file to code-behind file.
         /// </remarks>
         protected global::System.Web.UI.WebControls.CheckBox ChkFilterExactMatchOnly;
-        
+
         /// <summary>
         /// ChkAugmentAADRoles control.
         /// </summary>
@@ -200,7 +211,7 @@ namespace azurecp.ControlTemplates {
         /// To modify move field declaration from designer file to code-behind file.
         /// </remarks>
         protected global::System.Web.UI.WebControls.CheckBox ChkAugmentAADRoles;
-        
+
         /// <summary>
         /// ChkFilterSecurityEnabledGroupsOnly control.
         /// </summary>
@@ -209,7 +220,7 @@ namespace azurecp.ControlTemplates {
         /// To modify move field declaration from designer file to code-behind file.
         /// </remarks>
         protected global::System.Web.UI.WebControls.CheckBox ChkFilterSecurityEnabledGroupsOnly;
-        
+
         /// <summary>
         /// BtnResetAzureCPConfig control.
         /// </summary>
@@ -218,7 +229,7 @@ namespace azurecp.ControlTemplates {
         /// To modify move field declaration from designer file to code-behind file.
         /// </remarks>
         protected global::System.Web.UI.WebControls.Button BtnResetAzureCPConfig;
-        
+
         /// <summary>
         /// BtnOK control.
         /// </summary>

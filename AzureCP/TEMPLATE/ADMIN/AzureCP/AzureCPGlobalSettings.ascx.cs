@@ -211,9 +211,16 @@ namespace azurecp.ControlTemplates
         void AddTenantConnection()
         {
             if (ValidatePrerequisite() != ConfigStatus.AllGood) { return; }
-            if (this.TxtTenantName.Text == String.Empty || this.TxtClientId.Text == String.Empty || this.TxtClientSecret.Text == String.Empty)
+            if (this.TxtTenantName.Text == String.Empty || this.TxtClientId.Text == String.Empty)
             {
                 this.LabelErrorTestLdapConnection.Text = TextErrorAzureTenantFieldsMissing;
+                return;
+            }
+
+            if ((InputClientCertFile.PostedFile == null || String.IsNullOrWhiteSpace(this.TxtClientSecret.Text)) ||
+                InputClientCertFile.PostedFile != null || !String.IsNullOrWhiteSpace(TxtClientSecret.Text))
+            {
+                this.LabelErrorTestLdapConnection.Text = "Specify either a client secret or a client certificate, but not both.";
                 return;
             }
 
