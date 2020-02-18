@@ -720,6 +720,7 @@ namespace azurecp
             }
             set
             {
+                if (value == null) { return; }
                 try
                 {
                     // To get the raw data with the private key, it is required to call method Export() instead of just reading the property RawData

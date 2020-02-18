@@ -145,7 +145,7 @@
     </wssuc:inputformsection>
     <wssuc:inputformsection title="New Azure Active Directory tenant" runat="server">
         <template_description>
-			<wssawc:EncodedLiteral runat="server" text="<p>Type here the information about the app registration you created in Azure AD for AzureCP.<br />AzureCP can authenticate in Azure AD either using a client secret or a client certificate (but not both).<br /><br/>Read <a href='https://yvand.github.io/AzureCP/Register-App-In-AAD.html' target='_blank'>this article</a> to register the application in Azure AD.</p>" EncodeMethod='NoEncode' />
+			<wssawc:EncodedLiteral runat="server" text="<p>A dedicated app must be registered in Azure AD to authorize AzureCP to run queries.<br />Read <a href='https://yvand.github.io/AzureCP/Register-App-In-AAD.html' target='_blank'>this article</a> to see how to do it, then you can enter the information here.<br /><br />AzureCP can authenticate either with a secret or a certificate.</p>" EncodeMethod='NoEncode' />
 		</template_description>
         <template_inputformcontrols>
 			<tr><td>
@@ -158,26 +158,25 @@
 						<wssawc:InputFormTextBox title="Azure tenant name" class="ms-input" ID="TxtTenantName" Columns="50" Runat="server" MaxLength="255" Text="TENANTNAME.onMicrosoft.com" />
 					</li>
 					<li>
-						<label for="<%= TxtClientId.ClientID %>">Client ID: <em>*</em></label>
+						<label for="<%= TxtClientId.ClientID %>">Application (client) ID: <em>*</em></label>
 						<wssawc:InputFormTextBox title="Password" class="ms-input" ID="TxtClientId" Columns="50" Runat="server" MaxLength="255" />
 					</li>
 					<li>
-						<p style="margin-bottom: 0px; margin-top: 0px">Enter either a client ID or a client certificate (but not both):</p>
+						<p style="margin-bottom: 0px; margin-top: 0px">Specify either a client secret or a client certificate (but not both):</p>
 					</li>
 					<li>
 						<label for="<%= TxtClientSecret.ClientID %>">Client secret:</label>
 						<wssawc:InputFormTextBox title="Password" class="ms-input" ID="TxtClientSecret" Columns="50" Runat="server" MaxLength="255" TextMode="Password" />
 					</li>
                     <li>
-						<label for="<%= InputClientCertFile.ClientID %>">Client certificate (with exportable private key):</label>
+						<label for="<%= InputClientCertFile.ClientID %>">Client certificate (.pfx):</label>
                         <span dir="ltr">
-					        <input id="InputClientCertFile"
-						        title="Client certificate file"
-						        runat="server"
-						        type="file"
-						        size="40"
-						        class="ms-fileinput"/>
+					        <input id="InputClientCertFile" title="Client certificate file" runat="server" type="file" size="38" class="ms-fileinput" />
 				        </span>
+                    </li>
+					<li>
+						<label for="<%= InputClientCertPassword.ClientID %>">Client certificate password:</label>
+						<wssawc:InputFormTextBox title="Certificate password" class="ms-input" ID="InputClientCertPassword" Columns="50" Runat="server" MaxLength="255" TextMode="Password" />
 					</li>
 					<li>
 						<label for="<%=ChkMemberUserTypeOnly.ClientID %>">Filter out <a href="https://docs.microsoft.com/en-us/azure/active-directory/active-directory-b2b-user-properties" target="_blank">Guest users</a> on this tenant:</label>
