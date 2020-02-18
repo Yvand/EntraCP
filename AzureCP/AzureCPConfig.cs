@@ -644,8 +644,26 @@ namespace azurecp
             }
             return configUpdated;
         }
-    }
 
+        /// <summary>
+        /// Return the Azure AD tenant in the current configuration based on its name.
+        /// </summary>
+        /// <param name="azureTenantName">Name of the tenant, for example TENANTNAME.onMicrosoft.com.</param>
+        /// <returns>AzureTenant found in the current configuration.</returns>
+        public AzureTenant GetAzureTenantByName(string azureTenantName)
+        {
+            AzureTenant match = null;
+            foreach (AzureTenant tenant in this.AzureTenants)
+            {
+                if (String.Equals(tenant.Name, azureTenantName, StringComparison.InvariantCultureIgnoreCase))
+                {
+                    match = tenant;
+                    break;
+                }
+            }
+            return match;
+        }
+    }
 
     public class AzureTenant : SPAutoSerializingObject
     {
