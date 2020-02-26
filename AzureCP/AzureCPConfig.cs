@@ -842,6 +842,48 @@ namespace azurecp
             }
             return copy;
         }
+
+        /// <summary>
+        /// Update the credentials used to connect to the Azure AD tenant
+        /// </summary>
+        /// <param name="newApplicationSecret">New application (client) secret</param>
+        public void UpdateCredentials(string newApplicationSecret)
+        {
+            SetCredentials(this.ApplicationId, newApplicationSecret);
+        }
+
+        /// <summary>
+        /// Set the credentials used to connect to the Azure AD tenant
+        /// </summary>
+        /// <param name="applicationId">Application (client) ID</param>
+        /// <param name="applicationSecret">Application (client) secret</param>
+        public void SetCredentials(string applicationId, string applicationSecret)
+        {
+            this.ApplicationId = applicationId;
+            this.ApplicationSecret = applicationSecret;
+            this.ClientCertificatePrivateKey = null;
+        }
+
+        /// <summary>
+        /// Update the credentials used to connect to the Azure AD tenant
+        /// </summary>
+        /// <param name="newCertificate">New certificate with its private key</param>
+        public void UpdateCredentials(X509Certificate2 newCertificate)
+        {
+            SetCredentials(this.ApplicationId, newCertificate);
+        }
+
+        /// <summary>
+        /// Set the credentials used to connect to the Azure AD tenant
+        /// </summary>
+        /// <param name="applicationId">Application (client) secret</param>
+        /// <param name="certificate">Certificate with its private key</param>
+        public void SetCredentials(string applicationId, X509Certificate2 certificate)
+        {
+            this.ApplicationId = applicationId;
+            this.ApplicationSecret = String.Empty;
+            this.ClientCertificatePrivateKey = certificate;
+        }
     }
 
     /// <summary>
