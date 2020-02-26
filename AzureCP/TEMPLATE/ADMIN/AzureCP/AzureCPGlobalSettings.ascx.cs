@@ -1,13 +1,19 @@
 ﻿using Microsoft.Graph;
 using Microsoft.IdentityModel.Clients.ActiveDirectory;
+using Microsoft.SharePoint;
 using Microsoft.SharePoint.Administration;
+using Microsoft.SharePoint.Utilities;
 using Microsoft.SharePoint.WebControls;
 using System;
 using System.Collections.Generic;
 using System.Data;
+using System.IO;
 using System.Linq;
 using System.Reflection;
+using System.Security.Cryptography;
+using System.Security.Cryptography.X509Certificates;
 using System.Threading.Tasks;
+using System.Web.UI.HtmlControls;
 using System.Web.UI.WebControls;
 using static azurecp.ClaimsProviderLogging;
 
@@ -15,9 +21,10 @@ namespace azurecp.ControlTemplates
 {
     public partial class AzureCPGlobalSettings : AzureCPUserControl
     {
-        readonly string TextErrorAzureTenantFieldsMissing = "Some mandatory fields are missing.";
+        readonly string TextErrorNewTenantFieldsMissing = "Some mandatory fields are missing.";
         readonly string TextErrorTestAzureADConnection = "Unable to get access token for tenant '{0}': {1}";
         readonly string TextConnectionSuccessful = "Connection successful.";
+        readonly string TextErrorNewTenantCreds = "Specify either a client secret or a client certificate, but not both.";
 
         protected void Page_Load(object sender, EventArgs e)
         {
@@ -155,30 +162,57 @@ namespace azurecp.ControlTemplates
 
         protected void ValidateAzureTenantConnection()
         {
-            if (this.TxtTenantName.Text == String.Empty || this.TxtClientId.Text == String.Empty || this.TxtClientSecret.Text == String.Empty)
+            if (String.IsNullOrWhiteSpace(this.TxtTenantName.Text) || String.IsNullOrWhiteSpace(this.TxtClientId.Text))
             {
-                this.LabelErrorTestLdapConnection.Text = TextErrorAzureTenantFieldsMissing;
+                this.LabelErrorTestLdapConnection.Text = TextErrorNewTenantFieldsMissing;
+                return;
+            }
+
+            if ((InputClientCertFile.PostedFile == null && String.IsNullOrWhiteSpace(this.TxtClientSecret.Text)) ||
+                (InputClientCertFile.PostedFile != null && InputClientCertFile.PostedFile.ContentLength == 0 && String.IsNullOrWhiteSpace(TxtClientSecret.Text)) ||
+                (InputClientCertFile.PostedFile != null && InputClientCertFile.PostedFile.ContentLength != 0 && !String.IsNullOrWhiteSpace(TxtClientSecret.Text)))
+            {
+                this.LabelErrorTestLdapConnection.Text = TextErrorNewTenantCreds;
                 return;
             }
 
             string tenantName = this.TxtTenantName.Text;
             string clientId = this.TxtClientId.Text;
             string clientSecret = this.TxtClientSecret.Text;
-            try
+            // The whole flow of setting the certificate and testing it in AADAppOnlyAuthenticationProvider needs to be done as app pool account
+            // Otherwise AADAppOnlyAuthenticationProvider throws CryptographicException: Keyset does not exist (which means it could not access the private key) 
+            SPSecurity.RunWithElevatedPrivileges(delegate ()
             {
-                AADAppOnlyAuthenticationProvider testConnection = new AADAppOnlyAuthenticationProvider(ClaimsProviderConstants.AuthorityUriTemplate, tenantName, clientId, clientSecret, String.Empty, ClaimsProviderConstants.DEFAULT_TIMEOUT);
-                Task<bool> testConnectionTask = testConnection.GetAccessToken(true);
-                testConnectionTask.Wait();
-                this.LabelTestTenantConnectionOK.Text = TextConnectionSuccessful;
-            }
-            catch (AdalServiceException ex)
-            {
-                this.LabelErrorTestLdapConnection.Text = String.Format(TextErrorTestAzureADConnection, tenantName, ex.Message);
-            }
-            catch (Exception ex)
-            {
-                this.LabelErrorTestLdapConnection.Text = String.Format(TextErrorTestAzureADConnection, tenantName, ex.Message);
-            }
+                X509Certificate2 cert = null;
+                if (String.IsNullOrWhiteSpace(this.TxtClientSecret.Text))
+                {
+                    if (ValidateUploadedCertFile(InputClientCertFile, this.InputClientCertPassword.Text, out cert) == false)
+                    { return; }
+                }
+                try
+                {
+                    AADAppOnlyAuthenticationProvider testConnection;
+                    if (String.IsNullOrWhiteSpace(this.TxtClientSecret.Text))
+                    {
+                        testConnection = new AADAppOnlyAuthenticationProvider(ClaimsProviderConstants.AuthorityUriTemplate, tenantName, clientId, cert, String.Empty, ClaimsProviderConstants.DEFAULT_TIMEOUT);
+                    }
+                    else
+                    {
+                        testConnection = new AADAppOnlyAuthenticationProvider(ClaimsProviderConstants.AuthorityUriTemplate, tenantName, clientId, clientSecret, String.Empty, ClaimsProviderConstants.DEFAULT_TIMEOUT);
+                    }
+                    Task<bool> testConnectionTask = testConnection.GetAccessToken(true);
+                    testConnectionTask.Wait();
+                    this.LabelTestTenantConnectionOK.Text = TextConnectionSuccessful;
+                }
+                catch (AdalServiceException ex)
+                {
+                    this.LabelErrorTestLdapConnection.Text = String.Format(TextErrorTestAzureADConnection, tenantName, ex.Message);
+                }
+                catch (Exception ex)
+                {
+                    this.LabelErrorTestLdapConnection.Text = String.Format(TextErrorTestAzureADConnection, tenantName, ex.Message);
+                }
+            });
         }
 
         protected void BtnOK_Click(Object sender, EventArgs e)
@@ -211,10 +245,25 @@ namespace azurecp.ControlTemplates
         void AddTenantConnection()
         {
             if (ValidatePrerequisite() != ConfigStatus.AllGood) { return; }
-            if (this.TxtTenantName.Text == String.Empty || this.TxtClientId.Text == String.Empty || this.TxtClientSecret.Text == String.Empty)
+            if (String.IsNullOrWhiteSpace(this.TxtTenantName.Text) || String.IsNullOrWhiteSpace(this.TxtClientId.Text))
             {
-                this.LabelErrorTestLdapConnection.Text = TextErrorAzureTenantFieldsMissing;
+                this.LabelErrorTestLdapConnection.Text = TextErrorNewTenantFieldsMissing;
                 return;
+            }
+
+            if ((InputClientCertFile.PostedFile == null && String.IsNullOrWhiteSpace(this.TxtClientSecret.Text)) ||
+                (InputClientCertFile.PostedFile != null && InputClientCertFile.PostedFile.ContentLength == 0 && String.IsNullOrWhiteSpace(TxtClientSecret.Text)) ||
+                (InputClientCertFile.PostedFile != null && InputClientCertFile.PostedFile.ContentLength != 0 && !String.IsNullOrWhiteSpace(TxtClientSecret.Text)))
+            {
+                this.LabelErrorTestLdapConnection.Text = TextErrorNewTenantCreds;
+                return;
+            }
+
+            X509Certificate2 cert = null;
+            if (String.IsNullOrWhiteSpace(this.TxtClientSecret.Text))
+            {
+                if (ValidateUploadedCertFile(InputClientCertFile, this.InputClientCertPassword.Text, out cert) == false)
+                { return; }
             }
 
             if (PersistedObject.AzureTenants == null)
@@ -225,9 +274,10 @@ namespace azurecp.ControlTemplates
                 new AzureTenant
                 {
                     Name = this.TxtTenantName.Text,
-                    ApplicationId = TxtClientId.Text,
+                    ApplicationId = this.TxtClientId.Text,
                     ApplicationSecret = this.TxtClientSecret.Text,
                     ExcludeMembers = this.ChkMemberUserTypeOnly.Checked,
+                    ClientCertificatePrivateKey = cert
                 });
 
             CommitChanges();
@@ -237,6 +287,59 @@ namespace azurecp.ControlTemplates
             this.TxtTenantName.Text = "TENANTNAME.onMicrosoft.com";
             this.TxtClientId.Text = String.Empty;
             this.TxtClientSecret.Text = String.Empty;
+            this.InputClientCertPassword.Text = String.Empty;
+        }
+
+        private bool ValidateUploadedCertFile(
+            HtmlInputFile inputFile,
+            string certificatePassword,
+            out X509Certificate2 cert)
+        {
+            cert = null;
+            if (inputFile.PostedFile == null ||
+                inputFile.PostedFile.ContentLength == 0)
+            {
+                this.LabelErrorTestLdapConnection.Text = $"No certificate was passed.";
+                return false;
+            }
+
+            // Ensure that fileName is just the file name (no directories), then check that fileName is legal.
+            string fileName = string.Empty;
+            try
+            {
+                fileName = Path.GetFileName(inputFile.PostedFile.FileName);
+            }
+            catch (ArgumentException ex)
+            {
+                this.LabelErrorTestLdapConnection.Text = $"Invalid file path. Error message: {ex.Message}";
+                return false;
+            }
+            if (!SPUrlUtility.IsLegalFileName(fileName))
+            {
+                this.LabelErrorTestLdapConnection.Text = $"The file name is not legal.";
+                return false;
+            }
+
+            try
+            {
+                byte[] buffer = new byte[inputFile.PostedFile.ContentLength];
+                inputFile.PostedFile.InputStream.Read(buffer, 0, buffer.Length);
+                cert = new X509Certificate2(buffer, certificatePassword, X509KeyStorageFlags.UserKeySet | X509KeyStorageFlags.Exportable);
+                if (cert.HasPrivateKey == false)
+                {
+                    this.LabelErrorTestLdapConnection.Text = $"Certificate does not contain the private key.";
+                    return false;
+                }
+
+                // Try to export the certificate with its private key to validate that it succeeds
+                cert.Export(X509ContentType.Pkcs12, "Yvan");
+            }
+            catch (CryptographicException ex)
+            {
+                this.LabelErrorTestLdapConnection.Text = $"Invalid certificate. Error message: {ex.Message}";
+                return false;
+            }
+            return true;
         }
     }
 
