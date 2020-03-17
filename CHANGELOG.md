@@ -1,6 +1,6 @@
 # Change log for AzureCP
 
-## Unreleased
+## AzureCP 16.0.20200303.1092 enhancements & bug-fixes - Published in Marc 17, 2020
 
 * Fix hang while using "check permissions" feature - https://github.com/Yvand/AzureCP/issues/78
 * Update NuGet package Microsoft.Graph.1.18.0 -> Microsoft.Graph.1.21.0
