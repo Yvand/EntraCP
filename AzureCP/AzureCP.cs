@@ -1148,6 +1148,10 @@ namespace azurecp
 
             string preferredFilterPattern;
             string input = currentContext.Input;
+
+            // https://github.com/Yvand/AzureCP/issues/88: Escape single quotes as documented in https://docs.microsoft.com/en-us/graph/query-parameters#escaping-single-quotes
+            input = input.Replace("'", "''");
+
             if (currentContext.ExactSearch)
             {
                 preferredFilterPattern = String.Format(searchPatternEquals, "{0}", input);
