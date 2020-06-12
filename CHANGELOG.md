@@ -1,5 +1,9 @@
 # Change log for AzureCP
 
+## Unreleased
+
+* Fix error when earching users with a single quote in the people picker - https://github.com/Yvand/AzureCP/issues/88
+
 ## AzureCP 16.0.20200303.1092 enhancements & bug-fixes - Published in March 17, 2020
 
 * Fix hang while using "check permissions" feature - https://github.com/Yvand/AzureCP/issues/78
