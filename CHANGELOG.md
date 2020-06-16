@@ -3,6 +3,9 @@
 ## Unreleased
 
 * Fix error when earching users with a single quote in the people picker - https://github.com/Yvand/AzureCP/issues/88
+* Update target framework to v4.6.1
+* Update NuGet package Microsoft.Graph 1.21.0 -> Microsoft.Graph 3.7.0
+* Update NuGet package Microsoft.IdentityModel.Clients.ActiveDirectory 5.2.6 -> Microsoft.IdentityModel.Clients.ActiveDirectory 5.2.7
 
 ## AzureCP 16.0.20200303.1092 enhancements & bug-fixes - Published in March 17, 2020
 
