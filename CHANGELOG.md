@@ -3,6 +3,7 @@
 ## Unreleased
 
 * Fix error when earching users with a single quote in the people picker - https://github.com/Yvand/AzureCP/issues/88
+* Use batch requests when relevant to optimize network performance
 * Update target framework to v4.6.1
 * Update NuGet package Microsoft.Graph 1.21.0 -> Microsoft.Graph 3.7.0
 * Update NuGet package Microsoft.IdentityModel.Clients.ActiveDirectory 5.2.6 -> Microsoft.IdentityModel.Clients.ActiveDirectory 5.2.7
