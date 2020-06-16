@@ -1335,7 +1335,10 @@ namespace azurecp
 
         protected virtual async Task<AzureADResult> QueryAzureADTenantAsync(OperationContext currentContext, AzureTenant tenant, bool firstAttempt)
         {
-            if (tenant.UserFilter == null && tenant.GroupFilter == null) { return null; }
+            if (String.IsNullOrWhiteSpace(tenant.UserFilter) && String.IsNullOrWhiteSpace(tenant.GroupFilter))
+            {
+                return null;
+            }
 
             if (tenant.GraphService == null)
             {
@@ -1343,94 +1346,116 @@ namespace azurecp
                 return null;
             }
 
-            ClaimsProviderLogging.Log($"[{ProviderInternalName}] Querying Azure AD tenant '{tenant.Name}' for users/groups/domains, with input '{currentContext.Input}'", TraceSeverity.VerboseEx, EventSeverity.Information, TraceCategory.Lookup);
+            ClaimsProviderLogging.Log($"[{ProviderInternalName}] Querying Azure AD tenant '{tenant.Name}' for users and groups, with input '{currentContext.Input}'", TraceSeverity.VerboseEx, EventSeverity.Information, TraceCategory.Lookup);
             AzureADResult tenantResults = new AzureADResult();
             bool tryAgain = false;
             object lockAddResultToCollection = new object();
             CancellationTokenSource cts = new CancellationTokenSource(this.CurrentConfiguration.Timeout);
             try
             {
-                using (new SPMonitoredScope($"[{ProviderInternalName}] Querying Azure AD tenant '{tenant.Name}' for users/groups/domains, with input '{currentContext.Input}'", 1000))
+                using (new SPMonitoredScope($"[{ProviderInternalName}] Querying Azure AD tenant '{tenant.Name}' for users and groups, with input '{currentContext.Input}'", 1000))
                 {
-                    // No need to lock here: as per https://stackoverflow.com/questions/49108179/need-advice-on-getting-access-token-with-multiple-task-in-microsoft-graph:
-                    // The Graph client object is thread-safe and re-entrant
-                    Task userQueryTask = Task.Run(async () =>
+                    // Run in a task to timeout it if it takes too long
+                    Task batchQueryTask = Task.Run(async () =>
                     {
-                        if (String.IsNullOrEmpty(tenant.UserFilter))
+                        // Initialize requests and variables that will receive the result
+                        IGraphServiceUsersCollectionPage usersFound = null;
+                        IGraphServiceGroupsCollectionPage groupsFound = null;
+                        IGraphServiceUsersCollectionRequest userRequest = tenant.GraphService.Users.Request().Select(tenant.UserSelect).Filter(tenant.UserFilter).Top(currentContext.MaxCount);
+                        IGraphServiceGroupsCollectionRequest groupRequest = tenant.GraphService.Groups.Request().Select(tenant.GroupSelect).Filter(tenant.GroupFilter).Top(currentContext.MaxCount);
+
+                        // Do a batch query only if necessary
+                        if (!String.IsNullOrEmpty(tenant.UserFilter) && !String.IsNullOrEmpty(tenant.GroupFilter))
                         {
-                            return;
+                            // https://docs.microsoft.com/en-us/graph/sdks/batch-requests?tabs=csharp
+                            BatchRequestContent batchRequestContent = new BatchRequestContent();
+                            var userRequestId = batchRequestContent.AddBatchRequestStep(userRequest);
+                            var groupRequestId = batchRequestContent.AddBatchRequestStep(groupRequest);
+                            var batchResponse = await tenant.GraphService.Batch.Request().PostAsync(batchRequestContent).ConfigureAwait(false);
+
+                            // De - serialize batch response based on known return type
+                            GraphServiceUsersCollectionResponse usersBatchResponse = await batchResponse.GetResponseByIdAsync<GraphServiceUsersCollectionResponse>(userRequestId).ConfigureAwait(false);
+                            usersFound = usersBatchResponse.Value;
+                            GraphServiceGroupsCollectionResponse groupsBatchResponse = await batchResponse.GetResponseByIdAsync<GraphServiceGroupsCollectionResponse>(groupRequestId).ConfigureAwait(false);
+                            groupsFound = groupsBatchResponse.Value;
                         }
-                        IGraphServiceUsersCollectionPage users = await tenant.GraphService.Users.Request().Select(tenant.UserSelect).Filter(tenant.UserFilter).Top(currentContext.MaxCount).GetAsync().ConfigureAwait(false);
-                        ClaimsProviderLogging.Log($"[{ProviderInternalName}] Query to tenant '{tenant.Name}' returned {users.Count} user(s) with filter \"{HttpUtility.UrlDecode(tenant.UserFilter)}\"", TraceSeverity.VerboseEx, EventSeverity.Information, TraceCategory.Lookup);
-                        if (users != null && users.Count > 0)
+                        else
                         {
-                            do
+                            // The request only asks for either users or groups, not both
+                            if (!String.IsNullOrEmpty(tenant.UserFilter))
                             {
-                                lock (lockAddResultToCollection)
-                                {
-                                    IList<User> usersInCurrentPage = users.CurrentPage;
-                                    if (tenant.ExcludeMembers)
-                                    {
-                                        usersInCurrentPage = users.CurrentPage.Where(x => !String.Equals(x.UserType, ClaimsProviderConstants.MEMBER_USERTYPE, StringComparison.InvariantCultureIgnoreCase)).ToList<User>();
-                                    }
-                                    else if (tenant.ExcludeGuests)
-                                    {
-                                        usersInCurrentPage = users.CurrentPage.Where(x => !String.Equals(x.UserType, ClaimsProviderConstants.GUEST_USERTYPE, StringComparison.InvariantCultureIgnoreCase)).ToList<User>();
-                                    }
-                                    tenantResults.UsersAndGroups.AddRange(usersInCurrentPage);
-                                }
-                                if (users.NextPageRequest != null)
-                                {
-                                    users = await users.NextPageRequest.GetAsync().ConfigureAwait(false);
-                                }
+                                usersFound = await userRequest.GetAsync().ConfigureAwait(false);
                             }
-                            while (users?.Count > 0 && users.NextPageRequest != null);
-                        }
-                    }, cts.Token);
-                    Task groupQueryTask = Task.Run(async () =>
-                    {
-                        if (String.IsNullOrEmpty(tenant.GroupFilter)) return;
-                        IGraphServiceGroupsCollectionPage groups = await tenant.GraphService.Groups.Request().Select(tenant.GroupSelect).Filter(tenant.GroupFilter).Top(currentContext.MaxCount).GetAsync().ConfigureAwait(false);
-                        ClaimsProviderLogging.Log($"[{ProviderInternalName}] Query to tenant '{tenant.Name}' returned {groups.Count} group(s) with filter \"{HttpUtility.UrlDecode(tenant.GroupFilter)}\"", TraceSeverity.VerboseEx, EventSeverity.Information, TraceCategory.Lookup);
-                        if (groups != null && groups.Count > 0)
-                        {
-                            do
+                            else
                             {
-                                lock (lockAddResultToCollection)
-                                {
-                                    tenantResults.UsersAndGroups.AddRange(groups.CurrentPage);
-                                }
-                                if (groups.NextPageRequest != null)
-                                {
-                                    groups = await groups.NextPageRequest.GetAsync().ConfigureAwait(false);
-                                }
+                                groupsFound = await groupRequest.GetAsync().ConfigureAwait(false);
                             }
-                            while (groups?.Count > 0 && groups.NextPageRequest != null);
                         }
+
+                        Task userQueryTask = Task.Run(async () =>
+                        {
+                            ClaimsProviderLogging.Log($"[{ProviderInternalName}] Query to tenant '{tenant.Name}' returned {(usersFound == null ? 0 : usersFound.Count)} user(s) with filter \"{HttpUtility.UrlDecode(tenant.UserFilter)}\"", TraceSeverity.VerboseEx, EventSeverity.Information, TraceCategory.Lookup);
+                            if (usersFound != null && usersFound.Count > 0)
+                            {
+                                do
+                                {
+                                    lock (lockAddResultToCollection)
+                                    {
+                                        IList<User> usersInCurrentPage = usersFound.CurrentPage;
+                                        if (tenant.ExcludeMembers)
+                                        {
+                                            usersInCurrentPage = usersFound.CurrentPage.Where(x => !String.Equals(x.UserType, ClaimsProviderConstants.MEMBER_USERTYPE, StringComparison.InvariantCultureIgnoreCase)).ToList<User>();
+                                        }
+                                        else if (tenant.ExcludeGuests)
+                                        {
+                                            usersInCurrentPage = usersFound.CurrentPage.Where(x => !String.Equals(x.UserType, ClaimsProviderConstants.GUEST_USERTYPE, StringComparison.InvariantCultureIgnoreCase)).ToList<User>();
+                                        }
+                                        tenantResults.UsersAndGroups.AddRange(usersInCurrentPage);
+                                    }
+                                    if (usersFound.NextPageRequest != null)
+                                    {
+                                        usersFound = await usersFound.NextPageRequest.GetAsync().ConfigureAwait(false);
+                                    }
+                                }
+                                while (usersFound.Count > 0 && usersFound.NextPageRequest != null);
+                            }
+                        }, cts.Token);
+
+                        Task groupQueryTask = Task.Run(async () =>
+                        {
+                            ClaimsProviderLogging.Log($"[{ProviderInternalName}] Query to tenant '{tenant.Name}' returned {(groupsFound == null ? 0 : groupsFound.Count)} group(s) with filter \"{HttpUtility.UrlDecode(tenant.GroupFilter)}\"", TraceSeverity.VerboseEx, EventSeverity.Information, TraceCategory.Lookup);
+                            if (groupsFound != null && groupsFound.Count > 0)
+                            {
+                                do
+                                {
+                                    lock (lockAddResultToCollection)
+                                    {
+                                        tenantResults.UsersAndGroups.AddRange(groupsFound.CurrentPage);
+                                    }
+                                    if (groupsFound.NextPageRequest != null)
+                                    {
+                                        groupsFound = await groupsFound.NextPageRequest.GetAsync().ConfigureAwait(false);
+                                    }
+                                }
+                                while (groupsFound.Count > 0 && groupsFound.NextPageRequest != null);
+                            }
+                        }, cts.Token);
+                        Task.WaitAll(new Task[2] { userQueryTask, groupQueryTask }, this.CurrentConfiguration.Timeout, cts.Token);
                     }, cts.Token);
-                    //Task domainQueryTask = Task.Run(async () =>
-                    //{
-                    //    IGraphServiceDomainsCollectionPage domains = await tenant.GraphService.Domains.Request().GetAsync().ConfigureAwait(false);
-                    //    lock (lockAddResultToCollection)
-                    //    {
-                    //        tenantResults.DomainsRegisteredInAzureADTenant.AddRange(domains.Where(x => x.IsVerified == true).Select(x => x.Id));
-                    //    }
-                    //}, cts.Token);
 
                     // Waits for all tasks to complete execution within a specified number of milliseconds
                     // Use specifically WaitAll(Task[], Int32, CancellationToken) as it will thwrow an OperationCanceledException if cancellationToken is canceled
-                    //bool tasksCompletedInTime = Task.WaitAll(new Task[3] { userQueryTask, groupQueryTask, domainQueryTask }, this.CurrentConfiguration.Timeout, cts.Token);
-                    bool tasksCompletedInTime = Task.WaitAll(new Task[2] { userQueryTask, groupQueryTask }, this.CurrentConfiguration.Timeout, cts.Token);
+                    //bool tasksCompletedInTime = Task.WaitAll(new Task[2] { userQueryTask, groupQueryTask }, this.CurrentConfiguration.Timeout, cts.Token);
+                    bool tasksCompletedInTime = Task.WaitAll(new Task[1] { batchQueryTask }, this.CurrentConfiguration.Timeout, cts.Token);
                     if (!tasksCompletedInTime)
                     {
                         // Some or all tasks didn't complete on time, cancel them
                         //ClaimsProviderLogging.Log($"[{ProviderInternalName}] DEBUG: Exceeded Timeout on Azure AD tenant '{tenant.TenantName}', cancelling token.", TraceSeverity.Unexpected, EventSeverity.Error, TraceCategory.Lookup);
                         cts.Cancel();
-                        // For some reason, Cancel() doesn't make Task.WaitAll to throw an OperationCanceledException
+                        // For some reason, Cancel() doesn't make Task.WaitAll() to throw an OperationCanceledException
                         ClaimsProviderLogging.Log($"[{ProviderInternalName}] Queries on Azure AD tenant '{tenant.Name}' exceeded Timeout of {this.CurrentConfiguration.Timeout} ms and were cancelled.", TraceSeverity.Unexpected, EventSeverity.Error, TraceCategory.Lookup);
                         tryAgain = true;
                     }
-                    //await Task.WhenAll(userQueryTask, groupQueryTask).ConfigureAwait(false);
                 }
             }
             catch (OperationCanceledException)
