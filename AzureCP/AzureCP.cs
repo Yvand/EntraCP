@@ -1335,19 +1335,19 @@ namespace azurecp
 
         protected virtual async Task<AzureADResult> QueryAzureADTenantAsync(OperationContext currentContext, AzureTenant tenant, bool firstAttempt)
         {
+            AzureADResult tenantResults = new AzureADResult();
             if (String.IsNullOrWhiteSpace(tenant.UserFilter) && String.IsNullOrWhiteSpace(tenant.GroupFilter))
             {
-                return null;
+                return tenantResults;
             }
 
             if (tenant.GraphService == null)
             {
                 ClaimsProviderLogging.Log($"[{ProviderInternalName}] Cannot query Azure AD tenant '{tenant.Name}' because it was not initialized", TraceSeverity.Unexpected, EventSeverity.Error, TraceCategory.Lookup);
-                return null;
+                return tenantResults;
             }
 
             ClaimsProviderLogging.Log($"[{ProviderInternalName}] Querying Azure AD tenant '{tenant.Name}' for users and groups, with input '{currentContext.Input}'", TraceSeverity.VerboseEx, EventSeverity.Information, TraceCategory.Lookup);
-            AzureADResult tenantResults = new AzureADResult();
             bool tryAgain = false;
             object lockAddResultToCollection = new object();
             CancellationTokenSource cts = new CancellationTokenSource(this.CurrentConfiguration.Timeout);
@@ -1365,7 +1365,7 @@ namespace azurecp
                         IGraphServiceGroupsCollectionRequest groupRequest = tenant.GraphService.Groups.Request().Select(tenant.GroupSelect).Filter(tenant.GroupFilter).Top(currentContext.MaxCount);
 
                         // Do a batch query only if necessary
-                        if (!String.IsNullOrEmpty(tenant.UserFilter) && !String.IsNullOrEmpty(tenant.GroupFilter))
+                        if (!String.IsNullOrWhiteSpace(tenant.UserFilter) && !String.IsNullOrWhiteSpace(tenant.GroupFilter))
                         {
                             // https://docs.microsoft.com/en-us/graph/sdks/batch-requests?tabs=csharp
                             BatchRequestContent batchRequestContent = new BatchRequestContent();
@@ -1382,7 +1382,7 @@ namespace azurecp
                         else
                         {
                             // The request only asks for either users or groups, not both
-                            if (!String.IsNullOrEmpty(tenant.UserFilter))
+                            if (!String.IsNullOrWhiteSpace(tenant.UserFilter))
                             {
                                 usersFound = await userRequest.GetAsync().ConfigureAwait(false);
                             }
