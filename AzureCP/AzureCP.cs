@@ -1490,9 +1490,8 @@ namespace azurecp
         {
             // Split results between users/groups and list of registered domains in the tenant
             List<DirectoryObject> usersAndGroups = new List<DirectoryObject>();
-            //List<string> domains = new List<string>();
-            // For each Azure AD tenant
-            foreach (AzureADResult tenantResults in azureADResults)
+            // For each Azure AD tenant where list of result (UsersAndGroups) is not null
+            foreach (AzureADResult tenantResults in azureADResults.Where(x => x.UsersAndGroups != null))
             {
                 usersAndGroups.AddRange(tenantResults.UsersAndGroups);
                 //domains.AddRange(tenantResults.DomainsRegisteredInAzureADTenant);
