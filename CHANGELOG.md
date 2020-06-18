@@ -4,8 +4,9 @@
 
 * Fix error when earching users with a single quote in the people picker - https://github.com/Yvand/AzureCP/issues/88
 * Use batch requests when relevant to optimize network performance
+* Avoid potential null reference exception in method AzureCP.ProcessAzureADResults() and ensure that method AzureCP.QueryAzureADTenantAsync() never returns null
 * Update target framework to v4.6.1
-* Update NuGet package Microsoft.Graph 1.21.0 -> Microsoft.Graph 3.7.0
+* Update NuGet package Microsoft.Graph 1.21.0 -> Microsoft.Graph 3.8.0
 * Update NuGet package Microsoft.IdentityModel.Clients.ActiveDirectory 5.2.6 -> Microsoft.IdentityModel.Clients.ActiveDirectory 5.2.7
 
 ## AzureCP 16.0.20200303.1092 enhancements & bug-fixes - Published in March 17, 2020
