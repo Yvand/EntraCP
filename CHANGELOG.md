@@ -3,6 +3,7 @@
 ## Unreleased
 
 * Add support for national cloud deployments
+* Update NuGet package Microsoft.IdentityModel.Clients.ActiveDirectory 5.2.7 -> Microsoft.IdentityModel.Clients.ActiveDirectory 5.2.8
 
 ## AzureCP 17.0.20200618.1133 enhancements & bug-fixes - Published in June 22, 2020
 
