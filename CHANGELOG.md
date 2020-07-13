@@ -1,5 +1,9 @@
 # Change log for AzureCP
 
+## Unreleased
+
+* Add support for national cloud deployments
+
 ## AzureCP 17.0.20200618.1133 enhancements & bug-fixes - Published in June 22, 2020
 
 * IMPORTANT: due to its dependency to Microsoft.Graph 3+, AzureCP 17 requires at least .NET 4.6.1 (SharePoint requires only .NET 4.5)

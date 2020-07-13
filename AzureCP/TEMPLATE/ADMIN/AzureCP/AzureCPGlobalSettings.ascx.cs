@@ -194,11 +194,11 @@ namespace azurecp.ControlTemplates
                     AADAppOnlyAuthenticationProvider testConnection;
                     if (String.IsNullOrWhiteSpace(this.TxtClientSecret.Text))
                     {
-                        testConnection = new AADAppOnlyAuthenticationProvider(ClaimsProviderConstants.AuthorityUriTemplate, tenantName, clientId, cert, String.Empty, ClaimsProviderConstants.DEFAULT_TIMEOUT);
+                        testConnection = new AADAppOnlyAuthenticationProvider(ClaimsProviderConstants.DefaultLoginServiceEndpoint, ClaimsProviderConstants.DefaultGraphServiceEndpoint, tenantName, clientId, cert, String.Empty, ClaimsProviderConstants.DEFAULT_TIMEOUT);
                     }
                     else
                     {
-                        testConnection = new AADAppOnlyAuthenticationProvider(ClaimsProviderConstants.AuthorityUriTemplate, tenantName, clientId, clientSecret, String.Empty, ClaimsProviderConstants.DEFAULT_TIMEOUT);
+                        testConnection = new AADAppOnlyAuthenticationProvider(ClaimsProviderConstants.DefaultLoginServiceEndpoint, ClaimsProviderConstants.DefaultGraphServiceEndpoint, tenantName, clientId, clientSecret, String.Empty, ClaimsProviderConstants.DEFAULT_TIMEOUT);
                     }
                     Task<bool> testConnectionTask = testConnection.GetAccessToken(true);
                     testConnectionTask.Wait();

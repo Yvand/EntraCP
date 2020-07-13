@@ -22,26 +22,35 @@ namespace azurecp
         private readonly string ClaimsProviderName;
         private readonly int Timeout;
         private readonly X509Certificate2 ClientCertificate;
+        private readonly string GraphServiceEndpoint;
 
         private AuthenticationResult AuthNResult;
         private AsyncLock GetAccessTokenLock = new AsyncLock();
 
-        public AADAppOnlyAuthenticationProvider(string authorityUriTemplate, string tenant, string clientId, string appKey, string claimsProviderName, int timeout)
+        public AADAppOnlyAuthenticationProvider(string loginServiceEndpoint, string graphServiceEndpoint, string tenant, string clientId, string appKey, string claimsProviderName, int timeout)
         {
             this.Tenant = tenant;
             this.ClientId = clientId;
             this.ClientSecret = appKey;
-            this.AuthorityUri = String.Format(CultureInfo.InvariantCulture, authorityUriTemplate, tenant);
+            this.GraphServiceEndpoint = graphServiceEndpoint;
+            Uri loginEndpointUri = new Uri(loginServiceEndpoint);
+            var authorityUriBuilder = new UriBuilder(loginEndpointUri);
+            authorityUriBuilder.Path = $"/{tenant}";
+            this.AuthorityUri = authorityUriBuilder.ToString();
             this.ClaimsProviderName = claimsProviderName;
             this.Timeout = timeout;
         }
 
-        public AADAppOnlyAuthenticationProvider(string authorityUriTemplate, string tenant, string clientId, X509Certificate2 ClientCertificate, string claimsProviderName, int timeout)
+        public AADAppOnlyAuthenticationProvider(string loginServiceEndpoint, string graphServiceEndpoint, string tenant, string clientId, X509Certificate2 ClientCertificate, string claimsProviderName, int timeout)
         {
             this.Tenant = tenant;
             this.ClientId = clientId;
             this.ClientCertificate = ClientCertificate;
-            this.AuthorityUri = String.Format(CultureInfo.InvariantCulture, authorityUriTemplate, tenant);
+            this.GraphServiceEndpoint = graphServiceEndpoint;
+            Uri loginEndpointUri = new Uri(loginServiceEndpoint);
+            var authorityUriBuilder = new UriBuilder(loginEndpointUri);
+            authorityUriBuilder.Path = $"/{tenant}";
+            this.AuthorityUri = authorityUriBuilder.ToString();
             this.ClaimsProviderName = claimsProviderName;
             this.Timeout = timeout;
         }
@@ -89,14 +98,14 @@ namespace azurecp
                     // Get bearer token using a client secret
                     ClaimsProviderLogging.Log($"[{ClaimsProviderName}] Getting new access token for tenant '{Tenant}' using client ID {ClientId} and a client secret.", TraceSeverity.Verbose, EventSeverity.Information, TraceCategory.Core);
                     ClientCredential creds = new ClientCredential(ClientId, ClientSecret);
-                    acquireTokenTask = authContext.AcquireTokenAsync(ClaimsProviderConstants.GraphAPIResource, creds);
+                    acquireTokenTask = authContext.AcquireTokenAsync(GraphServiceEndpoint, creds);
                 }
                 else
                 {
                     // Get bearer token using a client certificate
                     ClaimsProviderLogging.Log($"[{ClaimsProviderName}] Getting new access token for tenant '{Tenant}' using client ID {ClientId} and a client certificate with thumbprint {ClientCertificate.Thumbprint}.", TraceSeverity.Verbose, EventSeverity.Information, TraceCategory.Core);
                     ClientAssertionCertificate certCreds = new ClientAssertionCertificate(ClientId, ClientCertificate);
-                    acquireTokenTask = authContext.AcquireTokenAsync(ClaimsProviderConstants.GraphAPIResource, certCreds);
+                    acquireTokenTask = authContext.AcquireTokenAsync(GraphServiceEndpoint, certCreds);
                 }
                 AuthNResult = await TaskHelper.TimeoutAfter<AuthenticationResult>(acquireTokenTask, new TimeSpan(0, 0, 0, 0, timeout)).ConfigureAwait(false);
                 TimeSpan duration = new TimeSpan(AuthNResult.ExpiresOn.UtcTicks - DateTime.Now.ToUniversalTime().Ticks);
