@@ -119,8 +119,8 @@ jobs:
     inputs:
       SourceFolder: '$(Build.SourcesDirectory)'
       Contents: |
-       $(system.teamProject)/bin/$(configuration)/!($(system.teamProject).*)
-      TargetFolder: '$(Build.ArtifactStagingDirectory)\DLLs'
+       $(system.teamProject)/bin/$(configuration)/!($(system.teamProject).*|*.pdb)
+      TargetFolder: '$(Build.ArtifactStagingDirectory)/Additional dependent DLLs'
 
   - task: PublishBuildArtifacts@1
     displayName: 'Publish Artifact: drop'
