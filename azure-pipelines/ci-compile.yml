@@ -115,12 +115,12 @@ jobs:
       TargetFolder: '$(Build.ArtifactStagingDirectory)'
 
   - task: CopyFiles@2
-    displayName: 'Copy all dependent DLLs to artifacts'
+    displayName: 'Copy dependencies to artifacts'
     inputs:
       SourceFolder: '$(Build.SourcesDirectory)'
       Contents: |
        $(system.teamProject)/bin/$(configuration)/!($(system.teamProject).*|*.pdb)
-      TargetFolder: '$(Build.ArtifactStagingDirectory)/All dependent DLLs'
+      TargetFolder: '$(Build.ArtifactStagingDirectory)/dependencies'
 
   - task: PublishBuildArtifacts@1
     displayName: 'Publish Artifact: drop'
