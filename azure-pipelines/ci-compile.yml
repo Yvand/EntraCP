@@ -119,7 +119,7 @@ jobs:
     inputs:
       SourceFolder: '$(Build.SourcesDirectory)'
       Contents: |
-       $(system.teamProject)/bin/$(configuration)/!($(system.teamProject).*|*.pdb)
+       $(system.teamProject)/bin/$(configuration)/!(*.pdb)
       TargetFolder: '$(Build.ArtifactStagingDirectory)/dependencies'
 
   - task: PublishBuildArtifacts@1
