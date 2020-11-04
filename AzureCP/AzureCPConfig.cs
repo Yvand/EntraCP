@@ -1,4 +1,5 @@
 ﻿using Microsoft.Graph;
+using Microsoft.Identity.Client;
 using Microsoft.SharePoint;
 using Microsoft.SharePoint.Administration;
 using Microsoft.SharePoint.Administration.Claims;
@@ -37,8 +38,19 @@ namespace azurecp
         public static string CONFIG_ID => "0E9F8FB6-B314-4CCC-866D-DEC0BE76C237";
         public static string CONFIG_NAME => "AzureCPConfig";
         public static string GraphServiceEndpointVersion => "v1.0";
-        public static string DefaultGraphServiceEndpoint => "https://graph.microsoft.com/";
-        public static string DefaultLoginServiceEndpoint => "https://login.windows.net/";
+        //public static string DefaultGraphServiceEndpoint => "https://graph.microsoft.com/";
+        //public static string DefaultLoginServiceEndpoint => "https://login.microsoftonline.com/";
+        /// <summary>
+        /// List of Microsoft Graph service root endpoints based on National Cloud as described on https://docs.microsoft.com/en-us/graph/deployments
+        /// </summary>
+        public static List<KeyValuePair<AzureCloudInstance, string>> AzureCloudEndpoints = new List<KeyValuePair<AzureCloudInstance, string>>()
+        {
+            new KeyValuePair<AzureCloudInstance, string>(AzureCloudInstance.AzurePublic, "https://graph.microsoft.com"),
+            new KeyValuePair<AzureCloudInstance, string>(AzureCloudInstance.AzureChina, "https://microsoftgraph.chinacloudapi.cn"),
+            new KeyValuePair<AzureCloudInstance, string>(AzureCloudInstance.AzureGermany, "https://graph.microsoft.de"),
+            new KeyValuePair<AzureCloudInstance, string>(AzureCloudInstance.AzureUsGovernment, "https://graph.microsoft.us"),
+            new KeyValuePair<AzureCloudInstance, string>(AzureCloudInstance.None, "https://graph.microsoft.com"),
+        };
         public static string GroupClaimEntityType { get; set; } = SPClaimEntityTypes.FormsRole;
         public static bool EnforceOnly1ClaimTypeForGroup => true;     // In AzureCP, only 1 claim type can be used to create group permissions
         public static string DefaultMainGroupClaimType => WIF4_5.ClaimTypes.Role;
@@ -766,21 +778,29 @@ namespace azurecp
             }
         }
 
-        public string GraphServiceEndpoint
-        {
-            get => m_GraphServiceEndpoint;
-            set => m_GraphServiceEndpoint = value;
-        }
-        [Persisted]
-        private string m_GraphServiceEndpoint = ClaimsProviderConstants.DefaultGraphServiceEndpoint;
+        //public string GraphServiceEndpoint
+        //{
+        //    get => m_GraphServiceEndpoint;
+        //    set => m_GraphServiceEndpoint = value;
+        //}
+        //[Persisted]
+        //private string m_GraphServiceEndpoint = ClaimsProviderConstants.DefaultGraphServiceEndpoint;
 
-        public string LoginServiceEndpoint
+        //public string LoginServiceEndpoint
+        //{
+        //    get => m_LoginServiceEndpoint;
+        //    set => m_LoginServiceEndpoint = value;
+        //}
+        //[Persisted]
+        //private string m_LoginServiceEndpoint = ClaimsProviderConstants.DefaultLoginServiceEndpoint;
+
+        public AzureCloudInstance CloudInstance
         {
-            get => m_LoginServiceEndpoint;
-            set => m_LoginServiceEndpoint = value;
+            get => m_CloudInstance;
+            set => m_CloudInstance = value;
         }
         [Persisted]
-        private string m_LoginServiceEndpoint = ClaimsProviderConstants.DefaultLoginServiceEndpoint;
+        private AzureCloudInstance m_CloudInstance = AzureCloudInstance.AzurePublic;
 
         /// <summary>
         /// Instance of the IAuthenticationProvider class for this specific Azure AD tenant
@@ -823,13 +843,13 @@ namespace azurecp
             {
                 if (!String.IsNullOrWhiteSpace(ClientSecret))
                 {
-                    this.AuthenticationProvider = new AADAppOnlyAuthenticationProvider(this.LoginServiceEndpoint, this.GraphServiceEndpoint, this.Name, this.ApplicationId, this.ApplicationSecret, claimsProviderName, timeout);
+                    this.AuthenticationProvider = new AADAppOnlyAuthenticationProvider(this.CloudInstance, this.Name, this.ApplicationId, this.ApplicationSecret, claimsProviderName, timeout);
                 }
                 else
                 {
-                    this.AuthenticationProvider = new AADAppOnlyAuthenticationProvider(this.LoginServiceEndpoint, this.GraphServiceEndpoint, this.Name, this.ApplicationId, this.ClientCertificatePrivateKey, claimsProviderName, timeout);
+                    this.AuthenticationProvider = new AADAppOnlyAuthenticationProvider(this.CloudInstance, this.Name, this.ApplicationId, this.ClientCertificatePrivateKey, claimsProviderName, timeout);
                 }
-                UriBuilder graphUriBuilder = new UriBuilder(this.GraphServiceEndpoint);
+                UriBuilder graphUriBuilder = new UriBuilder(this.AuthenticationProvider.GraphServiceEndpoint);
                 graphUriBuilder.Path = $"/{ClaimsProviderConstants.GraphServiceEndpointVersion}";
                 this.GraphService = new GraphServiceClient(graphUriBuilder.ToString(), this.AuthenticationProvider);
             }

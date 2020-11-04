@@ -1,5 +1,5 @@
 ﻿using Microsoft.Graph;
-using Microsoft.IdentityModel.Clients.ActiveDirectory;
+using Microsoft.Identity.Client;
 using Microsoft.SharePoint;
 using Microsoft.SharePoint.Administration;
 using Microsoft.SharePoint.Utilities;
@@ -194,17 +194,17 @@ namespace azurecp.ControlTemplates
                     AADAppOnlyAuthenticationProvider testConnection;
                     if (String.IsNullOrWhiteSpace(this.TxtClientSecret.Text))
                     {
-                        testConnection = new AADAppOnlyAuthenticationProvider(ClaimsProviderConstants.DefaultLoginServiceEndpoint, ClaimsProviderConstants.DefaultGraphServiceEndpoint, tenantName, clientId, cert, String.Empty, ClaimsProviderConstants.DEFAULT_TIMEOUT);
+                        testConnection = new AADAppOnlyAuthenticationProvider(AzureCloudInstance.AzurePublic, tenantName, clientId, cert, String.Empty, ClaimsProviderConstants.DEFAULT_TIMEOUT);
                     }
                     else
                     {
-                        testConnection = new AADAppOnlyAuthenticationProvider(ClaimsProviderConstants.DefaultLoginServiceEndpoint, ClaimsProviderConstants.DefaultGraphServiceEndpoint, tenantName, clientId, clientSecret, String.Empty, ClaimsProviderConstants.DEFAULT_TIMEOUT);
+                        testConnection = new AADAppOnlyAuthenticationProvider(AzureCloudInstance.AzurePublic, tenantName, clientId, clientSecret, String.Empty, ClaimsProviderConstants.DEFAULT_TIMEOUT);
                     }
                     Task<bool> testConnectionTask = testConnection.GetAccessToken(true);
                     testConnectionTask.Wait();
                     this.LabelTestTenantConnectionOK.Text = TextConnectionSuccessful;
                 }
-                catch (AdalServiceException ex)
+                catch (MsalServiceException ex)
                 {
                     this.LabelErrorTestLdapConnection.Text = String.Format(TextErrorTestAzureADConnection, tenantName, ex.Message);
                 }

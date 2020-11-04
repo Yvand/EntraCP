@@ -1,7 +1,7 @@
 ﻿<?xml version="1.0" encoding="utf-8"?>
 <package xmlns:dm0="http://schemas.microsoft.com/VisualStudio/2008/DslTools/Core" dslVersion="1.0.0.0" Id="1db45b9b-2fff-4f07-992b-344dde907316" solutionId="1db45b9b-2fff-4f07-992b-344dde907316" resetWebServer="false" title="Azure AD Claims Provider" sharePointProductVersion="15.0" name="AzureCP" xmlns="http://schemas.microsoft.com/VisualStudio/2008/SharePointTools/PackageModel">
   <assemblies>
-    <customAssembly location="Microsoft.IdentityModel.Clients.ActiveDirectory.dll" deploymentTarget="GlobalAssemblyCache" sourcePath="bin\Microsoft.IdentityModel.Clients.ActiveDirectory.dll" />
+    <customAssembly location="Microsoft.Identity.Client.dll" deploymentTarget="GlobalAssemblyCache" sourcePath="bin\Microsoft.Identity.Client.dll" />
     <customAssembly location="Nito.AsyncEx.Concurrent.dll" deploymentTarget="GlobalAssemblyCache" sourcePath="bin\Nito.AsyncEx.Concurrent.dll" />
     <customAssembly location="Nito.AsyncEx.dll" deploymentTarget="GlobalAssemblyCache" sourcePath="bin\Nito.AsyncEx.dll" />
     <customAssembly location="Nito.AsyncEx.Enlightenment.dll" deploymentTarget="GlobalAssemblyCache" sourcePath="bin\Nito.AsyncEx.Enlightenment.dll" />
