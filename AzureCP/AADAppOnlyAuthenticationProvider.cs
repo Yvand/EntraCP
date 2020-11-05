@@ -24,6 +24,12 @@ namespace azurecp
         private readonly string ClaimsProviderName;
         private readonly int Timeout;
         private readonly X509Certificate2 ClientCertificate;
+
+        /// <summary>
+        /// With client credentials flows, the scope is always of the shape "resource/.default" because the
+        /// application permissions need to be set statically and then granted by a tenant administrator.
+        /// https://docs.microsoft.com/en-us/azure/active-directory/develop/scenario-daemon-acquire-token?tabs=dotnet
+        /// </summary>
         private readonly List<string> Scopes;
         private readonly AzureCloudInstance CloudInstance;
         public readonly string GraphServiceEndpoint;
@@ -38,19 +44,12 @@ namespace azurecp
             this.ClientSecret = appKey;
             this.ClaimsProviderName = claimsProviderName;
             this.Timeout = timeout;
-            //Enum.TryParse("", out AzureCloudInstance CloudInstance);
             this.CloudInstance = cloudInstance;
 
             this.GraphServiceEndpoint = ClaimsProviderConstants.AzureCloudEndpoints.SingleOrDefault(kvp => kvp.Key == cloudInstance).Value;
             UriBuilder scopeBuilder = new UriBuilder(this.GraphServiceEndpoint);
             scopeBuilder.Path = "/.default";
-            this.Scopes = new List<string>(1);
-            this.Scopes.Add(scopeBuilder.Uri.ToString());
-
-            ////Uri loginEndpointUri = new Uri(loginServiceEndpoint);
-            //var authorityUriBuilder = new UriBuilder(loginServiceEndpoint);
-            //authorityUriBuilder.Path = $"/{tenant}";
-            //this.AuthorityUri = authorityUriBuilder.ToString();
+            this.Scopes = new List<string>(1) { scopeBuilder.Uri.ToString() };
         }
 
         public AADAppOnlyAuthenticationProvider(AzureCloudInstance cloudInstance, string tenant, string clientId, X509Certificate2 ClientCertificate, string claimsProviderName, int timeout)
@@ -60,19 +59,12 @@ namespace azurecp
             this.ClientCertificate = ClientCertificate;
             this.ClaimsProviderName = claimsProviderName;
             this.Timeout = timeout;
-            //Enum.TryParse("", out AzureCloudInstance cloudInstance);
             this.CloudInstance = cloudInstance;
 
             this.GraphServiceEndpoint = ClaimsProviderConstants.AzureCloudEndpoints.SingleOrDefault(kvp => kvp.Key == cloudInstance).Value;
             UriBuilder scopeBuilder = new UriBuilder(this.GraphServiceEndpoint);
             scopeBuilder.Path = "/.default";
-            this.Scopes = new List<string>(1);
-            this.Scopes.Add(scopeBuilder.Uri.ToString());
-
-            ////Uri loginEndpointUri = new Uri(loginServiceEndpoint);
-            //var authorityUriBuilder = new UriBuilder(loginServiceEndpoint);
-            //authorityUriBuilder.Path = $"/{tenant}";
-            //this.AuthorityUri = authorityUriBuilder.ToString();
+            this.Scopes = new List<string>(1) { scopeBuilder.Uri.ToString() };
         }
 
         public async Task AuthenticateRequestAsync(HttpRequestMessage request)
