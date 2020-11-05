@@ -111,42 +111,41 @@ namespace azurecp
             int timeout = this.Timeout;
             try
             {
-                AzureCloudInstance cloudInstance = AzureCloudInstance.AzurePublic;
-                ConfidentialClientApplicationBuilder appBuilder = ConfidentialClientApplicationBuilder.Create(ClientId).WithAuthority(cloudInstance, this.Tenant);
+                ConfidentialClientApplicationBuilder appBuilder = ConfidentialClientApplicationBuilder.Create(ClientId).WithAuthority(this.CloudInstance, this.Tenant);
                 IConfidentialClientApplication app = null;
                 if (!String.IsNullOrWhiteSpace(ClientSecret))
                 {
                     // Get bearer token using a client secret
-                    ClaimsProviderLogging.Log($"[{ClaimsProviderName}] Getting new access token for tenant '{Tenant}' using client ID {ClientId} and a client secret.", TraceSeverity.Verbose, EventSeverity.Information, TraceCategory.Core);
+                    ClaimsProviderLogging.Log($"[{ClaimsProviderName}] Getting new access token for tenant '{Tenant}' on cloud instance '{CloudInstance}' using client ID {ClientId} and a client secret.", TraceSeverity.Verbose, EventSeverity.Information, TraceCategory.Core);
                     app = appBuilder.WithClientSecret(ClientSecret).Build();
                 }
                 else
                 {
                     // Get bearer token using a client certificate
-                    ClaimsProviderLogging.Log($"[{ClaimsProviderName}] Getting new access token for tenant '{Tenant}' using client ID {ClientId} and a client certificate with thumbprint {ClientCertificate.Thumbprint}.", TraceSeverity.Verbose, EventSeverity.Information, TraceCategory.Core);
+                    ClaimsProviderLogging.Log($"[{ClaimsProviderName}] Getting new access token for tenant '{Tenant}' on cloud instance '{CloudInstance}' using client ID {ClientId} and a client certificate with thumbprint {ClientCertificate.Thumbprint}.", TraceSeverity.Verbose, EventSeverity.Information, TraceCategory.Core);
                     app = appBuilder.WithCertificate(ClientCertificate).Build();
                 }
                 // Acquire bearer token
                 Task<AuthenticationResult> acquireTokenTask = app.AcquireTokenForClient(this.Scopes).ExecuteAsync();
                 AuthNResult = await TaskHelper.TimeoutAfter<AuthenticationResult>(acquireTokenTask, new TimeSpan(0, 0, 0, 0, timeout)).ConfigureAwait(false);
                 TimeSpan duration = new TimeSpan(AuthNResult.ExpiresOn.UtcTicks - DateTime.Now.ToUniversalTime().Ticks);
-                ClaimsProviderLogging.Log($"[{ClaimsProviderName}] Got new access token for tenant '{Tenant}', valid for {Math.Round((duration.TotalHours), 1)} hour(s) and retrieved in {timer.ElapsedMilliseconds.ToString()} ms", TraceSeverity.High, EventSeverity.Information, TraceCategory.Core);
+                ClaimsProviderLogging.Log($"[{ClaimsProviderName}] Got new access token for tenant '{Tenant}' on cloud instance '{CloudInstance}', valid for {Math.Round((duration.TotalHours), 1)} hour(s) and retrieved in {timer.ElapsedMilliseconds.ToString()} ms", TraceSeverity.High, EventSeverity.Information, TraceCategory.Core);
             }
             catch (MsalServiceException ex)
             {
-                ClaimsProviderLogging.Log($"[{ClaimsProviderName}] Unable to get access token for tenant '{Tenant}': {ex.Message}", TraceSeverity.Unexpected, EventSeverity.Error, TraceCategory.Core);
+                ClaimsProviderLogging.Log($"[{ClaimsProviderName}] Unable to get access token for tenant '{Tenant}' on cloud instance '{CloudInstance}': {ex.Message}", TraceSeverity.Unexpected, EventSeverity.Error, TraceCategory.Core);
                 success = false;
                 if (throwExceptionIfFail) { throw; }
             }
             catch (TimeoutException)
             {
-                ClaimsProviderLogging.Log($"[{ClaimsProviderName}] Could not get access token before timeout of {timeout.ToString()} ms for tenant '{Tenant}'", TraceSeverity.Unexpected, EventSeverity.Error, TraceCategory.Core);
+                ClaimsProviderLogging.Log($"[{ClaimsProviderName}] Could not get access token before timeout of {timeout.ToString()} ms for tenant '{Tenant}' on cloud instance '{CloudInstance}'", TraceSeverity.Unexpected, EventSeverity.Error, TraceCategory.Core);
                 success = false;
                 if (throwExceptionIfFail) { throw; }
             }
             catch (Exception ex)
             {
-                ClaimsProviderLogging.LogException(ClaimsProviderName, $"while getting access token for tenant '{Tenant}'", TraceCategory.Lookup, ex);
+                ClaimsProviderLogging.LogException(ClaimsProviderName, $"while getting access token for tenant '{Tenant}' on cloud instance '{CloudInstance}'", TraceCategory.Lookup, ex);
                 success = false;
                 if (throwExceptionIfFail) { throw; }
             }
