@@ -69,6 +69,15 @@ namespace azurecp.ControlTemplates
         protected global::Microsoft.SharePoint.WebControls.InputFormTextBox TxtTenantName;
 
         /// <summary>
+        /// DDLAzureCloudInstance control.
+        /// </summary>
+        /// <remarks>
+        /// Auto-generated field.
+        /// To modify move field declaration from designer file to code-behind file.
+        /// </remarks>
+        protected global::System.Web.UI.WebControls.DropDownList DDLAzureCloudInstance;
+
+        /// <summary>
         /// TxtClientId control.
         /// </summary>
         /// <remarks>

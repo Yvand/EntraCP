@@ -778,29 +778,13 @@ namespace azurecp
             }
         }
 
-        //public string GraphServiceEndpoint
-        //{
-        //    get => m_GraphServiceEndpoint;
-        //    set => m_GraphServiceEndpoint = value;
-        //}
-        //[Persisted]
-        //private string m_GraphServiceEndpoint = ClaimsProviderConstants.DefaultGraphServiceEndpoint;
-
-        //public string LoginServiceEndpoint
-        //{
-        //    get => m_LoginServiceEndpoint;
-        //    set => m_LoginServiceEndpoint = value;
-        //}
-        //[Persisted]
-        //private string m_LoginServiceEndpoint = ClaimsProviderConstants.DefaultLoginServiceEndpoint;
-
         public AzureCloudInstance CloudInstance
         {
-            get => m_CloudInstance;
-            set => m_CloudInstance = value;
+            get => (AzureCloudInstance)Enum.Parse(typeof(AzureCloudInstance), m_CloudInstance);
+            set => m_CloudInstance =  value.ToString();
         }
         [Persisted]
-        private AzureCloudInstance m_CloudInstance = AzureCloudInstance.AzurePublic;
+        private string m_CloudInstance = AzureCloudInstance.AzurePublic.ToString();
 
         /// <summary>
         /// Instance of the IAuthenticationProvider class for this specific Azure AD tenant

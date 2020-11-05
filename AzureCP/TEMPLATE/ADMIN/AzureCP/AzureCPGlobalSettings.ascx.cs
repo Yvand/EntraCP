@@ -59,7 +59,7 @@ namespace azurecp.ControlTemplates
                 PropertyCollectionBinder pcb = new PropertyCollectionBinder();
                 foreach (AzureTenant tenant in PersistedObject.AzureTenants)
                 {
-                    pcb.AddRow(tenant.Identifier, tenant.Name, tenant.ApplicationId, tenant.ExcludeMembers);
+                    pcb.AddRow(tenant.Identifier, tenant.Name, tenant.ApplicationId, tenant.CloudInstance.ToString());
                 }
                 pcb.BindGrid(grdAzureTenants);
             }
@@ -82,6 +82,14 @@ namespace azurecp.ControlTemplates
             this.ChkFilterExactMatchOnly.Checked = PersistedObject.FilterExactMatchOnly;
             this.ChkAugmentAADRoles.Checked = PersistedObject.EnableAugmentation;
             this.ChkFilterSecurityEnabledGroupsOnly.Checked = PersistedObject.FilterSecurityEnabledGroupsOnly;
+
+            AzureCloudInstance[] azureCloudInstanceValues = (AzureCloudInstance[])Enum.GetValues(typeof(AzureCloudInstance));
+            foreach (var azureCloudInstanceValue in azureCloudInstanceValues)
+            {
+                if (azureCloudInstanceValue == AzureCloudInstance.None) { continue; }
+                this.DDLAzureCloudInstance.Items.Add(new System.Web.UI.WebControls.ListItem(azureCloudInstanceValue.ToString(), azureCloudInstanceValue.ToString()));
+            }
+            this.DDLAzureCloudInstance.SelectedValue = AzureCloudInstance.AzurePublic.ToString();
         }
 
         private void BuildGraphPropertyDDL()
@@ -179,6 +187,7 @@ namespace azurecp.ControlTemplates
             string tenantName = this.TxtTenantName.Text;
             string clientId = this.TxtClientId.Text;
             string clientSecret = this.TxtClientSecret.Text;
+            AzureCloudInstance cloudInstance = (AzureCloudInstance)Enum.Parse(typeof(AzureCloudInstance), this.DDLAzureCloudInstance.SelectedValue);
             // The whole flow of setting the certificate and testing it in AADAppOnlyAuthenticationProvider needs to be done as app pool account
             // Otherwise AADAppOnlyAuthenticationProvider throws CryptographicException: Keyset does not exist (which means it could not access the private key) 
             SPSecurity.RunWithElevatedPrivileges(delegate ()
@@ -194,11 +203,11 @@ namespace azurecp.ControlTemplates
                     AADAppOnlyAuthenticationProvider testConnection;
                     if (String.IsNullOrWhiteSpace(this.TxtClientSecret.Text))
                     {
-                        testConnection = new AADAppOnlyAuthenticationProvider(AzureCloudInstance.AzurePublic, tenantName, clientId, cert, String.Empty, ClaimsProviderConstants.DEFAULT_TIMEOUT);
+                        testConnection = new AADAppOnlyAuthenticationProvider(cloudInstance, tenantName, clientId, cert, String.Empty, ClaimsProviderConstants.DEFAULT_TIMEOUT);
                     }
                     else
                     {
-                        testConnection = new AADAppOnlyAuthenticationProvider(AzureCloudInstance.AzurePublic, tenantName, clientId, clientSecret, String.Empty, ClaimsProviderConstants.DEFAULT_TIMEOUT);
+                        testConnection = new AADAppOnlyAuthenticationProvider(cloudInstance, tenantName, clientId, clientSecret, String.Empty, ClaimsProviderConstants.DEFAULT_TIMEOUT);
                     }
                     Task<bool> testConnectionTask = testConnection.GetAccessToken(true);
                     testConnectionTask.Wait();
@@ -277,17 +286,19 @@ namespace azurecp.ControlTemplates
                     ApplicationId = this.TxtClientId.Text,
                     ApplicationSecret = this.TxtClientSecret.Text,
                     ExcludeMembers = this.ChkMemberUserTypeOnly.Checked,
-                    ClientCertificatePrivateKey = cert
+                    ClientCertificatePrivateKey = cert,
+                    CloudInstance = (AzureCloudInstance)Enum.Parse(typeof(AzureCloudInstance), this.DDLAzureCloudInstance.SelectedValue)
                 });
 
             CommitChanges();
-            ClaimsProviderLogging.Log($"Azure AD tenant '{this.TxtTenantName.Text}' was successfully added in configuration '{PersistedObjectName}'", TraceSeverity.Medium, EventSeverity.Information, TraceCategory.Configuration);
+            ClaimsProviderLogging.Log($"Azure AD tenant '{this.TxtTenantName.Text}' was successfully added to configuration '{PersistedObjectName}'", TraceSeverity.Medium, EventSeverity.Information, TraceCategory.Configuration);
 
             PopulateConnectionsGrid();
             this.TxtTenantName.Text = "TENANTNAME.onMicrosoft.com";
             this.TxtClientId.Text = String.Empty;
             this.TxtClientSecret.Text = String.Empty;
             this.InputClientCertPassword.Text = String.Empty;
+            this.DDLAzureCloudInstance.SelectedValue = AzureCloudInstance.AzurePublic.ToString();
         }
 
         private bool ValidateUploadedCertFile(
@@ -351,16 +362,18 @@ namespace azurecp.ControlTemplates
             PropertyCollection.Columns.Add("Id", typeof(Guid));
             PropertyCollection.Columns.Add("TenantName", typeof(string));
             PropertyCollection.Columns.Add("ClientID", typeof(string));
-            PropertyCollection.Columns.Add("MemberUserTypeOnly", typeof(bool));
+            //PropertyCollection.Columns.Add("MemberUserTypeOnly", typeof(bool));
+            PropertyCollection.Columns.Add("CloudInstance", typeof(string));
         }
 
-        public void AddRow(Guid Id, string TenantName, string ClientID, bool MemberUserTypeOnly)
+        public void AddRow(Guid Id, string TenantName, string ClientID, string CloudInstance)
         {
             DataRow newRow = PropertyCollection.Rows.Add();
             newRow["Id"] = Id;
             newRow["TenantName"] = TenantName;
             newRow["ClientID"] = ClientID;
-            newRow["MemberUserTypeOnly"] = MemberUserTypeOnly;
+            //newRow["MemberUserTypeOnly"] = MemberUserTypeOnly;
+            newRow["CloudInstance"] = CloudInstance;
         }
 
         public void BindGrid(SPGridView grid)

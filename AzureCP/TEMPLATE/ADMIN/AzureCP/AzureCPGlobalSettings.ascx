@@ -136,7 +136,7 @@
 					<asp:BoundField DataField="Id" ItemStyle-CssClass="Azurecp-HideCol" HeaderStyle-CssClass="Azurecp-HideCol"/>
 					<asp:BoundField HeaderText="Tenant name" DataField="TenantName"/>
 					<asp:BoundField HeaderText="Application ID" DataField="ClientID"/>
-                    <asp:BoundField HeaderText="Filter out Guest users" DataField="MemberUserTypeOnly" />
+                    <asp:BoundField HeaderText="Cloud instance" DataField="CloudInstance" />
 					<asp:CommandField HeaderText="Action" ButtonType="Button" DeleteText="Remove" ShowDeleteButton="True" />
 				</Columns>
 			</wssawc:SPGridView>
@@ -157,6 +157,10 @@
 						<label for="<%= TxtTenantName.ClientID %>">Tenant name: <em>*</em></label>
 						<wssawc:InputFormTextBox title="Azure tenant name" class="ms-input" ID="TxtTenantName" Columns="50" Runat="server" MaxLength="255" Text="TENANTNAME.onMicrosoft.com" />
 					</li>
+                    <li>
+                        <label for="<%= DDLAzureCloudInstance.ClientID %>">Cloud instance: <em>*</em></label>
+                        <asp:DropDownList runat="server" ID="DDLAzureCloudInstance" class="ms-input" Columns="50" />
+                    </li>
 					<li>
 						<label for="<%= TxtClientId.ClientID %>">Application (client) ID: <em>*</em></label>
 						<wssawc:InputFormTextBox title="Password" class="ms-input" ID="TxtClientId" Columns="50" Runat="server" MaxLength="255" />
