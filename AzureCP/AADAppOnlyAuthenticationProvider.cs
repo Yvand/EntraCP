@@ -36,11 +36,12 @@ namespace azurecp
         private AuthenticationResult AuthNResult;
         private AsyncLock GetAccessTokenLock = new AsyncLock();
 
-        public AADAppOnlyAuthenticationProvider(AzureCloudInstance cloudInstance, string tenant, string clientId, string appKey, string claimsProviderName, int timeout)
+        public AADAppOnlyAuthenticationProvider(AzureCloudInstance cloudInstance, string tenant, string clientId, string clientSecret, string claimsProviderName, int timeout)
         {
+            this.ClientSecret = clientSecret;
+
             this.Tenant = tenant;
             this.ClientId = clientId;
-            this.ClientSecret = appKey;
             this.ClaimsProviderName = claimsProviderName;
             this.Timeout = timeout;
             this.CloudInstance = cloudInstance;
@@ -53,9 +54,10 @@ namespace azurecp
 
         public AADAppOnlyAuthenticationProvider(AzureCloudInstance cloudInstance, string tenant, string clientId, X509Certificate2 ClientCertificate, string claimsProviderName, int timeout)
         {
+            this.ClientCertificate = ClientCertificate;
+
             this.Tenant = tenant;
             this.ClientId = clientId;
-            this.ClientCertificate = ClientCertificate;
             this.ClaimsProviderName = claimsProviderName;
             this.Timeout = timeout;
             this.CloudInstance = cloudInstance;
