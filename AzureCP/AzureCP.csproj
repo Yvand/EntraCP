@@ -154,6 +154,7 @@ copy /Y "$(TargetDir)System.ValueTuple.dll" $(ProjectDir)\bin
 copy /Y "$(TargetDir)System.Buffers.dll" $(ProjectDir)\bin
 copy /Y "$(TargetDir)System.Diagnostics.DiagnosticSource.dll" $(ProjectDir)\bin
 copy /Y "$(TargetDir)System.Memory.dll" $(ProjectDir)\bin
-copy /Y "$(TargetDir)System.Runtime.CompilerServices.Unsafe.dll" $(ProjectDir)\bin</PostBuildEvent>
+copy /Y "$(TargetDir)System.Runtime.CompilerServices.Unsafe.dll" $(ProjectDir)\bin
+copy /Y "$(TargetDir)System.Numerics.Vectors.dll" $(ProjectDir)\bin</PostBuildEvent>
   </PropertyGroup>
 </Project>

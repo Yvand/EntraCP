@@ -13,6 +13,7 @@
     <customAssembly location="System.Diagnostics.DiagnosticSource.dll" deploymentTarget="GlobalAssemblyCache" sourcePath="bin\System.Diagnostics.DiagnosticSource.dll" />
     <customAssembly location="System.Memory.dll" deploymentTarget="GlobalAssemblyCache" sourcePath="bin\System.Memory.dll" />
     <customAssembly location="System.Runtime.CompilerServices.Unsafe.dll" deploymentTarget="GlobalAssemblyCache" sourcePath="bin\System.Runtime.CompilerServices.Unsafe.dll" />
+    <customAssembly location="System.Numerics.Vectors.dll" deploymentTarget="GlobalAssemblyCache" sourcePath="bin\System.Numerics.Vectors.dll" />
   </assemblies>
   <features>
     <featureReference itemId="70b104e2-19df-4cb1-9802-c98eaf14d84e" />
