@@ -2,6 +2,7 @@
 
 ## Unreleased
 
+* IMPORTANT: due to its dependencies and issues specific to .NET 4.6.1 and lower with .NET Standard 2.0, AzureCP 18 requires at least .NET 4.7.2.
 * Replace authentication library ADAL (deprecated) with MSAL.NET (recommended), using Nuget package Microsoft.Identity.Client 4.22.0
 * Replace NuGet package Nito.AsyncEx.StrongNamed (outdated) with up to date Nuget package Nito.AsyncEx 5.1.0.
 * Add support for national clouds

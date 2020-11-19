@@ -9,7 +9,7 @@
     <AppDesignerFolder>Properties</AppDesignerFolder>
     <RootNamespace>azurecp</RootNamespace>
     <AssemblyName>AzureCP</AssemblyName>
-    <TargetFrameworkVersion>v4.6.1</TargetFrameworkVersion>
+    <TargetFrameworkVersion>v4.7.2</TargetFrameworkVersion>
     <TargetOfficeVersion>15.0</TargetOfficeVersion>
     <FileAlignment>512</FileAlignment>
     <ProjectTypeGuids>{C1CDDADD-2546-481F-9697-4EA41081F2FC};{14822709-B5A1-4724-98CA-57A101D1B079};{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}</ProjectTypeGuids>
@@ -150,13 +150,12 @@ copy /Y "$(TargetDir)Microsoft.Identity.Client.dll" $(ProjectDir)\bin
 copy /Y "$(TargetDir)Microsoft.Graph.Core.dll" $(ProjectDir)\bin
 copy /Y "$(TargetDir)Microsoft.Graph.dll" $(ProjectDir)\bin
 copy /Y "$(TargetDir)Newtonsoft.Json.dll" $(ProjectDir)\bin
-copy /Y "$(TargetDir)System.ValueTuple.dll" $(ProjectDir)\bin
 copy /Y "$(TargetDir)System.Buffers.dll" $(ProjectDir)\bin
+copy /Y "$(TargetDir)System.Collections.Immutable.dll" $(ProjectDir)\bin
 copy /Y "$(TargetDir)System.Diagnostics.DiagnosticSource.dll" $(ProjectDir)\bin
 copy /Y "$(TargetDir)System.Memory.dll" $(ProjectDir)\bin
-copy /Y "$(TargetDir)System.Runtime.CompilerServices.Unsafe.dll" $(ProjectDir)\bin
 copy /Y "$(TargetDir)System.Numerics.Vectors.dll" $(ProjectDir)\bin
-copy /Y "$(TargetDir)System.Net.Http.dll" $(ProjectDir)\bin
+copy /Y "$(TargetDir)System.Runtime.CompilerServices.Unsafe.dll" $(ProjectDir)\bin
 copy /Y "$(TargetDir)Nito.AsyncEx.Context.dll" $(ProjectDir)\bin
 copy /Y "$(TargetDir)Nito.AsyncEx.Coordination.dll" $(ProjectDir)\bin
 copy /Y "$(TargetDir)Nito.AsyncEx.Interop.WaitHandles.dll" $(ProjectDir)\bin
@@ -164,7 +163,6 @@ copy /Y "$(TargetDir)Nito.AsyncEx.Oop.dll" $(ProjectDir)\bin
 copy /Y "$(TargetDir)Nito.AsyncEx.Tasks.dll" $(ProjectDir)\bin
 copy /Y "$(TargetDir)Nito.Cancellation.dll" $(ProjectDir)\bin
 copy /Y "$(TargetDir)Nito.Collections.Deque.dll" $(ProjectDir)\bin
-copy /Y "$(TargetDir)Nito.Disposables.dll" $(ProjectDir)\bin
-copy /Y "$(TargetDir)System.Collections.Immutable.dll" $(ProjectDir)\bin</PostBuildEvent>
+copy /Y "$(TargetDir)Nito.Disposables.dll" $(ProjectDir)\bin</PostBuildEvent>
   </PropertyGroup>
 </Project>
