@@ -116,8 +116,11 @@
     <PackageReference Include="Microsoft.Identity.Client">
       <Version>4.22.0</Version>
     </PackageReference>
-    <PackageReference Include="Nito.AsyncEx.StrongNamed">
-      <Version>4.0.1</Version>
+    <PackageReference Include="Nito.AsyncEx">
+      <Version>5.1.0</Version>
+    </PackageReference>
+    <PackageReference Include="StrongNamer">
+      <Version>0.2.5</Version>
     </PackageReference>
   </ItemGroup>
   <ItemGroup>
@@ -144,9 +147,6 @@
   <PropertyGroup>
     <PostBuildEvent>"C:\Program Files (x86)\Microsoft SDKs\Windows\v10.0A\bin\NETFX 4.8 Tools\x64\gacutil.exe" /f /i "$(TargetPath)"
 copy /Y "$(TargetDir)Microsoft.Identity.Client.dll" $(ProjectDir)\bin
-copy /Y "$(TargetDir)Nito.AsyncEx.Concurrent.dll" $(ProjectDir)\bin
-copy /Y "$(TargetDir)Nito.AsyncEx.dll" $(ProjectDir)\bin
-copy /Y "$(TargetDir)Nito.AsyncEx.Enlightenment.dll" $(ProjectDir)\bin
 copy /Y "$(TargetDir)Microsoft.Graph.Core.dll" $(ProjectDir)\bin
 copy /Y "$(TargetDir)Microsoft.Graph.dll" $(ProjectDir)\bin
 copy /Y "$(TargetDir)Newtonsoft.Json.dll" $(ProjectDir)\bin
@@ -156,6 +156,15 @@ copy /Y "$(TargetDir)System.Diagnostics.DiagnosticSource.dll" $(ProjectDir)\bin
 copy /Y "$(TargetDir)System.Memory.dll" $(ProjectDir)\bin
 copy /Y "$(TargetDir)System.Runtime.CompilerServices.Unsafe.dll" $(ProjectDir)\bin
 copy /Y "$(TargetDir)System.Numerics.Vectors.dll" $(ProjectDir)\bin
-copy /Y "$(TargetDir)System.Net.Http.dll" $(ProjectDir)\bin</PostBuildEvent>
+copy /Y "$(TargetDir)System.Net.Http.dll" $(ProjectDir)\bin
+copy /Y "$(TargetDir)Nito.AsyncEx.Context.dll" $(ProjectDir)\bin
+copy /Y "$(TargetDir)Nito.AsyncEx.Coordination.dll" $(ProjectDir)\bin
+copy /Y "$(TargetDir)Nito.AsyncEx.Interop.WaitHandles.dll" $(ProjectDir)\bin
+copy /Y "$(TargetDir)Nito.AsyncEx.Oop.dll" $(ProjectDir)\bin
+copy /Y "$(TargetDir)Nito.AsyncEx.Tasks.dll" $(ProjectDir)\bin
+copy /Y "$(TargetDir)Nito.Cancellation.dll" $(ProjectDir)\bin
+copy /Y "$(TargetDir)Nito.Collections.Deque.dll" $(ProjectDir)\bin
+copy /Y "$(TargetDir)Nito.Disposables.dll" $(ProjectDir)\bin
+copy /Y "$(TargetDir)System.Collections.Immutable.dll" $(ProjectDir)\bin</PostBuildEvent>
   </PropertyGroup>
 </Project>
