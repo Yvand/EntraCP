@@ -117,10 +117,11 @@ namespace azurecp
             try
             {
 #if DEBUG
-                WriteTrace(TraceCategory.Debug, TraceSeverity.VerboseEx, message);
+                WriteTrace(TraceCategory.Debug, TraceSeverity.High, message);
                 Debug.WriteLine(message);
 #else
-                // Do nothing
+                WriteTrace(TraceCategory.Debug, TraceSeverity.VerboseEx, message);
+                Debug.WriteLine(message);
 #endif
             }
             catch

@@ -1361,7 +1361,11 @@ namespace azurecp
             ClaimsProviderLogging.Log($"[{ProviderInternalName}] Querying Azure AD tenant '{tenant.Name}' for users and groups, with input '{currentContext.Input}'", TraceSeverity.VerboseEx, EventSeverity.Information, TraceCategory.Lookup);
             bool tryAgain = false;
             object lockAddResultToCollection = new object();
-            CancellationTokenSource cts = new CancellationTokenSource(this.CurrentConfiguration.Timeout);
+            int timeout = this.CurrentConfiguration.Timeout;
+#if DEBUG
+            timeout = 60 * 1000;
+#endif
+            CancellationTokenSource cts = new CancellationTokenSource(timeout);
             try
             {
                 using (new SPMonitoredScope($"[{ProviderInternalName}] Querying Azure AD tenant '{tenant.Name}' for users and groups, with input '{currentContext.Input}'", 1000))
@@ -1451,27 +1455,21 @@ namespace azurecp
                                 while (groupsFound.Count > 0 && groupsFound.NextPageRequest != null);
                             }
                         }, cts.Token);
-                        Task.WaitAll(new Task[2] { userQueryTask, groupQueryTask }, this.CurrentConfiguration.Timeout, cts.Token);
+                        Task.WaitAll(new Task[2] { userQueryTask, groupQueryTask }, timeout, cts.Token);
                     }, cts.Token);
 
                     // Waits for all tasks to complete execution within a specified number of milliseconds
-                    // Use specifically WaitAll(Task[], Int32, CancellationToken) as it will thwrow an OperationCanceledException if cancellationToken is canceled
-                    //bool tasksCompletedInTime = Task.WaitAll(new Task[2] { userQueryTask, groupQueryTask }, this.CurrentConfiguration.Timeout, cts.Token);
-                    bool tasksCompletedInTime = Task.WaitAll(new Task[1] { batchQueryTask }, this.CurrentConfiguration.Timeout, cts.Token);
-                    if (!tasksCompletedInTime)
-                    {
-                        // Some or all tasks didn't complete on time, cancel them
-                        //ClaimsProviderLogging.Log($"[{ProviderInternalName}] DEBUG: Exceeded Timeout on Azure AD tenant '{tenant.TenantName}', cancelling token.", TraceSeverity.Unexpected, EventSeverity.Error, TraceCategory.Lookup);
-                        cts.Cancel();
-                        // For some reason, Cancel() doesn't make Task.WaitAll() to throw an OperationCanceledException
-                        ClaimsProviderLogging.Log($"[{ProviderInternalName}] Queries on Azure AD tenant '{tenant.Name}' exceeded Timeout of {this.CurrentConfiguration.Timeout} ms and were cancelled.", TraceSeverity.Unexpected, EventSeverity.Error, TraceCategory.Lookup);
-                        tryAgain = true;
-                    }
+                    ClaimsProviderLogging.LogDebug($"Waiting on Task.WaitAll for {tenant.Name} starting");
+                    // Cannot use Task.WaitAll() because it's actually blocking the threads, preventing parallel queries on others AAD tenants.
+                    // Use await Task.WhenAll() as it does not block other threads, so all AAD tenants are actually queried in parallel.
+                    // More info: https://stackoverflow.com/questions/12337671/using-async-await-for-multiple-tasks
+                    await Task.WhenAll(new Task[1] { batchQueryTask });
+                    ClaimsProviderLogging.LogDebug($"Waiting on Task.WaitAll for {tenant.Name} finished");                    
                 }
             }
             catch (OperationCanceledException)
             {
-                ClaimsProviderLogging.Log($"[{ProviderInternalName}] Queries on Azure AD tenant '{tenant.Name}' exceeded timeout of {this.CurrentConfiguration.Timeout} ms and were cancelled.", TraceSeverity.Unexpected, EventSeverity.Error, TraceCategory.Lookup);
+                ClaimsProviderLogging.Log($"[{ProviderInternalName}] Queries on Azure AD tenant '{tenant.Name}' exceeded timeout of {timeout} ms and were cancelled.", TraceSeverity.Unexpected, EventSeverity.Error, TraceCategory.Lookup);
                 tryAgain = true;
             }
             catch (AggregateException ex)
@@ -1482,7 +1480,6 @@ namespace azurecp
             }
             finally
             {
-                ClaimsProviderLogging.LogDebug($"[{ProviderInternalName}] Finished queries on Azure AD tenant '{tenant.Name}'");
                 cts.Dispose();
             }
 
