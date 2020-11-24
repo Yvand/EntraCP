@@ -1,4 +1,5 @@
 ﻿using Microsoft.Graph;
+using Microsoft.Identity.Client;
 using Microsoft.SharePoint;
 using Microsoft.SharePoint.Administration;
 using Microsoft.SharePoint.Administration.Claims;
@@ -36,8 +37,20 @@ namespace azurecp
     {
         public static string CONFIG_ID => "0E9F8FB6-B314-4CCC-866D-DEC0BE76C237";
         public static string CONFIG_NAME => "AzureCPConfig";
-        public static string GraphAPIResource => "https://graph.microsoft.com/";
-        public static string AuthorityUriTemplate => "https://login.windows.net/{0}";
+        public static string GraphServiceEndpointVersion => "v1.0";
+        //public static string DefaultGraphServiceEndpoint => "https://graph.microsoft.com/";
+        //public static string DefaultLoginServiceEndpoint => "https://login.microsoftonline.com/";
+        /// <summary>
+        /// List of Microsoft Graph service root endpoints based on National Cloud as described on https://docs.microsoft.com/en-us/graph/deployments
+        /// </summary>
+        public static List<KeyValuePair<AzureCloudInstance, string>> AzureCloudEndpoints = new List<KeyValuePair<AzureCloudInstance, string>>()
+        {
+            new KeyValuePair<AzureCloudInstance, string>(AzureCloudInstance.AzurePublic, "https://graph.microsoft.com"),
+            new KeyValuePair<AzureCloudInstance, string>(AzureCloudInstance.AzureChina, "https://microsoftgraph.chinacloudapi.cn"),
+            new KeyValuePair<AzureCloudInstance, string>(AzureCloudInstance.AzureGermany, "https://graph.microsoft.de"),
+            new KeyValuePair<AzureCloudInstance, string>(AzureCloudInstance.AzureUsGovernment, "https://graph.microsoft.us"),
+            new KeyValuePair<AzureCloudInstance, string>(AzureCloudInstance.None, "https://graph.microsoft.com"),
+        };
         public static string GroupClaimEntityType { get; set; } = SPClaimEntityTypes.FormsRole;
         public static bool EnforceOnly1ClaimTypeForGroup => true;     // In AzureCP, only 1 claim type can be used to create group permissions
         public static string DefaultMainGroupClaimType => WIF4_5.ClaimTypes.Role;
@@ -480,9 +493,9 @@ namespace azurecp
                 new ClaimTypeConfig{EntityType = DirectoryObjectType.User, DirectoryObjectProperty = AzureADObjectProperty.DisplayName, UseMainClaimTypeOfDirectoryObject = true, EntityDataKey = PeopleEditorEntityDataKeys.DisplayName},
                 new ClaimTypeConfig{EntityType = DirectoryObjectType.User, DirectoryObjectProperty = AzureADObjectProperty.GivenName, UseMainClaimTypeOfDirectoryObject = true}, //Yvan
                 new ClaimTypeConfig{EntityType = DirectoryObjectType.User, DirectoryObjectProperty = AzureADObjectProperty.Surname, UseMainClaimTypeOfDirectoryObject = true},   //Duhamel
+                new ClaimTypeConfig{EntityType = DirectoryObjectType.User, DirectoryObjectProperty = AzureADObjectProperty.Mail, EntityDataKey = PeopleEditorEntityDataKeys.Email, UseMainClaimTypeOfDirectoryObject = true},
 
                 // Additional properties to populate metadata of entity created: no claim type set, EntityDataKey is set and UseMainClaimTypeOfDirectoryObject = false (default value)
-                new ClaimTypeConfig{EntityType = DirectoryObjectType.User, DirectoryObjectProperty = AzureADObjectProperty.Mail, EntityDataKey = PeopleEditorEntityDataKeys.Email},
                 new ClaimTypeConfig{EntityType = DirectoryObjectType.User, DirectoryObjectProperty = AzureADObjectProperty.MobilePhone, EntityDataKey = PeopleEditorEntityDataKeys.MobilePhone},
                 new ClaimTypeConfig{EntityType = DirectoryObjectType.User, DirectoryObjectProperty = AzureADObjectProperty.JobTitle, EntityDataKey = PeopleEditorEntityDataKeys.JobTitle},
                 new ClaimTypeConfig{EntityType = DirectoryObjectType.User, DirectoryObjectProperty = AzureADObjectProperty.Department, EntityDataKey = PeopleEditorEntityDataKeys.Department},
@@ -765,6 +778,14 @@ namespace azurecp
             }
         }
 
+        public AzureCloudInstance CloudInstance
+        {
+            get => (AzureCloudInstance)Enum.Parse(typeof(AzureCloudInstance), m_CloudInstance);
+            set => m_CloudInstance =  value.ToString();
+        }
+        [Persisted]
+        private string m_CloudInstance = AzureCloudInstance.AzurePublic.ToString();
+
         /// <summary>
         /// Instance of the IAuthenticationProvider class for this specific Azure AD tenant
         /// </summary>
@@ -806,13 +827,15 @@ namespace azurecp
             {
                 if (!String.IsNullOrWhiteSpace(ClientSecret))
                 {
-                    this.AuthenticationProvider = new AADAppOnlyAuthenticationProvider(ClaimsProviderConstants.AuthorityUriTemplate, this.Name, this.ApplicationId, this.ApplicationSecret, claimsProviderName, timeout);
+                    this.AuthenticationProvider = new AADAppOnlyAuthenticationProvider(this.CloudInstance, this.Name, this.ApplicationId, this.ApplicationSecret, claimsProviderName, timeout);
                 }
                 else
                 {
-                    this.AuthenticationProvider = new AADAppOnlyAuthenticationProvider(ClaimsProviderConstants.AuthorityUriTemplate, this.Name, this.ApplicationId, this.ClientCertificatePrivateKey, claimsProviderName, timeout);
+                    this.AuthenticationProvider = new AADAppOnlyAuthenticationProvider(this.CloudInstance, this.Name, this.ApplicationId, this.ClientCertificatePrivateKey, claimsProviderName, timeout);
                 }
-                this.GraphService = new GraphServiceClient(this.AuthenticationProvider);
+                UriBuilder graphUriBuilder = new UriBuilder(this.AuthenticationProvider.GraphServiceEndpoint);
+                graphUriBuilder.Path = $"/{ClaimsProviderConstants.GraphServiceEndpointVersion}";
+                this.GraphService = new GraphServiceClient(graphUriBuilder.ToString(), this.AuthenticationProvider);
             }
             catch (Exception ex)
             {

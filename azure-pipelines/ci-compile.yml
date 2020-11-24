@@ -114,6 +114,14 @@ jobs:
        $(system.teamProject).Tests/bin/$(configuration)/?(*.dll)
       TargetFolder: '$(Build.ArtifactStagingDirectory)'
 
+  - task: CopyFiles@2
+    displayName: 'Copy dependencies to artifacts'
+    inputs:
+      SourceFolder: '$(Build.SourcesDirectory)'
+      Contents: |
+       $(system.teamProject)/bin/$(configuration)/?(*.dll)
+      TargetFolder: '$(Build.ArtifactStagingDirectory)/dependencies'
+
   - task: PublishBuildArtifacts@1
     displayName: 'Publish Artifact: drop'
     inputs:

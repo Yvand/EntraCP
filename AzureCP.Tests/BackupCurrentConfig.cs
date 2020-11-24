@@ -16,6 +16,7 @@ namespace AzureCP.Tests
         [OneTimeSetUp]
         public void Init()
         {
+            Trace.WriteLine($"{DateTime.Now.ToString("s")} Start backup of current AzureCP configuration");
             Config = AzureCPConfig.GetConfiguration(UnitTestsHelper.ClaimsProviderConfigName, UnitTestsHelper.SPTrust.Name);
             if (Config == null)
             {
@@ -39,6 +40,7 @@ namespace AzureCP.Tests
         {
             Config.ApplyConfiguration(BackupConfig);
             Config.Update();
+            Trace.WriteLine($"{DateTime.Now.ToString("s")} Restored original settings of AzureCP configuration");
         }
     }
 }

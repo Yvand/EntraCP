@@ -56,12 +56,6 @@ public class UnitTestsHelper
     [OneTimeSetUp]
     public static void InitializeSiteCollection()
     {
-
-#if DEBUG
-        TestSiteCollUri = new Uri("http://spsites/sites/" + TestContext.Parameters["TestSiteCollectionName"]);
-        return; // Uncommented when debugging AzureCP code from unit tests
-#endif
-
         logFileListener = new TextWriterTraceListener(TestContext.Parameters["TestLogFileName"]);
         Trace.Listeners.Add(logFileListener);
         Trace.AutoFlush = true;
@@ -71,6 +65,13 @@ public class UnitTestsHelper
         Trace.WriteLine($"{DateTime.Now.ToString("s")} DataFile_GuestAccountsUPN_Search: {DataFile_GuestAccountsUPN_Search}");
         Trace.WriteLine($"{DateTime.Now.ToString("s")} DataFile_GuestAccountsUPN_Validate: {DataFile_GuestAccountsUPN_Validate}");
         Trace.WriteLine($"{DateTime.Now.ToString("s")} TestSiteCollectionName: {TestContext.Parameters["TestSiteCollectionName"]}");
+
+#if DEBUG
+        TestSiteCollUri = new Uri("http://spsites/sites/" + TestContext.Parameters["TestSiteCollectionName"]);
+        return; // Uncommented when debugging AzureCP code from unit tests
+#endif
+
+
         if (SPTrust == null)
         {
             Trace.TraceError($"{DateTime.Now.ToString("s")} SPTrust: is null");
@@ -161,6 +162,7 @@ public class UnitTestsHelper
         List<AzureTenant> azureTenants = JsonConvert.DeserializeObject<List<AzureTenant>>(json);
         config.AzureTenants = azureTenants;
         config.Update();
+        Trace.WriteLine($"{DateTime.Now.ToString("s")} Set {config.AzureTenants.Count} Azure AD tenants to AzureCP configuration");
     }
 
     /// <summary>
@@ -171,18 +173,29 @@ public class UnitTestsHelper
     /// <param name="expectedClaimValue"></param>
     public static void TestSearchOperation(string inputValue, int expectedCount, string expectedClaimValue)
     {
-        var entityTypes = new [] { "User", "SecGroup", "SharePointGroup", "System", "FormsRole" };
-
-        SPProviderHierarchyTree providerResults = ClaimsProvider.Search(TestSiteCollUri, entityTypes, inputValue, null, 30);
-        List<PickerEntity> entities = new List<PickerEntity>();
-        foreach (var children in providerResults.Children)
+        try
         {
-            entities.AddRange(children.EntityData);
-        }
-        VerifySearchTest(entities, inputValue, expectedCount, expectedClaimValue);
+            Stopwatch timer = new Stopwatch();
+            timer.Start();
+            var entityTypes = new[] { "User", "SecGroup", "SharePointGroup", "System", "FormsRole" };
 
-        entities = ClaimsProvider.Resolve(TestSiteCollUri, entityTypes, inputValue).ToList();
-        VerifySearchTest(entities, inputValue, expectedCount, expectedClaimValue);
+            SPProviderHierarchyTree providerResults = ClaimsProvider.Search(TestSiteCollUri, entityTypes, inputValue, null, 30);
+            List<PickerEntity> entities = new List<PickerEntity>();
+            foreach (var children in providerResults.Children)
+            {
+                entities.AddRange(children.EntityData);
+            }
+            VerifySearchTest(entities, inputValue, expectedCount, expectedClaimValue);
+
+            entities = ClaimsProvider.Resolve(TestSiteCollUri, entityTypes, inputValue).ToList();
+            VerifySearchTest(entities, inputValue, expectedCount, expectedClaimValue);
+            timer.Stop();
+            Trace.WriteLine($"{DateTime.Now.ToString("s")} TestSearchOperation finished in {timer.ElapsedMilliseconds} ms. Parameters: inputValue: '{inputValue}', expectedCount: '{expectedCount}', expectedClaimValue: '{expectedClaimValue}'.");
+        }
+        catch (Exception ex)
+        {
+            Trace.TraceError($"{DateTime.Now.ToString("s")} TestSearchOperation failed with exception '{ex.GetType()}', message '{ex.Message}'. Parameters: inputValue: '{inputValue}', expectedCount: '{expectedCount}', expectedClaimValue: '{expectedClaimValue}'.");
+        }
     }
 
     public static void VerifySearchTest(List<PickerEntity> entities, string input, int expectedCount, string expectedClaimValue)
@@ -214,38 +227,60 @@ public class UnitTestsHelper
 
     public static void TestValidationOperation(SPClaim inputClaim, bool shouldValidate, string expectedClaimValue)
     {
-        var entityTypes = new [] { "User" };
-
-        PickerEntity[] entities = ClaimsProvider.Resolve(TestSiteCollUri, entityTypes, inputClaim);
-
-        int expectedCount = shouldValidate ? 1 : 0;
-        Assert.AreEqual(expectedCount, entities.Length, $"Validation of entity \"{inputClaim.Value}\" should have returned {expectedCount} entity, but it returned {entities.Length} instead.");
-        if (shouldValidate)
+        try
         {
-            StringAssert.AreEqualIgnoringCase(expectedClaimValue, entities[0].Claim.Value, $"Validation of entity \"{inputClaim.Value}\" should have returned value \"{expectedClaimValue}\", but it returned \"{entities[0].Claim.Value}\" instead.");
+            Stopwatch timer = new Stopwatch();
+            timer.Start();
+            var entityTypes = new[] { "User" };
+
+            PickerEntity[] entities = ClaimsProvider.Resolve(TestSiteCollUri, entityTypes, inputClaim);
+
+            int expectedCount = shouldValidate ? 1 : 0;
+            Assert.AreEqual(expectedCount, entities.Length, $"Validation of entity \"{inputClaim.Value}\" should have returned {expectedCount} entity, but it returned {entities.Length} instead.");
+            if (shouldValidate)
+            {
+                StringAssert.AreEqualIgnoringCase(expectedClaimValue, entities[0].Claim.Value, $"Validation of entity \"{inputClaim.Value}\" should have returned value \"{expectedClaimValue}\", but it returned \"{entities[0].Claim.Value}\" instead.");
+            }
+            timer.Stop();
+            Trace.WriteLine($"{DateTime.Now.ToString("s")} TestValidationOperation finished in {timer.ElapsedMilliseconds} ms. Parameters: inputClaim.Value: '{inputClaim.Value}', shouldValidate: '{shouldValidate}', expectedClaimValue: '{expectedClaimValue}'.");
+        }
+        catch (Exception ex)
+        {
+            Trace.TraceError($"{DateTime.Now.ToString("s")} TestValidationOperation failed with exception '{ex.GetType()}', message '{ex.Message}'. Parameters: inputClaim.Value: '{inputClaim.Value}', shouldValidate: '{shouldValidate}', expectedClaimValue: '{expectedClaimValue}'.");
         }
     }
 
     public static void TestAugmentationOperation(string claimType, string claimValue, bool isMemberOfTrustedGroup)
     {
-        SPClaim inputClaim = new SPClaim(claimType, claimValue, ClaimValueTypes.String, SPOriginalIssuers.Format(SPOriginalIssuerType.TrustedProvider, UnitTestsHelper.SPTrust.Name));
-        Uri context = new Uri(UnitTestsHelper.TestSiteCollUri.AbsoluteUri);
-
-        SPClaim[] groups = ClaimsProvider.GetClaimsForEntity(context, inputClaim);
-
-        bool groupFound = false;
-        if (groups != null && groups.Contains(TrustedGroup))
+        try
         {
-            groupFound = true;
+            Stopwatch timer = new Stopwatch();
+            timer.Start();
+            SPClaim inputClaim = new SPClaim(claimType, claimValue, ClaimValueTypes.String, SPOriginalIssuers.Format(SPOriginalIssuerType.TrustedProvider, UnitTestsHelper.SPTrust.Name));
+            Uri context = new Uri(UnitTestsHelper.TestSiteCollUri.AbsoluteUri);
+
+            SPClaim[] groups = ClaimsProvider.GetClaimsForEntity(context, inputClaim);
+
+            bool groupFound = false;
+            if (groups != null && groups.Contains(TrustedGroup))
+            {
+                groupFound = true;
+            }
+
+            if (isMemberOfTrustedGroup)
+            {
+                Assert.IsTrue(groupFound, $"Entity \"{claimValue}\" should be member of group \"{TrustedGroupToAdd_ClaimValue}\", but this group was not found in the claims returned by the claims provider.");
+            }
+            else
+            {
+                Assert.IsFalse(groupFound, $"Entity \"{claimValue}\" should NOT be member of group \"{TrustedGroupToAdd_ClaimValue}\", but this group was found in the claims returned by the claims provider.");
+            }
+            timer.Stop();
+            Trace.WriteLine($"{DateTime.Now.ToString("s")} TestAugmentationOperation finished in {timer.ElapsedMilliseconds} ms. Parameters: claimType: '{claimType}', claimValue: '{claimValue}', isMemberOfTrustedGroup: '{isMemberOfTrustedGroup}'.");
         }
-
-        if (isMemberOfTrustedGroup)
+        catch (Exception ex)
         {
-            Assert.IsTrue(groupFound, $"Entity \"{claimValue}\" should be member of group \"{TrustedGroupToAdd_ClaimValue}\", but this group was not found in the claims returned by the claims provider.");
-        }
-        else
-        {
-            Assert.IsFalse(groupFound, $"Entity \"{claimValue}\" should NOT be member of group \"{TrustedGroupToAdd_ClaimValue}\", but this group was found in the claims returned by the claims provider.");
+            Trace.TraceError($"{DateTime.Now.ToString("s")} TestAugmentationOperation failed with exception '{ex.GetType()}', message '{ex.Message}'. Parameters: claimType: '{claimType}', claimValue: '{claimValue}', isMemberOfTrustedGroup: '{isMemberOfTrustedGroup}'.");
         }
     }
 }
