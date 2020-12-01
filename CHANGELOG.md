@@ -3,6 +3,7 @@
 ## Unreleased
 
 * Fix bug: No Azure AD group was returned when FilterSecurityEnabledGroupsOnly is set to true - https://github.com/Yvand/AzureCP/issues/109
+* Add ConfigureAwait(false) to Task.WhenAll()
 * Update NuGet package Microsoft.Graph.3.19.0 -> Microsoft.Graph.3.20.0
 * Update NuGet package Microsoft.Identity.Client.4.22.0 -> Microsoft.Identity.Client.4.23.0
 
