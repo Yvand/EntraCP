@@ -1151,7 +1151,7 @@ namespace azurecp
             StringBuilder userFilterBuilder = new StringBuilder();
             StringBuilder groupFilterBuilder = new StringBuilder();
             StringBuilder userSelectBuilder = new StringBuilder("UserType, Mail, ");    // UserType and Mail are always needed to deal with Guest users
-            StringBuilder groupSelectBuilder = new StringBuilder("Id, ");               // Id is always required for groups
+            StringBuilder groupSelectBuilder = new StringBuilder("Id, securityEnabled, ");               // Id is always required for groups
 
             //// Microsoft Graph doesn't support operator not equals (ne) on attribute UserType, it can only be queried using equals (eq)
             //string memberOnlyUserTypeFilter = " and UserType eq 'Member'";
