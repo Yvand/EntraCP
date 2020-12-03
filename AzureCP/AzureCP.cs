@@ -1472,6 +1472,11 @@ namespace azurecp
                 ClaimsProviderLogging.Log($"[{ProviderInternalName}] Queries on Azure AD tenant '{tenant.Name}' exceeded timeout of {timeout} ms and were cancelled.", TraceSeverity.Unexpected, EventSeverity.Error, TraceCategory.Lookup);
                 tryAgain = true;
             }
+            catch (ServiceException ex)
+            {
+                ClaimsProviderLogging.LogException(ProviderInternalName, $"Microsoft.Graph could not query tenant '{tenant.Name}'", TraceCategory.Lookup, ex);
+                tryAgain = true;
+            }
             catch (AggregateException ex)
             {
                 // Task.WaitAll throws an AggregateException, which contains all exceptions thrown by tasks it waited on
@@ -1499,9 +1504,10 @@ namespace azurecp
             // Split results between users/groups and list of registered domains in the tenant
             List<DirectoryObject> usersAndGroups = new List<DirectoryObject>();
             // For each Azure AD tenant where list of result (UsersAndGroups) is not null
-            foreach (AzureADResult tenantResults in azureADResults.Where(x => x.UsersAndGroups != null))
+            // singleTenantResults in azureADResults can be null if AzureCP failed to get a valid access token for it
+            foreach (AzureADResult singleTenantResults in azureADResults.Where(singleTenantResults => singleTenantResults != null && singleTenantResults.UsersAndGroups != null))
             {
-                usersAndGroups.AddRange(tenantResults.UsersAndGroups);
+                usersAndGroups.AddRange(singleTenantResults.UsersAndGroups);
                 //domains.AddRange(tenantResults.DomainsRegisteredInAzureADTenant);
             }
 
