@@ -6,8 +6,8 @@
 * Fix bug: Setting "Filter out Guest users" in new AAD teant dialog excludes members instead of guests - https://github.com/Yvand/AzureCP/issues/107
 * Add ConfigureAwait(false) to Task.WhenAll()
 * Better handle scenario when AzureCP cannot get an access token for a tenant
-* Update NuGet package Microsoft.Graph.3.19.0 -> Microsoft.Graph.3.20.0
-* Update NuGet package Microsoft.Identity.Client.4.22.0 -> Microsoft.Identity.Client.4.23.0
+* Update NuGet package Microsoft.Graph.3.19.0 -> Microsoft.Graph.3.21.0
+* Update NuGet package Microsoft.Identity.Client.4.22.0 -> Microsoft.Identity.Client.4.24.0
 
 ## AzureCP 18.0.20201120.1245 enhancements & bug-fixes - Published in November 24, 2020
 
