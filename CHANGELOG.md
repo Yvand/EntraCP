@@ -7,8 +7,9 @@
 * Add ConfigureAwait(false) to Task.WhenAll()
 * Update the text in AzureCP global admin page
 * Better handle scenario when AzureCP cannot get an access token for a tenant
-* Update NuGet package Microsoft.Graph.3.19.0 -> Microsoft.Graph.3.21.0
-* Update NuGet package Microsoft.Identity.Client.4.22.0 -> Microsoft.Identity.Client.4.24.0
+* Update NuGet package Microsoft.Graph.3.19.0 -> Microsoft.Graph.3.23.0
+* Update NuGet package Microsoft.Identity.Client.4.22.0 -> Microsoft.Identity.Client.4.25.0
+* Update NuGet package NUnit.3.12.0 -> Microsoft.Identity.Client.3.13.1
 
 ## AzureCP 18.0.20201120.1245 enhancements & bug-fixes - Published in November 24, 2020
 
