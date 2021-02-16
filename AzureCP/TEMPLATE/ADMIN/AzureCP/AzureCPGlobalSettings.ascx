@@ -125,9 +125,9 @@
 			<asp:Button UseSubmitBehavior="false" runat="server" class="ms-ButtonHeightWidth" OnClick="BtnOK_Click" Text="<%$Resources:wss,multipages_okbutton_text%>" id="BtnOKTop" accesskey="<%$Resources:wss,okbutton_accesskey%>"/>
 		</template_buttons>
     </wssuc:buttonsection>
-    <wssuc:inputformsection title="Existing Azure Active Directory tenants" runat="server">
+    <wssuc:inputformsection title="Registered Azure Active Directory tenants" runat="server">
         <template_description>
-				<wssawc:EncodedLiteral runat="server" text="Azure AD tenants registered." EncodeMethod='HtmlEncodeAllowSimpleTextFormatting'/>
+				<wssawc:EncodedLiteral runat="server" text="Azure AD tenants currently registered in AzureCP configuration." EncodeMethod='HtmlEncodeAllowSimpleTextFormatting'/>
 			</template_description>
         <template_inputformcontrols>
 			<tr><td>
@@ -143,15 +143,15 @@
 			</td></tr>
 		</template_inputformcontrols>
     </wssuc:inputformsection>
-    <wssuc:inputformsection title="New Azure Active Directory tenant" runat="server">
+    <wssuc:inputformsection title="Register a new Azure Active Directory tenant" runat="server">
         <template_description>
-			<wssawc:EncodedLiteral runat="server" text="<p>A dedicated app must be registered in Azure AD to authorize AzureCP to run queries.<br />Read <a href='https://yvand.github.io/AzureCP/Register-App-In-AAD.html' target='_blank'>this article</a> to see how to do it, then you can enter the information here.<br /><br />AzureCP can authenticate either with a secret or a certificate.</p>" EncodeMethod='NoEncode' />
+			<wssawc:EncodedLiteral runat="server" text="<p>AzureCP needs its own app registration to connect to your Azure AD tenant, with permissions 'Group.Read.All' and 'User.Read.All'.<br />Check <a href='https://yvand.github.io/AzureCP/Register-App-In-AAD.html' target='_blank'>this page</a> to see how to register it properly.<br /><br />AzureCP can authenticate using <a href='https://docs.microsoft.com/en-us/azure/active-directory/develop/v2-oauth2-client-creds-grant-flow#get-a-token' target='_blank'>either a secret or a certificate</a>.</p>" EncodeMethod='NoEncode' />
 		</template_description>
         <template_inputformcontrols>
 			<tr><td>
 				<div id="divNewLdapConnection">
 				<fieldset>
-				<legend>Details about new Azure AD tenant</legend>
+				<legend>Information on the Azure AD tenant to register</legend>
 				<ul>
 					<li>
 						<label for="<%= TxtTenantName.ClientID %>">Tenant name: <em>*</em></label>
@@ -202,7 +202,7 @@
 			</td></tr>
 		 </template_inputformcontrols>
     </wssuc:inputformsection>
-    <wssuc:inputformsection runat="server" title="User identifier property" description="Set the properties that identify users in Azure Active Directory.<br/><br/>AzureCP automatically maps those properties with the identity claim type set in the SharePoint TrustedLoginProvider">
+    <wssuc:inputformsection runat="server" title="User identifier property" description="Set the properties that identify users in Azure Active Directory.<br/>AzureCP automatically maps them to the identity claim type you set in the SPTrustedIdentityTokenIssuer.<br/><br/>Be cautious: Changing it may make existing Azure AD user permissions invalid.">
         <template_inputformcontrols>
 			<div id="divUserIdentifiers">
 			<label>User identifier for 'Member' users:</label>
@@ -215,7 +215,7 @@
 			</div> 
 		</template_inputformcontrols>
     </wssuc:inputformsection>
-    <wssuc:inputformsection runat="server" title="Display of user identifier results" description="Configure how entities created with identity claim type are shown in the people picker.<br/>It does not change the actual value of the entity, that is the user identifier.">
+    <wssuc:inputformsection runat="server" title="Display of user identifier results" description="Configure how entities created with the identity claim type appear in the people picker.<br/>It does not affect the actual value of the entity, which is always set with the user identifier property.">
         <template_inputformcontrols>
 			<wssawc:InputFormRadioButton id="RbIdentityDefault"
 				LabelText="Show the user identifier value"
@@ -237,17 +237,22 @@
 			</wssawc:InputFormRadioButton>
 		</template_inputformcontrols>
     </wssuc:inputformsection>
-    <wssuc:inputformsection runat="server" title="Bypass Azure AD lookup" description="Completely bypass Azure AD lookup and consider any input as valid.<br/><br/>This can be useful to keep people picker working even if connectivity with Azure tenant is lost.">
+    <wssuc:inputformsection runat="server" title="Bypass Azure AD lookup" description="Skip Azure AD lookup and consider any input as valid.<br/><br/>This can be useful to keep people picker working even if connectivity with the Azure tenant is lost.">
         <template_inputformcontrols>
             <asp:Checkbox Runat="server" Name="ChkAlwaysResolveUserInput" ID="ChkAlwaysResolveUserInput" Text="Bypass Azure AD lookup" />
 		</template_inputformcontrols>
     </wssuc:inputformsection>
-    <wssuc:inputformsection runat="server" title="Require exact match" description="Set to only return results that exactly match the user input (case-insensitive).">
+    <wssuc:inputformsection runat="server" title="Require exact match" description="Enable this to return only results that match exactly the user input (case-insensitive).">
         <template_inputformcontrols>
 			<asp:Checkbox Runat="server" Name="ChkFilterExactMatchOnly" ID="ChkFilterExactMatchOnly" Text="Require exact match" />
 		</template_inputformcontrols>
     </wssuc:inputformsection>
-    <wssuc:inputformsection runat="server" title="Augmentation" description="Enable augmentation to let AzureCP get group membership of Azure AD users.<br/><br/>If not enabled, permissions granted on Azure AD groups may not work.">
+    <wssuc:inputformsection runat="server" title="Augmentation" >
+		<template_description>
+			<wssawc:EncodedLiteral runat="server" text="Enable augmentation to let AzureCP get " EncodeMethod='HtmlEncodeAllowSimpleTextFormatting'/>
+			<a href="https://docs.microsoft.com/en-us/graph/api/user-getmembergroups" target="_blank"><wssawc:EncodedLiteral runat="server" text="all the Azure AD groups" EncodeMethod='HtmlEncodeAllowSimpleTextFormatting'/></a>
+			<wssawc:EncodedLiteral runat="server" text="that the user is a member of.<br/><br/>If not enabled, permissions granted to Azure AD groups may not work correctly." EncodeMethod='HtmlEncodeAllowSimpleTextFormatting'/>
+		</template_description>
         <template_inputformcontrols>
 			<asp:Checkbox Runat="server" Name="ChkAugmentAADRoles" ID="ChkAugmentAADRoles" Text="Retrieve Azure AD groups" />
 		</template_inputformcontrols>
@@ -262,7 +267,7 @@
 			<asp:Checkbox Runat="server" Name="ChkFilterSecurityEnabledGroupsOnly" ID="ChkFilterSecurityEnabledGroupsOnly" Text="Return <a href='https://docs.microsoft.com/en-us/graph/api/resources/groups-overview?view=graph-rest-1.0' target='_blank'>security-enabled</a> groups only" />
 		</template_inputformcontrols>
     </wssuc:inputformsection>
-    <wssuc:inputformsection runat="server" title="Reset AzureCP configuration" description="Restore configuration to its default values. Every changes, including claim types configuration, will be reset.">
+    <wssuc:inputformsection runat="server" title="Reset AzureCP configuration" description="Restore configuration to its default values. All changes, including in claim types mappings, will be lost.">
         <template_inputformcontrols>
 			<asp:Button runat="server" ID="BtnResetAzureCPConfig" Text="Reset AzureCP configuration" onclick="BtnResetAzureCPConfig_Click" class="ms-ButtonHeightWidth" OnClientClick="return confirm('Do you really want to reset AzureCP configuration?');" />
 		</template_inputformcontrols>

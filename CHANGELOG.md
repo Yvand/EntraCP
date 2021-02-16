@@ -1,5 +1,16 @@
 # Change log for AzureCP
 
+## Unreleased
+
+* Fix bug: No Azure AD group was returned when FilterSecurityEnabledGroupsOnly is set to true - https://github.com/Yvand/AzureCP/issues/109
+* Fix bug: Setting "Filter out Guest users" in new AAD teant dialog excludes members instead of guests - https://github.com/Yvand/AzureCP/issues/107
+* Add ConfigureAwait(false) to Task.WhenAll()
+* Update the text in AzureCP global admin page
+* Better handle scenario when AzureCP cannot get an access token for a tenant
+* Update NuGet package Microsoft.Graph.3.19.0 -> Microsoft.Graph.3.23.0
+* Update NuGet package Microsoft.Identity.Client.4.22.0 -> Microsoft.Identity.Client.4.25.0
+* Update NuGet package NUnit.3.12.0 -> Microsoft.Identity.Client.3.13.1
+
 ## AzureCP 18.0.20201120.1245 enhancements & bug-fixes - Published in November 24, 2020
 
 * IMPORTANT: due to its dependencies and issues specific to .NET 4.6.1 (and lower) with .NET Standard 2.0, AzureCP 18 requires at least .NET 4.7.2.

@@ -1151,7 +1151,7 @@ namespace azurecp
             StringBuilder userFilterBuilder = new StringBuilder();
             StringBuilder groupFilterBuilder = new StringBuilder();
             StringBuilder userSelectBuilder = new StringBuilder("UserType, Mail, ");    // UserType and Mail are always needed to deal with Guest users
-            StringBuilder groupSelectBuilder = new StringBuilder("Id, ");               // Id is always required for groups
+            StringBuilder groupSelectBuilder = new StringBuilder("Id, securityEnabled, ");               // Id is always required for groups
 
             //// Microsoft Graph doesn't support operator not equals (ne) on attribute UserType, it can only be queried using equals (eq)
             //string memberOnlyUserTypeFilter = " and UserType eq 'Member'";
@@ -1463,13 +1463,18 @@ namespace azurecp
                     // Cannot use Task.WaitAll() because it's actually blocking the threads, preventing parallel queries on others AAD tenants.
                     // Use await Task.WhenAll() as it does not block other threads, so all AAD tenants are actually queried in parallel.
                     // More info: https://stackoverflow.com/questions/12337671/using-async-await-for-multiple-tasks
-                    await Task.WhenAll(new Task[1] { batchQueryTask });
+                    await Task.WhenAll(new Task[1] { batchQueryTask }).ConfigureAwait(false);
                     ClaimsProviderLogging.LogDebug($"Waiting on Task.WaitAll for {tenant.Name} finished");                    
                 }
             }
             catch (OperationCanceledException)
             {
                 ClaimsProviderLogging.Log($"[{ProviderInternalName}] Queries on Azure AD tenant '{tenant.Name}' exceeded timeout of {timeout} ms and were cancelled.", TraceSeverity.Unexpected, EventSeverity.Error, TraceCategory.Lookup);
+                tryAgain = true;
+            }
+            catch (ServiceException ex)
+            {
+                ClaimsProviderLogging.LogException(ProviderInternalName, $"Microsoft.Graph could not query tenant '{tenant.Name}'", TraceCategory.Lookup, ex);
                 tryAgain = true;
             }
             catch (AggregateException ex)
@@ -1499,9 +1504,10 @@ namespace azurecp
             // Split results between users/groups and list of registered domains in the tenant
             List<DirectoryObject> usersAndGroups = new List<DirectoryObject>();
             // For each Azure AD tenant where list of result (UsersAndGroups) is not null
-            foreach (AzureADResult tenantResults in azureADResults.Where(x => x.UsersAndGroups != null))
+            // singleTenantResults in azureADResults can be null if AzureCP failed to get a valid access token for it
+            foreach (AzureADResult singleTenantResults in azureADResults.Where(singleTenantResults => singleTenantResults != null && singleTenantResults.UsersAndGroups != null))
             {
-                usersAndGroups.AddRange(tenantResults.UsersAndGroups);
+                usersAndGroups.AddRange(singleTenantResults.UsersAndGroups);
                 //domains.AddRange(tenantResults.DomainsRegisteredInAzureADTenant);
             }
 

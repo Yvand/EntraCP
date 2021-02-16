@@ -285,7 +285,7 @@ namespace azurecp.ControlTemplates
                     Name = this.TxtTenantName.Text,
                     ApplicationId = this.TxtClientId.Text,
                     ApplicationSecret = this.TxtClientSecret.Text,
-                    ExcludeMembers = this.ChkMemberUserTypeOnly.Checked,
+                    ExcludeGuests = this.ChkMemberUserTypeOnly.Checked,
                     ClientCertificatePrivateKey = cert,
                     CloudInstance = (AzureCloudInstance)Enum.Parse(typeof(AzureCloudInstance), this.DDLAzureCloudInstance.SelectedValue)
                 });
