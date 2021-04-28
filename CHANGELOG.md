@@ -1,6 +1,6 @@
 # Change log for AzureCP
 
-## Unreleased
+## AzureCP 19.0.20210211.1285 enhancements & bug-fixes - Published in February 11, 2021
 
 * Fix bug: No Azure AD group was returned when FilterSecurityEnabledGroupsOnly is set to true - https://github.com/Yvand/AzureCP/issues/109
 * Fix bug: Setting "Filter out Guest users" in new AAD teant dialog excludes members instead of guests - https://github.com/Yvand/AzureCP/issues/107
