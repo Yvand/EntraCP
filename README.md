@@ -1,6 +1,6 @@
 # AzureCP for SharePoint 2019 / 2016 / 2013
 
-**Please visit [yvand.github.io/AzureCP](https://yvand.github.io/AzureCP/) to download AzureCP and find documentation.**
+**Please visit [azurecp.yvand.net](https://azurecp.yvand.net/) to download AzureCP and find documentation.**
 
 ## Latest stable release
 
