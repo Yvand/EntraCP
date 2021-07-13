@@ -6,19 +6,20 @@
     <customAssembly location="Microsoft.Graph.dll" deploymentTarget="GlobalAssemblyCache" sourcePath="bin\Microsoft.Graph.dll" />
     <customAssembly location="Newtonsoft.Json.dll" deploymentTarget="GlobalAssemblyCache" sourcePath="bin\Newtonsoft.Json.dll" />
     <customAssembly location="System.Buffers.dll" deploymentTarget="GlobalAssemblyCache" sourcePath="bin\System.Buffers.dll" />
-	<customAssembly location="System.Collections.Immutable.dll" deploymentTarget="GlobalAssemblyCache" sourcePath="bin\System.Collections.Immutable.dll" />
+    <customAssembly location="System.Collections.Immutable.dll" deploymentTarget="GlobalAssemblyCache" sourcePath="bin\System.Collections.Immutable.dll" />
     <customAssembly location="System.Diagnostics.DiagnosticSource.dll" deploymentTarget="GlobalAssemblyCache" sourcePath="bin\System.Diagnostics.DiagnosticSource.dll" />
     <customAssembly location="System.Memory.dll" deploymentTarget="GlobalAssemblyCache" sourcePath="bin\System.Memory.dll" />
-	<customAssembly location="System.Numerics.Vectors.dll" deploymentTarget="GlobalAssemblyCache" sourcePath="bin\System.Numerics.Vectors.dll" />
+    <customAssembly location="System.Numerics.Vectors.dll" deploymentTarget="GlobalAssemblyCache" sourcePath="bin\System.Numerics.Vectors.dll" />
     <customAssembly location="System.Runtime.CompilerServices.Unsafe.dll" deploymentTarget="GlobalAssemblyCache" sourcePath="bin\System.Runtime.CompilerServices.Unsafe.dll" />
-	<customAssembly location="Nito.AsyncEx.Context.dll" deploymentTarget="GlobalAssemblyCache" sourcePath="bin\Nito.AsyncEx.Context.dll" />
-	<customAssembly location="Nito.AsyncEx.Coordination.dll" deploymentTarget="GlobalAssemblyCache" sourcePath="bin\Nito.AsyncEx.Coordination.dll" />
-	<customAssembly location="Nito.AsyncEx.Interop.WaitHandles.dll" deploymentTarget="GlobalAssemblyCache" sourcePath="bin\Nito.AsyncEx.Interop.WaitHandles.dll" />
-	<customAssembly location="Nito.AsyncEx.Oop.dll" deploymentTarget="GlobalAssemblyCache" sourcePath="bin\Nito.AsyncEx.Oop.dll" />
-	<customAssembly location="Nito.AsyncEx.Tasks.dll" deploymentTarget="GlobalAssemblyCache" sourcePath="bin\Nito.AsyncEx.Tasks.dll" />
-	<customAssembly location="Nito.Cancellation.dll" deploymentTarget="GlobalAssemblyCache" sourcePath="bin\Nito.Cancellation.dll" />
-	<customAssembly location="Nito.Collections.Deque.dll" deploymentTarget="GlobalAssemblyCache" sourcePath="bin\Nito.Collections.Deque.dll" />
-	<customAssembly location="Nito.Disposables.dll" deploymentTarget="GlobalAssemblyCache" sourcePath="bin\Nito.Disposables.dll" />
+    <customAssembly location="Nito.AsyncEx.Context.dll" deploymentTarget="GlobalAssemblyCache" sourcePath="bin\Nito.AsyncEx.Context.dll" />
+    <customAssembly location="Nito.AsyncEx.Coordination.dll" deploymentTarget="GlobalAssemblyCache" sourcePath="bin\Nito.AsyncEx.Coordination.dll" />
+    <customAssembly location="Nito.AsyncEx.Interop.WaitHandles.dll" deploymentTarget="GlobalAssemblyCache" sourcePath="bin\Nito.AsyncEx.Interop.WaitHandles.dll" />
+    <customAssembly location="Nito.AsyncEx.Oop.dll" deploymentTarget="GlobalAssemblyCache" sourcePath="bin\Nito.AsyncEx.Oop.dll" />
+    <customAssembly location="Nito.AsyncEx.Tasks.dll" deploymentTarget="GlobalAssemblyCache" sourcePath="bin\Nito.AsyncEx.Tasks.dll" />
+    <customAssembly location="Nito.Cancellation.dll" deploymentTarget="GlobalAssemblyCache" sourcePath="bin\Nito.Cancellation.dll" />
+    <customAssembly location="Nito.Collections.Deque.dll" deploymentTarget="GlobalAssemblyCache" sourcePath="bin\Nito.Collections.Deque.dll" />
+    <customAssembly location="Nito.Disposables.dll" deploymentTarget="GlobalAssemblyCache" sourcePath="bin\Nito.Disposables.dll" />
+    <customAssembly location="netstandard.dll" deploymentTarget="GlobalAssemblyCache" sourcePath="bin\netstandard.dll" />
   </assemblies>
   <features>
     <featureReference itemId="70b104e2-19df-4cb1-9802-c98eaf14d84e" />
