@@ -1,5 +1,9 @@
 # Change log for AzureCP
 
+## Unreleased
+
+* Explicitely reference netstandard and System.Net.Http and reorganize file
+
 ## AzureCP 19.0.20210211.1285 enhancements & bug-fixes - Published in February 11, 2021
 
 * Fix bug: No Azure AD group was returned when FilterSecurityEnabledGroupsOnly is set to true - https://github.com/Yvand/AzureCP/issues/109

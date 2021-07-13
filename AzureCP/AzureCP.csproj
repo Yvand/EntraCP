@@ -1,9 +1,8 @@
 ﻿<?xml version="1.0" encoding="utf-8"?>
 <Project ToolsVersion="12.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <Import Project="$(MSBuildExtensionsPath)\$(MSBuildToolsVersion)\Microsoft.Common.props" Condition="Exists('$(MSBuildExtensionsPath)\$(MSBuildToolsVersion)\Microsoft.Common.props')" />
+  <!-- Common -->
   <PropertyGroup>
-    <Configuration Condition=" '$(Configuration)' == '' ">Debug</Configuration>
-    <Platform Condition=" '$(Platform)' == '' ">AnyCPU</Platform>
     <ProjectGuid>{EEC47949-34B5-4805-A04D-A372BE75D3CB}</ProjectGuid>
     <OutputType>Library</OutputType>
     <AppDesignerFolder>Properties</AppDesignerFolder>
@@ -25,7 +24,11 @@
     <NuGetPackageImportStamp>
     </NuGetPackageImportStamp>
     <TargetFrameworkProfile />
+    <SignAssembly>true</SignAssembly>
+    <AssemblyOriginatorKeyFile>AzureCP.snk</AssemblyOriginatorKeyFile>
+    <DependsOnNETStandard>true</DependsOnNETStandard>
   </PropertyGroup>
+  <!-- Debug configuration -->
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
     <DebugSymbols>true</DebugSymbols>
     <DebugType>full</DebugType>
@@ -36,6 +39,7 @@
     <WarningLevel>4</WarningLevel>
     <UseVSHostingProcess>false</UseVSHostingProcess>
   </PropertyGroup>
+  <!-- Release configuration -->
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|AnyCPU' ">
     <DebugType>pdbonly</DebugType>
     <Optimize>true</Optimize>
@@ -45,13 +49,17 @@
     <WarningLevel>4</WarningLevel>
     <UseVSHostingProcess>false</UseVSHostingProcess>
   </PropertyGroup>
-  <PropertyGroup>
-    <SignAssembly>true</SignAssembly>
-  </PropertyGroup>
-  <PropertyGroup>
-    <AssemblyOriginatorKeyFile>AzureCP.snk</AssemblyOriginatorKeyFile>
-  </PropertyGroup>
+  <!-- Project references -->
   <ItemGroup>
+    <!-- Manually add reference to netstandard to fix random error "System.IO.FileNotFoundException: Could not load file or assembly 'netstandard, Version=2.0.0.0, Culture=neutral, PublicKeyToken=cc7b13ffcd2ddd51'" -->
+    <Reference Include="netstandard">
+      <Private>True</Private>
+    </Reference>
+    <!-- Manually add reference to netstandard to fix random error "System.IO.FileNotFoundException: Could not load file or assembly 'System.Net.Http, Version=4.2.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a' or one of its dependencies" -->
+    <!-- -->
+	<Reference Include="System.Net.Http">
+      <Private>True</Private>
+    </Reference>
     <Reference Include="Microsoft.CSharp" />
     <Reference Include="System" />
     <Reference Include="System.Core" />
@@ -109,6 +117,7 @@
       <SharePointProjectItemId>{aa00a720-1ea7-47a5-8993-73b778baef87}</SharePointProjectItemId>
     </None>
   </ItemGroup>
+  <!-- NuGet packages -->
   <ItemGroup>
     <PackageReference Include="Microsoft.Graph">
       <Version>3.23.0</Version>
@@ -144,6 +153,7 @@
     <VSToolsPath Condition="'$(VSToolsPath)' == ''">$(MSBuildExtensionsPath32)\Microsoft\VisualStudio\v$(VisualStudioVersion)</VSToolsPath>
   </PropertyGroup>
   <Import Project="$(VSToolsPath)\SharePointTools\Microsoft.VisualStudio.SharePoint.targets" Condition="'$(VSToolsPath)' != ''" />
+  <!-- Copy the assemblies that will be added to the WSP package -->
   <PropertyGroup>
     <PostBuildEvent>"C:\Program Files (x86)\Microsoft SDKs\Windows\v10.0A\bin\NETFX 4.8 Tools\x64\gacutil.exe" /f /i "$(TargetPath)"
 copy /Y "$(TargetDir)Microsoft.Identity.Client.dll" $(ProjectDir)\bin
@@ -163,6 +173,7 @@ copy /Y "$(TargetDir)Nito.AsyncEx.Oop.dll" $(ProjectDir)\bin
 copy /Y "$(TargetDir)Nito.AsyncEx.Tasks.dll" $(ProjectDir)\bin
 copy /Y "$(TargetDir)Nito.Cancellation.dll" $(ProjectDir)\bin
 copy /Y "$(TargetDir)Nito.Collections.Deque.dll" $(ProjectDir)\bin
-copy /Y "$(TargetDir)Nito.Disposables.dll" $(ProjectDir)\bin</PostBuildEvent>
+copy /Y "$(TargetDir)Nito.Disposables.dll" $(ProjectDir)\bin
+copy /Y "$(TargetDir)netstandard.dll" $(ProjectDir)\bin</PostBuildEvent>
   </PropertyGroup>
 </Project>
