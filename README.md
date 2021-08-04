@@ -1,4 +1,4 @@
-# AzureCP for SharePoint 2019 / 2016 / 2013
+# AzureCP for SharePoint Subscription / 2019 / 2016 / 2013
 
 **Please visit [azurecp.yvand.net](https://azurecp.yvand.net/) to download AzureCP and find documentation.**
 
