@@ -19,7 +19,6 @@
     <customAssembly location="Nito.Cancellation.dll" deploymentTarget="GlobalAssemblyCache" sourcePath="bin\Nito.Cancellation.dll" />
     <customAssembly location="Nito.Collections.Deque.dll" deploymentTarget="GlobalAssemblyCache" sourcePath="bin\Nito.Collections.Deque.dll" />
     <customAssembly location="Nito.Disposables.dll" deploymentTarget="GlobalAssemblyCache" sourcePath="bin\Nito.Disposables.dll" />
-    <customAssembly location="netstandard.dll" deploymentTarget="GlobalAssemblyCache" sourcePath="bin\netstandard.dll" />
   </assemblies>
   <features>
     <featureReference itemId="70b104e2-19df-4cb1-9802-c98eaf14d84e" />
