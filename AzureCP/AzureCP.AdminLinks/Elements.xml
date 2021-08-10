@@ -30,7 +30,7 @@
       Id="AzureCPPrivacyPolicy"
       GroupId="AzureCP"
       Location="Microsoft.SharePoint.Administration.Security"
-      Title="Privacy Policy"
+      Title="Privacy policy"
       Sequence="30">
     <UrlAction Url="https://azurecp.yvand.net/privacy-policy/" />
   </CustomAction>
