@@ -165,10 +165,6 @@ copy /Y "$(TargetDir)Microsoft.IdentityModel.Logging.dll" $(ProjectDir)\bin
 copy /Y "$(TargetDir)Microsoft.IdentityModel.Protocols.dll" $(ProjectDir)\bin
 copy /Y "$(TargetDir)Microsoft.IdentityModel.Protocols.OpenIdConnect.dll" $(ProjectDir)\bin
 copy /Y "$(TargetDir)Microsoft.IdentityModel.Tokens.dll" $(ProjectDir)\bin
-copy /Y "$(TargetDir)Microsoft.IdentityModel.Protocols.OpenIdConnect.dll" $(ProjectDir)\bin
-copy /Y "$(TargetDir)Microsoft.IdentityModel.Protocols.OpenIdConnect.dll" $(ProjectDir)\bin
-copy /Y "$(TargetDir)Microsoft.IdentityModel.Protocols.OpenIdConnect.dll" $(ProjectDir)\bin
-copy /Y "$(TargetDir)Microsoft.IdentityModel.Protocols.OpenIdConnect.dll" $(ProjectDir)\bin
 copy /Y "$(TargetDir)Nito.AsyncEx.Context.dll" $(ProjectDir)\bin
 copy /Y "$(TargetDir)Nito.AsyncEx.Coordination.dll" $(ProjectDir)\bin
 copy /Y "$(TargetDir)Nito.AsyncEx.Interop.WaitHandles.dll" $(ProjectDir)\bin
