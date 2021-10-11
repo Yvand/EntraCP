@@ -1271,12 +1271,16 @@ namespace azurecp
             }
 
             //userFilterBuilder.Append(" ) and accountEnabled eq true");  // Graph throws this error if used: "Search filter expression has excessive height: 4. Max allowed: 3."
-            string encodedUserFilter = HttpUtility.UrlEncode(userFilterBuilder.ToString());
-            string encodedGroupFilter = HttpUtility.UrlEncode(groupFilterBuilder.ToString());
-            string encodedUserSelect = HttpUtility.UrlEncode(userSelectBuilder.ToString());
-            string encodedgroupSelect = HttpUtility.UrlEncode(groupSelectBuilder.ToString());
-            //string encodedMemberOnlyUserTypeFilter = HttpUtility.UrlEncode(memberOnlyUserTypeFilter);
-            //string encodedGuestOnlyUserTypeFilter = HttpUtility.UrlEncode(guestOnlyUserTypeFilter);
+            // Starting with 4 (and fully working in 4.2 - https://github.com/microsoftgraph/msgraph-sdk-dotnet/issues/1081); Microsoft Graph encodes the spaces itself and it should no longer be done in the client
+            // So filter and select are no longer URL encoded
+            string encodedUserFilter = userFilterBuilder.ToString();
+            string encodedGroupFilter = groupFilterBuilder.ToString();
+            string encodedUserSelect = userSelectBuilder.ToString();
+            string encodedgroupSelect = groupSelectBuilder.ToString();
+            //string encodedMemberOnlyUserTypeFilter = memberOnlyUserTypeFilter;
+            //string encodedGuestOnlyUserTypeFilter = guestOnlyUserTypeFilter;
+
+
 
             foreach (AzureTenant tenant in azureTenants)
             {
