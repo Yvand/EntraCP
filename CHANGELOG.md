@@ -2,7 +2,11 @@
 
 ## Unreleased
 
-* Explicitely reference netstandard and System.Net.Http and reorganize file
+* Reorganize AzureCP.csproj file
+* Add a link to the privacy policy
+* Update NuGet package Microsoft.Graph to 4.6.0
+* Update NuGet package Microsoft.Identity.Client to 4.36.2
+* Update NuGet package Nito.AsyncEx to 5.1.2
 
 ## AzureCP 19.0.20210211.1285 enhancements & bug-fixes - Published in February 11, 2021
 
