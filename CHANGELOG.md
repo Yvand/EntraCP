@@ -2,6 +2,7 @@
 
 ## Unreleased
 
+* Fix: In claims configurfation page, the values in the list of "PickerEntity metadata" was not populated correctly, which caused an issue with the "Title" (and a few others)
 * Reorganize AzureCP.csproj file
 * Add a link to the privacy policy
 * Update NuGet package Microsoft.Graph to 4.6.0
