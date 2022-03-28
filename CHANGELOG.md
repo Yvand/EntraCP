@@ -5,9 +5,11 @@
 * Fix: In claims configurfation page, the values in the list of "PickerEntity metadata" was not populated correctly, which caused an issue with the "Title" (and a few others)
 * Reorganize AzureCP.csproj file
 * Add a link to the privacy policy
-* Update NuGet package Microsoft.Graph to 4.6.0
+* Update NuGet package Microsoft.Graph to 3.35
 * Update NuGet package Microsoft.Identity.Client to 4.42.1
 * Update NuGet package Nito.AsyncEx to 5.1.2
+* Update NuGet package NUnit to 3.13.3
+* Update NuGet package NUnit3TestAdapter to 4.2.1
 
 ## AzureCP 19.0.20210211.1285 enhancements & bug-fixes - Published in February 11, 2021
 
