@@ -52,10 +52,6 @@
   <!-- Project references -->
   <ItemGroup>
     <Reference Include="Microsoft.CSharp" />
-    <Reference Include="netstandard">
-      <Private>True</Private>
-    </Reference>
-    <!-- Manually add reference to netstandard to fix random error "System.IO.FileNotFoundException: Could not load file or assembly 'netstandard, Version=2.0.0.0, Culture=neutral, PublicKeyToken=cc7b13ffcd2ddd51'" -->
     <Reference Include="System" />
     <Reference Include="System.Core" />
     <Reference Include="System.Net.Http">
@@ -71,20 +67,16 @@
     <Compile Include="AzureCP.cs" />
     <Compile Include="AzureCPConfig.cs" />
     <Compile Include="AzureCPLogging.cs" />
-    <Compile Include="AzureCPUserControl.cs">
-      <SubType>ASPXCodeBehind</SubType>
-    </Compile>
+    <Compile Include="AzureCPUserControl.cs" />
     <Compile Include="ClaimTypeConfig.cs" />
     <Compile Include="TEMPLATE\ADMIN\AzureCP\ClaimTypesConfig.ascx.cs">
       <DependentUpon>ClaimTypesConfig.ascx</DependentUpon>
-      <SubType>ASPXCodeBehind</SubType>
     </Compile>
     <Compile Include="TEMPLATE\ADMIN\AzureCP\ClaimTypesConfig.ascx.designer.cs">
       <DependentUpon>ClaimTypesConfig.ascx.cs</DependentUpon>
     </Compile>
     <Compile Include="TEMPLATE\ADMIN\AzureCP\AzureCPGlobalSettings.ascx.cs">
       <DependentUpon>AzureCPGlobalSettings.ascx</DependentUpon>
-      <SubType>ASPXCodeBehind</SubType>
     </Compile>
     <Compile Include="TEMPLATE\ADMIN\AzureCP\AzureCPGlobalSettings.ascx.designer.cs">
       <DependentUpon>AzureCPGlobalSettings.ascx.cs</DependentUpon>
