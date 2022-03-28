@@ -26,7 +26,7 @@
     <TargetFrameworkProfile />
     <SignAssembly>true</SignAssembly>
     <AssemblyOriginatorKeyFile>AzureCP.snk</AssemblyOriginatorKeyFile>
-    <DependsOnNETStandard>true</DependsOnNETStandard>
+    <DependsOnNETStandard>false</DependsOnNETStandard>
   </PropertyGroup>
   <!-- Debug configuration -->
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
@@ -51,11 +51,16 @@
   </PropertyGroup>
   <!-- Project references -->
   <ItemGroup>
-    <!-- Manually add reference to netstandard to fix random error "System.IO.FileNotFoundException: Could not load file or assembly 'netstandard, Version=2.0.0.0, Culture=neutral, PublicKeyToken=cc7b13ffcd2ddd51'" -->
-    <!-- Manually add reference to netstandard to fix random error "System.IO.FileNotFoundException: Could not load file or assembly 'System.Net.Http, Version=4.2.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a' or one of its dependencies" -->
     <Reference Include="Microsoft.CSharp" />
+    <Reference Include="netstandard">
+      <Private>True</Private>
+    </Reference>
+    <!-- Manually add reference to netstandard to fix random error "System.IO.FileNotFoundException: Could not load file or assembly 'netstandard, Version=2.0.0.0, Culture=neutral, PublicKeyToken=cc7b13ffcd2ddd51'" -->
     <Reference Include="System" />
     <Reference Include="System.Core" />
+    <Reference Include="System.Net.Http">
+      <Private>True</Private>
+    </Reference>
     <Reference Include="System.Web" />
     <Reference Include="Microsoft.SharePoint">
       <Private>False</Private>
