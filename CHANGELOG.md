@@ -5,6 +5,7 @@
 * Fix: In claims configurfation page, the values in the list of "PickerEntity metadata" was not populated correctly, which caused an issue with the "Title" (and a few others)
 * Reorganize AzureCP.csproj file
 * Add a link to the privacy policy
+* Explicitely set build property DependsOnNETStandard to false to try to get rid of occasional FileNotFoundException error "Could not load file or assembly 'netstandard, Version=2.0.0.0"
 * Update NuGet package Microsoft.Graph to 3.35
 * Update NuGet package Microsoft.Identity.Client to 4.42.1
 * Update NuGet package Nito.AsyncEx to 5.1.2
