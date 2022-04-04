@@ -145,7 +145,7 @@
     </wssuc:inputformsection>
     <wssuc:inputformsection title="Register a new Azure Active Directory tenant" runat="server">
         <template_description>
-			<wssawc:EncodedLiteral runat="server" text="<p>AzureCP needs its own app registration to connect to your Azure AD tenant, with permissions 'Group.Read.All' and 'User.Read.All'.<br />Check <a href='https://yvand.github.io/AzureCP/Register-App-In-AAD.html' target='_blank'>this page</a> to see how to register it properly.<br /><br />AzureCP can authenticate using <a href='https://docs.microsoft.com/en-us/azure/active-directory/develop/v2-oauth2-client-creds-grant-flow#get-a-token' target='_blank'>either a secret or a certificate</a>.</p>" EncodeMethod='NoEncode' />
+			<wssawc:EncodedLiteral runat="server" text="<p>AzureCP needs its own app registration to connect to your Azure AD tenant, with permissions 'Group.Read.All' and 'User.Read.All'.<br />Check <a href='https://azurecp.yvand.net/docs/usage/register-application/' target='_blank'>this page</a> to see how to register it properly.<br /><br />AzureCP can authenticate using <a href='https://docs.microsoft.com/en-us/azure/active-directory/develop/v2-oauth2-client-creds-grant-flow#get-a-token' target='_blank'>either a secret or a certificate</a>.</p>" EncodeMethod='NoEncode' />
 		</template_description>
         <template_inputformcontrols>
 			<tr><td>
