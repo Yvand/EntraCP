@@ -2,6 +2,9 @@ name: $(BuildVersion).$(date:yyyyMMdd).$(Build.BuildId)
 resources:
 - repo: self
 
+pr:
+- master
+
 variables:
   SolutionFileName: '$(system.teamProject).sln'
 
