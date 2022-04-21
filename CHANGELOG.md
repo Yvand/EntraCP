@@ -1,5 +1,18 @@
 # Change log for AzureCP
 
+## Unreleased
+
+* Fix: In claims configurfation page, the values in the list of "PickerEntity metadata" was not populated correctly, which caused an issue with the "Title" (and a few others)
+* Fix: Ensure augmentation can continue even if a tenant has a problem
+* Reorganize AzureCP.csproj file
+* Add a link to the privacy policy
+* Explicitely set build property DependsOnNETStandard to false to try to get rid of occasional FileNotFoundException error "Could not load file or assembly 'netstandard, Version=2.0.0.0"
+* Update NuGet package Microsoft.Graph to 3.35
+* Update NuGet package Microsoft.Identity.Client to 4.42.1
+* Update NuGet package Nito.AsyncEx to 5.1.2
+* Update NuGet package NUnit to 3.13.3
+* Update NuGet package NUnit3TestAdapter to 4.2.1
+
 ## AzureCP 19.0.20210211.1285 enhancements & bug-fixes - Published in February 11, 2021
 
 * Fix bug: No Azure AD group was returned when FilterSecurityEnabledGroupsOnly is set to true - https://github.com/Yvand/AzureCP/issues/109

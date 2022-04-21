@@ -64,7 +64,9 @@ namespace azurecp.ControlTemplates
                 DdlNewEntityMetadata.Items.Add(String.Empty);
                 foreach (object field in typeof(PeopleEditorEntityDataKeys).GetFields())
                 {
-                    DdlNewEntityMetadata.Items.Add(((System.Reflection.FieldInfo)field).Name);
+                    FieldInfo fi = (FieldInfo)field;
+                    object fieldValue = fi.GetValue(null);
+                    DdlNewEntityMetadata.Items.Add(fieldValue.ToString());
                 }
 
                 DdlNewGraphProperty.Items.Add(String.Empty);

@@ -757,13 +757,23 @@ namespace azurecp
             // URL encode the filter to prevent that it gets truncated like this: "UserPrincipalName eq 'guest_contoso.com" instead of "UserPrincipalName eq 'guest_contoso.com#EXT#@TENANT.onmicrosoft.com'"
             string filter = HttpUtility.UrlEncode($"{currentContext.IncomingEntityClaimTypeConfig.DirectoryObjectProperty} eq '{currentContext.IncomingEntity.Value}'");
 
-            // https://github.com/Yvand/AzureCP/issues/78
-            // In this method, awaiting on the async task hangs in some scenario (reproduced only in multi-server 2019 farm in the w3wp of a site while using "check permissions" feature)
-            // Workaround: Instead of awaiting on the async task directly, run it in a parent task, and await on the parent task.
-            //IGraphServiceUsersCollectionPage userResult = await tenant.GraphService.Users.Request().Filter(filter).GetAsync().ConfigureAwait(false);
-            IGraphServiceUsersCollectionPage userResult = await Task.Run(() => tenant.GraphService.Users.Request().Filter(filter).GetAsync()).ConfigureAwait(false);
-            User user = userResult.FirstOrDefault();
+            // Do this operation in a try/catch, so if current tenant throws an exception (e.g. secret is expired), execution can still continue for other tenants
+            IGraphServiceUsersCollectionPage userResult = null;
+            try
+            {
+                // https://github.com/Yvand/AzureCP/issues/78
+                // In this method, awaiting on the async task hangs in some scenario (reproduced only in multi-server 2019 farm in the w3wp of a site while using "check permissions" feature)
+                // Workaround: Instead of awaiting on the async task directly, run it in a parent task, and await on the parent task.
+                // userResult = await tenant.GraphService.Users.Request().Filter(filter).GetAsync().ConfigureAwait(false);
+                userResult = await Task.Run(() => tenant.GraphService.Users.Request().Filter(filter).GetAsync()).ConfigureAwait(false);
+            }
+            catch (Exception ex)
+            {
+                ClaimsProviderLogging.LogException(ProviderInternalName, $"on tenant '{tenant.Name}' while running query '{filter}'", TraceCategory.Lookup, ex);
+                return claims;
+            }
 
+            User user = userResult.FirstOrDefault();
             if (user == null)
             {
                 // If user was not found, he might be a Guest user. Query to check this: /users?$filter=userType eq 'Guest' and mail eq 'guest@live.com'&$select=userPrincipalName, Id
@@ -1464,7 +1474,7 @@ namespace azurecp
                     // Use await Task.WhenAll() as it does not block other threads, so all AAD tenants are actually queried in parallel.
                     // More info: https://stackoverflow.com/questions/12337671/using-async-await-for-multiple-tasks
                     await Task.WhenAll(new Task[1] { batchQueryTask }).ConfigureAwait(false);
-                    ClaimsProviderLogging.LogDebug($"Waiting on Task.WaitAll for {tenant.Name} finished");                    
+                    ClaimsProviderLogging.LogDebug($"Waiting on Task.WaitAll for {tenant.Name} finished");
                 }
             }
             catch (OperationCanceledException)

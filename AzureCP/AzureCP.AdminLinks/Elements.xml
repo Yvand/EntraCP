@@ -25,4 +25,13 @@
       Sequence="20">
     <UrlAction Url="/_admin/azurecp/ClaimTypesConfig.aspx" />
   </CustomAction>
+
+  <CustomAction
+      Id="AzureCPPrivacyPolicy"
+      GroupId="AzureCP"
+      Location="Microsoft.SharePoint.Administration.Security"
+      Title="Privacy policy"
+      Sequence="30">
+    <UrlAction Url="https://azurecp.yvand.net/privacy-policy/" />
+  </CustomAction>
 </Elements>

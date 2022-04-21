@@ -54,7 +54,7 @@ namespace azurecp
         public static string GroupClaimEntityType { get; set; } = SPClaimEntityTypes.FormsRole;
         public static bool EnforceOnly1ClaimTypeForGroup => true;     // In AzureCP, only 1 claim type can be used to create group permissions
         public static string DefaultMainGroupClaimType => WIF4_5.ClaimTypes.Role;
-        public static string PUBLICSITEURL => "https://yvand.github.io/AzureCP/";
+        public static string PUBLICSITEURL => "https://azurecp.yvand.net/";
         public static string GUEST_USERTYPE => "Guest";
         public static string MEMBER_USERTYPE => "Member";
         private static object Sync_SetClaimsProviderVersion = new object();
