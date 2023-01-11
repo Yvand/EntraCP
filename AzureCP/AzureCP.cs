@@ -1389,12 +1389,11 @@ namespace azurecp
 
                         // Allow Advanced query as documented in https://learn.microsoft.com/en-us/graph/aad-advanced-queries?tabs=http :
                         // Add ConsistencyLevel header to eventual and $count=true to fix $filter on CompanyName - https://github.com/Yvand/AzureCP/issues/166
-                        List<QueryOption> queryOptions = new List<QueryOption>
+                        List<Option> queryOptions = new List<Option>
                         {
                             new QueryOption("$count", "true"),
-                            new QueryOption("ConsistencyLevel", "eventual"),
+                            new HeaderOption ("ConsistencyLevel", "eventual")
                         };
-                        //tenant.GraphService.Users.Request()
                         IGraphServiceUsersCollectionRequest userRequest = tenant.GraphService.Users.Request(queryOptions).Select(tenant.UserSelect).Filter(tenant.UserFilter).Top(currentContext.MaxCount);
                         IGraphServiceGroupsCollectionRequest groupRequest = tenant.GraphService.Groups.Request().Select(tenant.GroupSelect).Filter(tenant.GroupFilter).Top(currentContext.MaxCount);
 
