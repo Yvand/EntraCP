@@ -206,9 +206,14 @@ namespace azurecp
         /// <param name="configToApply"></param>
         internal void ApplyConfiguration(ClaimTypeConfig configToApply)
         {
-            // Copy non-inherited private fields
-            FieldInfo[] fieldsToCopy = this.GetType().GetFields(BindingFlags.NonPublic | BindingFlags.Instance | BindingFlags.DeclaredOnly);
-            foreach (FieldInfo field in fieldsToCopy)
+            // Copy non-inherited private fields of type ClaimTypeConfig, and also IdentityClaimTypeConfig if current object is of this type
+            List<FieldInfo> fieldsToCopyList = new List<FieldInfo>();
+            fieldsToCopyList.AddRange(typeof(ClaimTypeConfig).GetFields(BindingFlags.NonPublic | BindingFlags.Instance | BindingFlags.DeclaredOnly));
+            if (this is IdentityClaimTypeConfig == true)
+            {
+                fieldsToCopyList.AddRange(this.GetType().GetFields(BindingFlags.NonPublic | BindingFlags.Instance | BindingFlags.DeclaredOnly));
+            }
+            foreach (FieldInfo field in fieldsToCopyList)
             {
                 field.SetValue(this, field.GetValue(configToApply));
             }
