@@ -64,20 +64,16 @@
     <Compile Include="AzureCP.cs" />
     <Compile Include="AzureCPConfig.cs" />
     <Compile Include="AzureCPLogging.cs" />
-    <Compile Include="AzureCPUserControl.cs">
-      <SubType>ASPXCodeBehind</SubType>
-    </Compile>
+    <Compile Include="AzureCPUserControl.cs" />
     <Compile Include="ClaimTypeConfig.cs" />
     <Compile Include="TEMPLATE\ADMIN\AzureCP\ClaimTypesConfig.ascx.cs">
       <DependentUpon>ClaimTypesConfig.ascx</DependentUpon>
-      <SubType>ASPXCodeBehind</SubType>
     </Compile>
     <Compile Include="TEMPLATE\ADMIN\AzureCP\ClaimTypesConfig.ascx.designer.cs">
       <DependentUpon>ClaimTypesConfig.ascx.cs</DependentUpon>
     </Compile>
     <Compile Include="TEMPLATE\ADMIN\AzureCP\AzureCPGlobalSettings.ascx.cs">
       <DependentUpon>AzureCPGlobalSettings.ascx</DependentUpon>
-      <SubType>ASPXCodeBehind</SubType>
     </Compile>
     <Compile Include="TEMPLATE\ADMIN\AzureCP\AzureCPGlobalSettings.ascx.designer.cs">
       <DependentUpon>AzureCPGlobalSettings.ascx.cs</DependentUpon>
