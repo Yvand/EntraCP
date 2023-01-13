@@ -1386,15 +1386,7 @@ namespace azurecp
                         // Initialize requests and variables that will receive the result
                         IGraphServiceUsersCollectionPage usersFound = null;
                         IGraphServiceGroupsCollectionPage groupsFound = null;
-
-                        // Allow Advanced query as documented in https://learn.microsoft.com/en-us/graph/aad-advanced-queries?tabs=http :
-                        // Add ConsistencyLevel header to eventual and $count=true to fix $filter on CompanyName - https://github.com/Yvand/AzureCP/issues/166
-                        List<Option> queryOptions = new List<Option>
-                        {
-                            new QueryOption("$count", "true"),
-                            new HeaderOption ("ConsistencyLevel", "eventual")
-                        };
-                        IGraphServiceUsersCollectionRequest userRequest = tenant.GraphService.Users.Request(queryOptions).Select(tenant.UserSelect).Filter(tenant.UserFilter).Top(currentContext.MaxCount);
+                        IGraphServiceUsersCollectionRequest userRequest = tenant.GraphService.Users.Request().Select(tenant.UserSelect).Filter(tenant.UserFilter).Top(currentContext.MaxCount);
                         IGraphServiceGroupsCollectionRequest groupRequest = tenant.GraphService.Groups.Request().Select(tenant.GroupSelect).Filter(tenant.GroupFilter).Top(currentContext.MaxCount);
 
                         // Do a batch query only if necessary
