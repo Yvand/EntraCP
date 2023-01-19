@@ -401,9 +401,17 @@ namespace azurecp
         /// <returns>Null if property doesn't exist, String.Empty if property exists but has no value, actual value otherwise</returns>
         public static string GetPropertyValue(object directoryObject, string propertyName)
         {
-            if (directoryObject == null) { return null; }
+            if (propertyName.StartsWith("extensionAttribute"))
+            {
+                return propertyName;
+            }
+            if (directoryObject == null) { 
+                return null; 
+            }
             PropertyInfo pi = directoryObject.GetType().GetProperty(propertyName);
-            if (pi == null) { return null; }   // Property doesn't exist
+            if (pi == null) { 
+                return null; 
+            }   // Property doesn't exist
             object propertyValue = pi.GetValue(directoryObject, null);
             return propertyValue == null ? String.Empty : propertyValue.ToString();
         }

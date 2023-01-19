@@ -258,7 +258,7 @@
         <input type="button" value="Refresh page" onClick="window.location.href = window.location.href; return false;">
     </div>
     <div id="divTblClaims">
-        <span style="display: block; margin-bottom: 10px;">This table shows the mappings between the claim types (initially defined in SPTrustedIdentityTokenIssuer &quot;{trustname}&quot;) and the Azure AD objects and properties.</span>
+        <span style="display: block; margin-bottom: 10px;">NEW!!! This table shows the mappings between the claim types (initially defined in SPTrustedIdentityTokenIssuer &quot;{trustname}&quot;) and the Azure AD objects and properties.</span>
         <asp:Table ID="TblClaimsMapping" runat="server"></asp:Table>
         <div id="divLegend">
             <fieldset>
