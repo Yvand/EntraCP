@@ -137,6 +137,7 @@
 					<asp:BoundField HeaderText="Tenant name" DataField="TenantName"/>
 					<asp:BoundField HeaderText="Application ID" DataField="ClientID"/>
                     <asp:BoundField HeaderText="Cloud instance" DataField="CloudInstance" />
+                    <asp:BoundField HeaderText="AD Connect Client ID" DataField="ADConnectClientID" />
 					<asp:CommandField HeaderText="Action" ButtonType="Button" DeleteText="Remove" ShowDeleteButton="True" />
 				</Columns>
 			</wssawc:SPGridView>
@@ -183,11 +184,15 @@
 						<wssawc:InputFormTextBox title="Certificate password" class="ms-input" ID="InputClientCertPassword" Columns="50" Runat="server" MaxLength="255" TextMode="Password" />
 					</li>
 					<li>
-						<label for="<%=ChkMemberUserTypeOnly.ClientID %>">Filter out <a href="https://docs.microsoft.com/en-us/azure/active-directory/active-directory-b2b-user-properties" target="_blank">Guest users</a> on this tenant:</label>
+						<label for="<%= ChkMemberUserTypeOnly.ClientID %>">Filter out <a href="https://docs.microsoft.com/en-us/azure/active-directory/active-directory-b2b-user-properties" target="_blank">Guest users</a> on this tenant:</label>
 						<table border="0" cellpadding="0" cellspacing="0" style="display: inline;">
 						<wssawc:InputFormCheckBox class="ms-input" ID="ChkMemberUserTypeOnly" ToolTip="Filter out Guest users" runat="server" />
 						</table>
 					</li>
+                    <li>
+                        <label for="<%= TxtADConnectClientID.ClientID %>">AD Connect Client ID for extension attributes</label>
+			            <wssawc:InputFormTextBox title="AD Connect Client ID" class="ms-input" ID="TxtADConnectClientID" Columns="50" Runat="server" MaxLength="36" />
+                    </li>
 				</ul>
 				<div class="divbuttons">
 					<asp:Button runat="server" ID="BtnTestAzureTenantConnection" Text="Test connection to tenant" ToolTip="Make sure this server has access to Internet before you click" onclick="BtnTestAzureTenantConnection_Click" class="ms-ButtonHeightWidth" />

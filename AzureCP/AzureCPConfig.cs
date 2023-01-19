@@ -743,6 +743,18 @@ namespace azurecp
         [Persisted]
         private bool ExcludeGuestUsers = false;
 
+        /// <summary>
+        /// Client ID of AD Connect used in extension attribues
+        /// </summary>
+        [Persisted]
+        private Guid ADConnectClientIdPersisted;
+
+        public Guid ADConnectClientId
+        {
+            get => ADConnectClientIdPersisted;
+            set => ADConnectClientIdPersisted = value;
+        }
+
         public X509Certificate2 ClientCertificatePrivateKey
         {
             get

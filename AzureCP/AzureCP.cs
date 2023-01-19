@@ -1195,6 +1195,12 @@ namespace azurecp
             foreach (ClaimTypeConfig ctConfig in currentContext.CurrentClaimTypeConfigList)
             {
                 string currentPropertyString = ctConfig.DirectoryObjectProperty.ToString();
+
+                if (currentPropertyString.StartsWith("extensionAttribute"))
+                {
+                    currentPropertyString = String.Format("{0}_{1}_{2}", "extension", "ADCONNECTCLIENTID", currentPropertyString);
+                }
+
                 string currentFilter;
                 if (!ctConfig.SupportsWildcard)
                 {
@@ -1298,9 +1304,12 @@ namespace azurecp
 
             foreach (AzureTenant tenant in azureTenants)
             {
+                string encodedUserFilterForTenant = encodedUserFilter.Replace("ADCONNECTCLIENTID", tenant.ADConnectClientId.ToString());
+                string encodedUserSelectForTenant = encodedUserSelect.Replace("ADCONNECTCLIENTID", tenant.ADConnectClientId.ToString());
+
                 if (firstUserObjectProcessed)
                 {
-                    tenant.UserFilter = encodedUserFilter;
+                    tenant.UserFilter = encodedUserFilterForTenant;
                     //if (tenant.MemberUserTypeOnly)
                     //    tenant.UserFilter += encodedMemberOnlyUserTypeFilter;
                     //else if (tenant.ExcludeGuestUsers)
@@ -1321,7 +1330,7 @@ namespace azurecp
                     tenant.GroupFilter = String.Empty;
                 }
 
-                tenant.UserSelect = encodedUserSelect;
+                tenant.UserSelect = encodedUserSelectForTenant;
                 tenant.GroupSelect = encodedgroupSelect;
             }
         }
