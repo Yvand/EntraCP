@@ -1304,8 +1304,8 @@ namespace azurecp
 
             foreach (AzureTenant tenant in azureTenants)
             {
-                string encodedUserFilterForTenant = encodedUserFilter.Replace("ADCONNECTCLIENTID", tenant.ADConnectClientId.ToString());
-                string encodedUserSelectForTenant = encodedUserSelect.Replace("ADCONNECTCLIENTID", tenant.ADConnectClientId.ToString());
+                string encodedUserFilterForTenant = encodedUserFilter.Replace("ADCONNECTCLIENTID", tenant.ADConnectClientId.ToString("N"));
+                string encodedUserSelectForTenant = encodedUserSelect.Replace("ADCONNECTCLIENTID", tenant.ADConnectClientId.ToString("N"));
 
                 if (firstUserObjectProcessed)
                 {
