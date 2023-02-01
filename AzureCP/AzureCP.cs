@@ -422,6 +422,10 @@ namespace azurecp
                             {
                                 returnString = obj.Value.ToString();
                             }
+                            else
+                            {
+                                return null;
+                            }
                         }
                     }
                     else if (directoryObject.GetType().ToString() == "Microsoft.Graph.Group")
@@ -433,6 +437,10 @@ namespace azurecp
                             if (obj.Value != null)
                             {
                                 returnString = obj.Value.ToString();
+                            }
+                            else
+                            {
+                                return null;
                             }
                         }
                     }
