@@ -8,6 +8,7 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
 using System.Reflection;
+using System.Runtime.CompilerServices;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
@@ -401,13 +402,32 @@ namespace azurecp
         /// <returns>Null if property doesn't exist, String.Empty if property exists but has no value, actual value otherwise</returns>
         public static string GetPropertyValue(object directoryObject, string propertyName)
         {
+            if (directoryObject == null)
+            {
+                return null;
+            }
+
             if (propertyName.StartsWith("extensionAttribute"))
             {
-                return propertyName;
-            }
-            if (directoryObject == null) { 
-                return null; 
-            }
+                try
+                {
+                    if (directoryObject.GetType().ToString() == "Microsoft.Graph.User")
+                    {
+                        var userobject = (Microsoft.Graph.User)directoryObject;
+                        return userobject.AdditionalData.FirstOrDefault(s => s.Key.EndsWith(propertyName)).Value.ToString();
+                    }
+                    else if (directoryObject.GetType().ToString() == "Microsoft.Graph.Group")
+                    {
+                        var groupobject = (Microsoft.Graph.Group)directoryObject;
+                        return groupobject.AdditionalData.FirstOrDefault(s => s.Key.EndsWith(propertyName)).Value.ToString();
+                    }                    
+                }
+                catch
+                {
+                    return null;
+                }
+            }  
+            
             PropertyInfo pi = directoryObject.GetType().GetProperty(propertyName);
             if (pi == null) { 
                 return null; 

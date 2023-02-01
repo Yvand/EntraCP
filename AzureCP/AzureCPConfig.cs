@@ -778,7 +778,6 @@ namespace azurecp
                 }
             }
         }
-        [Persisted]
         private X509Certificate2 m_ClientCertificatePrivateKey;
         [Persisted]
         private byte[] m_ClientCertificatePrivateKeyRawData;
