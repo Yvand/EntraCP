@@ -411,26 +411,43 @@ namespace azurecp
             {
                 try
                 {
+                    var returnString = string.Empty;
                     if (directoryObject.GetType().ToString() == "Microsoft.Graph.User")
                     {
                         var userobject = (Microsoft.Graph.User)directoryObject;
-                        return userobject.AdditionalData.FirstOrDefault(s => s.Key.EndsWith(propertyName)).Value.ToString();
+                        if (userobject.AdditionalData != null)
+                        {
+                            var obj = userobject.AdditionalData.FirstOrDefault(s => s.Key.EndsWith(propertyName));
+                            if (obj.Value != null)
+                            {
+                                returnString = obj.Value.ToString();
+                            }
+                        }
                     }
                     else if (directoryObject.GetType().ToString() == "Microsoft.Graph.Group")
                     {
                         var groupobject = (Microsoft.Graph.Group)directoryObject;
-                        return groupobject.AdditionalData.FirstOrDefault(s => s.Key.EndsWith(propertyName)).Value.ToString();
-                    }                    
+                        if (groupobject.AdditionalData != null)
+                        {
+                            var obj = groupobject.AdditionalData.FirstOrDefault(s => s.Key.EndsWith(propertyName));
+                            if (obj.Value != null)
+                            {
+                                returnString = obj.Value.ToString();
+                            }
+                        }
+                    }
+                    return returnString == null ? propertyName : returnString;
                 }
                 catch
                 {
                     return null;
                 }
-            }  
-            
+            }
+
             PropertyInfo pi = directoryObject.GetType().GetProperty(propertyName);
-            if (pi == null) { 
-                return null; 
+            if (pi == null)
+            {
+                return null;
             }   // Property doesn't exist
             object propertyValue = pi.GetValue(directoryObject, null);
             return propertyValue == null ? String.Empty : propertyValue.ToString();
