@@ -412,7 +412,7 @@ namespace azurecp
                 try
                 {
                     var returnString = string.Empty;
-                    if (directoryObject.GetType().ToString() == "Microsoft.Graph.User")
+                    if (directoryObject is User)
                     {
                         var userobject = (Microsoft.Graph.User)directoryObject;
                         if (userobject.AdditionalData != null)
@@ -428,7 +428,7 @@ namespace azurecp
                             }
                         }
                     }
-                    else if (directoryObject.GetType().ToString() == "Microsoft.Graph.Group")
+                    else if (directoryObject is Group)
                     {
                         var groupobject = (Microsoft.Graph.Group)directoryObject;
                         if (groupobject.AdditionalData != null)
