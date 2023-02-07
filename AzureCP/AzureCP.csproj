@@ -25,7 +25,7 @@
     </NuGetPackageImportStamp>
     <TargetFrameworkProfile />
     <SignAssembly>true</SignAssembly>
-    <AssemblyOriginatorKeyFile>AzureCPKrueger.snk</AssemblyOriginatorKeyFile>
+    <AssemblyOriginatorKeyFile>AzureCP.snk</AssemblyOriginatorKeyFile>
     <DependsOnNETStandard>false</DependsOnNETStandard>
   </PropertyGroup>
   <!-- Debug configuration -->
