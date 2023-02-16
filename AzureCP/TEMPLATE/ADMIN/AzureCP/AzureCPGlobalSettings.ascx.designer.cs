@@ -123,13 +123,13 @@ namespace azurecp.ControlTemplates
         protected global::Microsoft.SharePoint.WebControls.InputFormCheckBox ChkMemberUserTypeOnly;
 
         /// <summary>
-        /// TxtADConnectClientID control.
+        /// TxtExtensionAttributesApplicationId control.
         /// </summary>
         /// <remarks>
         /// Auto-generated field.
         /// To modify move field declaration from designer file to code-behind file.
         /// </remarks>
-        protected global::Microsoft.SharePoint.WebControls.InputFormTextBox TxtADConnectClientID;
+        protected global::Microsoft.SharePoint.WebControls.InputFormTextBox TxtExtensionAttributesApplicationId;
 
         /// <summary>
         /// BtnTestAzureTenantConnection control.

@@ -1243,7 +1243,7 @@ namespace azurecp
 
                 if (currentPropertyString.StartsWith("extensionAttribute"))
                 {
-                    currentPropertyString = String.Format("{0}_{1}_{2}", "extension", "ADCONNECTCLIENTID", currentPropertyString);
+                    currentPropertyString = String.Format("{0}_{1}_{2}", "extension", "EXTENSIONATTRIBUTESAPPLICATIONID", currentPropertyString);
                 }
 
                 string currentFilter;
@@ -1349,8 +1349,8 @@ namespace azurecp
 
             foreach (AzureTenant tenant in azureTenants)
             {
-                string encodedUserFilterForTenant = encodedUserFilter.Replace("ADCONNECTCLIENTID", tenant.ADConnectClientId.ToString("N"));
-                string encodedUserSelectForTenant = encodedUserSelect.Replace("ADCONNECTCLIENTID", tenant.ADConnectClientId.ToString("N"));
+                string encodedUserFilterForTenant = encodedUserFilter.Replace("EXTENSIONATTRIBUTESAPPLICATIONID", tenant.ExtensionAttributesApplicationId.ToString("N"));
+                string encodedUserSelectForTenant = encodedUserSelect.Replace("EXTENSIONATTRIBUTESAPPLICATIONID", tenant.ExtensionAttributesApplicationId.ToString("N"));
 
                 if (firstUserObjectProcessed)
                 {

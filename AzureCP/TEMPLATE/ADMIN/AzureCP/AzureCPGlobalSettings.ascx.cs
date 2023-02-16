@@ -25,7 +25,7 @@ namespace azurecp.ControlTemplates
         readonly string TextErrorTestAzureADConnection = "Unable to get access token for tenant '{0}': {1}";
         readonly string TextConnectionSuccessful = "Connection successful.";
         readonly string TextErrorNewTenantCreds = "Specify either a client secret or a client certificate, but not both.";
-        readonly string TextErrorADConnectClientID = "Please specify a valid Client ID for AD Connect.";
+        readonly string TextErrorExtensionAttributesApplicationId = "Please specify a valid Client ID for AD Connect.";
 
         protected void Page_Load(object sender, EventArgs e)
         {
@@ -60,7 +60,7 @@ namespace azurecp.ControlTemplates
                 PropertyCollectionBinder pcb = new PropertyCollectionBinder();
                 foreach (AzureTenant tenant in PersistedObject.AzureTenants)
                 {
-                    pcb.AddRow(tenant.Identifier, tenant.Name, tenant.ApplicationId, tenant.CloudInstance.ToString(), tenant.ADConnectClientId);
+                    pcb.AddRow(tenant.Identifier, tenant.Name, tenant.ApplicationId, tenant.CloudInstance.ToString(), tenant.ExtensionAttributesApplicationId);
                 }
                 pcb.BindGrid(grdAzureTenants);
             }
@@ -261,16 +261,16 @@ namespace azurecp.ControlTemplates
                 return;
             }
 
-            if (!string.IsNullOrWhiteSpace(this.TxtADConnectClientID.Text))
+            if (!string.IsNullOrWhiteSpace(this.TxtExtensionAttributesApplicationId.Text))
             {
                 try
                 {
-                    Guid adConnectClientId = Guid.Parse(this.TxtADConnectClientID.Text);
+                    Guid extensionAttributesApplicationId = Guid.Parse(this.TxtExtensionAttributesApplicationId.Text);
                 }
                 catch (Exception)
                 {
 
-                    this.LabelErrorTestLdapConnection.Text = TextErrorADConnectClientID;
+                    this.LabelErrorTestLdapConnection.Text = TextErrorExtensionAttributesApplicationId;
                 }
 
             }
@@ -305,7 +305,7 @@ namespace azurecp.ControlTemplates
                     ExcludeGuests = this.ChkMemberUserTypeOnly.Checked,
                     ClientCertificatePrivateKey = cert,
                     CloudInstance = (AzureCloudInstance)Enum.Parse(typeof(AzureCloudInstance), this.DDLAzureCloudInstance.SelectedValue),
-                    ADConnectClientId = string.IsNullOrWhiteSpace(this.TxtADConnectClientID.Text) ? Guid.Empty : Guid.Parse(this.TxtADConnectClientID.Text)
+                    ExtensionAttributesApplicationId = string.IsNullOrWhiteSpace(this.TxtExtensionAttributesApplicationId.Text) ? Guid.Empty : Guid.Parse(this.TxtExtensionAttributesApplicationId.Text)
                 });
 
             CommitChanges();
@@ -316,7 +316,7 @@ namespace azurecp.ControlTemplates
             this.TxtClientId.Text = String.Empty;
             this.TxtClientSecret.Text = String.Empty;
             this.InputClientCertPassword.Text = String.Empty;
-            this.TxtADConnectClientID.Text = String.Empty;
+            this.TxtExtensionAttributesApplicationId.Text = String.Empty;
             this.DDLAzureCloudInstance.SelectedValue = AzureCloudInstance.AzurePublic.ToString();
         }
 
@@ -383,10 +383,10 @@ namespace azurecp.ControlTemplates
             PropertyCollection.Columns.Add("ClientID", typeof(string));
             //PropertyCollection.Columns.Add("MemberUserTypeOnly", typeof(bool));
             PropertyCollection.Columns.Add("CloudInstance", typeof(string));
-            PropertyCollection.Columns.Add("ADConnectClientID", typeof(Guid));
+            PropertyCollection.Columns.Add("ExtensionAttributesApplicationId", typeof(Guid));
         }
 
-        public void AddRow(Guid Id, string TenantName, string ClientID, string CloudInstance, Guid ADConnectClientID)
+        public void AddRow(Guid Id, string TenantName, string ClientID, string CloudInstance, Guid ExtensionAttributesApplicationId)
         {
             DataRow newRow = PropertyCollection.Rows.Add();
             newRow["Id"] = Id;
@@ -394,7 +394,7 @@ namespace azurecp.ControlTemplates
             newRow["ClientID"] = ClientID;
             //newRow["MemberUserTypeOnly"] = MemberUserTypeOnly;
             newRow["CloudInstance"] = CloudInstance;
-            newRow["ADConnectClientID"] = ADConnectClientID;
+            newRow["ExtensionAttributesApplicationId"] = ExtensionAttributesApplicationId;
         }
 
         public void BindGrid(SPGridView grid)

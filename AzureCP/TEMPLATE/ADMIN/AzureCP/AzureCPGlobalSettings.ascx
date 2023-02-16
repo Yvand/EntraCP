@@ -137,7 +137,7 @@
 					<asp:BoundField HeaderText="Tenant name" DataField="TenantName"/>
 					<asp:BoundField HeaderText="Application ID" DataField="ClientID"/>
                     <asp:BoundField HeaderText="Cloud instance" DataField="CloudInstance" />
-                    <asp:BoundField HeaderText="AD Connect Client ID" DataField="ADConnectClientID" />
+                    <asp:BoundField HeaderText="AD Connect Client ID" DataField="ExtensionAttributesApplicationId" />
 					<asp:CommandField HeaderText="Action" ButtonType="Button" DeleteText="Remove" ShowDeleteButton="True" />
 				</Columns>
 			</wssawc:SPGridView>
@@ -190,8 +190,8 @@
 						</table>
 					</li>
                     <li>
-                        <label for="<%= TxtADConnectClientID.ClientID %>">AD Connect Client ID for extension attributes</label>
-			            <wssawc:InputFormTextBox title="AD Connect Client ID" class="ms-input" ID="TxtADConnectClientID" Columns="50" Runat="server" MaxLength="36" />
+                        <label for="<%= TxtExtensionAttributesApplicationId.ClientID %>">AD Connect Client ID for extension attributes</label>
+			            <wssawc:InputFormTextBox title="AD Connect Client ID" class="ms-input" ID="TxtExtensionAttributesApplicationId" Columns="50" Runat="server" MaxLength="36" />
                     </li>
 				</ul>
 				<div class="divbuttons">

@@ -747,12 +747,12 @@ namespace azurecp
         /// Client ID of AD Connect used in extension attribues
         /// </summary>
         [Persisted]
-        private Guid ADConnectClientIdPersisted;
+        private Guid ExtensionAttributesApplicationIdPersisted;
 
-        public Guid ADConnectClientId
+        public Guid ExtensionAttributesApplicationId
         {
-            get => ADConnectClientIdPersisted;
-            set => ADConnectClientIdPersisted = value;
+            get => ExtensionAttributesApplicationIdPersisted;
+            set => ExtensionAttributesApplicationIdPersisted = value;
         }
 
         public X509Certificate2 ClientCertificatePrivateKey
