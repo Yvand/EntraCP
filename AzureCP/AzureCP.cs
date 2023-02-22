@@ -1351,6 +1351,8 @@ namespace azurecp
             {
                 string encodedUserFilterForTenant = encodedUserFilter.Replace("EXTENSIONATTRIBUTESAPPLICATIONID", tenant.ExtensionAttributesApplicationId.ToString("N"));
                 string encodedUserSelectForTenant = encodedUserSelect.Replace("EXTENSIONATTRIBUTESAPPLICATIONID", tenant.ExtensionAttributesApplicationId.ToString("N"));
+                string encodedGroupFilterForTenant = encodedGroupFilter.Replace("EXTENSIONATTRIBUTESAPPLICATIONID", tenant.ExtensionAttributesApplicationId.ToString("N"));
+                string encodedGroupSelectForTenant = encodedgroupSelect.Replace("EXTENSIONATTRIBUTESAPPLICATIONID", tenant.ExtensionAttributesApplicationId.ToString("N"));
 
                 if (firstUserObjectProcessed)
                 {
@@ -1368,7 +1370,7 @@ namespace azurecp
 
                 if (firstGroupObjectProcessed)
                 {
-                    tenant.GroupFilter = encodedGroupFilter;
+                    tenant.GroupFilter = encodedGroupFilterForTenant;
                 }
                 else
                 {
@@ -1376,7 +1378,7 @@ namespace azurecp
                 }
 
                 tenant.UserSelect = encodedUserSelectForTenant;
-                tenant.GroupSelect = encodedgroupSelect;
+                tenant.GroupSelect = encodedGroupSelectForTenant;
             }
         }
 
