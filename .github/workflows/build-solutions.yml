@@ -70,7 +70,7 @@ jobs:
     - name: Upload build artifacts
       uses: actions/upload-artifact@v3
       with:
-        name: "${{ env.Project_Name }}"
+        name: "${{ env.Project_Name }} ${{ env.Configuration }}"
         path: "${{ env.Project_Directory }}\\bin\\${{ env.Configuration }}\\${{ env.Project_Name }}.wsp"
       env:
         Configuration: ${{ matrix.configuration }}
