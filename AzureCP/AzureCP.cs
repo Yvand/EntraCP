@@ -1254,7 +1254,6 @@ namespace azurecp
                 else
                 {
                     // Use String.Replace instead of String.Format because String.Format trows an exception if input contains a '{'
-                    //currentFilter = String.Format(preferredFilterPattern, currentPropertyString);
                     currentFilter = preferredFilterPattern.Replace("{0}", currentPropertyString);
                 }
 
