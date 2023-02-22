@@ -71,6 +71,6 @@ jobs:
       uses: actions/upload-artifact@v3
       with:
         name: "${{ env.Project_Name }}"
-        path: "${{ env.Project_Directory }}\\bin\\${{ env.Configuration }}\\${{ env.Project_Name }} ${{ env.Configuration }}.wsp"
+        path: "${{ env.Project_Directory }}\\bin\\${{ env.Configuration }}\\${{ env.Project_Name }}.wsp"
       env:
         Configuration: ${{ matrix.configuration }}
