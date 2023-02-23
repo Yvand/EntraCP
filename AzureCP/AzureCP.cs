@@ -489,20 +489,27 @@ namespace azurecp
                 isMappedClaimTypeConfig = true;
             }
 
+            entity.EntityType = result.ClaimTypeConfig.SharePointEntityType;
             if (result.ClaimTypeConfig.UseMainClaimTypeOfDirectoryObject)
             {
                 string claimValueType;
                 if (result.ClaimTypeConfig.EntityType == DirectoryObjectType.User)
                 {
                     permissionClaimType = IdentityClaimTypeConfig.ClaimType;
-                    entity.EntityType = SPClaimEntityTypes.User;
                     claimValueType = IdentityClaimTypeConfig.ClaimValueType;
+                    if (String.IsNullOrEmpty(entity.EntityType))
+                    {
+                        entity.EntityType = SPClaimEntityTypes.User;
+                    }
                 }
                 else
                 {
                     permissionClaimType = MainGroupClaimTypeConfig.ClaimType;
-                    entity.EntityType = ClaimsProviderConstants.GroupClaimEntityType;
                     claimValueType = MainGroupClaimTypeConfig.ClaimValueType;
+                    if (String.IsNullOrEmpty(entity.EntityType))
+                    {
+                        entity.EntityType = ClaimsProviderConstants.GroupClaimEntityType;
+                    }
                 }
                 permissionValue = FormatPermissionValue(permissionClaimType, permissionValue, isMappedClaimTypeConfig, result);
                 claim = CreateClaim(
@@ -517,7 +524,10 @@ namespace azurecp
                     permissionClaimType,
                     permissionValue,
                     result.ClaimTypeConfig.ClaimValueType);
-                entity.EntityType = result.ClaimTypeConfig.EntityType == DirectoryObjectType.User ? SPClaimEntityTypes.User : ClaimsProviderConstants.GroupClaimEntityType;
+                if (String.IsNullOrEmpty(entity.EntityType))
+                {
+                    entity.EntityType = result.ClaimTypeConfig.EntityType == DirectoryObjectType.User ? SPClaimEntityTypes.User : ClaimsProviderConstants.GroupClaimEntityType;
+                }
             }
 
             entity.Claim = claim;
@@ -529,16 +539,21 @@ namespace azurecp
                 result.QueryMatchValue);
 
             int nbMetadata = 0;
-            // Populate metadata of new PickerEntity
-            foreach (ClaimTypeConfig ctConfig in MetadataConfig.Where(x => x.EntityType == result.ClaimTypeConfig.EntityType))
+            // If current result is a SharePoint group but was found on an AAD User object, then 1 to many User objects could match so no metadata from the current match should be set
+            if (!String.Equals(result.ClaimTypeConfig.SharePointEntityType, ClaimsProviderConstants.GroupClaimEntityType, StringComparison.InvariantCultureIgnoreCase) ||
+                result.ClaimTypeConfig.EntityType != DirectoryObjectType.User )
             {
-                // if there is actally a value in the GraphObject, then it can be set
-                string entityAttribValue = GetPropertyValue(result.UserOrGroupResult, ctConfig.DirectoryObjectProperty.ToString());
-                if (!String.IsNullOrEmpty(entityAttribValue))
+                // Populate metadata of new PickerEntity
+                foreach (ClaimTypeConfig ctConfig in MetadataConfig.Where(x => x.EntityType == result.ClaimTypeConfig.EntityType))
                 {
-                    entity.EntityData[ctConfig.EntityDataKey] = entityAttribValue;
-                    nbMetadata++;
-                    ClaimsProviderLogging.Log($"[{ProviderInternalName}] Set metadata '{ctConfig.EntityDataKey}' of new entity to '{entityAttribValue}'", TraceSeverity.VerboseEx, EventSeverity.Information, TraceCategory.Claims_Picking);
+                    // if there is actally a value in the GraphObject, then it can be set
+                    string entityAttribValue = GetPropertyValue(result.UserOrGroupResult, ctConfig.DirectoryObjectProperty.ToString());
+                    if (!String.IsNullOrEmpty(entityAttribValue))
+                    {
+                        entity.EntityData[ctConfig.EntityDataKey] = entityAttribValue;
+                        nbMetadata++;
+                        ClaimsProviderLogging.Log($"[{ProviderInternalName}] Set metadata '{ctConfig.EntityDataKey}' of new entity to '{entityAttribValue}'", TraceSeverity.VerboseEx, EventSeverity.Information, TraceCategory.Claims_Picking);
+                    }
                 }
             }
             entity.DisplayText = FormatPermissionDisplayText(entity, isMappedClaimTypeConfig, result);
@@ -624,7 +639,11 @@ namespace azurecp
                 PickerEntity entity = CreatePickerEntity();
                 entity.Claim = claim;
                 entity.IsResolved = true;
-                entity.EntityType = ctConfig.EntityType == DirectoryObjectType.User ? SPClaimEntityTypes.User : ClaimsProviderConstants.GroupClaimEntityType;
+                entity.EntityType = ctConfig.SharePointEntityType;
+                if (String.IsNullOrEmpty(entity.EntityType))
+                {
+                    entity.EntityType = ctConfig.EntityType == DirectoryObjectType.User ? SPClaimEntityTypes.User : ClaimsProviderConstants.GroupClaimEntityType;
+                }
                 //entity.EntityGroupName = "";
                 entity.Description = String.Format(PickerEntityOnMouseOver, ctConfig.DirectoryObjectProperty.ToString(), input);
 
