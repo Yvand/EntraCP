@@ -918,7 +918,6 @@ namespace azurecp
         protected override void FillEntityTypes(List<string> entityTypes)
         {
             entityTypes.Add(SPClaimEntityTypes.User);
-            entityTypes.Add(SPClaimEntityTypes.FormsRole);
             entityTypes.Add(ClaimsProviderConstants.GroupClaimEntityType);
         }
 
