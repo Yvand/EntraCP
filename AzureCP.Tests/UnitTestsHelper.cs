@@ -27,7 +27,7 @@ public class UnitTestsHelper
     public const int MaxTime = 50000;
     public static readonly string FarmAdmin = TestContext.Parameters["FarmAdmin"];
 #if DEBUG
-    public const int TestRepeatCount = 5;
+    public const int TestRepeatCount = 1;
 #else
     public const int TestRepeatCount = 20;
 #endif
@@ -68,7 +68,7 @@ public class UnitTestsHelper
 
 #if DEBUG
         TestSiteCollUri = new Uri("http://spsites/sites/" + TestContext.Parameters["TestSiteCollectionName"]);
-        return; // Uncommented when debugging AzureCP code from unit tests
+        //return; // Uncommented when debugging AzureCP code from unit tests
 #endif
 
 
