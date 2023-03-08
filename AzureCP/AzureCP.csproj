@@ -93,6 +93,7 @@
       <SharePointProjectItemId>{c15a0bf3-126a-42e6-af6b-5880f2e9af42}</SharePointProjectItemId>
     </None>
     <None Include="AzureCP.snk" />
+    <None Include="AzureCPKrueger.snk" />
     <None Include="Features\AzureCP\AzureCP.feature">
       <FeatureId>{70b104e2-19df-4cb1-9802-c98eaf14d84e}</FeatureId>
     </None>

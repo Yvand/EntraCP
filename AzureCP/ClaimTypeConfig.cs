@@ -70,6 +70,23 @@ namespace azurecp
         [Persisted]
         private int _DirectoryObjectType;
 
+        /// <summary>
+        /// Set if this will create a User or a Group permission. Values allowed are "User" or "FormsRole"
+        /// </summary>
+        public string SharePointEntityType
+        {
+            get { return _SharePointEntityType; }
+            set
+            {
+                if (String.Equals(value, "User", StringComparison.CurrentCultureIgnoreCase) || String.Equals(value, ClaimsProviderConstants.GroupClaimEntityType, StringComparison.CurrentCultureIgnoreCase))
+                {
+                    _SharePointEntityType = value;
+                }
+            }
+        }
+        [Persisted]
+        private string _SharePointEntityType;
+
         public string ClaimType
         {
             get { return _ClaimType; }

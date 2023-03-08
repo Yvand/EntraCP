@@ -25,6 +25,7 @@ namespace azurecp.ControlTemplates
         readonly string TextErrorTestAzureADConnection = "Unable to get access token for tenant '{0}': {1}";
         readonly string TextConnectionSuccessful = "Connection successful.";
         readonly string TextErrorNewTenantCreds = "Specify either a client secret or a client certificate, but not both.";
+        readonly string TextErrorExtensionAttributesApplicationId = "Please specify a valid Client ID for AD Connect.";
 
         protected void Page_Load(object sender, EventArgs e)
         {
@@ -59,7 +60,7 @@ namespace azurecp.ControlTemplates
                 PropertyCollectionBinder pcb = new PropertyCollectionBinder();
                 foreach (AzureTenant tenant in PersistedObject.AzureTenants)
                 {
-                    pcb.AddRow(tenant.Identifier, tenant.Name, tenant.ApplicationId, tenant.CloudInstance.ToString());
+                    pcb.AddRow(tenant.Identifier, tenant.Name, tenant.ApplicationId, tenant.CloudInstance.ToString(), tenant.ExtensionAttributesApplicationId);
                 }
                 pcb.BindGrid(grdAzureTenants);
             }
@@ -260,6 +261,20 @@ namespace azurecp.ControlTemplates
                 return;
             }
 
+            if (!string.IsNullOrWhiteSpace(this.TxtExtensionAttributesApplicationId.Text))
+            {
+                try
+                {
+                    Guid extensionAttributesApplicationId = Guid.Parse(this.TxtExtensionAttributesApplicationId.Text);
+                }
+                catch (Exception)
+                {
+
+                    this.LabelErrorTestLdapConnection.Text = TextErrorExtensionAttributesApplicationId;
+                }
+
+            }
+
             if ((InputClientCertFile.PostedFile == null && String.IsNullOrWhiteSpace(this.TxtClientSecret.Text)) ||
                 (InputClientCertFile.PostedFile != null && InputClientCertFile.PostedFile.ContentLength == 0 && String.IsNullOrWhiteSpace(TxtClientSecret.Text)) ||
                 (InputClientCertFile.PostedFile != null && InputClientCertFile.PostedFile.ContentLength != 0 && !String.IsNullOrWhiteSpace(TxtClientSecret.Text)))
@@ -272,7 +287,9 @@ namespace azurecp.ControlTemplates
             if (String.IsNullOrWhiteSpace(this.TxtClientSecret.Text))
             {
                 if (ValidateUploadedCertFile(InputClientCertFile, this.InputClientCertPassword.Text, out cert) == false)
-                { return; }
+                {
+                    return;
+                }
             }
 
             if (PersistedObject.AzureTenants == null)
@@ -287,7 +304,8 @@ namespace azurecp.ControlTemplates
                     ApplicationSecret = this.TxtClientSecret.Text,
                     ExcludeGuests = this.ChkMemberUserTypeOnly.Checked,
                     ClientCertificatePrivateKey = cert,
-                    CloudInstance = (AzureCloudInstance)Enum.Parse(typeof(AzureCloudInstance), this.DDLAzureCloudInstance.SelectedValue)
+                    CloudInstance = (AzureCloudInstance)Enum.Parse(typeof(AzureCloudInstance), this.DDLAzureCloudInstance.SelectedValue),
+                    ExtensionAttributesApplicationId = string.IsNullOrWhiteSpace(this.TxtExtensionAttributesApplicationId.Text) ? Guid.Empty : Guid.Parse(this.TxtExtensionAttributesApplicationId.Text)
                 });
 
             CommitChanges();
@@ -298,6 +316,7 @@ namespace azurecp.ControlTemplates
             this.TxtClientId.Text = String.Empty;
             this.TxtClientSecret.Text = String.Empty;
             this.InputClientCertPassword.Text = String.Empty;
+            this.TxtExtensionAttributesApplicationId.Text = String.Empty;
             this.DDLAzureCloudInstance.SelectedValue = AzureCloudInstance.AzurePublic.ToString();
         }
 
@@ -364,9 +383,10 @@ namespace azurecp.ControlTemplates
             PropertyCollection.Columns.Add("ClientID", typeof(string));
             //PropertyCollection.Columns.Add("MemberUserTypeOnly", typeof(bool));
             PropertyCollection.Columns.Add("CloudInstance", typeof(string));
+            PropertyCollection.Columns.Add("ExtensionAttributesApplicationId", typeof(Guid));
         }
 
-        public void AddRow(Guid Id, string TenantName, string ClientID, string CloudInstance)
+        public void AddRow(Guid Id, string TenantName, string ClientID, string CloudInstance, Guid ExtensionAttributesApplicationId)
         {
             DataRow newRow = PropertyCollection.Rows.Add();
             newRow["Id"] = Id;
@@ -374,6 +394,7 @@ namespace azurecp.ControlTemplates
             newRow["ClientID"] = ClientID;
             //newRow["MemberUserTypeOnly"] = MemberUserTypeOnly;
             newRow["CloudInstance"] = CloudInstance;
+            newRow["ExtensionAttributesApplicationId"] = ExtensionAttributesApplicationId;
         }
 
         public void BindGrid(SPGridView grid)

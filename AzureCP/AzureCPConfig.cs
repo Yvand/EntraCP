@@ -743,6 +743,18 @@ namespace azurecp
         [Persisted]
         private bool ExcludeGuestUsers = false;
 
+        /// <summary>
+        /// Client ID of AD Connect used in extension attribues
+        /// </summary>
+        [Persisted]
+        private Guid ExtensionAttributesApplicationIdPersisted;
+
+        public Guid ExtensionAttributesApplicationId
+        {
+            get => ExtensionAttributesApplicationIdPersisted;
+            set => ExtensionAttributesApplicationIdPersisted = value;
+        }
+
         public X509Certificate2 ClientCertificatePrivateKey
         {
             get
@@ -1180,7 +1192,22 @@ namespace azurecp
         AboutMe,
         MySite,
         PreferredName,
-        ODataType
+        ODataType,
+        extensionAttribute1,
+        extensionAttribute2,
+        extensionAttribute3,
+        extensionAttribute4,
+        extensionAttribute5,
+        extensionAttribute6,
+        extensionAttribute7,
+        extensionAttribute8,
+        extensionAttribute9,
+        extensionAttribute10,
+        extensionAttribute11,
+        extensionAttribute12,
+        extensionAttribute13,
+        extensionAttribute14,
+        extensionAttribute15
     }
 
     public enum DirectoryObjectType

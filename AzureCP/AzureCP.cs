@@ -8,6 +8,7 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
 using System.Reflection;
+using System.Runtime.CompilerServices;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
@@ -401,9 +402,61 @@ namespace azurecp
         /// <returns>Null if property doesn't exist, String.Empty if property exists but has no value, actual value otherwise</returns>
         public static string GetPropertyValue(object directoryObject, string propertyName)
         {
-            if (directoryObject == null) { return null; }
+            if (directoryObject == null)
+            {
+                return null;
+            }
+
+            if (propertyName.StartsWith("extensionAttribute"))
+            {
+                try
+                {
+                    var returnString = string.Empty;
+                    if (directoryObject is User)
+                    {
+                        var userobject = (Microsoft.Graph.User)directoryObject;
+                        if (userobject.AdditionalData != null)
+                        {
+                            var obj = userobject.AdditionalData.FirstOrDefault(s => s.Key.EndsWith(propertyName));
+                            if (obj.Value != null)
+                            {
+                                returnString = obj.Value.ToString();
+                            }
+                            else
+                            {
+                                return null;
+                            }
+                        }
+                    }
+                    else if (directoryObject is Group)
+                    {
+                        var groupobject = (Microsoft.Graph.Group)directoryObject;
+                        if (groupobject.AdditionalData != null)
+                        {
+                            var obj = groupobject.AdditionalData.FirstOrDefault(s => s.Key.EndsWith(propertyName));
+                            if (obj.Value != null)
+                            {
+                                returnString = obj.Value.ToString();
+                            }
+                            else
+                            {
+                                return null;
+                            }
+                        }
+                    }
+                    return returnString == null ? propertyName : returnString;
+                }
+                catch
+                {
+                    return null;
+                }
+            }
+
             PropertyInfo pi = directoryObject.GetType().GetProperty(propertyName);
-            if (pi == null) { return null; }   // Property doesn't exist
+            if (pi == null)
+            {
+                return null;
+            }   // Property doesn't exist
             object propertyValue = pi.GetValue(directoryObject, null);
             return propertyValue == null ? String.Empty : propertyValue.ToString();
         }
@@ -436,20 +489,27 @@ namespace azurecp
                 isMappedClaimTypeConfig = true;
             }
 
+            entity.EntityType = result.ClaimTypeConfig.SharePointEntityType;
             if (result.ClaimTypeConfig.UseMainClaimTypeOfDirectoryObject)
             {
                 string claimValueType;
                 if (result.ClaimTypeConfig.EntityType == DirectoryObjectType.User)
                 {
                     permissionClaimType = IdentityClaimTypeConfig.ClaimType;
-                    entity.EntityType = SPClaimEntityTypes.User;
                     claimValueType = IdentityClaimTypeConfig.ClaimValueType;
+                    if (String.IsNullOrEmpty(entity.EntityType))
+                    {
+                        entity.EntityType = SPClaimEntityTypes.User;
+                    }
                 }
                 else
                 {
                     permissionClaimType = MainGroupClaimTypeConfig.ClaimType;
-                    entity.EntityType = ClaimsProviderConstants.GroupClaimEntityType;
                     claimValueType = MainGroupClaimTypeConfig.ClaimValueType;
+                    if (String.IsNullOrEmpty(entity.EntityType))
+                    {
+                        entity.EntityType = ClaimsProviderConstants.GroupClaimEntityType;
+                    }
                 }
                 permissionValue = FormatPermissionValue(permissionClaimType, permissionValue, isMappedClaimTypeConfig, result);
                 claim = CreateClaim(
@@ -464,7 +524,10 @@ namespace azurecp
                     permissionClaimType,
                     permissionValue,
                     result.ClaimTypeConfig.ClaimValueType);
-                entity.EntityType = result.ClaimTypeConfig.EntityType == DirectoryObjectType.User ? SPClaimEntityTypes.User : ClaimsProviderConstants.GroupClaimEntityType;
+                if (String.IsNullOrEmpty(entity.EntityType))
+                {
+                    entity.EntityType = result.ClaimTypeConfig.EntityType == DirectoryObjectType.User ? SPClaimEntityTypes.User : ClaimsProviderConstants.GroupClaimEntityType;
+                }
             }
 
             entity.Claim = claim;
@@ -476,16 +539,21 @@ namespace azurecp
                 result.QueryMatchValue);
 
             int nbMetadata = 0;
-            // Populate metadata of new PickerEntity
-            foreach (ClaimTypeConfig ctConfig in MetadataConfig.Where(x => x.EntityType == result.ClaimTypeConfig.EntityType))
+            // If current result is a SharePoint group but was found on an AAD User object, then 1 to many User objects could match so no metadata from the current match should be set
+            if (!String.Equals(result.ClaimTypeConfig.SharePointEntityType, ClaimsProviderConstants.GroupClaimEntityType, StringComparison.InvariantCultureIgnoreCase) ||
+                result.ClaimTypeConfig.EntityType != DirectoryObjectType.User )
             {
-                // if there is actally a value in the GraphObject, then it can be set
-                string entityAttribValue = GetPropertyValue(result.UserOrGroupResult, ctConfig.DirectoryObjectProperty.ToString());
-                if (!String.IsNullOrEmpty(entityAttribValue))
+                // Populate metadata of new PickerEntity
+                foreach (ClaimTypeConfig ctConfig in MetadataConfig.Where(x => x.EntityType == result.ClaimTypeConfig.EntityType))
                 {
-                    entity.EntityData[ctConfig.EntityDataKey] = entityAttribValue;
-                    nbMetadata++;
-                    ClaimsProviderLogging.Log($"[{ProviderInternalName}] Set metadata '{ctConfig.EntityDataKey}' of new entity to '{entityAttribValue}'", TraceSeverity.VerboseEx, EventSeverity.Information, TraceCategory.Claims_Picking);
+                    // if there is actally a value in the GraphObject, then it can be set
+                    string entityAttribValue = GetPropertyValue(result.UserOrGroupResult, ctConfig.DirectoryObjectProperty.ToString());
+                    if (!String.IsNullOrEmpty(entityAttribValue))
+                    {
+                        entity.EntityData[ctConfig.EntityDataKey] = entityAttribValue;
+                        nbMetadata++;
+                        ClaimsProviderLogging.Log($"[{ProviderInternalName}] Set metadata '{ctConfig.EntityDataKey}' of new entity to '{entityAttribValue}'", TraceSeverity.VerboseEx, EventSeverity.Information, TraceCategory.Claims_Picking);
+                    }
                 }
             }
             entity.DisplayText = FormatPermissionDisplayText(entity, isMappedClaimTypeConfig, result);
@@ -571,7 +639,11 @@ namespace azurecp
                 PickerEntity entity = CreatePickerEntity();
                 entity.Claim = claim;
                 entity.IsResolved = true;
-                entity.EntityType = ctConfig.EntityType == DirectoryObjectType.User ? SPClaimEntityTypes.User : ClaimsProviderConstants.GroupClaimEntityType;
+                entity.EntityType = ctConfig.SharePointEntityType;
+                if (String.IsNullOrEmpty(entity.EntityType))
+                {
+                    entity.EntityType = ctConfig.EntityType == DirectoryObjectType.User ? SPClaimEntityTypes.User : ClaimsProviderConstants.GroupClaimEntityType;
+                }
                 //entity.EntityGroupName = "";
                 entity.Description = String.Format(PickerEntityOnMouseOver, ctConfig.DirectoryObjectProperty.ToString(), input);
 
@@ -1187,6 +1259,12 @@ namespace azurecp
             foreach (ClaimTypeConfig ctConfig in currentContext.CurrentClaimTypeConfigList)
             {
                 string currentPropertyString = ctConfig.DirectoryObjectProperty.ToString();
+
+                if (currentPropertyString.StartsWith("extensionAttribute"))
+                {
+                    currentPropertyString = String.Format("{0}_{1}_{2}", "extension", "EXTENSIONATTRIBUTESAPPLICATIONID", currentPropertyString);
+                }
+
                 string currentFilter;
                 if (!ctConfig.SupportsWildcard)
                 {
@@ -1290,9 +1368,14 @@ namespace azurecp
 
             foreach (AzureTenant tenant in azureTenants)
             {
+                string encodedUserFilterForTenant = encodedUserFilter.Replace("EXTENSIONATTRIBUTESAPPLICATIONID", tenant.ExtensionAttributesApplicationId.ToString("N"));
+                string encodedUserSelectForTenant = encodedUserSelect.Replace("EXTENSIONATTRIBUTESAPPLICATIONID", tenant.ExtensionAttributesApplicationId.ToString("N"));
+                string encodedGroupFilterForTenant = encodedGroupFilter.Replace("EXTENSIONATTRIBUTESAPPLICATIONID", tenant.ExtensionAttributesApplicationId.ToString("N"));
+                string encodedGroupSelectForTenant = encodedgroupSelect.Replace("EXTENSIONATTRIBUTESAPPLICATIONID", tenant.ExtensionAttributesApplicationId.ToString("N"));
+
                 if (firstUserObjectProcessed)
                 {
-                    tenant.UserFilter = encodedUserFilter;
+                    tenant.UserFilter = encodedUserFilterForTenant;
                     //if (tenant.MemberUserTypeOnly)
                     //    tenant.UserFilter += encodedMemberOnlyUserTypeFilter;
                     //else if (tenant.ExcludeGuestUsers)
@@ -1306,15 +1389,15 @@ namespace azurecp
 
                 if (firstGroupObjectProcessed)
                 {
-                    tenant.GroupFilter = encodedGroupFilter;
+                    tenant.GroupFilter = encodedGroupFilterForTenant;
                 }
                 else
                 {
                     tenant.GroupFilter = String.Empty;
                 }
 
-                tenant.UserSelect = encodedUserSelect;
-                tenant.GroupSelect = encodedgroupSelect;
+                tenant.UserSelect = encodedUserSelectForTenant;
+                tenant.GroupSelect = encodedGroupSelectForTenant;
             }
         }
 
