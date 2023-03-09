@@ -7,8 +7,8 @@ using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
+using System.Net.Http;
 using System.Reflection;
-using System.Runtime.CompilerServices;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
@@ -1472,23 +1472,34 @@ namespace azurecp
 
                         // Allow Advanced query as documented in https://learn.microsoft.com/en-us/graph/aad-advanced-queries?tabs=http :
                         // Add ConsistencyLevel header to eventual and $count=true to fix $filter on CompanyName - https://github.com/Yvand/AzureCP/issues/166
-                        List<Option> queryOptions = new List<Option>
+                        // Only work for non-batched requests
+                        List<Option> nonBatchedUserQueryOptions = new List<Option>
                         {
                             new QueryOption("$count", "true"),
-                            new HeaderOption ("ConsistencyLevel", "eventual")
+                            new HeaderOption("ConsistencyLevel", "eventual")
                         };
-                        IGraphServiceUsersCollectionRequest userRequest = tenant.GraphService.Users.Request(queryOptions).Select(tenant.UserSelect).Filter(tenant.UserFilter).Top(currentContext.MaxCount);
+                        IGraphServiceUsersCollectionRequest userRequest = tenant.GraphService.Users.Request(nonBatchedUserQueryOptions).Select(tenant.UserSelect).Filter(tenant.UserFilter).Top(currentContext.MaxCount);
                         IGraphServiceGroupsCollectionRequest groupRequest = tenant.GraphService.Groups.Request().Select(tenant.GroupSelect).Filter(tenant.GroupFilter).Top(currentContext.MaxCount);
 
                         // Do a batch query only if necessary
                         if (!String.IsNullOrWhiteSpace(tenant.UserFilter) && !String.IsNullOrWhiteSpace(tenant.GroupFilter))
                         {
+                            // Fix https://github.com/Yvand/AzureCP/issues/175: Create the BatchRequestStep manually to be able to set the HTTP header ConsistencyLevel: eventual
+                            // Implememted as shown in https://learn.microsoft.com/en-us/graph/sdks/batch-requests?tabs=csharp#implementing-batching-using-batchrequestcontent-batchrequeststep-and-httprequestmessage
+                            // How header "ConsistencyLevel" must be set in batching: https://learn.microsoft.com/en-us/graph/json-batching#first-json-batch-request
+                            var httpUserRequestMessage = new HttpRequestMessage(HttpMethod.Get, $"https://graph.microsoft.com/v1.0/users/?$count=true&$select={tenant.UserSelect}&$filter={tenant.UserFilter}");
+                            httpUserRequestMessage.Content = new StringContent(String.Empty, Encoding.UTF8, "application/json");    // Create a fake content to be able to set the header below
+                            httpUserRequestMessage.Content.Headers.Add("ConsistencyLevel", "eventual");
+                            string userRequestId = Guid.NewGuid().ToString();
+                            BatchRequestStep requestStep = new BatchRequestStep(userRequestId, httpUserRequestMessage);
+
                             // https://docs.microsoft.com/en-us/graph/sdks/batch-requests?tabs=csharp
                             BatchRequestContent batchRequestContent = new BatchRequestContent();
-                            var userRequestId = batchRequestContent.AddBatchRequestStep(userRequest);
+                            //var userRequestId = batchRequestContent.AddBatchRequestStep(userRequest); // Use httpUserRequestMessage instead
+                            batchRequestContent.AddBatchRequestStep(requestStep);
                             var groupRequestId = batchRequestContent.AddBatchRequestStep(groupRequest);
                             var batchResponse = await tenant.GraphService.Batch.Request().PostAsync(batchRequestContent).ConfigureAwait(false);
-
+                            
                             // De - serialize batch response based on known return type
                             GraphServiceUsersCollectionResponse usersBatchResponse = await batchResponse.GetResponseByIdAsync<GraphServiceUsersCollectionResponse>(userRequestId).ConfigureAwait(false);
                             usersFound = usersBatchResponse.Value;
