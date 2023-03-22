@@ -72,6 +72,7 @@ jobs:
       with:
         name: "${{ env.Project_Name }}-${{ env.Configuration }}"
         path: "${{ env.Project_Directory }}/bin/${{ env.Configuration }}/${{ env.Project_Name }}.wsp"
+        if-no-files-found: error
       env:
         Configuration: ${{ matrix.configuration }}
         
@@ -80,7 +81,8 @@ jobs:
       with:
         name: "${{ env.Project_Name }}-${{ env.Configuration }}-dependencies"
         path: |
-            ${{ env.Project_Directory }}/bin/**/*.dll
+            ${{ env.Project_Directory }}/bin/${{ env.Configuration }}/*.dll
             ${{ env.Project_Directory }}/bin/${{ env.Configuration }}/*.pdb
+        if-no-files-found: error
       env:
         Configuration: ${{ matrix.configuration }}
