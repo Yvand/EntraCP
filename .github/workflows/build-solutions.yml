@@ -80,7 +80,7 @@ jobs:
       with:
         name: "${{ env.Project_Name }}-${{ env.Configuration }}-dependencies"
         path: |
-            "${{ env.Project_Directory }}/bin/**/*.dll"
-            "${{ env.Project_Directory }}/bin/**/*.pdb"
+            ${{ env.Project_Directory }}/bin/**/*.dll
+            ${{ env.Project_Directory }}/bin/${{ env.Configuration }}/*.pdb
       env:
         Configuration: ${{ matrix.configuration }}
