@@ -1,5 +1,9 @@
 # Change log for AzureCP
 
+## Unreleased
+
+* Fixed "Unsupported or invalid query filter" when AzureCP queries some properties like 'companyName' - https://github.com/Yvand/AzureCP/issues/166 and https://github.com/Yvand/AzureCP/issues/175
+
 ## AzureCP 20.0.20220421.1391 enhancements & bug-fixes - Published in April 21, 2022
 
 * Fix: In claims configurfation page, the values in the list of "PickerEntity metadata" was not populated correctly, which caused an issue with the "Title" (and a few others)
