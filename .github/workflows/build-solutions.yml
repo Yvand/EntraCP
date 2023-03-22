@@ -20,7 +20,7 @@ jobs:
       Solution_Name: AzureCP.sln
       Project_Name: AzureCP
       Project_Directory: AzureCP
-      Project_File_Path: AzureCP\AzureCP.csproj
+      Project_File_Path: AzureCP/AzureCP.csproj
 
     steps:
     - name: Checkout
@@ -37,7 +37,7 @@ jobs:
       uses: secondbounce/assemblyinfo-update@v2
       with:
         version: "${{ vars.VERSION_MAJOR_MINOR }}.${{ steps.date.outputs.date }}"
-        directory: "${{ env.Project_Directory }}\\Properties"
+        directory: "${{ env.Project_Directory }}/Properties"
         filename: 'AssemblyInfo.cs'
         recursive: false
 
@@ -65,13 +65,13 @@ jobs:
         Configuration: ${{ matrix.configuration }}
 
     - name: Remove the signing key
-      run: Remove-Item -path "${{ env.Project_Directory }}\\${{ env.Project_Name }}.snk"
+      run: Remove-Item -path "${{ env.Project_Directory }}/${{ env.Project_Name }}.snk"
 
     - name: Upload artifact - wsp solution
       uses: actions/upload-artifact@v3
       with:
         name: "${{ env.Project_Name }}-${{ env.Configuration }}"
-        path: "${{ env.Project_Directory }}\bin\${{ env.Configuration }}\${{ env.Project_Name }}.wsp"
+        path: "${{ env.Project_Directory }}/bin/${{ env.Configuration }}/${{ env.Project_Name }}.wsp"
       env:
         Configuration: ${{ matrix.configuration }}
         
@@ -80,7 +80,7 @@ jobs:
       with:
         name: "${{ env.Project_Name }}-${{ env.Configuration }}-dependencies"
         path: |
-            "${{ env.Project_Directory }}\bin\**\*.dll"
-            "${{ env.Project_Directory }}\bin\**\*.pdb"
+            "${{ env.Project_Directory }}/bin/**/*.dll"
+            "${{ env.Project_Directory }}/bin/**/*.pdb"
       env:
         Configuration: ${{ matrix.configuration }}
