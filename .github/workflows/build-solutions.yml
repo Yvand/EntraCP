@@ -67,18 +67,20 @@ jobs:
     - name: Remove the signing key
       run: Remove-Item -path "${{ env.Project_Directory }}\\${{ env.Project_Name }}.snk"
 
-    - name: Upload wsp artifacts
+    - name: Upload artifact - wsp solution
       uses: actions/upload-artifact@v3
       with:
         name: "${{ env.Project_Name }}-${{ env.Configuration }}"
-        path: "${{ env.Project_Directory }}\\bin\\${{ env.Configuration }}\\${{ env.Project_Name }}.wsp"
+        path: "${{ env.Project_Directory }}\bin\${{ env.Configuration }}\${{ env.Project_Name }}.wsp"
       env:
         Configuration: ${{ matrix.configuration }}
         
-    - name: Upload dependencies artifacts
+    - name: Upload artifacts - dependencies
       uses: actions/upload-artifact@v3
       with:
         name: "${{ env.Project_Name }}-${{ env.Configuration }}-dependencies"
-        path: "${{ env.Project_Directory }}\\bin\\**\\*{.dll, .pdb}"
+        path: |
+            "${{ env.Project_Directory }}\bin\**\*.dll"
+            "${{ env.Project_Directory }}\bin\**\*.pdb"
       env:
         Configuration: ${{ matrix.configuration }}
