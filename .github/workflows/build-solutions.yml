@@ -79,6 +79,6 @@ jobs:
       uses: actions/upload-artifact@v3
       with:
         name: "${{ env.Project_Name }}-${{ env.Configuration }}-dependencies"
-        path: "${{ env.Project_Directory }}\\bin\\${{ env.Configuration }}\\*.dll"
+        path: "${{ env.Project_Directory }}\\bin\\**\\*{.dll, .pdb}"
       env:
         Configuration: ${{ matrix.configuration }}
