@@ -7,15 +7,11 @@ on:
     branches: [ "master", "dev" ]
 
 jobs:
-
   build:
-
+    runs-on: windows-latest
     strategy:
       matrix:
         configuration: [Debug, Release]
-
-    runs-on: windows-latest
-    
     env:
       Solution_Name: AzureCP.sln
       Project_Name: AzureCP
@@ -70,7 +66,7 @@ jobs:
     - name: Upload artifact - wsp solution
       uses: actions/upload-artifact@v3
       with:
-        name: "${{ env.Project_Name }}-${{ env.Configuration }}"
+        name: "${{ env.Project_Name }}-${{ env.Configuration }}-wsp"
         path: "${{ env.Project_Directory }}/bin/${{ env.Configuration }}/${{ env.Project_Name }}.wsp"
         if-no-files-found: error
       env:
