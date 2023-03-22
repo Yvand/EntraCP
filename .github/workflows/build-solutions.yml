@@ -82,11 +82,3 @@ jobs:
         path: "${{ env.Project_Directory }}\\bin\\${{ env.Configuration }}\\*.dll"
       env:
         Configuration: ${{ matrix.configuration }}
-        
-    - name: Upload wsp Release artifact
-      uses: actions/upload-artifact@v3
-      with:
-        name: "${{ env.Project_Name }}"
-        path: "${{ env.Project_Directory }}\\bin\\${{ env.Configuration }}\\${{ env.Project_Name }}.wsp"
-      env:
-        Configuration: Release
