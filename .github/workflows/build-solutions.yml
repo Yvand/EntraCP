@@ -76,7 +76,7 @@ jobs:
       env:
         Configuration: ${{ matrix.configuration }}
         
-    - name: Upload artifacts - dependencies
+    - name: Upload artifact - dependencies
       uses: actions/upload-artifact@v3
       with:
         name: "${{ env.Project_Name }}-${{ env.Configuration }}-dependencies"
