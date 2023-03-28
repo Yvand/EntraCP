@@ -48,6 +48,9 @@ jobs:
       run: nuget restore $env:Solution_Name
 
     # Decode the base 64 encoded signing key
+    # Key encoded using PowerShell Core:
+    # $cert = Get-Content "C:\...\AzureCP.snk" -AsByteStream -ReadCount 
+    # [System.Convert]::ToBase64String($cert) | Out-File "C:\...\AzureCP_b64Encoded.txt"
     - name: Decode the signing key
       run: |
         $data = [System.Convert]::FromBase64String("${{ secrets.BASE64_ENCODED_SIGNINGKEY }}")
@@ -82,3 +85,40 @@ jobs:
         if-no-files-found: error
       env:
         Configuration: ${{ matrix.configuration }}
+
+  nightly-release:
+    needs: build
+    runs-on: ubuntu-latest
+    env:
+      Project_Name: AzureCP
+    steps:
+      - name: Download artifacts
+        uses: actions/download-artifact@v3
+        with:
+          path: ./
+          
+      - name: Display structure of downloaded files
+        run: |
+          ls -R
+          mkdir ${{ env.Project_Name }}-dependencies
+          mkdir ${{ env.Project_Name }}-dependencies/debug
+          mkdir ${{ env.Project_Name }}-dependencies/release
+          cp ./${{ env.Project_Name }}-Debug-dependencies/* ${{ env.Project_Name }}-dependencies/debug
+          cp ./${{ env.Project_Name }}-Release-dependencies/* ${{ env.Project_Name }}-dependencies/release
+          cd ${{ env.Project_Name }}-dependencies
+          zip -r ../${{ env.Project_Name }}-dependencies.zip ./*
+          ls -R
+      
+      - name: Update Nightly Release
+        uses: andelf/nightly-release@main
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          tag_name: nightly
+          name: 'Nightly Release $$'
+          prerelease: true
+          body: |
+            This is a nightly release, use it with caution **and do not deploy it in a production environment**
+          files: |
+            ./${{ env.Project_Name }}-Release-wsp/${{ env.Project_Name }}.wsp
+            ./${{ env.Project_Name }}-dependencies.zip
