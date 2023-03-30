@@ -30,9 +30,6 @@ jobs:
       id: date
       run: echo "::set-output name=date::$(date +'%Y%m%d')"
       
-   - name: Show the version
-      run: echo "{{steps.set-assembly-version.outputs.version}}"
-
     - name: Set version
       id: set-assembly-version
       uses: secondbounce/assemblyinfo-update@v2
@@ -41,6 +38,9 @@ jobs:
         directory: "${{ env.Project_Directory }}/Properties"
         filename: 'AssemblyInfo.cs'
         recursive: false
+
+   - name: Show the version
+      run: echo "{{steps.set-assembly-version.outputs.version}}"
 
     # Add MSBuild to the PATH: https://github.com/microsoft/setup-msbuild
     - name: Setup MSBuild.exe
