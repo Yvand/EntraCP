@@ -103,7 +103,7 @@ jobs:
     runs-on: ubuntu-latest
     env:
       Project_Name: AzureCP
-      assembly-version: ${{ needs.assembly-version.outputs.assembly-version }}
+      assembly-version: ${{ needs.build.outputs.assembly-version }}
     steps:
       - name: Download artifacts
         uses: actions/download-artifact@v3
