@@ -118,12 +118,12 @@ jobs:
           cp ./${{ env.Project_Name }}-Debug-symbols/* ${{ env.Project_Name }}-symbols/debug
           cp ./${{ env.Project_Name }}-Release-symbols/* ${{ env.Project_Name }}-symbols/release
           cd ${{ env.Project_Name }}-symbols
-          zip -r ../${{ env.Project_Name }}--${{ assembly-version }}-symbols.zip ./*
+          zip -r ../${{ env.Project_Name }}--${{ env.assembly-version }}-symbols.zip ./*
           cd ..
           mkdir ${{ env.Project_Name }}-dependencies
           cp ./${{ env.Project_Name }}-Release-dependencies/* ${{ env.Project_Name }}-dependencies
           cd ${{ env.Project_Name }}-dependencies
-          zip -r ../${{ env.Project_Name }}-${{ assembly-version }}-dependencies.zip ./*
+          zip -r ../${{ env.Project_Name }}-${{ env.assembly-version }}-dependencies.zip ./*
       
       - name: Update Nightly Release
         uses: andelf/nightly-release@main
