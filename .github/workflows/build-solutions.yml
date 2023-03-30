@@ -12,6 +12,8 @@ jobs:
     strategy:
       matrix:
         configuration: [Debug, Release]
+    outputs:
+      assembly-version: ${{ steps.set-assembly-version.outputs.version }}
     env:
       Solution_Name: AzureCP.sln
       Project_Name: AzureCP
@@ -101,6 +103,7 @@ jobs:
     runs-on: ubuntu-latest
     env:
       Project_Name: AzureCP
+      assembly-version: ${{ needs.assembly-version.outputs.assembly-version }}
     steps:
       - name: Download artifacts
         uses: actions/download-artifact@v3
@@ -109,20 +112,18 @@ jobs:
           
       - name: Display structure of downloaded files
         run: |
-          ls -R
           mkdir ${{ env.Project_Name }}-symbols
           mkdir ${{ env.Project_Name }}-symbols/debug
           mkdir ${{ env.Project_Name }}-symbols/release
           cp ./${{ env.Project_Name }}-Debug-symbols/* ${{ env.Project_Name }}-symbols/debug
           cp ./${{ env.Project_Name }}-Release-symbols/* ${{ env.Project_Name }}-symbols/release
           cd ${{ env.Project_Name }}-symbols
-          zip -r ../${{ env.Project_Name }}-symbols.zip ./*
+          zip -r ../${{ env.Project_Name }}--${{ assembly-version }}-symbols.zip ./*
           cd ..
           mkdir ${{ env.Project_Name }}-dependencies
           cp ./${{ env.Project_Name }}-Release-dependencies/* ${{ env.Project_Name }}-dependencies
           cd ${{ env.Project_Name }}-dependencies
-          zip -r ../${{ env.Project_Name }}-dependencies.zip ./*
-          ls -R
+          zip -r ../${{ env.Project_Name }}-${{ assembly-version }}-dependencies.zip ./*
       
       - name: Update Nightly Release
         uses: andelf/nightly-release@main
