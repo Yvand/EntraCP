@@ -40,7 +40,7 @@ jobs:
         recursive: false
 
    - name: Show the version
-      run: echo "{{steps.set-assembly-version.outputs.version}}"
+      run: echo "${{steps.set-assembly-version.outputs.version}}"
 
     # Add MSBuild to the PATH: https://github.com/microsoft/setup-msbuild
     - name: Setup MSBuild.exe
