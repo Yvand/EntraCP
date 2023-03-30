@@ -28,7 +28,7 @@ jobs:
 
     - name: Get current date
       id: date
-      run: echo "::set-output name=date::$(date +'%Y')"
+      run: echo "::set-output name=date::$(date +'%Y%m%d')"
 
     - name: Set version
       id: set-assembly-version
@@ -38,9 +38,6 @@ jobs:
         directory: "${{ env.Project_Directory }}/Properties"
         filename: 'AssemblyInfo.cs'
         recursive: false
-
-    - name: Display the version used
-      run: echo "{{steps.set-assembly-version.outputs.version}}"
 
     # Add MSBuild to the PATH: https://github.com/microsoft/setup-msbuild
     - name: Setup MSBuild.exe
@@ -110,7 +107,7 @@ jobs:
         with:
           path: ./
           
-      - name: Display structure of downloaded files
+      - name: Create zip files to publish
         run: |
           mkdir ${{ env.Project_Name }}-symbols
           mkdir ${{ env.Project_Name }}-symbols/debug
@@ -125,7 +122,7 @@ jobs:
           cd ${{ env.Project_Name }}-dependencies
           zip -r ../${{ env.Project_Name }}-${{ env.assembly-version }}-dependencies.zip ./*
       
-      - name: Update Nightly Release
+      - name: Update nightly release
         uses: andelf/nightly-release@main
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
@@ -137,5 +134,5 @@ jobs:
             This is a nightly release, use it with caution **and do not deploy it in a production environment**
           files: |
             ./${{ env.Project_Name }}-Release-wsp/${{ env.Project_Name }}.wsp
-            ./${{ env.Project_Name }}-symbols.zip
-            ./${{ env.Project_Name }}-dependencies.zip
+            ./${{ env.Project_Name }}-${{ env.assembly-version }}-symbols.zip
+            ./${{ env.Project_Name }}-${{ env.assembly-version }}-dependencies.zip
