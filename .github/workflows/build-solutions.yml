@@ -38,6 +38,7 @@ jobs:
         directory: "${{ env.Project_Directory }}/Properties"
         filename: 'AssemblyInfo.cs'
         recursive: false
+        copyright: "Copyright ©${{ date +'%Y' }} Yvan Duhamel, All rights reserved"
 
     - name: Show the version
       run: echo "${{steps.set-assembly-version.outputs.version}}"
