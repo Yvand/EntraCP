@@ -32,7 +32,7 @@ jobs:
       
     - name: Set version
       id: set-assembly-version
-      uses: secondbounce/assemblyinfo-update@v2
+      uses: Yvand/assemblyinfo-update@main
       with:
         version: "${{ vars.VERSION_MAJOR_MINOR }}.${{ steps.date.outputs.date }}"
         directory: "${{ env.Project_Directory }}/Properties"
