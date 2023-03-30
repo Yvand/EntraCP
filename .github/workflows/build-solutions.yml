@@ -9,6 +9,7 @@ on:
 jobs:
   build:
     runs-on: windows-latest
+    if: false
     strategy:
       matrix:
         configuration: [Debug, Release]
@@ -100,6 +101,7 @@ jobs:
 
   nightly-release:
     needs: build
+    if: always()
     runs-on: ubuntu-latest
     env:
       Project_Name: AzureCP
@@ -124,6 +126,8 @@ jobs:
           cp ./${{ env.Project_Name }}-Release-dependencies/* ${{ env.Project_Name }}-dependencies
           cd ${{ env.Project_Name }}-dependencies
           zip -r ../${{ env.Project_Name }}-${{ env.assembly-version }}-dependencies.zip ./*
+          cd ..
+          ls -alR
       
       - name: Update nightly release
         uses: andelf/nightly-release@main
