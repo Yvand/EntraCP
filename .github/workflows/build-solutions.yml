@@ -29,6 +29,9 @@ jobs:
     - name: Get current date
       id: date
       run: echo "::set-output name=date::$(date +'%Y%m%d')"
+      
+   - name: Show the version
+      run: echo "{{steps.set-assembly-version.outputs.version}}"
 
     - name: Set version
       id: set-assembly-version
