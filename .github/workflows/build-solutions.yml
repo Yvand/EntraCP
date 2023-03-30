@@ -9,7 +9,6 @@ on:
 jobs:
   build:
     runs-on: windows-latest
-    if: false
     strategy:
       matrix:
         configuration: [Debug, Release]
@@ -101,7 +100,6 @@ jobs:
 
   nightly-release:
     needs: build
-    if: always()
     runs-on: ubuntu-latest
     env:
       Project_Name: AzureCP
@@ -114,6 +112,8 @@ jobs:
           
       - name: Create zip files to publish
         run: |
+          ls -alR
+          echo "prepare symbols'
           mkdir ${{ env.Project_Name }}-symbols
           mkdir ${{ env.Project_Name }}-symbols/debug
           mkdir ${{ env.Project_Name }}-symbols/release
@@ -122,6 +122,7 @@ jobs:
           cd ${{ env.Project_Name }}-symbols
           zip -r ../${{ env.Project_Name }}--${{ env.assembly-version }}-symbols.zip ./*
           cd ..
+          echo "prepare dependencies'
           mkdir ${{ env.Project_Name }}-dependencies
           cp ./${{ env.Project_Name }}-Release-dependencies/* ${{ env.Project_Name }}-dependencies
           cd ${{ env.Project_Name }}-dependencies
