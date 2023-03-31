@@ -32,8 +32,8 @@ jobs:
     strategy:
       matrix:
         configuration: [Debug, Release]
-    # outputs:
-      # assembly-version: ${{ steps.set-assembly-version.outputs.version }}
+    outputs:
+      assembly-version: ${{ needs.calculate-version.outputs.assembly-version }}
     env:
       Solution_Name: AzureCP.sln
       Project_Name: AzureCP
@@ -124,7 +124,7 @@ jobs:
     runs-on: ubuntu-latest
     env:
       Project_Name: AzureCP
-      assembly-version: ${{ needs.calculate-version.outputs.assembly-version }}
+      assembly-version: ${{ needs.build.outputs.assembly-version }}
     steps:
       - name: Download artifacts
         uses: actions/download-artifact@v3
