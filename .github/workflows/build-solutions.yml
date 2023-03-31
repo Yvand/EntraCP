@@ -16,10 +16,16 @@ jobs:
     - name: set-version
       id: set-version
       run: |
-        echo "::set-output name=date::$(date +'%Y%m%d')"
-        echo "::set-output name=year::$(date +'%Y')"
-        echo "::set-output name=assembly-version::${{ vars.VERSION_MAJOR_MINOR }}.$(date +'%Y%m%d').${{ github.run_number }}"
+        echo "date=$(date +'%Y%m%d')" >> $GITHUB_OUTPUT
+        echo "year=$(date +'%Y')" >> $GITHUB_OUTPUT
+        echo "assembly-version=${{ vars.VERSION_MAJOR_MINOR }}.$(date +'%Y%m%d').${{ github.run_number }}" >> $GITHUB_OUTPUT
         
+    - name: Show the version
+      run: |
+        echo "assembly-version: ${{steps.set-version.outputs.assembly-version}}"
+        echo "date: ${{steps.set-version.outputs.date}}"
+        echo "year: ${{steps.set-version.outputs.year}}"
+
   build:
     runs-on: windows-latest
     needs: calculate-version
@@ -56,8 +62,6 @@ jobs:
         recursive: false
         copyright: "Copyright © Yvan Duhamel $${{ needs.calculate-version.outputs.year }}"
 
-    # - name: Show the version
-      # run: echo "${{steps.set-assembly-version.outputs.version}}"
       
     # Add MSBuild to the PATH: https://github.com/microsoft/setup-msbuild
     - name: Setup MSBuild.exe
