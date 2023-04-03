@@ -45,12 +45,6 @@ jobs:
       uses: actions/checkout@v3
       with:
         fetch-depth: 0
-
-    # - name: Get current date
-      # id: date
-      # run: |
-        # echo "::set-output name=date::$(date +'%Y%m%d')"
-        # echo "::set-output name=year::$(date +'%Y')"
       
     - name: Set version
       id: set-assembly-version
@@ -134,7 +128,6 @@ jobs:
       - name: Create zip files to publish
         run: |
           echo "assembly-version: ${{ env.assembly-version }}"
-          ls -al
           mkdir ${{ env.Project_Name }}-symbols
           mkdir ${{ env.Project_Name }}-symbols/debug
           mkdir ${{ env.Project_Name }}-symbols/release
@@ -150,7 +143,6 @@ jobs:
           cd ${{ env.Project_Name }}-dependencies
           zip -r ../${{ env.Project_Name }}-${{ env.assembly-version }}-dependencies.zip ./*
           cd ..
-          ls -al
       
       - name: Update nightly release
         uses: andelf/nightly-release@main
