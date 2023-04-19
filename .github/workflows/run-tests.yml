@@ -89,5 +89,10 @@ jobs:
       uses: azure/CLI@v1
       with:
         inlineScript: |
-          az lab vm apply-artifacts --lab-name ${{ vars.dtl_serviceName }} --name ${{ env.vm_name }} --resource-group ${{ vars.dtl_rgName }} \
-          --artifacts "[ { \"artifactId\": \"/subscriptions/${{ vars.dtl_subscriptionId }}/resourceGroups/${{ vars.dtl_rgName }}/providers/Microsoft.DevTestLab/labs/${{ vars.dtl_serviceName }}/artifactSources/public repo/artifacts/windows-run-powershell\", \"parameters\": [ { \"name\": \"scriptFileUris\", \"value\": \" ${{ vars.DTL_PrepareSharePointVmScriptUris }} \" }, { \"name\": \"scriptToRun\", \"value\": \"ConfigureLab.ps1\" }, { \"name\": \"scriptArguments\", \"value\": \"-pathToPackage 'blablabla' -claimsProviderName '${{ env.claims_provider_name }}' -spTrustName 'contoso.local' -adminUserName '${{ format('contoso\{0}', vars.dtl_adminUserName) }}' -adminPassword '${{ secrets.dtl_accountsPassword }}'\" } ] } ]"
+          artifactId="/subscriptions/${{ vars.dtl_subscriptionId }}/resourceGroups/${{ vars.dtl_rgName }}/providers/Microsoft.DevTestLab/labs/${{ vars.dtl_serviceName }}/artifactSources/public repo/artifacts/windows-run-powershell"
+          artifactApplied=$(az lab vm show --lab-name ${{ vars.dtl_serviceName }} --resource-group ${{ vars.dtl_rgName }} --name ${{ env.vm_name }} --expand 'properties($expand=artifacts)' --query "artifacts[?artifactId=='$artifactId' && status == 'Succeeded'].status" --output tsv)
+          echo $artifactApplied
+          if [ -z $artifactApplied ]; then
+            az lab vm apply-artifacts --lab-name ${{ vars.dtl_serviceName }} --name ${{ env.vm_name }} --resource-group ${{ vars.dtl_rgName }} \
+            --artifacts "[ { \"artifactId\": \"$artifactId\", \"parameters\": [ { \"name\": \"scriptFileUris\", \"value\": \" ${{ vars.DTL_PrepareSharePointVmScriptUris }} \" }, { \"name\": \"scriptToRun\", \"value\": \"ConfigureLab.ps1\" }, { \"name\": \"scriptArguments\", \"value\": \"-pathToPackage 'blablabla' -claimsProviderName '${{ env.claims_provider_name }}' -spTrustName 'contoso.local' -adminUserName '${{ format('contoso\{0}', vars.dtl_adminUserName) }}' -adminPassword '${{ secrets.dtl_accountsPassword }}'\" } ] } ]"
+          fi
