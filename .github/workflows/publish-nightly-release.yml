@@ -1,10 +1,5 @@
 name: Publish nightly release
-
-on:
-  repository_dispatch:
-    types:
-      - publish-nightly-release
-
+on: workflow_dispatch
 jobs:
   calculate-version:
     runs-on: ubuntu-latest
