@@ -23,7 +23,7 @@ jobs:
       run: |
         echo "date=$(date +'%Y%m%d')" >> $GITHUB_OUTPUT
         echo "year=$(date +'%Y')" >> $GITHUB_OUTPUT
-        echo "assembly-version=${{ input.version-major-minor }}.$(date +'%Y%m%d').${{ github.run_number }}" >> $GITHUB_OUTPUT
+        echo "assembly-version=${{ inputs.version-major-minor }}.$(date +'%Y%m%d').${{ github.run_number }}" >> $GITHUB_OUTPUT
         
     - name: Show the version
       run: |
@@ -40,10 +40,10 @@ jobs:
     outputs:
       assembly-version: ${{ needs.calculate-version.outputs.assembly-version }}
     env:
-      Solution_Name: ${{ input.project-name }}.sln
-      project-name: ${{ input.project-name }}
-      Project_Directory: ${{ input.project-name }}
-      Project_File_Path: ${{ input.project-name }}/${{ input.project-name }}.csproj
+      Solution_Name: ${{ inputs.project-name }}.sln
+      project-name: ${{ inputs.project-name }}
+      Project_Directory: ${{ inputs.project-name }}
+      Project_File_Path: ${{ inputs.project-name }}/${{ inputs.project-name }}.csproj
 
     steps:
     - name: Checkout
@@ -56,7 +56,7 @@ jobs:
       id: set-assembly-version
       uses: Yvand/assemblyinfo-update@main
       with:
-        version: "${{ needs.calculate-version.outputs.assembly-version }}" #"${{ input.version-major-minor }}.${{ steps.date.outputs.date }}"
+        version: "${{ needs.calculate-version.outputs.assembly-version }}" #"${{ inputs.version-major-minor }}.${{ steps.date.outputs.date }}"
         directory: "${{ env.Project_Directory }}/Properties"
         filename: 'AssemblyInfo.cs'
         recursive: false
@@ -123,7 +123,7 @@ jobs:
     needs: build
     runs-on: ubuntu-latest
     env:
-      project-name: ${{ input.project-name }}
+      project-name: ${{ inputs.project-name }}
       assembly-version: ${{ needs.build.outputs.assembly-version }}
     steps:
       - name: Download artifacts
