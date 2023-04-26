@@ -12,6 +12,10 @@ on:
     secrets:
       base64-encoded-signingkey:
         required: true
+    outputs:
+      assembly-version:
+        description: "The full assembly version generated"
+        value: ${{ jobs.calculate-version.outputs.assembly-version }}
 jobs:
   calculate-version:
     runs-on: ubuntu-latest

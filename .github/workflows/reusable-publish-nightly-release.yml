@@ -25,7 +25,7 @@ jobs:
     runs-on: ubuntu-latest
     env:
       project-name: ${{ inputs.project-name }}
-      assembly-version: ${{ needs.build.outputs.assembly-version }}
+      assembly-version: ${{ needs.call-build.outputs.assembly-version }}
     steps:
       - name: Download artifacts
         uses: actions/download-artifact@v3
