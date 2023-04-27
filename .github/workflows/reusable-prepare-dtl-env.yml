@@ -54,6 +54,14 @@ on:
         type: boolean
         description: 'Specify if Azure Bastion should be provisioned'
         default: false
+      test-prepareSharePointVmScriptUris:
+        required: true
+        type: string
+        description: 'URLs of the scripts to download on the SharePoint VM to configure the claims provider'
+      test-claimsProviderPackageUri:
+        required: true
+        type: string
+        description: 'URL of the claims provider solution package to test'
     secrets:
       AZURE_CREDENTIALS:
         required: true
@@ -145,5 +153,5 @@ jobs:
           echo $artifactApplied
           if [ -z $artifactApplied ]; then
             az lab vm apply-artifacts --lab-name ${{ inputs.dtl-serviceName }} --name ${{ env.vm_name }} --resource-group ${{ inputs.dtl-rgName }} \
-            --artifacts "[ { \"artifactId\": \"$artifactId\", \"parameters\": [ { \"name\": \"scriptFileUris\", \"value\": \" ${{ inputs.DTL_PrepareSharePointVmScriptUris }} \" }, { \"name\": \"scriptToRun\", \"value\": \"ConfigureLab.ps1\" }, { \"name\": \"scriptArguments\", \"value\": \"-claimsProviderPackageUri '${{ inputs.DTL_ClaimsProviderPackageUri }}' -claimsProviderName '${{ env.claims_provider_name }}' -spTrustName 'contoso.local' -adminUserName '${{ format('contoso\{0}', inputs.dtl-env-adminUserName) }}' -adminPassword '${{ secrets.dtl-env-accountsPassword }}'\" } ] } ]"
+            --artifacts "[ { \"artifactId\": \"$artifactId\", \"parameters\": [ { \"name\": \"scriptFileUris\", \"value\": \" ${{ inputs.test-prepareSharePointVmScriptUris }} \" }, { \"name\": \"scriptToRun\", \"value\": \"ConfigureLab.ps1\" }, { \"name\": \"scriptArguments\", \"value\": \"-claimsProviderPackageUri '${{ inputs.test-claimsProviderPackageUri }}' -claimsProviderName '${{ env.claims_provider_name }}' -spTrustName 'contoso.local' -adminUserName '${{ format('contoso\{0}', inputs.dtl-env-adminUserName) }}' -adminPassword '${{ secrets.dtl-env-accountsPassword }}'\" } ] } ]"
           fi

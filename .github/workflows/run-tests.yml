@@ -30,6 +30,8 @@ jobs:
       dtl-env-addPublicIPAddress: ${{ vars.dtl_addPublicIPAddress }}
       dtl-env-rdpTrafficAllowed: ${{ vars.dtl_RDPTrafficAllowed }}
       dtl-env-addAzureBastion: ${{ vars.dtl_addAzureBastion == 'true' }}
+      test-prepareSharePointVmScriptUris: ${{ vars.DTL_PrepareSharePointVmScriptUris }}
+      test-claimsProviderPackageUri: ${{ vars.DTL_ClaimsProviderPackageUri }}
     secrets:
       AZURE_CREDENTIALS: ${{ secrets.AZURE_CREDENTIALS }}
       azdevops-pat-registerAgent: ${{ secrets.dtl_azdevopsPassword }}
