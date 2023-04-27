@@ -93,7 +93,7 @@ jobs:
     #if: startsWith(inputs.dtl_provisionSharePointSubscription, 'Subscription-')
     strategy:
       matrix:
-        sharepoint_version: ${{ inputs.sharepoint-versions }}
+        sharepoint_version: ${{ fromJson(inputs.sharepoint-versions) }}
         # include:
         # - sharepoint_version: Subscription-RTM #${{ startsWith(matrix.sharepoint_version, 'Subscription-') }}
           # sps_version: 'SE'
