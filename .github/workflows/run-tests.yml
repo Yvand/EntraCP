@@ -19,8 +19,8 @@ jobs:
     uses: Yvand/AzureCP/.github/workflows/reusable-prepare-dtl-env.yml@master
     with:
       project-name: ${{ vars.PROJECT_NAME }}
-      sharepoint-versions: ${{ github.event.client_payload.sharepoint_versions }}
-      skip-create-environment: ${{ github.event.client_payload.skip_create_environment == 'true' }}
+      sharepoint-versions: ${{ inputs.sharepoint_versions }}
+      skip-create-environment: ${{ inputs.skip_create_environment == 'true' }}
       dtl-serviceName: ${{ vars.dtl_serviceName }}
       dtl-rgName: ${{ vars.dtl_rgName }}
       dtl-environmentName: ${{ vars.dtl_environmentName }}
