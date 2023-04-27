@@ -25,6 +25,7 @@ jobs:
       dtl-rgName: ${{ vars.dtl_rgName }}
       dtl-environmentName: ${{ vars.dtl_environmentName }}
       dtl-subscriptionId: ${{ vars.dtl_subscriptionId }}
+      azdevops-organizationName: ${{ vars.DTL_AZDEVOPSACCOUNT }}
       dtl-env-adminUserName: ${{ vars.dtl_adminUserName }}
       dtl-env-addPublicIPAddress: ${{ vars.dtl_addPublicIPAddress }}
       dtl-env-rdpTrafficAllowed: ${{ vars.dtl_RDPTrafficAllowed }}
