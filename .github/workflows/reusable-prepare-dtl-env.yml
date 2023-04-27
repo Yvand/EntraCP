@@ -54,9 +54,12 @@ on:
       AZURE_CREDENTIALS:
         required: true
         description: 'Azure credentials which contains the service principal, to connect to the DevTest Labs service'
-      dtl-accountsPassword:
+      azdevops-pat-registerAgent:
         required: true
-        description: 'Password for the administrator and the service accounts'
+        description: 'Personal access token to register a VSTS agent in an agent pool'
+      dtl-env-accountsPassword:
+        required: true
+        description: 'Password for the accounts in the SharePoint environment'
 
 jobs:
   create-test-environment:
@@ -80,7 +83,7 @@ jobs:
         inlineScript: |
           az lab environment create --lab-name ${{ inputs.dtl-serviceName }} --name ${{ inputs.dtl-environmentName }} --resource-group ${{ inputs.dtl-rgName }} --artifact-source-name "Public Repo" \
           --arm-template "/subscriptions/${{ inputs.dtl-subscriptionId }}/resourceGroups/${{ inputs.dtl-rgName }}/providers/Microsoft.DevTestLab/labs/${{ inputs.dtl-serviceName }}/artifactSources/Public Environment Repo/armTemplates/SharePoint-AllVersions" \
-          --parameters "[ { \"name\": \"provisionSharePoint2013\", \"value\": \"${{ env.dtl_provisionSharePoint2013 }}\" }, { \"name\": \"provisionSharePoint2016\", \"value\": \"${{ env.dtl_provisionSharePoint2016 }}\" }, { \"name\": \"provisionSharePoint2019\", \"value\": \"${{ env.dtl_provisionSharePoint2019 }}\" }, { \"name\": \"provisionSharePointSubscription\", \"value\": \"${{ env.dtl_provisionSharePointSubscription }}\" }, { \"name\": \"configureADFS\", \"value\": \"true\" }, { \"name\": \"enableHybridBenefitServerLicenses\", \"value\": \"true\" }, { \"name\": \"enableAutomaticUpdates\", \"value\": \"false\" }, { \"name\": \"adminUserName\", \"value\": \"${{ inputs.dtl-env-adminUserName }}\" }, { \"name\": \"adminPassword\", \"value\": \"${{ secrets.dtl-accountsPassword }}\" }, { \"name\": \"serviceAccountsPassword\", \"value\": \"${{ secrets.dtl-accountsPassword }}\" }, { \"name\": \"addPublicIPAddress\", \"value\": \"${{ inputs.dtl-env-addPublicIPAddress }}\" }, { \"name\": \"RDPTrafficAllowed\", \"value\": \"${{ inputs.dtl-env-rdpTrafficAllowed }}\" }, { \"name\": \"addAzureBastion\", \"value\": \"${{ inputs.dtl-env-addAzureBastion }}\" } ]"
+          --parameters "[ { \"name\": \"provisionSharePoint2013\", \"value\": \"${{ env.dtl_provisionSharePoint2013 }}\" }, { \"name\": \"provisionSharePoint2016\", \"value\": \"${{ env.dtl_provisionSharePoint2016 }}\" }, { \"name\": \"provisionSharePoint2019\", \"value\": \"${{ env.dtl_provisionSharePoint2019 }}\" }, { \"name\": \"provisionSharePointSubscription\", \"value\": \"${{ env.dtl_provisionSharePointSubscription }}\" }, { \"name\": \"configureADFS\", \"value\": \"true\" }, { \"name\": \"enableHybridBenefitServerLicenses\", \"value\": \"true\" }, { \"name\": \"enableAutomaticUpdates\", \"value\": \"false\" }, { \"name\": \"adminUserName\", \"value\": \"${{ inputs.dtl-env-adminUserName }}\" }, { \"name\": \"adminPassword\", \"value\": \"${{ secrets.dtl-env-accountsPassword }}\" }, { \"name\": \"serviceAccountsPassword\", \"value\": \"${{ secrets.dtl-env-accountsPassword }}\" }, { \"name\": \"addPublicIPAddress\", \"value\": \"${{ inputs.dtl-env-addPublicIPAddress }}\" }, { \"name\": \"RDPTrafficAllowed\", \"value\": \"${{ inputs.dtl-env-rdpTrafficAllowed }}\" }, { \"name\": \"addAzureBastion\", \"value\": \"${{ inputs.dtl-env-addAzureBastion }}\" } ]"
           
   #apply-artifacts-spse:
   apply-artifacts:
@@ -126,7 +129,7 @@ jobs:
           echo $artifactApplied
           if [ -z $artifactApplied ]; then
             az lab vm apply-artifacts --lab-name ${{ inputs.dtl-serviceName }} --name ${{ env.vm_name }} --resource-group ${{ inputs.dtl-rgName }} \
-            --artifacts "[ { \"artifactId\": \"$artifactId\", \"parameters\": [ { \"name\": \"vstsAccount\", \"value\": \"${{ inputs.dtl_azdevopsAccount }}\" }, { \"name\": \"vstsPassword\", \"value\": \"${{ secrets.dtl_azdevopsPassword }}\" }, { \"name\": \"poolName\", \"value\": \"${{ env.dtl_poolName }}\" }, { \"name\": \"windowsLogonAccount\", \"value\": \"${{ format('{0}@contoso.local', inputs.dtl-env-adminUserName) }}\" }, { \"name\": \"windowsLogonPassword\", \"value\": \"${{ secrets.dtl-accountsPassword }}\" }, { \"name\": \"agentName\", \"value\": \"${{ env.vm_name }}\" }, { \"name\": \"agentNameSuffix\", \"value\": \"${{ inputs.dtl_agentNameSuffix }}\" }, { \"name\": \"RunAsAutoLogon\", \"value\": \"false\" }, { \"name\": \"driveLetter\", \"value\": \"C\" }, { \"name\": \"workDirectory\", \"value\": \"\" } ] } ]"
+            --artifacts "[ { \"artifactId\": \"$artifactId\", \"parameters\": [ { \"name\": \"vstsAccount\", \"value\": \"${{ inputs.dtl_azdevopsAccount }}\" }, { \"name\": \"vstsPassword\", \"value\": \"${{ secrets.azdevops-pat-registerAgent }}\" }, { \"name\": \"poolName\", \"value\": \"${{ env.dtl_poolName }}\" }, { \"name\": \"windowsLogonAccount\", \"value\": \"${{ format('{0}@contoso.local', inputs.dtl-env-adminUserName) }}\" }, { \"name\": \"windowsLogonPassword\", \"value\": \"${{ secrets.dtl-env-accountsPassword }}\" }, { \"name\": \"agentName\", \"value\": \"${{ env.vm_name }}\" }, { \"name\": \"agentNameSuffix\", \"value\": \"${{ inputs.dtl_agentNameSuffix }}\" }, { \"name\": \"RunAsAutoLogon\", \"value\": \"false\" }, { \"name\": \"driveLetter\", \"value\": \"C\" }, { \"name\": \"workDirectory\", \"value\": \"\" } ] } ]"
           fi
 
     - name: Apply artifact - Run a PowerShell script to download and install claims provider in current VM
@@ -138,5 +141,5 @@ jobs:
           echo $artifactApplied
           if [ -z $artifactApplied ]; then
             az lab vm apply-artifacts --lab-name ${{ inputs.dtl-serviceName }} --name ${{ env.vm_name }} --resource-group ${{ inputs.dtl-rgName }} \
-            --artifacts "[ { \"artifactId\": \"$artifactId\", \"parameters\": [ { \"name\": \"scriptFileUris\", \"value\": \" ${{ inputs.DTL_PrepareSharePointVmScriptUris }} \" }, { \"name\": \"scriptToRun\", \"value\": \"ConfigureLab.ps1\" }, { \"name\": \"scriptArguments\", \"value\": \"-claimsProviderPackageUri '${{ inputs.DTL_ClaimsProviderPackageUri }}' -claimsProviderName '${{ env.claims_provider_name }}' -spTrustName 'contoso.local' -adminUserName '${{ format('contoso\{0}', inputs.dtl-env-adminUserName) }}' -adminPassword '${{ secrets.dtl-accountsPassword }}'\" } ] } ]"
+            --artifacts "[ { \"artifactId\": \"$artifactId\", \"parameters\": [ { \"name\": \"scriptFileUris\", \"value\": \" ${{ inputs.DTL_PrepareSharePointVmScriptUris }} \" }, { \"name\": \"scriptToRun\", \"value\": \"ConfigureLab.ps1\" }, { \"name\": \"scriptArguments\", \"value\": \"-claimsProviderPackageUri '${{ inputs.DTL_ClaimsProviderPackageUri }}' -claimsProviderName '${{ env.claims_provider_name }}' -spTrustName 'contoso.local' -adminUserName '${{ format('contoso\{0}', inputs.dtl-env-adminUserName) }}' -adminPassword '${{ secrets.dtl-env-accountsPassword }}'\" } ] } ]"
           fi
