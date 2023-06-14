@@ -4,10 +4,12 @@ using Microsoft.SharePoint;
 using Microsoft.SharePoint.Administration;
 using Microsoft.SharePoint.Administration.Claims;
 using Microsoft.SharePoint.WebControls;
+using Microsoft.Web.Hosting.Administration;
 using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Diagnostics;
+using System.IO;
 using System.Linq;
 using System.Reflection;
 using System.Security.Cryptography;
@@ -764,17 +766,17 @@ namespace azurecp
             set
             {
                 if (value == null) { return; }
+                m_ClientCertificatePrivateKey = value;
                 try
                 {
-                    // To get the raw data with the private key, it is required to call method Export() instead of just reading the property RawData
-                    // If the certificate submitted does not have its private key exportable, Export() will throw a CryptographicException "Key not valid for use in specified state."
-                    m_ClientCertificatePrivateKeyRawData = value.Export(X509ContentType.Pkcs12, ClaimsProviderConstants.ClientCertificatePrivateKeyPassword);
-                    m_ClientCertificatePrivateKey = value;
+                    // https://stackoverflow.com/questions/32354790/how-to-check-is-x509certificate2-exportable-or-not
+                    m_ClientCertificatePrivateKeyRawData = value.Export(X509ContentType.Pfx, ClaimsProviderConstants.ClientCertificatePrivateKeyPassword);
                 }
                 catch (CryptographicException ex)
                 {
-                    ClaimsProviderLogging.LogException(AzureCP._ProviderInternalName, $"while setting the certificate for tenant '{this.Name}'. Is the private key of the certificate exportable?", TraceCategory.Core, ex);
-                    throw;  // The caller should be informed that the certificate could not be set
+                    // X509Certificate2.Export() is expected to fail if the private key is not exportable, which depends on the X509KeyStorageFlags used when creating the X509Certificate2 object
+                    //ClaimsProviderLogging.LogException(AzureCP._ProviderInternalName, $"while setting the certificate for tenant '{this.Name}'. Is the private key of the certificate exportable?", TraceCategory.Core, ex);
+                    //throw;  // The caller should be informed that the certificate could not be set
                 }
             }
         }
@@ -820,9 +822,8 @@ namespace azurecp
             {
                 try
                 {
-                    // [OUTDATED] Flag UserKeySet avoid access denied error. Flag Exportable allows to export the certificate with its private key
-                    // No need to mark the certificate as exportable here since it will not be saved later
-                    m_ClientCertificatePrivateKey = ImportPfxCertificateBlob(m_ClientCertificatePrivateKeyRawData, ClaimsProviderConstants.ClientCertificatePrivateKeyPassword, X509KeyStorageFlags.DefaultKeySet);
+                    // EphemeralKeySet: Keep the private key in-memory, it won't be written to disk - https://www.pkisolutions.com/handling-x509keystorageflags-in-applications/
+                    m_ClientCertificatePrivateKey = ImportPfxCertificateBlob(m_ClientCertificatePrivateKeyRawData, ClaimsProviderConstants.ClientCertificatePrivateKeyPassword, X509KeyStorageFlags.EphemeralKeySet);
                 }
                 catch (CryptographicException ex)
                 {
@@ -935,14 +936,24 @@ namespace azurecp
                 return null;
             }
 
-            if (String.IsNullOrWhiteSpace(certificatePassword))
+            // Import blob into a temp file first, to avoid creating files that might not be deleted - https://paulstovell.com/x509certificate2/ and https://github.com/projectkudu/kudu/wiki/Best-X509Certificate2-Practices
+            var file = Path.Combine(Path.GetTempPath(), $"AzureCPCert-{Guid.NewGuid()}");
+            try
             {
-                // If passwordless, import private key as documented in https://support.microsoft.com/en-us/topic/kb5025823-change-in-how-net-applications-import-x-509-certificates-bf81c936-af2b-446e-9f7a-016f4713b46b
-                return new X509Certificate2(blob, (string)null, keyStorageFlags);
+                System.IO.File.WriteAllBytes(file, blob);
+                if (String.IsNullOrWhiteSpace(certificatePassword))
+                {
+                    // If passwordless, import private key as documented in https://support.microsoft.com/en-us/topic/kb5025823-change-in-how-net-applications-import-x-509-certificates-bf81c936-af2b-446e-9f7a-016f4713b46b
+                    return new X509Certificate2(file, (string)null, keyStorageFlags);
+                }
+                else
+                {
+                    return new X509Certificate2(file, certificatePassword, keyStorageFlags);
+                }
             }
-            else
+            finally
             {
-                return new X509Certificate2(blob, certificatePassword, keyStorageFlags);
+                System.IO.File.Delete(file);
             }
         }
     }
