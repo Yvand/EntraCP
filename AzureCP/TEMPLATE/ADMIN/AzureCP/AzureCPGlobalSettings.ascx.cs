@@ -354,15 +354,16 @@ namespace azurecp.ControlTemplates
             {
                 byte[] buffer = new byte[inputFile.PostedFile.ContentLength];
                 inputFile.PostedFile.InputStream.Read(buffer, 0, buffer.Length);
-                cert = new X509Certificate2(buffer, certificatePassword, X509KeyStorageFlags.UserKeySet | X509KeyStorageFlags.Exportable);
-                if (cert.HasPrivateKey == false)
+                // The certificate must be exportable so it can be saved in the persisted object
+                cert = AzureTenant.ImportPfxCertificateBlob(buffer, certificatePassword, X509KeyStorageFlags.Exportable);
+                if (cert == null)
                 {
                     this.LabelErrorTestLdapConnection.Text = $"Certificate does not contain the private key.";
                     return false;
                 }
 
                 // Try to export the certificate with its private key to validate that it succeeds
-                cert.Export(X509ContentType.Pkcs12, "Yvan");
+                cert.Export(X509ContentType.Pfx, "Yvan");
             }
             catch (CryptographicException ex)
             {

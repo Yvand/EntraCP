@@ -793,7 +793,7 @@ namespace azurecp
         public AzureCloudInstance CloudInstance
         {
             get => (AzureCloudInstance)Enum.Parse(typeof(AzureCloudInstance), m_CloudInstance);
-            set => m_CloudInstance =  value.ToString();
+            set => m_CloudInstance = value.ToString();
         }
         [Persisted]
         private string m_CloudInstance = AzureCloudInstance.AzurePublic.ToString();
@@ -820,8 +820,9 @@ namespace azurecp
             {
                 try
                 {
-                    // Flag UserKeySet avoid access denied error. Flag Exportable allows to export the certificate with its private key
-                    m_ClientCertificatePrivateKey = new X509Certificate2(m_ClientCertificatePrivateKeyRawData, ClaimsProviderConstants.ClientCertificatePrivateKeyPassword, X509KeyStorageFlags.Exportable | X509KeyStorageFlags.UserKeySet);
+                    // [OUTDATED] Flag UserKeySet avoid access denied error. Flag Exportable allows to export the certificate with its private key
+                    // No need to mark the certificate as exportable here since it will not be saved later
+                    m_ClientCertificatePrivateKey = ImportPfxCertificateBlob(m_ClientCertificatePrivateKeyRawData, ClaimsProviderConstants.ClientCertificatePrivateKeyPassword, X509KeyStorageFlags.DefaultKeySet);
                 }
                 catch (CryptographicException ex)
                 {
@@ -918,6 +919,31 @@ namespace azurecp
             this.ApplicationId = applicationId;
             this.ApplicationSecret = String.Empty;
             this.ClientCertificatePrivateKey = certificate;
+        }
+
+        /// <summary>
+        /// Import the input blob certificate into a pfx X509Certificate2 object
+        /// </summary>
+        /// <param name="blob"></param>
+        /// <param name="certificatePassword"></param>
+        /// <param name="keyStorageFlags"></param>
+        /// <returns></returns>
+        public static X509Certificate2 ImportPfxCertificateBlob(byte[] blob, string certificatePassword, X509KeyStorageFlags keyStorageFlags)
+        {
+            if (X509Certificate2.GetCertContentType(blob) != X509ContentType.Pfx)
+            {
+                return null;
+            }
+
+            if (String.IsNullOrWhiteSpace(certificatePassword))
+            {
+                // If passwordless, import private key as documented in https://support.microsoft.com/en-us/topic/kb5025823-change-in-how-net-applications-import-x-509-certificates-bf81c936-af2b-446e-9f7a-016f4713b46b
+                return new X509Certificate2(blob, (string)null, keyStorageFlags);
+            }
+            else
+            {
+                return new X509Certificate2(blob, certificatePassword, keyStorageFlags);
+            }
         }
     }
 
