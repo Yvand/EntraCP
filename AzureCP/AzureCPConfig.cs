@@ -936,24 +936,14 @@ namespace azurecp
                 return null;
             }
 
-            // Import blob into a temp file first, to avoid creating files that might not be deleted - https://paulstovell.com/x509certificate2/ and https://github.com/projectkudu/kudu/wiki/Best-X509Certificate2-Practices
-            var file = Path.Combine(Path.GetTempPath(), $"AzureCPCert-{Guid.NewGuid()}");
-            try
+            if (String.IsNullOrWhiteSpace(certificatePassword))
             {
-                System.IO.File.WriteAllBytes(file, blob);
-                if (String.IsNullOrWhiteSpace(certificatePassword))
-                {
-                    // If passwordless, import private key as documented in https://support.microsoft.com/en-us/topic/kb5025823-change-in-how-net-applications-import-x-509-certificates-bf81c936-af2b-446e-9f7a-016f4713b46b
-                    return new X509Certificate2(file, (string)null, keyStorageFlags);
-                }
-                else
-                {
-                    return new X509Certificate2(file, certificatePassword, keyStorageFlags);
-                }
+                // If passwordless, import private key as documented in https://support.microsoft.com/en-us/topic/kb5025823-change-in-how-net-applications-import-x-509-certificates-bf81c936-af2b-446e-9f7a-016f4713b46b
+                return new X509Certificate2(blob, (string)null, keyStorageFlags);
             }
-            finally
+            else
             {
-                System.IO.File.Delete(file);
+                return new X509Certificate2(blob, certificatePassword, keyStorageFlags);
             }
         }
     }
