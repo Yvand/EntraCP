@@ -17,7 +17,7 @@ jobs:
         sharePointVersion: 2019
       OnSharePointSubscription:
         deployThisSharePointVersion: variables['Deployment.ProvisionSharePointSubscription']
-        sharePointVersion: Subscription
+        sharePointVersion: SE
   displayName: Run integration tests
   #condition: eq(variables['deployThisSharePointVersion'], 'yes') # Not working: variables['deployThisSharePointVersion'] is evaluated to Null
   timeoutInMinutes: 30
