@@ -62,6 +62,10 @@ on:
         required: true
         type: string
         description: 'URL of the claims provider solution package to test'
+      unittestfiles-storageAccountSourceRelativePath:
+        required: true
+        type: string
+        description: 'Relative path to the unit test files in the Azure storage file share'
     secrets:
       AZURE_CREDENTIALS:
         required: true
@@ -72,6 +76,12 @@ on:
       dtl-env-accountsPassword:
         required: true
         description: 'Password for the accounts in the SharePoint environment'
+      unittestfiles-storageAccountEndpoint:
+        required: true
+        description: 'Azure storage account endpoint where unit test files are located'
+      unittestfiles-storageAccountShareName:
+        required: true
+        description: 'Azure storage account file share name where unit test files are located'
 
 jobs:
   create-test-environment:
@@ -153,5 +163,5 @@ jobs:
           echo $artifactApplied
           if [ -z $artifactApplied ]; then
             az lab vm apply-artifacts --lab-name ${{ inputs.dtl-serviceName }} --name ${{ env.vm_name }} --resource-group ${{ inputs.dtl-rgName }} \
-            --artifacts "[ { \"artifactId\": \"$artifactId\", \"parameters\": [ { \"name\": \"scriptFileUris\", \"value\": \" ${{ inputs.test-prepareSharePointVmScriptUris }} \" }, { \"name\": \"scriptToRun\", \"value\": \"ConfigureLab.ps1\" }, { \"name\": \"scriptArguments\", \"value\": \"-claimsProviderPackageUri '${{ inputs.test-claimsProviderPackageUri }}' -claimsProviderName '${{ env.claims_provider_name }}' -spTrustName 'contoso.local' -adminUserName '${{ format('contoso\{0}', inputs.dtl-env-adminUserName) }}' -adminPassword '${{ secrets.dtl-env-accountsPassword }}'\" } ] } ]"
+            --artifacts "[ { \"artifactId\": \"$artifactId\", \"parameters\": [ { \"name\": \"scriptFileUris\", \"value\": \" ${{ inputs.test-prepareSharePointVmScriptUris }} \" }, { \"name\": \"scriptToRun\", \"value\": \"ConfigureLab.ps1\" }, { \"name\": \"scriptArguments\", \"value\": \"-claimsProviderPackageUri '${{ inputs.test-claimsProviderPackageUri }}' -claimsProviderName '${{ env.claims_provider_name }}' -spTrustName 'contoso.local' -adminUserName '${{ format('contoso\{0}', inputs.dtl-env-adminUserName) }}' -adminPassword '${{ secrets.dtl-env-accountsPassword }}' -storageAccountEndpoint '${{ secrets.unittestfiles-storageAccountEndpoint }}' -storageAccountShareName '${{ secrets.unittestfiles-storageAccountShareName }}' -storageAccountSourceRelativePath '${{ env.unittestfiles-storageAccountSourceRelativePath }}'\" } ] } ]"
           fi

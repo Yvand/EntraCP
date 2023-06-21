@@ -32,7 +32,10 @@ jobs:
       dtl-env-addAzureBastion: ${{ vars.dtl_addAzureBastion == 'true' }}
       test-prepareSharePointVmScriptUris: ${{ vars.DTL_PrepareSharePointVmScriptUris }}
       test-claimsProviderPackageUri: ${{ vars.DTL_ClaimsProviderPackageUri }}
+      unittestfiles-storageAccountSourceRelativePath: ${{ vars.unittestfiles-storageAccountSourceRelativePath }}
     secrets:
       AZURE_CREDENTIALS: ${{ secrets.AZURE_CREDENTIALS }}
       azdevops-pat-registerAgent: ${{ secrets.dtl_azdevopsPassword }}
       dtl-env-accountsPassword: ${{ secrets.dtl_accountsPassword }}
+      unittestfiles-storageAccountEndpoint: ${{ secrets.unittestfiles-storageAccountEndpoint }}
+      unittestfiles-storageAccountShareName: ${{ secrets.unittestfiles-storageAccountShareName }}
