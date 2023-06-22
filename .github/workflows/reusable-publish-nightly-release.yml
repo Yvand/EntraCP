@@ -27,7 +27,7 @@ jobs:
       project-name: ${{ inputs.project-name }}
       assembly-version: ${{ needs.call-build.outputs.assembly-version }}
     steps:
-      - name: Download artifacts
+      - name: Download all artifacts
         uses: actions/download-artifact@v3
         with:
           path: ./
@@ -50,6 +50,15 @@ jobs:
           cd ${{ env.project-name }}-dependencies
           zip -r ../${{ env.project-name }}-${{ env.assembly-version }}-dependencies.zip ./*
           cd ..
+          echo "Generate unit-tests zip file"
+          mkdir ${{ env.project-name }}-unit-tests
+          mkdir ${{ env.project-name }}-unit-tests/debug
+          mkdir ${{ env.project-name }}-unit-tests/release
+          cp ./${{ env.project-name }}-Debug-unit-tests/* ${{ env.project-name }}-unit-tests/debug
+          cp ./${{ env.project-name }}-Release-unit-tests/* ${{ env.project-name }}-unit-tests/release
+          cd ${{ env.project-name }}-unit-tests
+          zip -r ../${{ env.project-name }}-unit-tests.zip ./*
+          cd ..
       
       - name: Update nightly release
         uses: andelf/nightly-release@main
@@ -65,3 +74,4 @@ jobs:
             ./${{ env.project-name }}-Release-wsp/${{ env.project-name }}.wsp
             ./${{ env.project-name }}-${{ env.assembly-version }}-symbols.zip
             ./${{ env.project-name }}-${{ env.assembly-version }}-dependencies.zip
+            ./${{ env.project-name }}-unit-tests.zip
