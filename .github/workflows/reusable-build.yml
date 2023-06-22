@@ -122,3 +122,12 @@ jobs:
         if-no-files-found: error
       env:
         Configuration: ${{ matrix.configuration }}
+        
+    - name: Upload artifact - unit tests
+      uses: actions/upload-artifact@v3
+      with:
+        name: "${{ env.project-name }}-${{ env.Configuration }}-unit-tests"
+        path: "${{ env.Project_Directory }}.Tests/bin/${{ env.Configuration }}/*.dll"
+        if-no-files-found: error
+      env:
+        Configuration: ${{ matrix.configuration }}
