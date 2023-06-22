@@ -1,6 +1,7 @@
 name: Verify PRs and commits
 
-on: workflow_dispatch
+on:
+  workflow_dispatch
   push:
     branches: [ "master", "dev" ]
   pull_request:
