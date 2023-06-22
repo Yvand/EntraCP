@@ -51,7 +51,7 @@ jobs:
     inputs:
       searchFolder: '$(RootLocalPath)/$(TestsPathName)/$(System.TeamProject)-unit-tests/release'
       vsTestVersion: toolsInstaller
-      runSettingsFile: '$(RootLocalPath)/$(TestsPathName)/$(Tests.DataFolderName)/DTLServer.runsettings'
+      runSettingsFile: '$(RootLocalPath)/$(TestsPathName)/DTLServer.runsettings'
       overrideTestrunParameters: '$(Tests.OverrideTestrunParameters)'
       codeCoverageEnabled: $(Tests.CodeCoverageEnabled)
       otherConsoleOptions: '/Platform:x64'
