@@ -137,33 +137,40 @@ jobs:
       dtl_poolName: ${{ format('{0}-Tests-{1}', inputs.project-name, matrix.sharepoint_version) }}
       claims_provider_name: ${{ inputs.project-name }}
     steps:
-    - name: Azure Login
-      uses: azure/login@v1
-      with:
-        creds: ${{ secrets.AZURE_CREDENTIALS }}
+    # - name: Azure Login
+      # uses: azure/login@v1
+      # with:
+        # creds: ${{ secrets.AZURE_CREDENTIALS }}
 
-    - name: Apply artifact - Register current VM as a VSTS agent in DevOps agent pools
-      uses: azure/CLI@v1
-      with:
-        inlineScript: |
-          artifactId="/subscriptions/${{ inputs.dtl-subscriptionId }}/resourceGroups/${{ inputs.dtl-rgName }}/providers/Microsoft.DevTestLab/labs/${{ inputs.dtl-serviceName }}/artifactSources/public repo/artifacts/windows-vsts-build-agent"
-          artifactApplied=$(az lab vm show --lab-name ${{ inputs.dtl-serviceName }} --resource-group ${{ inputs.dtl-rgName }} --name ${{ env.vm_name }} --expand 'properties($expand=artifacts)' --query "artifacts[?artifactId=='$artifactId' && status == 'Succeeded'].status" --output tsv)
-          echo $artifactApplied
-          if [ -z $artifactApplied ]; then
-            az lab vm apply-artifacts --lab-name ${{ inputs.dtl-serviceName }} --name ${{ env.vm_name }} --resource-group ${{ inputs.dtl-rgName }} \
-            --artifacts "[ { \"artifactId\": \"$artifactId\", \"parameters\": [ { \"name\": \"vstsAccount\", \"value\": \"${{ inputs.azdevops-organizationName }}\" }, { \"name\": \"vstsPassword\", \"value\": \"${{ secrets.azdevops-pat-registerAgent }}\" }, { \"name\": \"poolName\", \"value\": \"${{ env.dtl_poolName }}\" }, { \"name\": \"windowsLogonAccount\", \"value\": \"${{ format('{0}@contoso.local', inputs.dtl-env-adminUserName) }}\" }, { \"name\": \"windowsLogonPassword\", \"value\": \"${{ secrets.dtl-env-accountsPassword }}\" }, { \"name\": \"agentName\", \"value\": \"${{ env.vm_name }}\" }, { \"name\": \"agentNameSuffix\", \"value\": \"${{ format('-{0}', github.sha) }}\" }, { \"name\": \"RunAsAutoLogon\", \"value\": \"false\" }, { \"name\": \"driveLetter\", \"value\": \"C\" }, { \"name\": \"workDirectory\", \"value\": \"\" } ] } ]"
-          fi
+    # - name: Apply artifact - Register current VM as a VSTS agent in DevOps agent pools
+      # uses: azure/CLI@v1
+      # with:
+        # inlineScript: |
+          # artifactId="/subscriptions/${{ inputs.dtl-subscriptionId }}/resourceGroups/${{ inputs.dtl-rgName }}/providers/Microsoft.DevTestLab/labs/${{ inputs.dtl-serviceName }}/artifactSources/public repo/artifacts/windows-vsts-build-agent"
+          # artifactApplied=$(az lab vm show --lab-name ${{ inputs.dtl-serviceName }} --resource-group ${{ inputs.dtl-rgName }} --name ${{ env.vm_name }} --expand 'properties($expand=artifacts)' --query "artifacts[?artifactId=='$artifactId' && status == 'Succeeded'].status" --output tsv)
+          # echo $artifactApplied
+          # if [ -z $artifactApplied ]; then
+            # az lab vm apply-artifacts --lab-name ${{ inputs.dtl-serviceName }} --name ${{ env.vm_name }} --resource-group ${{ inputs.dtl-rgName }} \
+            # --artifacts "[ { \"artifactId\": \"$artifactId\", \"parameters\": [ { \"name\": \"vstsAccount\", \"value\": \"${{ inputs.azdevops-organizationName }}\" }, { \"name\": \"vstsPassword\", \"value\": \"${{ secrets.azdevops-pat-registerAgent }}\" }, { \"name\": \"poolName\", \"value\": \"${{ env.dtl_poolName }}\" }, { \"name\": \"windowsLogonAccount\", \"value\": \"${{ format('{0}@contoso.local', inputs.dtl-env-adminUserName) }}\" }, { \"name\": \"windowsLogonPassword\", \"value\": \"${{ secrets.dtl-env-accountsPassword }}\" }, { \"name\": \"agentName\", \"value\": \"${{ env.vm_name }}\" }, { \"name\": \"agentNameSuffix\", \"value\": \"${{ format('-{0}', github.sha) }}\" }, { \"name\": \"RunAsAutoLogon\", \"value\": \"false\" }, { \"name\": \"driveLetter\", \"value\": \"C\" }, { \"name\": \"workDirectory\", \"value\": \"\" } ] } ]"
+          # fi
 
-    - name: Apply artifact - Run a PowerShell script to download and install claims provider in current VM
-      uses: azure/CLI@v1
-      with:
-        inlineScript: |
-          artifactId="/subscriptions/${{ inputs.dtl-subscriptionId }}/resourceGroups/${{ inputs.dtl-rgName }}/providers/Microsoft.DevTestLab/labs/${{ inputs.dtl-serviceName }}/artifactSources/public repo/artifacts/windows-run-powershell"
-          artifactApplied=$(az lab vm show --lab-name ${{ inputs.dtl-serviceName }} --resource-group ${{ inputs.dtl-rgName }} --name ${{ env.vm_name }} --expand 'properties($expand=artifacts)' --query "artifacts[?artifactId=='$artifactId' && status == 'Succeeded'].status" --output tsv)
-          echo $artifactApplied
-          if [ -z $artifactApplied ]; then
-            claimsProviderPackageUri=${{ inputs.test-claimsProviderPackageUri }}
-            unitTestsProjectUri=${claimsProviderPackageUri/.wsp/-unit-tests.zip}
-            az lab vm apply-artifacts --lab-name ${{ inputs.dtl-serviceName }} --name ${{ env.vm_name }} --resource-group ${{ inputs.dtl-rgName }} \
-            --artifacts "[ { \"artifactId\": \"$artifactId\", \"parameters\": [ { \"name\": \"scriptFileUris\", \"value\": \" ${{ inputs.test-prepareSharePointVmScriptUris }} \" }, { \"name\": \"scriptToRun\", \"value\": \"ConfigureLab.ps1\" }, { \"name\": \"scriptArguments\", \"value\": \"-claimsProviderPackageUri '$claimsProviderPackageUri' -claimsProviderUnitTestsUri '$unitTestsProjectUri' -claimsProviderName '${{ env.claims_provider_name }}' -spTrustName 'contoso.local' -adminUserName '${{ format('contoso\{0}', inputs.dtl-env-adminUserName) }}' -adminPassword '${{ secrets.dtl-env-accountsPassword }}' -storageAccountEndpoint '${{ secrets.unittestfiles-storageAccountEndpoint }}' -storageAccountShareName '${{ secrets.unittestfiles-storageAccountShareName }}' -storageAccountSourceRelativePath '${{ inputs.unittestfiles-storageAccountSourceRelativePath }}'\" } ] } ]"
-          fi
+    # - name: Apply artifact - Run a PowerShell script to download and install claims provider in current VM
+      # uses: azure/CLI@v1
+      # with:
+        # inlineScript: |
+          # artifactId="/subscriptions/${{ inputs.dtl-subscriptionId }}/resourceGroups/${{ inputs.dtl-rgName }}/providers/Microsoft.DevTestLab/labs/${{ inputs.dtl-serviceName }}/artifactSources/public repo/artifacts/windows-run-powershell"
+          # artifactApplied=$(az lab vm show --lab-name ${{ inputs.dtl-serviceName }} --resource-group ${{ inputs.dtl-rgName }} --name ${{ env.vm_name }} --expand 'properties($expand=artifacts)' --query "artifacts[?artifactId=='$artifactId' && status == 'Succeeded'].status" --output tsv)
+          # echo $artifactApplied
+          # if [ -z $artifactApplied ]; then
+            # claimsProviderPackageUri=${{ inputs.test-claimsProviderPackageUri }}
+            # unitTestsProjectUri=${claimsProviderPackageUri/.wsp/-unit-tests.zip}
+            # az lab vm apply-artifacts --lab-name ${{ inputs.dtl-serviceName }} --name ${{ env.vm_name }} --resource-group ${{ inputs.dtl-rgName }} \
+            # --artifacts "[ { \"artifactId\": \"$artifactId\", \"parameters\": [ { \"name\": \"scriptFileUris\", \"value\": \" ${{ inputs.test-prepareSharePointVmScriptUris }} \" }, { \"name\": \"scriptToRun\", \"value\": \"ConfigureLab.ps1\" }, { \"name\": \"scriptArguments\", \"value\": \"-claimsProviderPackageUri '$claimsProviderPackageUri' -claimsProviderUnitTestsUri '$unitTestsProjectUri' -claimsProviderName '${{ env.claims_provider_name }}' -spTrustName 'contoso.local' -adminUserName '${{ format('contoso\{0}', inputs.dtl-env-adminUserName) }}' -adminPassword '${{ secrets.dtl-env-accountsPassword }}' -storageAccountEndpoint '${{ secrets.unittestfiles-storageAccountEndpoint }}' -storageAccountShareName '${{ secrets.unittestfiles-storageAccountShareName }}' -storageAccountSourceRelativePath '${{ inputs.unittestfiles-storageAccountSourceRelativePath }}'\" } ] } ]"
+          # fi
+          
+    - name: DEBUG
+      run: |
+        claimsProviderPackageUri=${{ inputs.test-claimsProviderPackageUri }}
+        unitTestsProjectUri=${claimsProviderPackageUri/%.wsp/-unit-tests.zip}
+        echo "$claimsProviderPackageUri"
+        echo "$unitTestsProjectUri"
