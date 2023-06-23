@@ -161,6 +161,7 @@ jobs:
           artifactId="/subscriptions/${{ inputs.dtl-subscriptionId }}/resourceGroups/${{ inputs.dtl-rgName }}/providers/Microsoft.DevTestLab/labs/${{ inputs.dtl-serviceName }}/artifactSources/public repo/artifacts/windows-run-powershell"
           artifactApplied=$(az lab vm show --lab-name ${{ inputs.dtl-serviceName }} --resource-group ${{ inputs.dtl-rgName }} --name ${{ env.vm_name }} --expand 'properties($expand=artifacts)' --query "artifacts[?artifactId=='$artifactId' && status == 'Succeeded'].status" --output tsv)
           echo $artifactApplied
+          unset artifactApplied
           if [ -z $artifactApplied ]; then
             claimsProviderPackageUri=${{ inputs.test-claimsProviderPackageUri }}
             unitTestsProjectUri=${claimsProviderPackageUri/.wsp/-unit-tests.zip}
