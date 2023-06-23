@@ -172,5 +172,5 @@ jobs:
       run: |
         claimsProviderPackageUri=${{ inputs.test-claimsProviderPackageUri }}
         unitTestsProjectUri=${claimsProviderPackageUri/%.wsp/-unit-tests.zip}
-        echo \"$claimsProviderPackageUri\"
-        echo $unitTestsProjectUri
+        echo "$claimsProviderPackageUri"
+        echo \'$unitTestsProjectUri\'
