@@ -2,7 +2,11 @@
 
 ## Unreleased
 
-* Fixed "Unsupported or invalid query filter" when AzureCP queries some properties like 'companyName' - https://github.com/Yvand/AzureCP/issues/166 and https://github.com/Yvand/AzureCP/issues/175
+* Fixed "Unsupported or invalid query filter" when AzureCP queries some properties like 'companyName' - (https://github.com/Yvand/AzureCP/pull/172 and https://github.com/Yvand/AzureCP/pull/177)
+* Add support for extension attributes ([#174](https://github.com/Yvand/AzureCP/pull/174))
+* Fix multiple reliability issues when using a certificate to authenticate in Azure AD
+* Fix the properties of the identity claim type not updated (https://github.com/Yvand/AzureCP/pull/171)
+* Switch from Azure DevOps to GitHub Actions to build the project and create the unit tests environments
 
 ## AzureCP 20.0.20220421.1391 enhancements & bug-fixes - Published in April 21, 2022
 
