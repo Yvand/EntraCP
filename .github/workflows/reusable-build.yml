@@ -81,7 +81,7 @@ jobs:
                 });
             }
             console.log(`tagName: '${tagName}'`);
-            core.setOutput("tagName", tagName)
+            core.setOutput("tagName", $tagName);
             return `${tagName}`;
   
   build:
