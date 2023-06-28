@@ -1,4 +1,4 @@
-name: Publish nightly release (reusable)
+name: Build project and publish release (reusable)
 on:
   workflow_call:
     inputs:
@@ -8,6 +8,10 @@ on:
       version-major-minor:
         required: true
         type: string
+      is-production-release:
+        description: "true to publish a production release, false to publish a nightly release"
+        default: false
+        type: boolean
     secrets:
       base64-encoded-signingkey:
         required: true
@@ -17,15 +21,17 @@ jobs:
     with:
       project-name: ${{ inputs.project-name }}
       version-major-minor: ${{ inputs.version-major-minor }}
+      tag-commit: ${{ inputs.is-production-release }}
     secrets:
       base64-encoded-signingkey: ${{ secrets.base64-encoded-signingkey }}
 
-  nightly-release:
+  production-release:
     needs: call-build
     runs-on: ubuntu-latest
     env:
       project-name: ${{ inputs.project-name }}
       assembly-version: ${{ needs.call-build.outputs.assembly-version }}
+      tag-name: ${{ needs.call-build.outputs.tag-name }}
     steps:
       - name: Download all artifacts
         uses: actions/download-artifact@v3
@@ -59,9 +65,26 @@ jobs:
           cd ${{ env.project-name }}-unit-tests
           zip -r ../${{ env.project-name }}-unit-tests.zip ./*
           cd ..
-      
-      - name: Update nightly release
-        uses: andelf/nightly-release@main
+
+      - name: Publish production release
+        uses: andelf/nightly-release@v1
+        if: inputs.is-production-release == true
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          tag_name: ${{ env.tag-name }}
+          name: '${{ env.project-name }} ${{ env.tag-name }}'
+          prerelease: true
+          body: |
+            ${{ env.project-name }} ${{ env.tag-name }}
+          files: |
+            ./${{ env.project-name }}-Release-wsp/${{ env.project-name }}.wsp
+            ./${{ env.project-name }}-${{ env.assembly-version }}-symbols.zip
+            ./${{ env.project-name }}-${{ env.assembly-version }}-dependencies.zip
+
+      - name: Publish nightly release
+        uses: andelf/nightly-release@v1
+        if: inputs.is-production-release == false
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:

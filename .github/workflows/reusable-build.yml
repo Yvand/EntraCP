@@ -9,6 +9,9 @@ on:
       version-major-minor:
         required: true
         type: string
+      tag-commit:
+        default: false
+        type: boolean
     secrets:
       base64-encoded-signingkey:
         required: true
@@ -16,6 +19,9 @@ on:
       assembly-version:
         description: "The full assembly version generated"
         value: ${{ jobs.calculate-version.outputs.assembly-version }}
+      tag-name:
+        description: "The name of the tag, if it was set"
+        value: ${{ jobs.build.outputs.tag-commit }}
 jobs:
   calculate-version:
     runs-on: ubuntu-latest
@@ -55,7 +61,36 @@ jobs:
       uses: actions/checkout@v3
       with:
         fetch-depth: 0
-      
+        
+    - name: tag-commit
+      uses: actions/github-script@v6
+      if: inputs.tag-commit == true
+      result-encoding: string
+      with:
+        script: |
+            const { owner, repo } = context.repo;
+            const tagName = "v${{ needs.calculate-version.outputs.assembly-version }}";
+            const ref = `refs/tags/${tagName}`;
+            try {
+                console.log(`Create tag '${tagName}' on commit '${context.sha}'`);
+                github.rest.git.createRef({
+                  owner: owner,
+                  repo: repo,
+                  ref: ref,
+                  sha: context.sha
+                });
+            } catch (exception) {
+                console.log(`Could not set tag '${tagName}' to commit '${context.sha}' due to error: $(exception)`);
+                console.log(`Update tag '${tagName}' on commit '${context.sha}'`);
+                github.rest.git.updateRef({
+                  owner: owner,
+                  repo: repo,
+                  ref: ref,
+                  sha: context.sha
+                });
+            }
+            return tagName;
+
     - name: Set assembly version
       id: set-assembly-version
       uses: Yvand/assemblyinfo-update@main
