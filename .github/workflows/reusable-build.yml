@@ -21,7 +21,7 @@ on:
         value: ${{ jobs.calculate-version.outputs.assembly-version }}
       tag-name:
         description: "The name of the tag, if it was set"
-        value: ${{ jobs.build.outputs.tag-commit }}
+        value: ${{ jobs.build.tag-if-needed.tag-name }}
 jobs:
   calculate-version:
     runs-on: ubuntu-latest
@@ -42,29 +42,19 @@ jobs:
         echo "date: ${{steps.set-version.outputs.date}}"
         echo "year: ${{steps.set-version.outputs.year}}"
 
-  build:
-    runs-on: windows-latest
-    needs: calculate-version
-    strategy:
-      matrix:
-        configuration: [Debug, Release]
+  tag-if-needed:
+    runs-on: ubuntu-latest
+    if: inputs.tag-commit == true
     outputs:
-      assembly-version: ${{ needs.calculate-version.outputs.assembly-version }}
-    env:
-      Solution_Name: ${{ inputs.project-name }}.sln
-      project-name: ${{ inputs.project-name }}
-      Project_Directory: ${{ inputs.project-name }}
-      Project_File_Path: ${{ inputs.project-name }}/${{ inputs.project-name }}.csproj
-
+      tag-name: ${{ steps.tag-commit.outputs.result }}
     steps:
     - name: Checkout
       uses: actions/checkout@v3
       with:
         fetch-depth: 0
-        
+    
     - name: tag-commit
       uses: actions/github-script@v6
-      if: inputs.tag-commit == true
       with:
         result-encoding: string
         script: |
@@ -90,6 +80,26 @@ jobs:
                 });
             }
             return tagName;
+  
+  build:
+    runs-on: windows-latest
+    needs: calculate-version
+    strategy:
+      matrix:
+        configuration: [Debug, Release]
+    outputs:
+      assembly-version: ${{ needs.calculate-version.outputs.assembly-version }}
+    env:
+      Solution_Name: ${{ inputs.project-name }}.sln
+      project-name: ${{ inputs.project-name }}
+      Project_Directory: ${{ inputs.project-name }}
+      Project_File_Path: ${{ inputs.project-name }}/${{ inputs.project-name }}.csproj
+
+    steps:
+    - name: Checkout
+      uses: actions/checkout@v3
+      with:
+        fetch-depth: 0
 
     - name: Set assembly version
       id: set-assembly-version
