@@ -66,6 +66,11 @@ jobs:
           zip -r ../${{ env.project-name }}-unit-tests.zip ./*
           cd ..
 
+      - name: debug
+        run: |
+          echo "env.tag-name: ${{ env.tag-name }}"
+          echo "github.ref: ${{ github.ref }}"
+
       - name: Publish production release
         uses: softprops/action-gh-release@v1
         if: startsWith(env.tag-name, 'v')
