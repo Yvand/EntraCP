@@ -47,7 +47,7 @@ jobs:
     needs: calculate-version
     if: inputs.tag-commit == true
     outputs:
-      tag-name: ${{ steps.tag-commit.outputs.result }}
+      tag-name: ${{ steps.tag-commit.outputs.tag-name }}
     steps:
     - name: Checkout
       uses: actions/checkout@v3
@@ -80,7 +80,8 @@ jobs:
                   sha: context.sha
                 });
             }
-            return tagName;
+            //return tagName;
+            echo "tag-name=$tagName" >> $GITHUB_OUTPUT
   
   build:
     runs-on: windows-latest
