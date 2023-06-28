@@ -80,7 +80,7 @@ jobs:
                   sha: context.sha
                 });
             }
-            return $tagName;
+            return `${tagName}`;
   
   build:
     runs-on: windows-latest
