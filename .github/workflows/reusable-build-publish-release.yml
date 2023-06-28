@@ -68,7 +68,7 @@ jobs:
 
       - name: Publish production release
         uses: softprops/action-gh-release@v1
-        if: startsWith(github.ref, 'refs/tags/v')
+        if: startsWith(env.tag-name, 'v')
         with:
           name: '${{ env.project-name }} ${{ env.tag-name }}'
           prerelease: true
