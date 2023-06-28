@@ -1,0 +1,100 @@
+name: Build project and publish release (reusable)
+on:
+  workflow_call:
+    inputs:
+      project-name:
+        required: true
+        type: string
+      version-major-minor:
+        required: true
+        type: string
+      is-production-release:
+        description: "true to publish a production release, false to publish a nightly release"
+        default: false
+        type: boolean
+    secrets:
+      base64-encoded-signingkey:
+        required: true
+jobs:
+  call-build:
+    uses: Yvand/AzureCP/.github/workflows/reusable-build.yml@master
+    with:
+      project-name: ${{ inputs.project-name }}
+      version-major-minor: ${{ inputs.version-major-minor }}
+      tag-commit: ${{ inputs.is-production-release }}
+    secrets:
+      base64-encoded-signingkey: ${{ secrets.base64-encoded-signingkey }}
+
+  production-release:
+    needs: call-build
+    runs-on: ubuntu-latest
+    env:
+      project-name: ${{ inputs.project-name }}
+      assembly-version: ${{ needs.call-build.outputs.assembly-version }}
+      tag-name: ${{ needs.call-build.outputs.tag-name }}
+    steps:
+      - name: Download all artifacts
+        uses: actions/download-artifact@v3
+        with:
+          path: ./
+          
+      - name: Create zip files to publish
+        run: |
+          echo "assembly-version: ${{ env.assembly-version }}"
+          mkdir ${{ env.project-name }}-symbols
+          mkdir ${{ env.project-name }}-symbols/debug
+          mkdir ${{ env.project-name }}-symbols/release
+          echo "Generate symbols zip file"
+          cp ./${{ env.project-name }}-Debug-symbols/* ${{ env.project-name }}-symbols/debug
+          cp ./${{ env.project-name }}-Release-symbols/* ${{ env.project-name }}-symbols/release
+          cd ${{ env.project-name }}-symbols
+          zip -r ../${{ env.project-name }}-${{ env.assembly-version }}-symbols.zip ./*
+          cd ..
+          echo "Generate dependencies zip file"
+          mkdir ${{ env.project-name }}-dependencies
+          cp ./${{ env.project-name }}-Release-dependencies/* ${{ env.project-name }}-dependencies
+          cd ${{ env.project-name }}-dependencies
+          zip -r ../${{ env.project-name }}-${{ env.assembly-version }}-dependencies.zip ./*
+          cd ..
+          echo "Generate unit-tests zip file"
+          mkdir ${{ env.project-name }}-unit-tests
+          mkdir ${{ env.project-name }}-unit-tests/debug
+          mkdir ${{ env.project-name }}-unit-tests/release
+          cp ./${{ env.project-name }}-Debug-unit-tests/* ${{ env.project-name }}-unit-tests/debug
+          cp ./${{ env.project-name }}-Release-unit-tests/* ${{ env.project-name }}-unit-tests/release
+          cd ${{ env.project-name }}-unit-tests
+          zip -r ../${{ env.project-name }}-unit-tests.zip ./*
+          cd ..
+
+      - name: Publish production release
+        uses: andelf/nightly-release@v1
+        if: inputs.is-production-release == true
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          tag_name: ${{ env.tag-name }}
+          name: '${{ env.project-name }} ${{ env.tag-name }}'
+          prerelease: true
+          body: |
+            ${{ env.project-name }} ${{ env.tag-name }}
+          files: |
+            ./${{ env.project-name }}-Release-wsp/${{ env.project-name }}.wsp
+            ./${{ env.project-name }}-${{ env.assembly-version }}-symbols.zip
+            ./${{ env.project-name }}-${{ env.assembly-version }}-dependencies.zip
+
+      - name: Publish nightly release
+        uses: andelf/nightly-release@v1
+        if: inputs.is-production-release == false
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          tag_name: nightly
+          name: 'Nightly Release $$'
+          prerelease: true
+          body: |
+            This is a nightly release, use it with caution **and do not deploy it in a production environment**
+          files: |
+            ./${{ env.project-name }}-Release-wsp/${{ env.project-name }}.wsp
+            ./${{ env.project-name }}-${{ env.assembly-version }}-symbols.zip
+            ./${{ env.project-name }}-${{ env.assembly-version }}-dependencies.zip
+            ./${{ env.project-name }}-unit-tests.zip

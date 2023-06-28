@@ -1,0 +1,41 @@
+name: Run integration tests
+on:
+  repository_dispatch:
+    types:
+      - start-workflow-run-tests
+  workflow_dispatch:
+    inputs:
+      sharepoint_versions:
+        description: 'SharePoint versions to deploy'
+        required: true
+        default: '["SE"]'
+      skip_create_environment:
+        description: 'Set to true to skip deployment of template and jump to artifacts installation'
+        required: true
+        default: false
+
+jobs:
+  call-workflow-prepare-dtl-env:
+    uses: Yvand/AzureCP/.github/workflows/reusable-prepare-dtl-env.yml@master
+    with:
+      project-name: ${{ vars.PROJECT_NAME }}
+      sharepoint-versions: ${{ inputs.sharepoint_versions }}
+      skip-create-environment: ${{ inputs.skip_create_environment == 'true' }}
+      dtl-serviceName: ${{ vars.dtl_serviceName }}
+      dtl-rgName: ${{ vars.dtl_rgName }}
+      dtl-environmentName: ${{ vars.dtl_environmentName }}
+      dtl-subscriptionId: ${{ vars.dtl_subscriptionId }}
+      azdevops-organizationName: ${{ vars.DTL_AZDEVOPSACCOUNT }}
+      dtl-env-adminUserName: ${{ vars.dtl_adminUserName }}
+      dtl-env-addPublicIPAddress: ${{ vars.dtl_addPublicIPAddress }}
+      dtl-env-rdpTrafficAllowed: ${{ vars.dtl_RDPTrafficAllowed }}
+      dtl-env-addAzureBastion: ${{ vars.dtl_addAzureBastion == 'true' }}
+      test-prepareSharePointVmScriptUris: ${{ vars.DTL_PrepareSharePointVmScriptUris }}
+      test-claimsProviderPackageUri: ${{ vars.DTL_ClaimsProviderPackageUri }}
+      unittestfiles-storageAccountSourceRelativePath: ${{ vars.unittestfiles_storageAccountSourceRelativePath }}
+    secrets:
+      AZURE_CREDENTIALS: ${{ secrets.AZURE_CREDENTIALS }}
+      azdevops-pat-registerAgent: ${{ secrets.dtl_azdevopsPassword }}
+      dtl-env-accountsPassword: ${{ secrets.dtl_accountsPassword }}
+      unittestfiles-storageAccountEndpoint: ${{ secrets.unittestfiles_storageAccountEndpoint }}
+      unittestfiles-storageAccountShareName: ${{ secrets.unittestfiles_storageAccountShareName }}

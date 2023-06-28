@@ -1,0 +1,168 @@
+name: Build (reusable)
+
+on:
+  workflow_call:
+    inputs:
+      project-name:
+        required: true
+        type: string
+      version-major-minor:
+        required: true
+        type: string
+      tag-commit:
+        default: false
+        type: boolean
+    secrets:
+      base64-encoded-signingkey:
+        required: true
+    outputs:
+      assembly-version:
+        description: "The full assembly version generated"
+        value: ${{ jobs.calculate-version.outputs.assembly-version }}
+      tag-name:
+        description: "The name of the tag, if it was set"
+        value: ${{ jobs.build.outputs.tag-commit }}
+jobs:
+  calculate-version:
+    runs-on: ubuntu-latest
+    outputs:
+      assembly-version: ${{ steps.set-version.outputs.assembly-version }}
+      year: ${{ steps.set-version.outputs.year }}
+    steps:
+    - name: set-version
+      id: set-version
+      run: |
+        echo "date=$(date +'%Y%m%d')" >> $GITHUB_OUTPUT
+        echo "year=$(date +'%Y')" >> $GITHUB_OUTPUT
+        echo "assembly-version=${{ inputs.version-major-minor }}.$(date +'%Y%m%d').${{ github.run_number }}" >> $GITHUB_OUTPUT
+        
+    - name: Show the version
+      run: |
+        echo "assembly-version: ${{steps.set-version.outputs.assembly-version}}"
+        echo "date: ${{steps.set-version.outputs.date}}"
+        echo "year: ${{steps.set-version.outputs.year}}"
+
+  build:
+    runs-on: windows-latest
+    needs: calculate-version
+    strategy:
+      matrix:
+        configuration: [Debug, Release]
+    outputs:
+      assembly-version: ${{ needs.calculate-version.outputs.assembly-version }}
+    env:
+      Solution_Name: ${{ inputs.project-name }}.sln
+      project-name: ${{ inputs.project-name }}
+      Project_Directory: ${{ inputs.project-name }}
+      Project_File_Path: ${{ inputs.project-name }}/${{ inputs.project-name }}.csproj
+
+    steps:
+    - name: Checkout
+      uses: actions/checkout@v3
+      with:
+        fetch-depth: 0
+        
+    - name: tag-commit
+      uses: actions/github-script@v6
+      if: inputs.tag-commit == true
+      result-encoding: string
+      with:
+        script: |
+            const { owner, repo } = context.repo;
+            const tagName = "v${{ needs.calculate-version.outputs.assembly-version }}";
+            const ref = `refs/tags/${tagName}`;
+            try {
+                console.log(`Create tag '${tagName}' on commit '${context.sha}'`);
+                github.rest.git.createRef({
+                  owner: owner,
+                  repo: repo,
+                  ref: ref,
+                  sha: context.sha
+                });
+            } catch (exception) {
+                console.log(`Could not set tag '${tagName}' to commit '${context.sha}' due to error: $(exception)`);
+                console.log(`Update tag '${tagName}' on commit '${context.sha}'`);
+                github.rest.git.updateRef({
+                  owner: owner,
+                  repo: repo,
+                  ref: ref,
+                  sha: context.sha
+                });
+            }
+            return tagName;
+
+    - name: Set assembly version
+      id: set-assembly-version
+      uses: Yvand/assemblyinfo-update@main
+      with:
+        version: "${{ needs.calculate-version.outputs.assembly-version }}" #"${{ inputs.version-major-minor }}.${{ steps.date.outputs.date }}"
+        directory: "${{ env.Project_Directory }}/Properties"
+        filename: 'AssemblyInfo.cs'
+        recursive: false
+        copyright: "Copyright © Yvan Duhamel $${{ needs.calculate-version.outputs.year }}"
+
+      
+    # Add MSBuild to the PATH: https://github.com/microsoft/setup-msbuild
+    - name: Setup MSBuild.exe
+      uses: microsoft/setup-msbuild@v1.3.1
+    
+    - name: Restore Packages
+      run: nuget restore $env:Solution_Name
+
+    # Decode the base 64 encoded signing key
+    # Key encoded using PowerShell Core:
+    # $cert = Get-Content "C:\...\key.snk" -AsByteStream -ReadCount 
+    # [System.Convert]::ToBase64String($cert) | Out-File "C:\...\key_b64Encoded.txt"
+    - name: Decode the signing key
+      run: |
+        $data = [System.Convert]::FromBase64String("${{ secrets.base64-encoded-signingkey }}")
+        $certificatePath = Join-Path -Path $env:Project_Directory -ChildPath "${{ env.project-name }}.snk"
+        [IO.File]::WriteAllBytes($certificatePath, $data)
+
+    # Build the application
+    - name: Build the application and create the solution package
+      run: msbuild $env:Solution_Name /p:Configuration=$env:Configuration /p:IsPackaging=true /p:platform="Any CPU"
+      env:
+        Configuration: ${{ matrix.configuration }}
+
+    - name: Remove the signing key
+      run: Remove-Item -path "${{ env.Project_Directory }}/${{ env.project-name }}.snk"
+
+    - name: Upload artifact - wsp solution
+      uses: actions/upload-artifact@v3
+      with:
+        name: "${{ env.project-name }}-${{ env.Configuration }}-wsp"
+        path: "${{ env.Project_Directory }}/bin/${{ env.Configuration }}/${{ env.project-name }}.wsp"
+        if-no-files-found: error
+      env:
+        Configuration: ${{ matrix.configuration }}
+        
+    - name: Upload artifact - dependencies
+      uses: actions/upload-artifact@v3
+      with:
+        name: "${{ env.project-name }}-${{ env.Configuration }}-dependencies"
+        path: "${{ env.Project_Directory }}/bin/${{ env.Configuration }}/*.dll"
+        if-no-files-found: error
+      env:
+        Configuration: ${{ matrix.configuration }}
+        
+    - name: Upload artifact - symbols
+      uses: actions/upload-artifact@v3
+      with:
+        name: "${{ env.project-name }}-${{ env.Configuration }}-symbols"
+        path: |
+            ${{ env.Project_Directory }}/bin/${{ env.Configuration }}/${{ env.project-name }}.dll
+            ${{ env.Project_Directory }}/bin/${{ env.Configuration }}/${{ env.project-name }}.pdb
+            ${{ env.Project_Directory }}/bin/${{ env.Configuration }}/${{ env.project-name }}.wsp
+        if-no-files-found: error
+      env:
+        Configuration: ${{ matrix.configuration }}
+        
+    - name: Upload artifact - unit tests
+      uses: actions/upload-artifact@v3
+      with:
+        name: "${{ env.project-name }}-${{ env.Configuration }}-unit-tests"
+        path: "${{ env.Project_Directory }}.Tests/bin/${{ env.Configuration }}/*.dll"
+        if-no-files-found: error
+      env:
+        Configuration: ${{ matrix.configuration }}
