@@ -67,14 +67,12 @@ jobs:
           cd ..
 
       - name: Publish production release
-        uses: andelf/nightly-release@v1
-        if: inputs.is-production-release == true
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        uses: softprops/action-gh-release@v1
+        if: startsWith(github.ref, 'refs/tags/v')
         with:
-          tag_name: ${{ env.tag-name }}
           name: '${{ env.project-name }} ${{ env.tag-name }}'
           prerelease: true
+          draft: true
           body: |
             ${{ env.project-name }} ${{ env.tag-name }}
           files: |

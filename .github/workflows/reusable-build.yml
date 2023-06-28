@@ -21,7 +21,7 @@ on:
         value: ${{ jobs.calculate-version.outputs.assembly-version }}
       tag-name:
         description: "The name of the tag, if it was set"
-        value: ${{ jobs.build.tag-if-needed.tag-name }}
+        value: ${{ jobs.build.tag-if-needed.outputs.tag-name }}
 jobs:
   calculate-version:
     runs-on: ubuntu-latest
