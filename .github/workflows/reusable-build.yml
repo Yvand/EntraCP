@@ -65,8 +65,8 @@ jobs:
     - name: tag-commit
       uses: actions/github-script@v6
       if: inputs.tag-commit == true
-      result-encoding: string
       with:
+        result-encoding: string
         script: |
             const { owner, repo } = context.repo;
             const tagName = "v${{ needs.calculate-version.outputs.assembly-version }}";
