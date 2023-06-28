@@ -80,6 +80,7 @@ jobs:
                   sha: context.sha
                 });
             }
+            console.log(`tagName: '${tagName}'`);
             return `${tagName}`;
   
   build:
