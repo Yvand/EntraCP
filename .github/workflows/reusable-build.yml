@@ -80,7 +80,7 @@ jobs:
                   sha: context.sha
                 });
             }
-            echo "tagName2=test" >> $GITHUB_OUTPUT
+            //echo "tagName2=test" >> $GITHUB_OUTPUT
             console.log(`tagName: '${tagName}'`);
             core.setOutput("tagName", tagName);
             return "anothertest";
