@@ -88,7 +88,7 @@ jobs:
     - name: debug
       run: |
         echo "outputs.tagName: ${{ steps.tag-commit.outputs.tagName }}"
-        echo "outputs.tagName2: ${{ steps.tag-commit.outputs.tagName }}"
+        echo "outputs.tagName2: ${{ steps.tag-commit.outputs.tagName2 }}"
         echo "outputs.result: ${{ steps.tag-commit.outputs.result }}"
   
   build:
