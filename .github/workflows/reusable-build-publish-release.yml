@@ -73,6 +73,7 @@ jobs:
           name: '${{ env.project-name }} ${{ env.tag-name }}'
           prerelease: true
           draft: true
+          tag_name: ${{ env.tag-name }}
           body: |
             ${{ env.project-name }} ${{ env.tag-name }}
           files: |
