@@ -58,7 +58,9 @@ jobs:
     - name: tag-commit
       uses: actions/github-script@v6
       with:
+        result-encoding: string
         script: |
+            return "hello";
             const { owner, repo } = context.repo;
             const tagName = "v${{ needs.calculate-version.outputs.assembly-version }}";
             const ref = `refs/tags/${tagName}`;
@@ -89,7 +91,7 @@ jobs:
       run: |
         echo "outputs.tagName: ${{ steps.tag-commit.outputs.tagName }}"
         echo "outputs.tagName2: ${{ steps.tag-commit.outputs.tagName2 }}"
-        echo "outputs.result: ${{ steps.tag-commit.outputs.result }}"
+        echo "outputs.result: ${{steps.tag-commit.outputs.result}}"
   
   build:
     runs-on: windows-latest
