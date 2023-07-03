@@ -82,8 +82,8 @@ jobs:
                 });
             }
             console.log(`tagName: '${tagName}'`);
-            core.setOutput("tagName", tagName);
-            return tagName;
+            core.setOutput("tagName", '${tagName}');
+            return '${tagName}';
     
     - name: debug
       run: |
