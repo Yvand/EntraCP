@@ -48,7 +48,6 @@ jobs:
     needs: calculate-version
     outputs:
       tag-name: ${{ steps.tag-commit.outputs.tagName }}
-      tag-name-test: ${{ steps.tag-commit.outputs.result }}
     steps:
     - name: Checkout
       uses: actions/checkout@v3
@@ -84,12 +83,6 @@ jobs:
             }
             console.log(`tagName: '${tagName}'`);
             core.setOutput("tagName", tagName);
-            return tagName;
-    
-    - name: debug
-      run: |
-        echo "outputs.tagName: ${{ steps.tag-commit.outputs.tagName }}"
-        echo "outputs.result: ${{steps.tag-commit.outputs.result}}"
   
   build:
     runs-on: windows-latest
