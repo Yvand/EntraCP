@@ -44,8 +44,8 @@ jobs:
 
   tag-if-needed:
     runs-on: ubuntu-latest
-    needs: calculate-version
     if: inputs.tag-commit == true
+    needs: calculate-version
     outputs:
       tag-name: ${{ steps.tag-commit.outputs.tagName }}
       tag-name-test: ${{ steps.tag-commit.outputs.result }}
@@ -84,6 +84,11 @@ jobs:
             console.log(`tagName: '${tagName}'`);
             core.setOutput("tagName", tagName);
             return tagName;
+    
+    - name: debug
+        run: |
+          echo "outputs.tagName: ${{ steps.tag-commit.outputs.tagName }}"
+          echo "outputs.result: ${{ steps.tag-commit.outputs.result }}"
   
   build:
     runs-on: windows-latest
