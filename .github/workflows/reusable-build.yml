@@ -86,9 +86,9 @@ jobs:
             return tagName;
     
     - name: debug
-        run: |
-          echo "outputs.tagName: ${{ steps.tag-commit.outputs.tagName }}"
-          echo "outputs.result: ${{ steps.tag-commit.outputs.result }}"
+      run: |
+        echo "outputs.tagName: ${{ steps.tag-commit.outputs.tagName }}"
+        echo "outputs.result: ${{ steps.tag-commit.outputs.result }}"
   
   build:
     runs-on: windows-latest
