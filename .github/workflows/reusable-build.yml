@@ -54,22 +54,13 @@ jobs:
       uses: actions/checkout@v3
       with:
         fetch-depth: 0
-    
-    - uses: actions/github-script@v6
-      id: set-result
-      with:
-        script: return "Hello!"
-        result-encoding: string
 
-    - name: Get result
-      run: echo "${{steps.set-result.outputs.result}}"
-    
-    - name: tag-commit
+    - name: Tag commit
+      id: tag-commit
       uses: actions/github-script@v6
       with:
         result-encoding: string
         script: |
-            return "hello";
             const { owner, repo } = context.repo;
             const tagName = "v${{ needs.calculate-version.outputs.assembly-version }}";
             const ref = `refs/tags/${tagName}`;
@@ -91,15 +82,13 @@ jobs:
                   sha: context.sha
                 });
             }
-            //echo "tagName2=test" >> $GITHUB_OUTPUT
             console.log(`tagName: '${tagName}'`);
             core.setOutput("tagName", tagName);
-            return "anothertest";
+            return tagName;
     
     - name: debug
       run: |
         echo "outputs.tagName: ${{ steps.tag-commit.outputs.tagName }}"
-        echo "outputs.tagName2: ${{ steps.tag-commit.outputs.tagName2 }}"
         echo "outputs.result: ${{steps.tag-commit.outputs.result}}"
   
   build:
