@@ -58,7 +58,6 @@ jobs:
     - name: tag-commit
       uses: actions/github-script@v6
       with:
-        result-encoding: string
         script: |
             const { owner, repo } = context.repo;
             const tagName = "v${{ needs.calculate-version.outputs.assembly-version }}";
@@ -82,8 +81,8 @@ jobs:
                 });
             }
             console.log(`tagName: '${tagName}'`);
-            core.setOutput("tagName", '${tagName}');
-            return '${tagName}';
+            core.setOutput("tagName", tagName);
+            return `${tagName}`;
     
     - name: debug
       run: |
