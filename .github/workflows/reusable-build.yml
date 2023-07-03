@@ -80,13 +80,15 @@ jobs:
                   sha: context.sha
                 });
             }
+            echo "tagName2=test" >> $GITHUB_OUTPUT
             console.log(`tagName: '${tagName}'`);
             core.setOutput("tagName", tagName);
-            return `${tagName}`;
+            return "anothertest";
     
     - name: debug
       run: |
         echo "outputs.tagName: ${{ steps.tag-commit.outputs.tagName }}"
+        echo "outputs.tagName2: ${{ steps.tag-commit.outputs.tagName }}"
         echo "outputs.result: ${{ steps.tag-commit.outputs.result }}"
   
   build:
