@@ -309,11 +309,17 @@ namespace azurecp.ControlTemplates
                 // Ensure property exists for the current object type
                 if (azureObject.Value.EntityType == DirectoryObjectType.User)
                 {
-                    if (AzureCP.GetPropertyValue(new User(), prop.ToString()) == null) { continue; }
+                    if (AzureCP.GetPropertyValue(new User(), prop.ToString()) == null)
+                    {
+                        continue;
+                    }
                 }
                 else
                 {
-                    if (AzureCP.GetPropertyValue(new Group(), prop.ToString()) == null) { continue; }
+                    if (AzureCP.GetPropertyValue(new Group(), prop.ToString()) == null) 
+                    { 
+                        continue; 
+                    }
                 }
 
                 graphPropertySelected = azureObject.Value.DirectoryObjectProperty == prop ? "selected" : String.Empty;

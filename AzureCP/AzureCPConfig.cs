@@ -4,10 +4,12 @@ using Microsoft.SharePoint;
 using Microsoft.SharePoint.Administration;
 using Microsoft.SharePoint.Administration.Claims;
 using Microsoft.SharePoint.WebControls;
+using Microsoft.Web.Hosting.Administration;
 using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Diagnostics;
+using System.IO;
 using System.Linq;
 using System.Reflection;
 using System.Security.Cryptography;
@@ -743,6 +745,18 @@ namespace azurecp
         [Persisted]
         private bool ExcludeGuestUsers = false;
 
+        /// <summary>
+        /// Client ID of AD Connect used in extension attribues
+        /// </summary>
+        [Persisted]
+        private Guid ExtensionAttributesApplicationIdPersisted;
+
+        public Guid ExtensionAttributesApplicationId
+        {
+            get => ExtensionAttributesApplicationIdPersisted;
+            set => ExtensionAttributesApplicationIdPersisted = value;
+        }
+
         public X509Certificate2 ClientCertificatePrivateKey
         {
             get
@@ -752,17 +766,17 @@ namespace azurecp
             set
             {
                 if (value == null) { return; }
+                m_ClientCertificatePrivateKey = value;
                 try
                 {
-                    // To get the raw data with the private key, it is required to call method Export() instead of just reading the property RawData
-                    // If the certificate submitted does not have its private key exportable, Export() will throw a CryptographicException "Key not valid for use in specified state."
-                    m_ClientCertificatePrivateKeyRawData = value.Export(X509ContentType.Pkcs12, ClaimsProviderConstants.ClientCertificatePrivateKeyPassword);
-                    m_ClientCertificatePrivateKey = value;
+                    // https://stackoverflow.com/questions/32354790/how-to-check-is-x509certificate2-exportable-or-not
+                    m_ClientCertificatePrivateKeyRawData = value.Export(X509ContentType.Pfx, ClaimsProviderConstants.ClientCertificatePrivateKeyPassword);
                 }
                 catch (CryptographicException ex)
                 {
-                    ClaimsProviderLogging.LogException(AzureCP._ProviderInternalName, $"while setting the certificate for tenant '{this.Name}'. Is the private key of the certificate exportable?", TraceCategory.Core, ex);
-                    throw;  // The caller should be informed that the certificate could not be set
+                    // X509Certificate2.Export() is expected to fail if the private key is not exportable, which depends on the X509KeyStorageFlags used when creating the X509Certificate2 object
+                    //ClaimsProviderLogging.LogException(AzureCP._ProviderInternalName, $"while setting the certificate for tenant '{this.Name}'. Is the private key of the certificate exportable?", TraceCategory.Core, ex);
+                    //throw;  // The caller should be informed that the certificate could not be set
                 }
             }
         }
@@ -781,7 +795,7 @@ namespace azurecp
         public AzureCloudInstance CloudInstance
         {
             get => (AzureCloudInstance)Enum.Parse(typeof(AzureCloudInstance), m_CloudInstance);
-            set => m_CloudInstance =  value.ToString();
+            set => m_CloudInstance = value.ToString();
         }
         [Persisted]
         private string m_CloudInstance = AzureCloudInstance.AzurePublic.ToString();
@@ -808,8 +822,8 @@ namespace azurecp
             {
                 try
                 {
-                    // Flag UserKeySet avoid access denied error. Flag Exportable allows to export the certificate with its private key
-                    m_ClientCertificatePrivateKey = new X509Certificate2(m_ClientCertificatePrivateKeyRawData, ClaimsProviderConstants.ClientCertificatePrivateKeyPassword, X509KeyStorageFlags.Exportable | X509KeyStorageFlags.UserKeySet);
+                    // EphemeralKeySet: Keep the private key in-memory, it won't be written to disk - https://www.pkisolutions.com/handling-x509keystorageflags-in-applications/
+                    m_ClientCertificatePrivateKey = ImportPfxCertificateBlob(m_ClientCertificatePrivateKeyRawData, ClaimsProviderConstants.ClientCertificatePrivateKeyPassword, X509KeyStorageFlags.EphemeralKeySet);
                 }
                 catch (CryptographicException ex)
                 {
@@ -906,6 +920,31 @@ namespace azurecp
             this.ApplicationId = applicationId;
             this.ApplicationSecret = String.Empty;
             this.ClientCertificatePrivateKey = certificate;
+        }
+
+        /// <summary>
+        /// Import the input blob certificate into a pfx X509Certificate2 object
+        /// </summary>
+        /// <param name="blob"></param>
+        /// <param name="certificatePassword"></param>
+        /// <param name="keyStorageFlags"></param>
+        /// <returns></returns>
+        public static X509Certificate2 ImportPfxCertificateBlob(byte[] blob, string certificatePassword, X509KeyStorageFlags keyStorageFlags)
+        {
+            if (X509Certificate2.GetCertContentType(blob) != X509ContentType.Pfx)
+            {
+                return null;
+            }
+
+            if (String.IsNullOrWhiteSpace(certificatePassword))
+            {
+                // If passwordless, import private key as documented in https://support.microsoft.com/en-us/topic/kb5025823-change-in-how-net-applications-import-x-509-certificates-bf81c936-af2b-446e-9f7a-016f4713b46b
+                return new X509Certificate2(blob, (string)null, keyStorageFlags);
+            }
+            else
+            {
+                return new X509Certificate2(blob, certificatePassword, keyStorageFlags);
+            }
         }
     }
 
@@ -1180,7 +1219,22 @@ namespace azurecp
         AboutMe,
         MySite,
         PreferredName,
-        ODataType
+        ODataType,
+        extensionAttribute1,
+        extensionAttribute2,
+        extensionAttribute3,
+        extensionAttribute4,
+        extensionAttribute5,
+        extensionAttribute6,
+        extensionAttribute7,
+        extensionAttribute8,
+        extensionAttribute9,
+        extensionAttribute10,
+        extensionAttribute11,
+        extensionAttribute12,
+        extensionAttribute13,
+        extensionAttribute14,
+        extensionAttribute15
     }
 
     public enum DirectoryObjectType

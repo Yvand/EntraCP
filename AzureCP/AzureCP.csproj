@@ -65,16 +65,20 @@
     <Compile Include="AzureCP.cs" />
     <Compile Include="AzureCPConfig.cs" />
     <Compile Include="AzureCPLogging.cs" />
-    <Compile Include="AzureCPUserControl.cs" />
+    <Compile Include="AzureCPUserControl.cs">
+      <SubType>ASPXCodeBehind</SubType>
+    </Compile>
     <Compile Include="ClaimTypeConfig.cs" />
     <Compile Include="TEMPLATE\ADMIN\AzureCP\ClaimTypesConfig.ascx.cs">
       <DependentUpon>ClaimTypesConfig.ascx</DependentUpon>
+      <SubType>ASPXCodeBehind</SubType>
     </Compile>
     <Compile Include="TEMPLATE\ADMIN\AzureCP\ClaimTypesConfig.ascx.designer.cs">
       <DependentUpon>ClaimTypesConfig.ascx.cs</DependentUpon>
     </Compile>
     <Compile Include="TEMPLATE\ADMIN\AzureCP\AzureCPGlobalSettings.ascx.cs">
       <DependentUpon>AzureCPGlobalSettings.ascx</DependentUpon>
+      <SubType>ASPXCodeBehind</SubType>
     </Compile>
     <Compile Include="TEMPLATE\ADMIN\AzureCP\AzureCPGlobalSettings.ascx.designer.cs">
       <DependentUpon>AzureCPGlobalSettings.ascx.cs</DependentUpon>
@@ -89,6 +93,7 @@
       <SharePointProjectItemId>{c15a0bf3-126a-42e6-af6b-5880f2e9af42}</SharePointProjectItemId>
     </None>
     <None Include="AzureCP.snk" />
+    <None Include="AzureCPKrueger.snk" />
     <None Include="Features\AzureCP\AzureCP.feature">
       <FeatureId>{70b104e2-19df-4cb1-9802-c98eaf14d84e}</FeatureId>
     </None>

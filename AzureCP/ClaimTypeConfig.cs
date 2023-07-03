@@ -70,6 +70,23 @@ namespace azurecp
         [Persisted]
         private int _DirectoryObjectType;
 
+        /// <summary>
+        /// Set if this will create a User or a Group permission. Values allowed are "User" or "FormsRole"
+        /// </summary>
+        public string SharePointEntityType
+        {
+            get { return _SharePointEntityType; }
+            set
+            {
+                if (String.Equals(value, "User", StringComparison.CurrentCultureIgnoreCase) || String.Equals(value, ClaimsProviderConstants.GroupClaimEntityType, StringComparison.CurrentCultureIgnoreCase))
+                {
+                    _SharePointEntityType = value;
+                }
+            }
+        }
+        [Persisted]
+        private string _SharePointEntityType;
+
         public string ClaimType
         {
             get { return _ClaimType; }
@@ -206,9 +223,14 @@ namespace azurecp
         /// <param name="configToApply"></param>
         internal void ApplyConfiguration(ClaimTypeConfig configToApply)
         {
-            // Copy non-inherited private fields
-            FieldInfo[] fieldsToCopy = this.GetType().GetFields(BindingFlags.NonPublic | BindingFlags.Instance | BindingFlags.DeclaredOnly);
-            foreach (FieldInfo field in fieldsToCopy)
+            // Copy non-inherited private fields of type ClaimTypeConfig, and also IdentityClaimTypeConfig if current object is of this type
+            List<FieldInfo> fieldsToCopyList = new List<FieldInfo>();
+            fieldsToCopyList.AddRange(typeof(ClaimTypeConfig).GetFields(BindingFlags.NonPublic | BindingFlags.Instance | BindingFlags.DeclaredOnly));
+            if (this is IdentityClaimTypeConfig == true)
+            {
+                fieldsToCopyList.AddRange(this.GetType().GetFields(BindingFlags.NonPublic | BindingFlags.Instance | BindingFlags.DeclaredOnly));
+            }
+            foreach (FieldInfo field in fieldsToCopyList)
             {
                 field.SetValue(this, field.GetValue(configToApply));
             }
