@@ -55,6 +55,15 @@ jobs:
       with:
         fetch-depth: 0
     
+    - uses: actions/github-script@v6
+      id: set-result
+      with:
+        script: return "Hello!"
+        result-encoding: string
+
+    - name: Get result
+      run: echo "${{steps.set-result.outputs.result}}"
+    
     - name: tag-commit
       uses: actions/github-script@v6
       with:
