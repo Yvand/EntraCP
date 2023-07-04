@@ -1,6 +1,6 @@
 # Change log for AzureCP
 
-## AzureCP 21.0
+## AzureCP v21.0.20230703.25 enhancements & bug-fixes - Published in July 3, 2023
 
 * Fixed "Unsupported or invalid query filter" when AzureCP queries some properties like 'companyName' - (https://github.com/Yvand/AzureCP/pull/172 and https://github.com/Yvand/AzureCP/pull/177)
 * Add support for extension attributes ([#174](https://github.com/Yvand/AzureCP/pull/174))
