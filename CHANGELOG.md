@@ -6,6 +6,7 @@
 * Update reference on Microsoft.SharePoint.dll to use the one published with SharePoint Subscription RTM (https://github.com/Yvand/AzureCP/pull/184)
 * Update minimum SharePoint Product Version from 15.0 to 16.0 (https://github.com/Yvand/AzureCP/pull/184)
 * Change the deployment server type of the wsp solution to "ApplicationServer" (https://github.com/Yvand/AzureCP/pull/185)
+* Update Microsoft.Identity.Client (MSAL.NET) from 4.42.1 to 4.54.1
 
 ## AzureCP v21.0.20230703.25 enhancements & bug-fixes - Published in July 3, 2023
 
