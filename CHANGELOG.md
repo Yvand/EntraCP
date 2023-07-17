@@ -2,9 +2,9 @@
 
 ## Unreleased
 
-* Update .NET Framework dependency to .NET 4.8
-* Update reference on Microsoft.SharePoint.dll to use the one published with SharePoint Subscription RTM
-* Update minimum SharePoint Product Version from 15.0 to 16.0
+* Update .NET Framework dependency to .NET 4.8 (https://github.com/Yvand/AzureCP/pull/184)
+* Update reference on Microsoft.SharePoint.dll to use the one published with SharePoint Subscription RTM (https://github.com/Yvand/AzureCP/pull/184)
+* Update minimum SharePoint Product Version from 15.0 to 16.0 (https://github.com/Yvand/AzureCP/pull/184)
 
 ## AzureCP v21.0.20230703.25 enhancements & bug-fixes - Published in July 3, 2023
 
