@@ -1,5 +1,5 @@
 ﻿<?xml version="1.0" encoding="utf-8"?>
-<package xmlns:dm0="http://schemas.microsoft.com/VisualStudio/2008/DslTools/Core" dslVersion="1.0.0.0" Id="1db45b9b-2fff-4f07-992b-344dde907316" solutionId="1db45b9b-2fff-4f07-992b-344dde907316" resetWebServer="false" title="Azure AD Claims Provider" sharePointProductVersion="16.0" name="AzureCP" xmlns="http://schemas.microsoft.com/VisualStudio/2008/SharePointTools/PackageModel">
+<package xmlns:dm0="http://schemas.microsoft.com/VisualStudio/2008/DslTools/Core" dslVersion="1.0.0.0" Id="1db45b9b-2fff-4f07-992b-344dde907316" solutionId="1db45b9b-2fff-4f07-992b-344dde907316" resetWebServer="true" deploymentServerType="ApplicationServer" title="Azure AD Claims Provider" sharePointProductVersion="16.0" name="AzureCP" xmlns="http://schemas.microsoft.com/VisualStudio/2008/SharePointTools/PackageModel">
   <assemblies>
     <customAssembly location="Microsoft.Graph.Core.dll" deploymentTarget="GlobalAssemblyCache" sourcePath="bin\Microsoft.Graph.Core.dll" />
     <customAssembly location="Microsoft.Graph.dll" deploymentTarget="GlobalAssemblyCache" sourcePath="bin\Microsoft.Graph.dll" />
