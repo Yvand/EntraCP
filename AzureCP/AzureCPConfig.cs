@@ -1,5 +1,6 @@
-﻿using Microsoft.Graph;
-using Microsoft.Identity.Client;
+﻿using Azure.Core;
+using Azure.Identity;
+using Microsoft.Graph;
 using Microsoft.SharePoint;
 using Microsoft.SharePoint.Administration;
 using Microsoft.SharePoint.Administration.Claims;
@@ -12,6 +13,7 @@ using System.Diagnostics;
 using System.IO;
 using System.Linq;
 using System.Reflection;
+using System.Runtime;
 using System.Security.Cryptography;
 using System.Security.Cryptography.X509Certificates;
 using System.Web;
@@ -20,6 +22,30 @@ using WIF4_5 = System.Security.Claims;
 
 namespace azurecp
 {
+    public enum AzureCloudInstance
+    {
+        //
+        // Summary:
+        //     Value communicating that the AzureCloudInstance is not specified.
+        None,
+        //
+        // Summary:
+        //     Microsoft Azure public cloud. Maps to https://login.microsoftonline.com
+        AzurePublic,
+        //
+        // Summary:
+        //     Microsoft Chinese national cloud. Maps to https://login.chinacloudapi.cn
+        AzureChina,
+        //
+        // Summary:
+        //     Microsoft German national cloud ("Black Forest"). Maps to https://login.microsoftonline.de
+        AzureGermany,
+        //
+        // Summary:
+        //     US Government cloud. Maps to https://login.microsoftonline.us
+        AzureUsGovernment
+    }
+
     public interface IAzureCPConfiguration
     {
         List<AzureTenant> AzureTenants { get; set; }
@@ -45,13 +71,13 @@ namespace azurecp
         /// <summary>
         /// List of Microsoft Graph service root endpoints based on National Cloud as described on https://docs.microsoft.com/en-us/graph/deployments
         /// </summary>
-        public static List<KeyValuePair<AzureCloudInstance, string>> AzureCloudEndpoints = new List<KeyValuePair<AzureCloudInstance, string>>()
+        public static List<KeyValuePair<AzureCloudInstance, Uri>> AzureCloudEndpoints = new List<KeyValuePair<AzureCloudInstance, Uri>>()
         {
-            new KeyValuePair<AzureCloudInstance, string>(AzureCloudInstance.AzurePublic, "https://graph.microsoft.com"),
-            new KeyValuePair<AzureCloudInstance, string>(AzureCloudInstance.AzureChina, "https://microsoftgraph.chinacloudapi.cn"),
-            new KeyValuePair<AzureCloudInstance, string>(AzureCloudInstance.AzureGermany, "https://graph.microsoft.de"),
-            new KeyValuePair<AzureCloudInstance, string>(AzureCloudInstance.AzureUsGovernment, "https://graph.microsoft.us"),
-            new KeyValuePair<AzureCloudInstance, string>(AzureCloudInstance.None, "https://graph.microsoft.com"),
+            new KeyValuePair<AzureCloudInstance, Uri>(AzureCloudInstance.AzurePublic, new Uri("https://graph.microsoft.com")),
+            new KeyValuePair<AzureCloudInstance, Uri>(AzureCloudInstance.AzureChina, new Uri("https://microsoftgraph.chinacloudapi.cn")),
+            new KeyValuePair<AzureCloudInstance, Uri>(AzureCloudInstance.AzureGermany, new Uri("https://graph.microsoft.de")),
+            new KeyValuePair<AzureCloudInstance, Uri>(AzureCloudInstance.AzureUsGovernment, new Uri("https://graph.microsoft.us")),
+            new KeyValuePair<AzureCloudInstance, Uri>(AzureCloudInstance.None, new Uri("https://graph.microsoft.com")),
         };
         public static string GroupClaimEntityType { get; set; } = SPClaimEntityTypes.FormsRole;
         public static bool EnforceOnly1ClaimTypeForGroup => true;     // In AzureCP, only 1 claim type can be used to create group permissions
@@ -803,7 +829,7 @@ namespace azurecp
         /// <summary>
         /// Instance of the IAuthenticationProvider class for this specific Azure AD tenant
         /// </summary>
-        private AADAppOnlyAuthenticationProvider AuthenticationProvider { get; set; }
+        //private AADAppOnlyAuthenticationProvider AuthenticationProvider { get; set; }
 
         public GraphServiceClient GraphService { get; set; }
 
@@ -835,21 +861,29 @@ namespace azurecp
         /// <summary>
         /// Set properties AuthenticationProvider and GraphService
         /// </summary>
-        public void SetAzureADContext(string claimsProviderName, int timeout)
+        public void InitializeGraphForAppOnlyAuth(string claimsProviderName, int timeout)
         {
             try
             {
+                TokenCredential tokenCredential;
+                TokenCredentialOptions tokenCredentialOptions = new TokenCredentialOptions();
+                tokenCredentialOptions.AuthorityHost = ClaimsProviderConstants.AzureCloudEndpoints.SingleOrDefault(kvp => kvp.Key == this.CloudInstance).Value;
+
                 if (!String.IsNullOrWhiteSpace(ClientSecret))
                 {
-                    this.AuthenticationProvider = new AADAppOnlyAuthenticationProvider(this.CloudInstance, this.Name, this.ApplicationId, this.ApplicationSecret, claimsProviderName, timeout);
+                    //this.AuthenticationProvider = new AADAppOnlyAuthenticationProvider(this.CloudInstance, this.Name, this.ApplicationId, this.ApplicationSecret, claimsProviderName, timeout);
+                    tokenCredential = new ClientSecretCredential(this.Name, this.ApplicationId, this.ApplicationSecret, tokenCredentialOptions);
                 }
                 else
                 {
-                    this.AuthenticationProvider = new AADAppOnlyAuthenticationProvider(this.CloudInstance, this.Name, this.ApplicationId, this.ClientCertificatePrivateKey, claimsProviderName, timeout);
+                    //this.AuthenticationProvider = new AADAppOnlyAuthenticationProvider(this.CloudInstance, this.Name, this.ApplicationId, this.ClientCertificatePrivateKey, claimsProviderName, timeout);
+                    tokenCredential = new ClientCertificateCredential(this.Name, this.ApplicationId, this.ClientCertificatePrivateKey, tokenCredentialOptions);
                 }
-                UriBuilder graphUriBuilder = new UriBuilder(this.AuthenticationProvider.GraphServiceEndpoint);
-                graphUriBuilder.Path = $"/{ClaimsProviderConstants.GraphServiceEndpointVersion}";
-                this.GraphService = new GraphServiceClient(graphUriBuilder.ToString(), this.AuthenticationProvider);
+                this.GraphService = new GraphServiceClient(tokenCredential);
+                //UriBuilder graphUriBuilder = new UriBuilder(this.AuthenticationProvider.GraphServiceEndpoint);
+                //graphUriBuilder.Path = $"/{ClaimsProviderConstants.GraphServiceEndpointVersion}";
+                //this.GraphService = new GraphServiceClient(graphUriBuilder.ToString(), this.AuthenticationProvider);
+
             }
             catch (Exception ex)
             {

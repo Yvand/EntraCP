@@ -1,4 +1,5 @@
 ﻿using Microsoft.Graph;
+using Microsoft.Graph.Models;
 using Microsoft.SharePoint.Administration;
 using Microsoft.SharePoint.Administration.Claims;
 using Microsoft.SharePoint.Utilities;
@@ -14,6 +15,7 @@ using System.Threading;
 using System.Threading.Tasks;
 using System.Web;
 using static azurecp.ClaimsProviderLogging;
+using static Microsoft.Graph.DeviceManagement.ManagedDevices.Item.Users.UsersRequestBuilder;
 using WIF4_5 = System.Security.Claims;
 
 /*
@@ -206,7 +208,7 @@ namespace azurecp
                     // Set properties AuthenticationProvider and GraphService
                     foreach (var tenant in this.CurrentConfiguration.AzureTenants)
                     {
-                        tenant.SetAzureADContext(ProviderInternalName, this.CurrentConfiguration.Timeout);
+                        tenant.InitializeGraphForAppOnlyAuth(ProviderInternalName, this.CurrentConfiguration.Timeout);
                     }
                     success = this.InitializeClaimTypeConfigList(this.CurrentConfiguration.ClaimTypes);
                 }
@@ -414,7 +416,7 @@ namespace azurecp
                     var returnString = string.Empty;
                     if (directoryObject is User)
                     {
-                        var userobject = (Microsoft.Graph.User)directoryObject;
+                        var userobject = (User)directoryObject;
                         if (userobject.AdditionalData != null)
                         {
                             var obj = userobject.AdditionalData.FirstOrDefault(s => s.Key.EndsWith(propertyName));
@@ -430,7 +432,7 @@ namespace azurecp
                     }
                     else if (directoryObject is Group)
                     {
-                        var groupobject = (Microsoft.Graph.Group)directoryObject;
+                        var groupobject = (Group)directoryObject;
                         if (groupobject.AdditionalData != null)
                         {
                             var obj = groupobject.AdditionalData.FirstOrDefault(s => s.Key.EndsWith(propertyName));
@@ -830,14 +832,17 @@ namespace azurecp
             string filter = HttpUtility.UrlEncode($"{currentContext.IncomingEntityClaimTypeConfig.DirectoryObjectProperty} eq '{currentContext.IncomingEntity.Value}'");
 
             // Do this operation in a try/catch, so if current tenant throws an exception (e.g. secret is expired), execution can still continue for other tenants
-            IGraphServiceUsersCollectionPage userResult = null;
+            UserCollectionResponse userResult = null;
             try
             {
                 // https://github.com/Yvand/AzureCP/issues/78
                 // In this method, awaiting on the async task hangs in some scenario (reproduced only in multi-server 2019 farm in the w3wp of a site while using "check permissions" feature)
                 // Workaround: Instead of awaiting on the async task directly, run it in a parent task, and await on the parent task.
                 // userResult = await tenant.GraphService.Users.Request().Filter(filter).GetAsync().ConfigureAwait(false);
-                userResult = await Task.Run(() => tenant.GraphService.Users.Request().Filter(filter).GetAsync()).ConfigureAwait(false);
+                userResult = await Task.Run(() => tenant.GraphService.Users.GetAsync((config) =>
+                {
+                    config.QueryParameters.Filter = filter;
+                })).ConfigureAwait(false);
             }
             catch (Exception ex)
             {
@@ -845,14 +850,20 @@ namespace azurecp
                 return claims;
             }
 
-            User user = userResult.FirstOrDefault();
+            // https://learn.microsoft.com/en-us/dotnet/csharp/language-reference/operators/member-access-operators#null-conditional-operators--and-
+            User user = userResult?.Value?.FirstOrDefault();
             if (user == null)
             {
                 // If user was not found, he might be a Guest user. Query to check this: /users?$filter=userType eq 'Guest' and mail eq 'guest@live.com'&$select=userPrincipalName, Id
                 string guestFilter = HttpUtility.UrlEncode($"userType eq 'Guest' and {IdentityClaimTypeConfig.DirectoryObjectPropertyForGuestUsers} eq '{currentContext.IncomingEntity.Value}'");
                 //userResult = await tenant.GraphService.Users.Request().Filter(guestFilter).Select(HttpUtility.UrlEncode("userPrincipalName, Id")).GetAsync().ConfigureAwait(false);
-                userResult = await Task.Run(() => tenant.GraphService.Users.Request().Filter(guestFilter).Select(HttpUtility.UrlEncode("userPrincipalName, Id")).GetAsync()).ConfigureAwait(false);
-                user = userResult.FirstOrDefault();
+                //userResult = await Task.Run(() => tenant.GraphService.Users.Request().Filter(guestFilter).Select(HttpUtility.UrlEncode("userPrincipalName, Id")).GetAsync()).ConfigureAwait(false);
+                userResult = await Task.Run(() => tenant.GraphService.Users.GetAsync((config) =>
+                {
+                    config.QueryParameters.Filter = guestFilter;
+                    config.QueryParameters.Select = new[] { "userPrincipalName", "Id" };
+                })).ConfigureAwait(false);
+                user = userResult?.Value?.FirstOrDefault();
                 if (user == null) { return claims; }
             }
 

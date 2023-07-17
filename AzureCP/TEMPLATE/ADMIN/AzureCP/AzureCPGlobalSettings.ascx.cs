@@ -1,4 +1,5 @@
 ﻿using Microsoft.Graph;
+using Microsoft.Graph.Models;
 using Microsoft.Identity.Client;
 using Microsoft.SharePoint;
 using Microsoft.SharePoint.Administration;
@@ -201,17 +202,17 @@ namespace azurecp.ControlTemplates
                 }
                 try
                 {
-                    AADAppOnlyAuthenticationProvider testConnection;
-                    if (String.IsNullOrWhiteSpace(this.TxtClientSecret.Text))
-                    {
-                        testConnection = new AADAppOnlyAuthenticationProvider(cloudInstance, tenantName, clientId, cert, String.Empty, ClaimsProviderConstants.DEFAULT_TIMEOUT);
-                    }
-                    else
-                    {
-                        testConnection = new AADAppOnlyAuthenticationProvider(cloudInstance, tenantName, clientId, clientSecret, String.Empty, ClaimsProviderConstants.DEFAULT_TIMEOUT);
-                    }
-                    Task<bool> testConnectionTask = testConnection.GetAccessToken(true);
-                    testConnectionTask.Wait();
+                    //AADAppOnlyAuthenticationProvider testConnection;
+                    //if (String.IsNullOrWhiteSpace(this.TxtClientSecret.Text))
+                    //{
+                    //    testConnection = new AADAppOnlyAuthenticationProvider(cloudInstance, tenantName, clientId, cert, String.Empty, ClaimsProviderConstants.DEFAULT_TIMEOUT);
+                    //}
+                    //else
+                    //{
+                    //    testConnection = new AADAppOnlyAuthenticationProvider(cloudInstance, tenantName, clientId, clientSecret, String.Empty, ClaimsProviderConstants.DEFAULT_TIMEOUT);
+                    //}
+                    //Task<bool> testConnectionTask = testConnection.GetAccessToken(true);
+                    //testConnectionTask.Wait();
                     this.LabelTestTenantConnectionOK.Text = TextConnectionSuccessful;
                 }
                 catch (MsalServiceException ex)
