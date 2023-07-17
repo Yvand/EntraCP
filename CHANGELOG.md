@@ -1,5 +1,11 @@
 # Change log for AzureCP
 
+## Unreleased
+
+* Update .NET Framework dependency to .NET 4.8 (https://github.com/Yvand/AzureCP/pull/184)
+* Update reference on Microsoft.SharePoint.dll to use the one published with SharePoint Subscription RTM (https://github.com/Yvand/AzureCP/pull/184)
+* Update minimum SharePoint Product Version from 15.0 to 16.0 (https://github.com/Yvand/AzureCP/pull/184)
+
 ## AzureCP v21.0.20230703.25 enhancements & bug-fixes - Published in July 3, 2023
 
 * Fixed "Unsupported or invalid query filter" when AzureCP queries some properties like 'companyName' - (https://github.com/Yvand/AzureCP/pull/172 and https://github.com/Yvand/AzureCP/pull/177)
