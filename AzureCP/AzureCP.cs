@@ -19,6 +19,9 @@ using System.Web;
 using static azurecp.ClaimsProviderLogging;
 using static Microsoft.Graph.DeviceManagement.ManagedDevices.Item.Users.UsersRequestBuilder;
 using WIF4_5 = System.Security.Claims;
+using Azure.Core;
+using Microsoft.Kiota.Abstractions;
+using Microsoft.Kiota.Http.HttpClientLibrary.Middleware.Options;
 
 /*
  * DO NOT directly edit AzureCP class. It is designed to be inherited to customize it as desired.
@@ -903,26 +906,26 @@ namespace azurecp
             {
                 // Fallback to GET to /v1.0/users/user@TENANT.onmicrosoft.com/memberOf, which returns all group properties but does not return nested groups
                 //IUserMemberOfCollectionWithReferencesPage memberGroupsResponse = await tenant.GraphService.Users[user.Id].MemberOf.Request().GetAsync().ConfigureAwait(false);
-                DirectoryObjectCollectionResponse memberGroupsResponse = await Task.Run(() => tenant.GraphService.Users[user.Id].MemberOf.GetAsync()).ConfigureAwait(false);
-                if (memberGroupsResponse?.Value != null)
+                DirectoryObjectCollectionResponse memberOfResponse = await Task.Run(() => tenant.GraphService.Users[user.Id].MemberOf.GetAsync()).ConfigureAwait(false);
+                if (memberOfResponse?.Value != null)
                 {
                     do
                     {
-                        foreach (Group group in memberGroupsResponse.Value.OfType<Group>())
+                        foreach (Group group in memberOfResponse.Value.OfType<Group>())
                         {
                             string groupClaimValue = GetPropertyValue(group, groupClaimTypeConfig.DirectoryObjectProperty.ToString());
                             claims.Add(CreateClaim(groupClaimTypeConfig.ClaimType, groupClaimValue, groupClaimTypeConfig.ClaimValueType));
                         }
 
-                        if (!string.IsNullOrWhiteSpace(memberGroupsResponse.OdataNextLink))
+                        if (!string.IsNullOrWhiteSpace(memberOfResponse.OdataNextLink))
                         {
-                            var nextPageRequest = new MemberOfRequestBuilder(memberGroupsResponse.OdataNextLink, tenant.GraphService.RequestAdapter);
+                            var nextPageRequest = new MemberOfRequestBuilder(memberOfResponse.OdataNextLink, tenant.GraphService.RequestAdapter);
                             //memberGroupsResponse = await memberGroupsResponse.NextPageRequest.GetAsync().ConfigureAwait(false);
                             //memberGroupsResponse = await Task.Run(() => memberGroupsResponse.NextPageRequest.GetAsync()).ConfigureAwait(false);
-                            memberGroupsResponse = await Task.Run(() => nextPageRequest.GetAsync()).ConfigureAwait(false);
+                            memberOfResponse = await Task.Run(() => nextPageRequest.GetAsync()).ConfigureAwait(false);
                         }
                     }
-                    while (!string.IsNullOrWhiteSpace(memberGroupsResponse.OdataNextLink));
+                    while (!string.IsNullOrWhiteSpace(memberOfResponse.OdataNextLink));
                 }
             }
             return claims;
@@ -1483,15 +1486,32 @@ namespace azurecp
                         IGraphServiceUsersCollectionPage usersFound = null;
                         IGraphServiceGroupsCollectionPage groupsFound = null;
 
-                        // Allow Advanced query as documented in https://learn.microsoft.com/en-us/graph/aad-advanced-queries?tabs=http :
+                        // Allow Advanced query as documented in  https://learn.microsoft.com/en-us/graph/sdks/create-requests?tabs=csharp#retrieve-a-list-of-entities
                         // Add ConsistencyLevel header to eventual and $count=true to fix $filter on CompanyName - https://github.com/Yvand/AzureCP/issues/166
-                        // Only work for non-batched requests
-                        List<Option> nonBatchedUserQueryOptions = new List<Option>
+                        // (Only work for non-batched requests)
+                        Microsoft.Graph.Users.UsersRequestBuilder.UsersRequestBuilderGetRequestConfiguration usersGetConfig = new Microsoft.Graph.Users.UsersRequestBuilder.UsersRequestBuilderGetRequestConfiguration();
+                        usersGetConfig.QueryParameters = new Microsoft.Graph.Users.UsersRequestBuilder.UsersRequestBuilderGetQueryParameters { Count = true };
+                        usersGetConfig.Headers = new Microsoft.Kiota.Abstractions.RequestHeaders
                         {
-                            new QueryOption("$count", "true"),
-                            new HeaderOption("ConsistencyLevel", "eventual")
+                            { "ConsistencyLevel", "eventual" }
                         };
-                        IGraphServiceUsersCollectionRequest userRequest = tenant.GraphService.Users.Request(nonBatchedUserQueryOptions).Select(tenant.UserSelect).Filter(tenant.UserFilter).Top(currentContext.MaxCount);
+                        RetryHandlerOption retryHandlerOption = new RetryHandlerOption()
+                        {
+                            MaxRetry = 1 // TODO https://stackoverflow.com/questions/75685845/where-is-withmaxretry-and-withshouldretry-in-dotnet-graph-sdk-v5
+                        };
+                        usersGetConfig.Options = new List<IRequestOption>
+                        {
+                            retryHandlerOption,
+                        };
+
+                        //Action<UsersRequestBuilderGetRequestConfiguration>
+                        //RequestInformation userRequest = tenant.GraphService.Users.ToGetRequestInformation();
+                        RequestInformation userRequest = tenant.GraphService.Users.ToGetRequestInformation(requestConfiguration =>
+                        {
+                            requestConfiguration = usersGetConfig;
+                        });
+
+                        //IGraphServiceUsersCollectionRequest userRequest = tenant.GraphService.Users.Request(nonBatchedUserQueryOptions).Select(tenant.UserSelect).Filter(tenant.UserFilter).Top(currentContext.MaxCount);
                         IGraphServiceGroupsCollectionRequest groupRequest = tenant.GraphService.Groups.Request().Select(tenant.GroupSelect).Filter(tenant.GroupFilter).Top(currentContext.MaxCount);
 
                         // Do a batch query only if necessary
