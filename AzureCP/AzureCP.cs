@@ -1,4 +1,6 @@
 ﻿using Microsoft.Graph;
+using Microsoft.Graph.Users.Item.GetMemberGroups;
+using Microsoft.Graph.Users.Item.MemberOf;
 using Microsoft.Graph.Models;
 using Microsoft.SharePoint.Administration;
 using Microsoft.SharePoint.Administration.Claims;
@@ -543,7 +545,7 @@ namespace azurecp
             int nbMetadata = 0;
             // If current result is a SharePoint group but was found on an AAD User object, then 1 to many User objects could match so no metadata from the current match should be set
             if (!String.Equals(result.ClaimTypeConfig.SharePointEntityType, ClaimsProviderConstants.GroupClaimEntityType, StringComparison.InvariantCultureIgnoreCase) ||
-                result.ClaimTypeConfig.EntityType != DirectoryObjectType.User )
+                result.ClaimTypeConfig.EntityType != DirectoryObjectType.User)
             {
                 // Populate metadata of new PickerEntity
                 foreach (ClaimTypeConfig ctConfig in MetadataConfig.Where(x => x.EntityType == result.ClaimTypeConfig.EntityType))
@@ -873,54 +875,54 @@ namespace azurecp
                 // But it returns only the group IDs so it can be used only if groupClaimTypeConfig.DirectoryObjectProperty == AzureADObjectProperty.Id
                 // For Guest users, it must be the id: POST to /v1.0/users/18ff6ae9-dd01-4008-a786-aabf71f1492a/microsoft.graph.getMemberGroups
                 //IDirectoryObjectGetMemberGroupsCollectionPage groupIDs = await tenant.GraphService.Users[user.Id].GetMemberGroups(CurrentConfiguration.FilterSecurityEnabledGroupsOnly).Request().PostAsync().ConfigureAwait(false);
-                IDirectoryObjectGetMemberGroupsCollectionPage groupIDs = await Task.Run(() => tenant.GraphService.Users[user.Id].GetMemberGroups(CurrentConfiguration.FilterSecurityEnabledGroupsOnly).Request().PostAsync()).ConfigureAwait(false);
-                if (groupIDs != null)
+                //IDirectoryObjectGetMemberGroupsCollectionPage groupIDs = await Task.Run(() => tenant.GraphService.Users[user.Id].GetMemberGroups(CurrentConfiguration.FilterSecurityEnabledGroupsOnly).Request().PostAsync()).ConfigureAwait(false);
+                GetMemberGroupsPostRequestBody getGroupsOptions = new GetMemberGroupsPostRequestBody();
+                getGroupsOptions.SecurityEnabledOnly = CurrentConfiguration.FilterSecurityEnabledGroupsOnly;
+                GetMemberGroupsResponse memberGroupsResponse = await Task.Run(() => tenant.GraphService.Users[user.Id].GetMemberGroups.PostAsync(getGroupsOptions)).ConfigureAwait(false);
+                if (memberGroupsResponse?.Value != null)
                 {
-                    bool morePages = groupIDs.Count > 0;
-                    while (morePages)
+                    bool morePages;
+                    do
                     {
-                        foreach (string groupID in groupIDs)
+                        foreach (string groupID in memberGroupsResponse.Value)
                         {
                             claims.Add(CreateClaim(groupClaimTypeConfig.ClaimType, groupID, groupClaimTypeConfig.ClaimValueType));
                         }
 
-                        if (groupIDs.NextPageRequest != null)
+                        morePages = !string.IsNullOrWhiteSpace(memberGroupsResponse.OdataNextLink);
+                        if (morePages)
                         {
-                            //groupIDs = await groupIDs.NextPageRequest.PostAsync().ConfigureAwait(false);
-                            groupIDs = await Task.Run(() => groupIDs.NextPageRequest.PostAsync()).ConfigureAwait(false);
-                        }
-                        else
-                        {
-                            morePages = false;
+                            var nextPageRequest = new GetMemberGroupsRequestBuilder(memberGroupsResponse.OdataNextLink, tenant.GraphService.RequestAdapter);
+                            memberGroupsResponse = await Task.Run(() => nextPageRequest.PostAsync(getGroupsOptions)).ConfigureAwait(false);
                         }
                     }
+                    while (morePages);
                 }
             }
             else
             {
                 // Fallback to GET to /v1.0/users/user@TENANT.onmicrosoft.com/memberOf, which returns all group properties but does not return nested groups
-                //IUserMemberOfCollectionWithReferencesPage groups = await tenant.GraphService.Users[user.Id].MemberOf.Request().GetAsync().ConfigureAwait(false);
-                IUserMemberOfCollectionWithReferencesPage groups = await Task.Run(() => tenant.GraphService.Users[user.Id].MemberOf.Request().GetAsync()).ConfigureAwait(false);
-                if (groups != null)
+                //IUserMemberOfCollectionWithReferencesPage memberGroupsResponse = await tenant.GraphService.Users[user.Id].MemberOf.Request().GetAsync().ConfigureAwait(false);
+                DirectoryObjectCollectionResponse memberGroupsResponse = await Task.Run(() => tenant.GraphService.Users[user.Id].MemberOf.GetAsync()).ConfigureAwait(false);
+                if (memberGroupsResponse?.Value != null)
                 {
-                    bool morePages = groups.Count > 0;
-                    while (morePages)
+                    do
                     {
-                        foreach (Group group in groups.OfType<Group>())
+                        foreach (Group group in memberGroupsResponse.Value.OfType<Group>())
                         {
                             string groupClaimValue = GetPropertyValue(group, groupClaimTypeConfig.DirectoryObjectProperty.ToString());
                             claims.Add(CreateClaim(groupClaimTypeConfig.ClaimType, groupClaimValue, groupClaimTypeConfig.ClaimValueType));
                         }
-                        if (groups.NextPageRequest != null)
+
+                        if (!string.IsNullOrWhiteSpace(memberGroupsResponse.OdataNextLink))
                         {
-                            //groups = await groups.NextPageRequest.GetAsync().ConfigureAwait(false);
-                            groups = await Task.Run(() => groups.NextPageRequest.GetAsync()).ConfigureAwait(false);
-                        }
-                        else
-                        {
-                            morePages = false;
+                            var nextPageRequest = new MemberOfRequestBuilder(memberGroupsResponse.OdataNextLink, tenant.GraphService.RequestAdapter);
+                            //memberGroupsResponse = await memberGroupsResponse.NextPageRequest.GetAsync().ConfigureAwait(false);
+                            //memberGroupsResponse = await Task.Run(() => memberGroupsResponse.NextPageRequest.GetAsync()).ConfigureAwait(false);
+                            memberGroupsResponse = await Task.Run(() => nextPageRequest.GetAsync()).ConfigureAwait(false);
                         }
                     }
+                    while (!string.IsNullOrWhiteSpace(memberGroupsResponse.OdataNextLink));
                 }
             }
             return claims;
@@ -1510,7 +1512,7 @@ namespace azurecp
                             batchRequestContent.AddBatchRequestStep(requestStep);
                             var groupRequestId = batchRequestContent.AddBatchRequestStep(groupRequest);
                             var batchResponse = await tenant.GraphService.Batch.Request().PostAsync(batchRequestContent).ConfigureAwait(false);
-                            
+
                             // De - serialize batch response based on known return type
                             GraphServiceUsersCollectionResponse usersBatchResponse = await batchResponse.GetResponseByIdAsync<GraphServiceUsersCollectionResponse>(userRequestId).ConfigureAwait(false);
                             usersFound = usersBatchResponse.Value;
