@@ -73,11 +73,11 @@ namespace azurecp
         /// </summary>
         public static List<KeyValuePair<AzureCloudInstance, Uri>> AzureCloudEndpoints = new List<KeyValuePair<AzureCloudInstance, Uri>>()
         {
-            new KeyValuePair<AzureCloudInstance, Uri>(AzureCloudInstance.AzurePublic, new Uri("https://graph.microsoft.com")),
-            new KeyValuePair<AzureCloudInstance, Uri>(AzureCloudInstance.AzureChina, new Uri("https://microsoftgraph.chinacloudapi.cn")),
-            new KeyValuePair<AzureCloudInstance, Uri>(AzureCloudInstance.AzureGermany, new Uri("https://graph.microsoft.de")),
-            new KeyValuePair<AzureCloudInstance, Uri>(AzureCloudInstance.AzureUsGovernment, new Uri("https://graph.microsoft.us")),
-            new KeyValuePair<AzureCloudInstance, Uri>(AzureCloudInstance.None, new Uri("https://graph.microsoft.com")),
+            new KeyValuePair<AzureCloudInstance, Uri>(AzureCloudInstance.AzurePublic, new Uri("https://login.microsoftonline.com")),
+            new KeyValuePair<AzureCloudInstance, Uri>(AzureCloudInstance.AzureChina, new Uri("https://login.chinacloudapi.cn")),
+            new KeyValuePair<AzureCloudInstance, Uri>(AzureCloudInstance.AzureGermany, new Uri("https://login.microsoftonline.de")),
+            new KeyValuePair<AzureCloudInstance, Uri>(AzureCloudInstance.AzureUsGovernment, new Uri("https://login.microsoftonline.us")),
+            new KeyValuePair<AzureCloudInstance, Uri>(AzureCloudInstance.None, new Uri("https://login.microsoftonline.com")),
         };
         public static string GroupClaimEntityType { get; set; } = SPClaimEntityTypes.FormsRole;
         public static bool EnforceOnly1ClaimTypeForGroup => true;     // In AzureCP, only 1 claim type can be used to create group permissions
@@ -879,7 +879,7 @@ namespace azurecp
                     //this.AuthenticationProvider = new AADAppOnlyAuthenticationProvider(this.CloudInstance, this.Name, this.ApplicationId, this.ClientCertificatePrivateKey, claimsProviderName, timeout);
                     tokenCredential = new ClientCertificateCredential(this.Name, this.ApplicationId, this.ClientCertificatePrivateKey, tokenCredentialOptions);
                 }
-                this.GraphService = new GraphServiceClient(tokenCredential);
+                this.GraphService = new GraphServiceClient(tokenCredential, new[] { "https://graph.microsoft.com/.default" });
                 //UriBuilder graphUriBuilder = new UriBuilder(this.AuthenticationProvider.GraphServiceEndpoint);
                 //graphUriBuilder.Path = $"/{ClaimsProviderConstants.GraphServiceEndpointVersion}";
                 //this.GraphService = new GraphServiceClient(graphUriBuilder.ToString(), this.AuthenticationProvider);

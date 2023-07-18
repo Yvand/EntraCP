@@ -1562,39 +1562,48 @@ namespace azurecp
                         UserCollectionResponse userCollectionResult = await returnedResponse.GetResponseByIdAsync<UserCollectionResponse>(usersRequestId);
                         GroupCollectionResponse groupCollectionResult = await returnedResponse.GetResponseByIdAsync<GroupCollectionResponse>(groupsRequestId);
 
-                        PageIterator<User, UserCollectionResponse> usersPageIterator = PageIterator<User, UserCollectionResponse>.CreatePageIterator(
-                            tenant.GraphService,
-                            userCollectionResult,
-                            (user) =>
-                            {
-                                lock (lockAddResultToCollection)
+                        if (userCollectionResult?.Value != null)
+                        {
+                            PageIterator<User, UserCollectionResponse> usersPageIterator = PageIterator<User, UserCollectionResponse>.CreatePageIterator(
+                                tenant.GraphService,
+                                userCollectionResult,
+                                (user) =>
                                 {
-                                    if (tenant.ExcludeMembers && !String.Equals(user.UserType, ClaimsProviderConstants.MEMBER_USERTYPE, StringComparison.InvariantCultureIgnoreCase))
+                                    lock (lockAddResultToCollection)
                                     {
-                                        tenantResults.UsersAndGroups.Add(user);
+                                        if (tenant.ExcludeMembers == true && !String.Equals(user.UserType, ClaimsProviderConstants.MEMBER_USERTYPE, StringComparison.InvariantCultureIgnoreCase))
+                                        {
+                                            tenantResults.UsersAndGroups.Add(user);
+                                        }
+                                        else if (tenant.ExcludeGuests == true && !String.Equals(user.UserType, ClaimsProviderConstants.GUEST_USERTYPE, StringComparison.InvariantCultureIgnoreCase))
+                                        {
+                                            tenantResults.UsersAndGroups.Add(user);
+                                        }
+                                        else
+                                        {
+                                            tenantResults.UsersAndGroups.Add(user);
+                                        }
                                     }
-                                    else if (tenant.ExcludeGuests && !String.Equals(user.UserType, ClaimsProviderConstants.GUEST_USERTYPE, StringComparison.InvariantCultureIgnoreCase))
-                                    {
-                                        tenantResults.UsersAndGroups.Add(user);
-                                    }
-                                }
-                                return true; // return true to continue the iteration
-                            });
-                        await usersPageIterator.IterateAsync().ConfigureAwait(false);
+                                    return true; // return true to continue the iteration
+                                });
+                            await usersPageIterator.IterateAsync().ConfigureAwait(false);
+                        }
 
-                        PageIterator<Group, GroupCollectionResponse> groupsPageIterator = PageIterator<Group, GroupCollectionResponse>.CreatePageIterator(
-                            tenant.GraphService,
-                            groupCollectionResult,
-                            (group) =>
-                            {
-                                lock (lockAddResultToCollection)
+                        if (groupCollectionResult?.Value != null)
+                        {
+                            PageIterator<Group, GroupCollectionResponse> groupsPageIterator = PageIterator<Group, GroupCollectionResponse>.CreatePageIterator(
+                                tenant.GraphService,
+                                groupCollectionResult,
+                                (group) =>
                                 {
-                                    tenantResults.UsersAndGroups.Add(group);
-                                }
-                                return true; // return true to continue the iteration
-                            });
-                        await groupsPageIterator.IterateAsync().ConfigureAwait(false);
-
+                                    lock (lockAddResultToCollection)
+                                    {
+                                        tenantResults.UsersAndGroups.Add(group);
+                                    }
+                                    return true; // return true to continue the iteration
+                                });
+                            await groupsPageIterator.IterateAsync().ConfigureAwait(false);
+                        }
 
                         //User user = userCollectionResult?.Value?.FirstOrDefault();
 
