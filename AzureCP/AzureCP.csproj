@@ -157,11 +157,25 @@
   <!-- Copy the assemblies that will be added to the WSP package -->
   <PropertyGroup>
     <PostBuildEvent>"C:\Program Files (x86)\Microsoft SDKs\Windows\v10.0A\bin\NETFX 4.8 Tools\x64\gacutil.exe" /f /i "$(TargetPath)"
+copy /Y "$(TargetDir)Azure.Core.dll" $(ProjectDir)\bin
+copy /Y "$(TargetDir)Azure.Identity.dll" $(ProjectDir)\bin
+copy /Y "$(TargetDir)Microsoft.Bcl.AsyncInterfaces.dll" $(ProjectDir)\bin
 copy /Y "$(TargetDir)Microsoft.Graph.Core.dll" $(ProjectDir)\bin
 copy /Y "$(TargetDir)Microsoft.Graph.dll" $(ProjectDir)\bin
 copy /Y "$(TargetDir)Microsoft.Identity.Client.dll" $(ProjectDir)\bin
+copy /Y "$(TargetDir)Microsoft.Identity.Client.Extensions.Msal.dll" $(ProjectDir)\bin
 copy /Y "$(TargetDir)Microsoft.IdentityModel.Abstractions.dll" $(ProjectDir)\bin
-copy /Y "$(TargetDir)Newtonsoft.Json.dll" $(ProjectDir)\bin
+copy /Y "$(TargetDir)Microsoft.IdentityModel.JsonWebTokens.dll" $(ProjectDir)\bin
+copy /Y "$(TargetDir)Microsoft.IdentityModel.Logging.dll" $(ProjectDir)\bin
+copy /Y "$(TargetDir)Microsoft.IdentityModel.Protocols.dll" $(ProjectDir)\bin
+copy /Y "$(TargetDir)Microsoft.IdentityModel.Protocols.OpenIdConnect.dll" $(ProjectDir)\bin
+copy /Y "$(TargetDir)Microsoft.IdentityModel.Tokens.dll" $(ProjectDir)\bin
+copy /Y "$(TargetDir)Microsoft.Kiota.Abstractions.dll" $(ProjectDir)\bin
+copy /Y "$(TargetDir)Microsoft.Kiota.Authentication.Azure.dll" $(ProjectDir)\bin
+copy /Y "$(TargetDir)Microsoft.Kiota.Http.HttpClientLibrary.dll" $(ProjectDir)\bin
+copy /Y "$(TargetDir)Microsoft.Kiota.Serialization.Form.dll" $(ProjectDir)\bin
+copy /Y "$(TargetDir)Microsoft.Kiota.Serialization.Json.dll" $(ProjectDir)\bin
+copy /Y "$(TargetDir)Microsoft.Kiota.Serialization.Text.dll" $(ProjectDir)\bin
 copy /Y "$(TargetDir)Nito.AsyncEx.Context.dll" $(ProjectDir)\bin
 copy /Y "$(TargetDir)Nito.AsyncEx.Coordination.dll" $(ProjectDir)\bin
 copy /Y "$(TargetDir)Nito.AsyncEx.Interop.WaitHandles.dll" $(ProjectDir)\bin
@@ -173,8 +187,17 @@ copy /Y "$(TargetDir)Nito.Disposables.dll" $(ProjectDir)\bin
 copy /Y "$(TargetDir)System.Buffers.dll" $(ProjectDir)\bin
 copy /Y "$(TargetDir)System.Collections.Immutable.dll" $(ProjectDir)\bin
 copy /Y "$(TargetDir)System.Diagnostics.DiagnosticSource.dll" $(ProjectDir)\bin
+copy /Y "$(TargetDir)System.IdentityModel.Tokens.Jwt.dll" $(ProjectDir)\bin
+copy /Y "$(TargetDir)System.Memory.Data.dll" $(ProjectDir)\bin
 copy /Y "$(TargetDir)System.Memory.dll" $(ProjectDir)\bin
+copy /Y "$(TargetDir)System.Net.Http.WinHttpHandler.dll" $(ProjectDir)\bin
 copy /Y "$(TargetDir)System.Numerics.Vectors.dll" $(ProjectDir)\bin
-copy /Y "$(TargetDir)System.Runtime.CompilerServices.Unsafe.dll" $(ProjectDir)\bin</PostBuildEvent>
+copy /Y "$(TargetDir)System.Runtime.CompilerServices.Unsafe.dll" $(ProjectDir)\bin
+copy /Y "$(TargetDir)System.Security.Cryptography.ProtectedData.dll" $(ProjectDir)\bin
+copy /Y "$(TargetDir)System.Text.Encodings.Web.dll" $(ProjectDir)\bin
+copy /Y "$(TargetDir)System.Text.Json.dll" $(ProjectDir)\bin
+copy /Y "$(TargetDir)System.Threading.Tasks.Extensions.dll" $(ProjectDir)\bin
+copy /Y "$(TargetDir)System.ValueTuple.dll" $(ProjectDir)\bin
+copy /Y "$(TargetDir)Tavis.UriTemplates.dll" $(ProjectDir)\bin</PostBuildEvent>
   </PropertyGroup>
 </Project>

@@ -835,8 +835,8 @@ namespace azurecp
 
         public string UserFilter { get; set; }
         public string GroupFilter { get; set; }
-        public string UserSelect { get; set; }
-        public string GroupSelect { get; set; }
+        public string[] UserSelect { get; set; }
+        public string[] GroupSelect { get; set; }
 
         public AzureTenant()
         {
