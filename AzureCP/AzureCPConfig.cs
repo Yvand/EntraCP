@@ -1274,13 +1274,7 @@ namespace azurecp
         User,
         Group
     }
-
-    public class AzureADUserTypeHelper
-    {
-        public const string GuestUserType = "Guest";
-        public const string MemberUserType = "Member";
-    }
-
+    
     public enum OperationType
     {
         Search,

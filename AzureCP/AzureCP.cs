@@ -1254,10 +1254,6 @@ namespace azurecp
             List<string> userSelectBuilder = new List<string> { "UserType", "Mail" };    // UserType and Mail are always needed to deal with Guest users
             List<string> groupSelectBuilder = new List<string> { "Id", "securityEnabled" };               // Id is always required for groups
 
-            //// Microsoft Graph doesn't support operator not equals (ne) on attribute UserType, it can only be queried using equals (eq)
-            //string memberOnlyUserTypeFilter = " and UserType eq 'Member'";
-            //string guestOnlyUserTypeFilter = " and UserType eq 'Guest'";
-
             string preferredFilterPattern;
             string input = currentContext.Input;
 
@@ -1278,7 +1274,6 @@ namespace azurecp
             foreach (ClaimTypeConfig ctConfig in currentContext.CurrentClaimTypeConfigList)
             {
                 string currentPropertyString = ctConfig.DirectoryObjectProperty.ToString();
-
                 if (currentPropertyString.StartsWith("extensionAttribute"))
                 {
                     currentPropertyString = String.Format("{0}_{1}_{2}", "extension", "EXTENSIONATTRIBUTESAPPLICATIONID", currentPropertyString);
@@ -1292,7 +1287,6 @@ namespace azurecp
                 else
                 {
                     // Use String.Replace instead of String.Format because String.Format trows an exception if input contains a '{'
-                    //currentFilter = String.Format(preferredFilterPattern, currentPropertyString);
                     currentFilter = preferredFilterPattern.Replace("{0}", currentPropertyString);
                 }
 
@@ -1317,17 +1311,17 @@ namespace azurecp
                         IdentityClaimTypeConfig identityClaimTypeConfig = ctConfig as IdentityClaimTypeConfig;
                         if (!ctConfig.SupportsWildcard)
                         {
-                            currentFilter = "( " + String.Format(identityConfigSearchPatternEquals, currentPropertyString, input, AzureADUserTypeHelper.MemberUserType) + " or " + String.Format(identityConfigSearchPatternEquals, identityClaimTypeConfig.DirectoryObjectPropertyForGuestUsers, input, AzureADUserTypeHelper.GuestUserType) + " )";
+                            currentFilter = "( " + String.Format(identityConfigSearchPatternEquals, currentPropertyString, input, ClaimsProviderConstants.MEMBER_USERTYPE) + " or " + String.Format(identityConfigSearchPatternEquals, identityClaimTypeConfig.DirectoryObjectPropertyForGuestUsers, input, ClaimsProviderConstants.GUEST_USERTYPE) + " )";
                         }
                         else
                         {
                             if (currentContext.ExactSearch)
                             {
-                                currentFilter = "( " + String.Format(identityConfigSearchPatternEquals, currentPropertyString, input, AzureADUserTypeHelper.MemberUserType) + " or " + String.Format(identityConfigSearchPatternEquals, identityClaimTypeConfig.DirectoryObjectPropertyForGuestUsers, input, AzureADUserTypeHelper.GuestUserType) + " )";
+                                currentFilter = "( " + String.Format(identityConfigSearchPatternEquals, currentPropertyString, input, ClaimsProviderConstants.MEMBER_USERTYPE) + " or " + String.Format(identityConfigSearchPatternEquals, identityClaimTypeConfig.DirectoryObjectPropertyForGuestUsers, input, ClaimsProviderConstants.GUEST_USERTYPE) + " )";
                             }
                             else
                             {
-                                currentFilter = "( " + String.Format(identityConfigSearchPatternStartsWith, currentPropertyString, input, AzureADUserTypeHelper.MemberUserType) + " or " + String.Format(identityConfigSearchPatternStartsWith, identityClaimTypeConfig.DirectoryObjectPropertyForGuestUsers, input, AzureADUserTypeHelper.GuestUserType) + " )";
+                                currentFilter = "( " + String.Format(identityConfigSearchPatternStartsWith, currentPropertyString, input, ClaimsProviderConstants.MEMBER_USERTYPE) + " or " + String.Format(identityConfigSearchPatternStartsWith, identityClaimTypeConfig.DirectoryObjectPropertyForGuestUsers, input, ClaimsProviderConstants.GUEST_USERTYPE) + " )";
                             }
                         }
                     }
@@ -1339,10 +1333,8 @@ namespace azurecp
                     else
                     {
                         currentFilter = " or " + currentFilter;
-                        //currentPropertyString = ", " + currentPropertyString;
                     }
                     userFilterBuilder.Append(currentFilter);
-                    //userSelectBuilder.Append(currentPropertyString);
                     userSelectBuilder.Add(currentPropertyString);
                 }
                 else
@@ -1355,10 +1347,8 @@ namespace azurecp
                     else
                     {
                         currentFilter = " or " + currentFilter;
-                        //currentPropertyString = ", " + currentPropertyString;
                     }
                     groupFilterBuilder.Append(currentFilter);
-                    //groupSelectBuilder.Append(currentPropertyString);
                     groupSelectBuilder.Add(currentPropertyString);
                 }
             }
@@ -1368,7 +1358,6 @@ namespace azurecp
             {
                 foreach (ClaimTypeConfig ctConfig in MetadataConfig.Where(x => x.EntityType == DirectoryObjectType.User))
                 {
-                    //userSelectBuilder.Append($", {ctConfig.DirectoryObjectProperty.ToString()}");
                     userSelectBuilder.Add(ctConfig.DirectoryObjectProperty.ToString());
                 }
             }
@@ -1376,45 +1365,30 @@ namespace azurecp
             {
                 foreach (ClaimTypeConfig ctConfig in MetadataConfig.Where(x => x.EntityType == DirectoryObjectType.Group))
                 {
-                    //groupSelectBuilder.Append($", {ctConfig.DirectoryObjectProperty.ToString()}");
                     groupSelectBuilder.Add(ctConfig.DirectoryObjectProperty.ToString());
                 }
             }
 
-            //userFilterBuilder.Append(" ) and accountEnabled eq true");  // Graph throws this error if used: "Search filter expression has excessive height: 4. Max allowed: 3."
-            //string encodedUserFilter = HttpUtility.UrlEncode(userFilterBuilder.ToString());
-            //string encodedGroupFilter = HttpUtility.UrlEncode(groupFilterBuilder.ToString());
-            //string encodedUserSelect = HttpUtility.UrlEncode(userSelectBuilder.ToString());
-            //string encodedgroupSelect = HttpUtility.UrlEncode(groupSelectBuilder.ToString());
-            //string encodedMemberOnlyUserTypeFilter = HttpUtility.UrlEncode(memberOnlyUserTypeFilter);
-            //string encodedGuestOnlyUserTypeFilter = HttpUtility.UrlEncode(guestOnlyUserTypeFilter);
-
             foreach (AzureTenant tenant in azureTenants)
             {
-                string encodedUserFilterForTenant = userFilterBuilder.ToString().Replace("EXTENSIONATTRIBUTESAPPLICATIONID", tenant.ExtensionAttributesApplicationId.ToString("N"));
-                //string encodedUserSelectForTenant = encodedUserSelect.Replace("EXTENSIONATTRIBUTESAPPLICATIONID", tenant.ExtensionAttributesApplicationId.ToString("N"));
+                string userFilterForTenant = userFilterBuilder.ToString().Replace("EXTENSIONATTRIBUTESAPPLICATIONID", tenant.ExtensionAttributesApplicationId.ToString("N"));
                 List<string> userSelectBuilderForTenant = userSelectBuilder.Select(elem => elem.Replace("EXTENSIONATTRIBUTESAPPLICATIONID", tenant.ExtensionAttributesApplicationId.ToString("N"))).ToList<string>();
-                string encodedGroupFilterForTenant = groupFilterBuilder.ToString().Replace("EXTENSIONATTRIBUTESAPPLICATIONID", tenant.ExtensionAttributesApplicationId.ToString("N"));
-                //string encodedGroupSelectForTenant = encodedgroupSelect.Replace("EXTENSIONATTRIBUTESAPPLICATIONID", tenant.ExtensionAttributesApplicationId.ToString("N"));
+                string groupFilterForTenant = groupFilterBuilder.ToString().Replace("EXTENSIONATTRIBUTESAPPLICATIONID", tenant.ExtensionAttributesApplicationId.ToString("N"));
                 List<string> groupSelectBuilderForTenant = groupSelectBuilder.Select(elem => elem.Replace("EXTENSIONATTRIBUTESAPPLICATIONID", tenant.ExtensionAttributesApplicationId.ToString("N"))).ToList<string>();
 
                 if (firstUserObjectProcessed)
                 {
-                    tenant.UserFilter = encodedUserFilterForTenant;
-                    //if (tenant.MemberUserTypeOnly)
-                    //    tenant.UserFilter += encodedMemberOnlyUserTypeFilter;
-                    //else if (tenant.ExcludeGuestUsers)
-                    //    tenant.UserFilter += encodedGuestOnlyUserTypeFilter;
+                    tenant.UserFilter = userFilterForTenant;
                 }
                 else
                 {
-                    // Reset filters if no corresponding object was found in requestInfo.ClaimTypeConfigList, to detect that tenant should not be queried
+                    // Reset filter if no corresponding object was found in requestInfo.ClaimTypeConfigList, to detect that tenant should not be queried
                     tenant.UserFilter = String.Empty;
                 }
 
                 if (firstGroupObjectProcessed)
                 {
-                    tenant.GroupFilter = encodedGroupFilterForTenant;
+                    tenant.GroupFilter = groupFilterForTenant;
                 }
                 else
                 {
@@ -1477,9 +1451,9 @@ namespace azurecp
             }
 
             ClaimsProviderLogging.Log($"[{ProviderInternalName}] Querying Azure AD tenant '{tenant.Name}' for users and groups, with input '{currentContext.Input}'", TraceSeverity.VerboseEx, EventSeverity.Information, TraceCategory.Lookup);
-            bool tryAgain = false;
             object lockAddResultToCollection = new object();
             int timeout = this.CurrentConfiguration.Timeout;
+            int maxRetry = currentContext.OperationType == OperationType.Validation ? 3 : 2;
 
             try
             {
@@ -1487,7 +1461,17 @@ namespace azurecp
                 {
                     RetryHandlerOption retryHandlerOption = new RetryHandlerOption()
                     {
-                        MaxRetry = 1, // TODO https://stackoverflow.com/questions/75685845/where-is-withmaxretry-and-withshouldretry-in-dotnet-graph-sdk-v5
+                        Delay = 1,
+                        RetriesTimeLimit = TimeSpan.FromMilliseconds(timeout),
+                        MaxRetry = maxRetry,
+                        ShouldRetry = (delay, attempt, httpResponse) =>
+                        {
+                            // Pointless to retry if this is Unauthorized
+                            if (httpResponse.StatusCode == System.Net.HttpStatusCode.Unauthorized) {
+                                return false;
+                            }
+                            return true;
+                        }
                     };
 
                     // Build the batch
@@ -1626,31 +1610,19 @@ namespace azurecp
             catch (OperationCanceledException)
             {
                 ClaimsProviderLogging.Log($"[{ProviderInternalName}] Queries on Azure AD tenant '{tenant.Name}' exceeded timeout of {timeout} ms and were cancelled.", TraceSeverity.Unexpected, EventSeverity.Error, TraceCategory.Lookup);
-                tryAgain = true;
             }
             catch (ServiceException ex)
             {
                 ClaimsProviderLogging.LogException(ProviderInternalName, $"Microsoft.Graph could not query tenant '{tenant.Name}'", TraceCategory.Lookup, ex);
-                tryAgain = true;
             }
             catch (AggregateException ex)
             {
                 // Task.WaitAll throws an AggregateException, which contains all exceptions thrown by tasks it waited on
                 ClaimsProviderLogging.LogException(ProviderInternalName, $"while querying Azure AD tenant '{tenant.Name}'", TraceCategory.Lookup, ex);
-                tryAgain = true;
             }
             finally
             {
             }
-
-            //if (tryAgain && !CurrentConfiguration.EnableRetry) { tryAgain = false; }
-
-            //if (firstAttempt && tryAgain)
-            //{
-            //    ClaimsProviderLogging.Log($"[{ProviderInternalName}] Doing new attempt to query Azure AD tenant '{tenant.Name}'...",
-            //        TraceSeverity.Medium, EventSeverity.Information, TraceCategory.Lookup);
-            //    tenantResults = await QueryAzureADTenantAsync(currentContext, tenant, false).ConfigureAwait(false);
-            //}
             return tenantResults;
         }
 
@@ -1688,7 +1660,7 @@ namespace azurecp
                     // This section has become irrelevant since the specific handling of guest users is done lower in the filtering, introduced in v13
                     //// Always exclude shadow users: UserType is Guest and his mail matches a verified domain in any Azure AD tenant
                     //string userType = ((User)userOrGroup).UserType;
-                    //if (String.Equals(userType, AzureADUserTypeHelper.GuestUserType, StringComparison.InvariantCultureIgnoreCase))
+                    //if (String.Equals(userType, ClaimsProviderConstants.GUEST_USERTYPE, StringComparison.InvariantCultureIgnoreCase))
                     //{
                     //    string userMail = ((User)userOrGroup).Mail;
                     //    if (String.IsNullOrEmpty(userMail))
@@ -1733,7 +1705,7 @@ namespace azurecp
 
                     if (ctConfig is IdentityClaimTypeConfig)
                     {
-                        if (String.Equals(((User)currentObject).UserType, AzureADUserTypeHelper.GuestUserType, StringComparison.InvariantCultureIgnoreCase))
+                        if (String.Equals(((User)currentObject).UserType, ClaimsProviderConstants.GUEST_USERTYPE, StringComparison.InvariantCultureIgnoreCase))
                         {
                             // For Guest users, use the value set in property DirectoryObjectPropertyForGuestUsers
                             directoryObjectPropertyValue = GetPropertyValue(currentObject, ((IdentityClaimTypeConfig)ctConfig).DirectoryObjectPropertyForGuestUsers.ToString());
@@ -1761,7 +1733,7 @@ namespace azurecp
                         if (objectType == DirectoryObjectType.User)
                         {
                             claimTypeConfigToCompare = IdentityClaimTypeConfig;
-                            if (String.Equals(((User)currentObject).UserType, AzureADUserTypeHelper.GuestUserType, StringComparison.InvariantCultureIgnoreCase))
+                            if (String.Equals(((User)currentObject).UserType, ClaimsProviderConstants.GUEST_USERTYPE, StringComparison.InvariantCultureIgnoreCase))
                             {
                                 // For Guest users, use the value set in property DirectoryObjectPropertyForGuestUsers
                                 entityClaimValue = GetPropertyValue(currentObject, IdentityClaimTypeConfig.DirectoryObjectPropertyForGuestUsers.ToString());
