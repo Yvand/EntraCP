@@ -1,6 +1,10 @@
 ﻿using Azure.Core;
 using Azure.Identity;
 using Microsoft.Graph;
+using Microsoft.Graph.Authentication;
+using Microsoft.Identity.Client;
+using Microsoft.Kiota.Authentication.Azure;
+using Microsoft.Kiota.Http.HttpClientLibrary.Middleware;
 using Microsoft.SharePoint;
 using Microsoft.SharePoint.Administration;
 using Microsoft.SharePoint.Administration.Claims;
@@ -12,6 +16,8 @@ using System.Collections.ObjectModel;
 using System.Diagnostics;
 using System.IO;
 using System.Linq;
+using System.Net;
+using System.Net.Http;
 using System.Reflection;
 using System.Runtime;
 using System.Security.Cryptography;
@@ -22,30 +28,6 @@ using WIF4_5 = System.Security.Claims;
 
 namespace azurecp
 {
-    public enum AzureCloudInstance
-    {
-        //
-        // Summary:
-        //     Value communicating that the AzureCloudInstance is not specified.
-        None,
-        //
-        // Summary:
-        //     Microsoft Azure public cloud. Maps to https://login.microsoftonline.com
-        AzurePublic,
-        //
-        // Summary:
-        //     Microsoft Chinese national cloud. Maps to https://login.chinacloudapi.cn
-        AzureChina,
-        //
-        // Summary:
-        //     Microsoft German national cloud ("Black Forest"). Maps to https://login.microsoftonline.de
-        AzureGermany,
-        //
-        // Summary:
-        //     US Government cloud. Maps to https://login.microsoftonline.us
-        AzureUsGovernment
-    }
-
     public interface IAzureCPConfiguration
     {
         List<AzureTenant> AzureTenants { get; set; }
@@ -54,7 +36,7 @@ namespace azurecp
         bool FilterExactMatchOnly { get; set; }
         bool EnableAugmentation { get; set; }
         string EntityDisplayTextPrefix { get; set; }
-        bool EnableRetry { get; set; }
+        //bool EnableRetry { get; set; }
         int Timeout { get; set; }
         string CustomData { get; set; }
         int MaxSearchResultsCount { get; set; }
@@ -73,11 +55,11 @@ namespace azurecp
         /// </summary>
         public static List<KeyValuePair<AzureCloudInstance, Uri>> AzureCloudEndpoints = new List<KeyValuePair<AzureCloudInstance, Uri>>()
         {
-            new KeyValuePair<AzureCloudInstance, Uri>(AzureCloudInstance.AzurePublic, new Uri("https://login.microsoftonline.com")),
-            new KeyValuePair<AzureCloudInstance, Uri>(AzureCloudInstance.AzureChina, new Uri("https://login.chinacloudapi.cn")),
-            new KeyValuePair<AzureCloudInstance, Uri>(AzureCloudInstance.AzureGermany, new Uri("https://login.microsoftonline.de")),
-            new KeyValuePair<AzureCloudInstance, Uri>(AzureCloudInstance.AzureUsGovernment, new Uri("https://login.microsoftonline.us")),
-            new KeyValuePair<AzureCloudInstance, Uri>(AzureCloudInstance.None, new Uri("https://login.microsoftonline.com")),
+            new KeyValuePair<AzureCloudInstance, Uri>(AzureCloudInstance.AzurePublic, AzureAuthorityHosts.AzurePublicCloud),
+            new KeyValuePair<AzureCloudInstance, Uri>(AzureCloudInstance.AzureChina, AzureAuthorityHosts.AzureChina),
+            new KeyValuePair<AzureCloudInstance, Uri>(AzureCloudInstance.AzureGermany, AzureAuthorityHosts.AzureGermany),
+            new KeyValuePair<AzureCloudInstance, Uri>(AzureCloudInstance.AzureUsGovernment, AzureAuthorityHosts.AzureGovernment),
+            new KeyValuePair<AzureCloudInstance, Uri>(AzureCloudInstance.None, AzureAuthorityHosts.AzurePublicCloud),
         };
         public static string GroupClaimEntityType { get; set; } = SPClaimEntityTypes.FormsRole;
         public static bool EnforceOnly1ClaimTypeForGroup => true;     // In AzureCP, only 1 claim type can be used to create group permissions
@@ -193,17 +175,22 @@ namespace azurecp
         [Persisted]
         private string _EntityDisplayTextPrefix;
 
-        public bool EnableRetry
-        {
-            get => _EnableRetry;
-            set => _EnableRetry = value;
-        }
-        [Persisted]
-        private bool _EnableRetry = false;
+        //public bool EnableRetry
+        //{
+        //    get => _EnableRetry;
+        //    set => _EnableRetry = value;
+        //}
+        //[Persisted]
+        //private bool _EnableRetry = false;
 
         public int Timeout
         {
-            get => _Timeout;
+            get {
+#if DEBUG
+                return _Timeout * 100;
+#endif
+                return _Timeout;
+            }
             set => _Timeout = value;
         }
         [Persisted]
@@ -417,7 +404,7 @@ namespace azurecp
             copy.FilterExactMatchOnly = this.FilterExactMatchOnly;
             copy.EnableAugmentation = this.EnableAugmentation;
             copy.EntityDisplayTextPrefix = this.EntityDisplayTextPrefix;
-            copy.EnableRetry = this.EnableRetry;
+            //copy.EnableRetry = this.EnableRetry;
             copy.Timeout = this.Timeout;
             copy.CustomData = this.CustomData;
             copy.MaxSearchResultsCount = this.MaxSearchResultsCount;
@@ -824,7 +811,7 @@ namespace azurecp
             set => m_CloudInstance = value.ToString();
         }
         [Persisted]
-        private string m_CloudInstance = AzureCloudInstance.AzurePublic.ToString();
+        private string m_CloudInstance = AzureAuthorityHosts.AzurePublicCloud.ToString();
 
         /// <summary>
         /// Instance of the IAuthenticationProvider class for this specific Azure AD tenant
@@ -865,25 +852,36 @@ namespace azurecp
         {
             try
             {
+                var handlers = GraphClientFactory.CreateDefaultHandlers();
+                handlers.Add(new ChaosHandler());   // DEBUG
+                // PROXY ISSUE: https://github.com/microsoftgraph/msgraph-sdk-dotnet/issues/1456
+                //HttpClient httpClient = GraphClientFactory.Create(handlers: handlers, proxy: new WebProxy(new Uri("http://localhost:8888"), false));
+                HttpClient httpClient = GraphClientFactory.Create(proxy: new WebProxy(new Uri("http://localhost:8888"), false));
+                //httpClient.Timeout = TimeSpan.FromMilliseconds(1000 * 10);
+                httpClient.Timeout = TimeSpan.FromMilliseconds(timeout);
+
                 TokenCredential tokenCredential;
                 TokenCredentialOptions tokenCredentialOptions = new TokenCredentialOptions();
                 tokenCredentialOptions.AuthorityHost = ClaimsProviderConstants.AzureCloudEndpoints.SingleOrDefault(kvp => kvp.Key == this.CloudInstance).Value;
+                //tokenCredentialOptions.AuthorityHost = AzureAuthorityHosts.AzurePublicCloud;
 
                 if (!String.IsNullOrWhiteSpace(ClientSecret))
                 {
-                    //this.AuthenticationProvider = new AADAppOnlyAuthenticationProvider(this.CloudInstance, this.Name, this.ApplicationId, this.ApplicationSecret, claimsProviderName, timeout);
                     tokenCredential = new ClientSecretCredential(this.Name, this.ApplicationId, this.ApplicationSecret, tokenCredentialOptions);
                 }
                 else
                 {
-                    //this.AuthenticationProvider = new AADAppOnlyAuthenticationProvider(this.CloudInstance, this.Name, this.ApplicationId, this.ClientCertificatePrivateKey, claimsProviderName, timeout);
                     tokenCredential = new ClientCertificateCredential(this.Name, this.ApplicationId, this.ClientCertificatePrivateKey, tokenCredentialOptions);
                 }
-                this.GraphService = new GraphServiceClient(tokenCredential, new[] { "https://graph.microsoft.com/.default" });
-                //UriBuilder graphUriBuilder = new UriBuilder(this.AuthenticationProvider.GraphServiceEndpoint);
-                //graphUriBuilder.Path = $"/{ClaimsProviderConstants.GraphServiceEndpointVersion}";
-                //this.GraphService = new GraphServiceClient(graphUriBuilder.ToString(), this.AuthenticationProvider);
 
+                // https://learn.microsoft.com/en-us/graph/sdks/customize-client?tabs=csharp
+                var authProvider = new Microsoft.Graph.Authentication.AzureIdentityAuthenticationProvider(
+                    credential: tokenCredential,
+                    //allowedHosts: new[] { AzureAuthorityHosts.AzurePublicCloud.ToString() },
+                    scopes: new[] { "https://graph.microsoft.com/.default",
+                });
+                this.GraphService = new GraphServiceClient(httpClient, authProvider);
+                //this.GraphService = new GraphServiceClient(tokenCredential, new[] { "User.Read.All", "GroupMember.Read.All" });
             }
             catch (Exception ex)
             {

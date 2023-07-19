@@ -24,6 +24,7 @@ using Microsoft.Kiota.Abstractions;
 using Microsoft.Kiota.Http.HttpClientLibrary.Middleware.Options;
 using System.Collections;
 using System.Diagnostics.Metrics;
+using static Microsoft.Graph.CoreConstants;
 
 /*
  * DO NOT directly edit AzureCP class. It is designed to be inherited to customize it as desired.
@@ -1479,230 +1480,142 @@ namespace azurecp
             bool tryAgain = false;
             object lockAddResultToCollection = new object();
             int timeout = this.CurrentConfiguration.Timeout;
-#if DEBUG
-            timeout = 60 * 1000;
-#endif
-            CancellationTokenSource cts = new CancellationTokenSource(timeout);
+
             try
             {
                 using (new SPMonitoredScope($"[{ProviderInternalName}] Querying Azure AD tenant '{tenant.Name}' for users and groups, with input '{currentContext.Input}'", 1000))
                 {
-                    // Run in a task to timeout it if it takes too long
-                    Task batchQueryTask = Task.Run(async () =>
+                    RetryHandlerOption retryHandlerOption = new RetryHandlerOption()
                     {
-                        RetryHandlerOption retryHandlerOption = new RetryHandlerOption()
+                        MaxRetry = 1, // TODO https://stackoverflow.com/questions/75685845/where-is-withmaxretry-and-withshouldretry-in-dotnet-graph-sdk-v5
+                    };
+
+                    // Build the batch
+                    BatchRequestContent batchRequestContent = new BatchRequestContent(tenant.GraphService);
+
+
+                    // Allow Advanced query as documented in  https://learn.microsoft.com/en-us/graph/sdks/create-requests?tabs=csharp#retrieve-a-list-of-entities
+                    // Add ConsistencyLevel header to eventual and $count=true to fix $filter on CompanyName - https://github.com/Yvand/AzureCP/issues/166
+                    //// (Only work for non-batched requests)
+                    ///
+                    string usersRequestId = String.Empty;
+                    if (!String.IsNullOrWhiteSpace(tenant.UserFilter))
+                    {
+                        // https://stackoverflow.com/questions/56417435/when-i-set-an-object-using-an-action-the-object-assigned-is-always-null
+                        RequestInformation userRequest = tenant.GraphService.Users.ToGetRequestInformation(conf =>
                         {
-                            MaxRetry = 1 // TODO https://stackoverflow.com/questions/75685845/where-is-withmaxretry-and-withshouldretry-in-dotnet-graph-sdk-v5
+                            conf.QueryParameters = new UsersRequestBuilder.UsersRequestBuilderGetQueryParameters
+                            {
+                                Count = true,
+                                //Filter = tenant.UserFilter,
+                                Select = tenant.UserSelect,
+                                Top = 2,    // YVANDEBUG
+                            };
+                            conf.Headers = new RequestHeaders
+                            {
+                                    { "ConsistencyLevel", "eventual" }
+                            };
+                            conf.Options = new List<IRequestOption>
+                            {
+                                    retryHandlerOption,
+                            };
+                        });
+                        // Using AddBatchRequestStepAsync adds each request as a step with no specified order of execution
+                        usersRequestId = await batchRequestContent.AddBatchRequestStepAsync(userRequest).ConfigureAwait(false);
+                    }
+
+                    // Groups
+                    string groupsRequestId = String.Empty;
+                    if (!String.IsNullOrWhiteSpace(tenant.GroupFilter))
+                    {
+                        GroupsRequestBuilder.GroupsRequestBuilderGetRequestConfiguration groupsRequestConfig = new GroupsRequestBuilder.GroupsRequestBuilderGetRequestConfiguration
+                        {
+                            QueryParameters = new GroupsRequestBuilder.GroupsRequestBuilderGetQueryParameters
+                            {
+                                Count = true,
+                                Filter = tenant.GroupFilter,
+                                Select = tenant.GroupSelect,
+                            },
+                            Headers = new RequestHeaders
+                                {
+                                    { "ConsistencyLevel", "eventual" }
+                                },
+                            Options = new List<IRequestOption>
+                                {
+                                    retryHandlerOption,
+                                }
                         };
-
-                        // Build the batch
-                        BatchRequestContent batchRequestContent = new BatchRequestContent(tenant.GraphService);
-
-
-                        // Allow Advanced query as documented in  https://learn.microsoft.com/en-us/graph/sdks/create-requests?tabs=csharp#retrieve-a-list-of-entities
-                        // Add ConsistencyLevel header to eventual and $count=true to fix $filter on CompanyName - https://github.com/Yvand/AzureCP/issues/166
-                        //// (Only work for non-batched requests)
-                        ///
-                        string usersRequestId = String.Empty;
-                        if (!String.IsNullOrWhiteSpace(tenant.UserFilter))
+                        RequestInformation groupRequest = tenant.GraphService.Groups.ToGetRequestInformation(conf =>
                         {
-                            UsersRequestBuilder.UsersRequestBuilderGetRequestConfiguration usersRequestConfig = new UsersRequestBuilder.UsersRequestBuilderGetRequestConfiguration
+                            conf.QueryParameters = new GroupsRequestBuilder.GroupsRequestBuilderGetQueryParameters
                             {
-                                QueryParameters = new UsersRequestBuilder.UsersRequestBuilderGetQueryParameters
-                                {
-                                    Count = true,
-                                    Filter = tenant.UserFilter,
-                                    Select = tenant.UserSelect,
-                                },
-                                Headers = new RequestHeaders
-                                {
-                                    { "ConsistencyLevel", "eventual" }
-                                },
-                                Options = new List<IRequestOption>
-                                {
-                                    retryHandlerOption,
-                                }
+                                Count = true,
+                                Filter = tenant.GroupFilter,
+                                Select = tenant.GroupSelect,
                             };
-                            RequestInformation userRequest = tenant.GraphService.Users.ToGetRequestInformation(conf => conf = usersRequestConfig);
-                            // Using AddBatchRequestStepAsync adds each request as a step with no specified order of execution
-                            usersRequestId = await batchRequestContent.AddBatchRequestStepAsync(userRequest).ConfigureAwait(false);
-                        }
-
-                        // Groups
-                        string groupsRequestId = String.Empty;
-                        if (!String.IsNullOrWhiteSpace(tenant.GroupFilter))
-                        {
-                            GroupsRequestBuilder.GroupsRequestBuilderGetRequestConfiguration groupsRequestConfig = new GroupsRequestBuilder.GroupsRequestBuilderGetRequestConfiguration
+                            conf.Headers = new RequestHeaders
                             {
-                                QueryParameters = new GroupsRequestBuilder.GroupsRequestBuilderGetQueryParameters
-                                {
-                                    Count = true,
-                                    Filter = tenant.GroupFilter,
-                                    Select = tenant.GroupSelect,
-                                },
-                                Headers = new RequestHeaders
-                                {
                                     { "ConsistencyLevel", "eventual" }
-                                },
-                                Options = new List<IRequestOption>
-                                {
-                                    retryHandlerOption,
-                                }
                             };
-                            RequestInformation groupRequest = tenant.GraphService.Groups.ToGetRequestInformation(conf => conf = groupsRequestConfig);
-                            // Using AddBatchRequestStepAsync adds each request as a step with no specified order of execution
-                            groupsRequestId = await batchRequestContent.AddBatchRequestStepAsync(groupRequest).ConfigureAwait(false);
-                        }
+                            conf.Options = new List<IRequestOption>
+                            {
+                                    retryHandlerOption,
+                            };
+                        });
+                        // Using AddBatchRequestStepAsync adds each request as a step with no specified order of execution
+                        groupsRequestId = await batchRequestContent.AddBatchRequestStepAsync(groupRequest).ConfigureAwait(false);
+                    }
 
-                        var returnedResponse = await tenant.GraphService.Batch.PostAsync(batchRequestContent).ConfigureAwait(false);
+                    BatchResponseContent returnedResponse = await tenant.GraphService.Batch.PostAsync(batchRequestContent).ConfigureAwait(false);
+                    UserCollectionResponse userCollectionResult = await returnedResponse.GetResponseByIdAsync<UserCollectionResponse>(usersRequestId).ConfigureAwait(false);
+                    GroupCollectionResponse groupCollectionResult = await returnedResponse.GetResponseByIdAsync<GroupCollectionResponse>(groupsRequestId).ConfigureAwait(false);
 
-                        // For collections, must use the *CollectionResponse class to deserialize
-                        // The .Value property will contain the *CollectionPage type that the Graph client
-                        // returns from GetAsync().
-                        UserCollectionResponse userCollectionResult = await returnedResponse.GetResponseByIdAsync<UserCollectionResponse>(usersRequestId);
-                        GroupCollectionResponse groupCollectionResult = await returnedResponse.GetResponseByIdAsync<GroupCollectionResponse>(groupsRequestId);
-
-                        if (userCollectionResult?.Value != null)
-                        {
-                            PageIterator<User, UserCollectionResponse> usersPageIterator = PageIterator<User, UserCollectionResponse>.CreatePageIterator(
-                                tenant.GraphService,
-                                userCollectionResult,
-                                (user) =>
+                    // Process users result
+                    ClaimsProviderLogging.Log($"[{ProviderInternalName}] Query to tenant '{tenant.Name}' returned {(userCollectionResult?.Value == null ? 0 : userCollectionResult.Value.Count)} user(s) with filter \"{tenant.UserFilter}\"", TraceSeverity.VerboseEx, EventSeverity.Information, TraceCategory.Lookup);
+                    if (userCollectionResult?.Value != null)
+                    {
+                        PageIterator<User, UserCollectionResponse> usersPageIterator = PageIterator<User, UserCollectionResponse>.CreatePageIterator(
+                            tenant.GraphService,
+                            userCollectionResult,
+                            (user) =>
+                            {
+                                lock (lockAddResultToCollection)
                                 {
-                                    lock (lockAddResultToCollection)
+                                    if (tenant.ExcludeMembers == true && !String.Equals(user.UserType, ClaimsProviderConstants.MEMBER_USERTYPE, StringComparison.InvariantCultureIgnoreCase))
                                     {
-                                        if (tenant.ExcludeMembers == true && !String.Equals(user.UserType, ClaimsProviderConstants.MEMBER_USERTYPE, StringComparison.InvariantCultureIgnoreCase))
-                                        {
-                                            tenantResults.UsersAndGroups.Add(user);
-                                        }
-                                        else if (tenant.ExcludeGuests == true && !String.Equals(user.UserType, ClaimsProviderConstants.GUEST_USERTYPE, StringComparison.InvariantCultureIgnoreCase))
-                                        {
-                                            tenantResults.UsersAndGroups.Add(user);
-                                        }
-                                        else
-                                        {
-                                            tenantResults.UsersAndGroups.Add(user);
-                                        }
+                                        tenantResults.UsersAndGroups.Add(user);
                                     }
-                                    return true; // return true to continue the iteration
-                                });
-                            await usersPageIterator.IterateAsync().ConfigureAwait(false);
-                        }
+                                    else if (tenant.ExcludeGuests == true && !String.Equals(user.UserType, ClaimsProviderConstants.GUEST_USERTYPE, StringComparison.InvariantCultureIgnoreCase))
+                                    {
+                                        tenantResults.UsersAndGroups.Add(user);
+                                    }
+                                    else
+                                    {
+                                        tenantResults.UsersAndGroups.Add(user);
+                                    }
+                                }
+                                return true; // return true to continue the iteration
+                            });
+                        await usersPageIterator.IterateAsync().ConfigureAwait(false);
+                    }
 
-                        if (groupCollectionResult?.Value != null)
-                        {
-                            PageIterator<Group, GroupCollectionResponse> groupsPageIterator = PageIterator<Group, GroupCollectionResponse>.CreatePageIterator(
-                                tenant.GraphService,
-                                groupCollectionResult,
-                                (group) =>
+                    // Process groups result
+                    if (groupCollectionResult?.Value != null)
+                    {
+                        PageIterator<Group, GroupCollectionResponse> groupsPageIterator = PageIterator<Group, GroupCollectionResponse>.CreatePageIterator(
+                            tenant.GraphService,
+                            groupCollectionResult,
+                            (group) =>
+                            {
+                                lock (lockAddResultToCollection)
                                 {
-                                    lock (lockAddResultToCollection)
-                                    {
-                                        tenantResults.UsersAndGroups.Add(group);
-                                    }
-                                    return true; // return true to continue the iteration
-                                });
-                            await groupsPageIterator.IterateAsync().ConfigureAwait(false);
-                        }
+                                    tenantResults.UsersAndGroups.Add(group);
+                                }
+                                return true; // return true to continue the iteration
+                            });
+                        await groupsPageIterator.IterateAsync().ConfigureAwait(false);
+                    }
 
-                        //User user = userCollectionResult?.Value?.FirstOrDefault();
-
-                        //IGraphServiceUsersCollectionRequest userRequest = tenant.GraphService.Users.Request(nonBatchedUserQueryOptions).Select(tenant.UserSelect).Filter(tenant.UserFilter).Top(currentContext.MaxCount);
-                        //IGraphServiceGroupsCollectionRequest groupRequest = tenant.GraphService.Groups.Request().Select(tenant.GroupSelect).Filter(tenant.GroupFilter).Top(currentContext.MaxCount);
-
-                        //// Do a batch query only if necessary
-                        //if (!String.IsNullOrWhiteSpace(tenant.UserFilter) && !String.IsNullOrWhiteSpace(tenant.GroupFilter))
-                        //{
-                        //    //// Fix https://github.com/Yvand/AzureCP/issues/175: Create the BatchRequestStep manually to be able to set the HTTP header ConsistencyLevel: eventual
-                        //    //// Implememted as shown in https://learn.microsoft.com/en-us/graph/sdks/batch-requests?tabs=csharp#implementing-batching-using-batchrequestcontent-batchrequeststep-and-httprequestmessage
-                        //    //// How header "ConsistencyLevel" must be set in batching: https://learn.microsoft.com/en-us/graph/json-batching#first-json-batch-request
-                        //    //var httpUserRequestMessage = new HttpRequestMessage(HttpMethod.Get, $"https://graph.microsoft.com/v1.0/users/?$count=true&$select={tenant.UserSelect}&$filter={tenant.UserFilter}");
-                        //    //httpUserRequestMessage.Content = new StringContent(String.Empty, Encoding.UTF8, "application/json");    // Create a fake content to be able to set the header below
-                        //    //httpUserRequestMessage.Content.Headers.Add("ConsistencyLevel", "eventual");
-                        //    //string userRequestId = Guid.NewGuid().ToString();
-                        //    //BatchRequestStep requestStep = new BatchRequestStep(userRequestId, httpUserRequestMessage);
-
-                        //    //// https://docs.microsoft.com/en-us/graph/sdks/batch-requests?tabs=csharp
-                        //    //BatchRequestContent batchRequestContent = new BatchRequestContent();
-                        //    ////var userRequestId = batchRequestContent.AddBatchRequestStep(userRequest); // Use httpUserRequestMessage instead
-                        //    //batchRequestContent.AddBatchRequestStep(requestStep);
-                        //    //var groupRequestId = batchRequestContent.AddBatchRequestStep(groupRequest);
-                        //    //var batchResponse = await tenant.GraphService.Batch.Request().PostAsync(batchRequestContent).ConfigureAwait(false);
-
-                        //    //// De - serialize batch response based on known return type
-                        //    //GraphServiceUsersCollectionResponse usersBatchResponse = await batchResponse.GetResponseByIdAsync<GraphServiceUsersCollectionResponse>(userRequestId).ConfigureAwait(false);
-                        //    //usersFound = usersBatchResponse.Value;
-                        //    //GraphServiceGroupsCollectionResponse groupsBatchResponse = await batchResponse.GetResponseByIdAsync<GraphServiceGroupsCollectionResponse>(groupRequestId).ConfigureAwait(false);
-                        //    //groupsFound = groupsBatchResponse.Value;
-
-
-                        //}
-                        //else
-                        //{
-                        //    // The request only asks for either users or groups, not both
-                        //    if (!String.IsNullOrWhiteSpace(tenant.UserFilter))
-                        //    {
-                        //        usersFound = await userRequest.GetAsync().ConfigureAwait(false);
-                        //    }
-                        //    else
-                        //    {
-                        //        groupsFound = await groupRequest.GetAsync().ConfigureAwait(false);
-                        //    }
-                        //}
-
-                        //    Task userQueryTask = Task.Run(async () =>
-                        //    {
-                        //        ClaimsProviderLogging.Log($"[{ProviderInternalName}] Query to tenant '{tenant.Name}' returned {(usersFound == null ? 0 : usersFound.Count)} user(s) with filter \"{HttpUtility.UrlDecode(tenant.UserFilter)}\"", TraceSeverity.VerboseEx, EventSeverity.Information, TraceCategory.Lookup);
-                        //        if (usersFound != null && usersFound.Count > 0)
-                        //        {
-                        //            do
-                        //            {
-                        //                lock (lockAddResultToCollection)
-                        //                {
-                        //                    IList<User> usersInCurrentPage = usersFound.CurrentPage;
-                        //                    if (tenant.ExcludeMembers)
-                        //                    {
-                        //                        usersInCurrentPage = usersFound.CurrentPage.Where(x => !String.Equals(x.UserType, ClaimsProviderConstants.MEMBER_USERTYPE, StringComparison.InvariantCultureIgnoreCase)).ToList<User>();
-                        //                    }
-                        //                    else if (tenant.ExcludeGuests)
-                        //                    {
-                        //                        usersInCurrentPage = usersFound.CurrentPage.Where(x => !String.Equals(x.UserType, ClaimsProviderConstants.GUEST_USERTYPE, StringComparison.InvariantCultureIgnoreCase)).ToList<User>();
-                        //                    }
-                        //                    tenantResults.UsersAndGroups.AddRange(usersInCurrentPage);
-                        //                }
-                        //                if (usersFound.NextPageRequest != null)
-                        //                {
-                        //                    usersFound = await usersFound.NextPageRequest.GetAsync().ConfigureAwait(false);
-                        //                }
-                        //            }
-                        //            while (usersFound.Count > 0 && usersFound.NextPageRequest != null);
-                        //        }
-                        //    }, cts.Token);
-
-                        //    Task groupQueryTask = Task.Run(async () =>
-                        //    {
-                        //        ClaimsProviderLogging.Log($"[{ProviderInternalName}] Query to tenant '{tenant.Name}' returned {(groupsFound == null ? 0 : groupsFound.Count)} group(s) with filter \"{HttpUtility.UrlDecode(tenant.GroupFilter)}\"", TraceSeverity.VerboseEx, EventSeverity.Information, TraceCategory.Lookup);
-                        //        if (groupsFound != null && groupsFound.Count > 0)
-                        //        {
-                        //            do
-                        //            {
-                        //                lock (lockAddResultToCollection)
-                        //                {
-                        //                    tenantResults.UsersAndGroups.AddRange(groupsFound.CurrentPage);
-                        //                }
-                        //                if (groupsFound.NextPageRequest != null)
-                        //                {
-                        //                    groupsFound = await groupsFound.NextPageRequest.GetAsync().ConfigureAwait(false);
-                        //                }
-                        //            }
-                        //            while (groupsFound.Count > 0 && groupsFound.NextPageRequest != null);
-                        //        }
-                        //    }, cts.Token);
-                        //Task.WaitAll(new Task[2] { userQueryTask, groupQueryTask }, timeout, cts.Token);
-                    }, cts.Token);
-
-                    //// Waits for all tasks to complete execution within a specified number of milliseconds
-                    //ClaimsProviderLogging.LogDebug($"Waiting on Task.WaitAll for {tenant.Name} starting");
                     //// Cannot use Task.WaitAll() because it's actually blocking the threads, preventing parallel queries on others AAD tenants.
                     //// Use await Task.WhenAll() as it does not block other threads, so all AAD tenants are actually queried in parallel.
                     //// More info: https://stackoverflow.com/questions/12337671/using-async-await-for-multiple-tasks
@@ -1728,17 +1641,16 @@ namespace azurecp
             }
             finally
             {
-                cts.Dispose();
             }
 
-            if (tryAgain && !CurrentConfiguration.EnableRetry) { tryAgain = false; }
+            //if (tryAgain && !CurrentConfiguration.EnableRetry) { tryAgain = false; }
 
-            if (firstAttempt && tryAgain)
-            {
-                ClaimsProviderLogging.Log($"[{ProviderInternalName}] Doing new attempt to query Azure AD tenant '{tenant.Name}'...",
-                    TraceSeverity.Medium, EventSeverity.Information, TraceCategory.Lookup);
-                tenantResults = await QueryAzureADTenantAsync(currentContext, tenant, false).ConfigureAwait(false);
-            }
+            //if (firstAttempt && tryAgain)
+            //{
+            //    ClaimsProviderLogging.Log($"[{ProviderInternalName}] Doing new attempt to query Azure AD tenant '{tenant.Name}'...",
+            //        TraceSeverity.Medium, EventSeverity.Information, TraceCategory.Lookup);
+            //    tenantResults = await QueryAzureADTenantAsync(currentContext, tenant, false).ConfigureAwait(false);
+            //}
             return tenantResults;
         }
 
