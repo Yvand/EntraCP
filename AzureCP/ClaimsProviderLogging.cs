@@ -1,12 +1,13 @@
-﻿using Microsoft.SharePoint;
-using Microsoft.SharePoint.Administration;
+﻿using Microsoft.SharePoint.Administration;
+using Microsoft.SharePoint;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
 using System.Text;
+using System.Threading.Tasks;
 
-namespace azurecp
+namespace Yvand.ClaimsProviders
 {
     /// <summary>
     /// Implemented as documented in http://www.sbrickey.com/Tech/Blog/Post/Custom_Logging_in_SharePoint_2010

@@ -15,11 +15,13 @@ using System.Linq;
 using System.Reflection;
 using System.Security.Claims;
 using System.Text;
+using Yvand.ClaimsProviders.Configuration;
+using Yvand.ClaimsProviders.Configuration.AzureAD;
 
 [SetUpFixture]
 public class UnitTestsHelper
 {
-    public static readonly azurecp.AzureCP ClaimsProvider = new azurecp.AzureCP(UnitTestsHelper.ClaimsProviderName);
+    public static readonly Yvand.ClaimsProviders.AzureCP ClaimsProvider = new Yvand.ClaimsProviders.AzureCP(UnitTestsHelper.ClaimsProviderName);
     public static string ClaimsProviderName => "AzureCP";
     public static readonly string ClaimsProviderConfigName = TestContext.Parameters["ClaimsProviderConfigName"];
     private static Uri TestSiteCollUri;
@@ -81,10 +83,10 @@ public class UnitTestsHelper
             Trace.WriteLine($"{DateTime.Now.ToString("s")} SPTrust: {SPTrust.Name}");
         }
 
-        AzureCPConfig config = AzureCPConfig.GetConfiguration(UnitTestsHelper.ClaimsProviderConfigName, UnitTestsHelper.SPTrust.Name);
+        AzureADEntityProviderConfiguration config = AzureADEntityProviderConfiguration.GetConfiguration(UnitTestsHelper.ClaimsProviderConfigName);
         if (config == null)
         {
-            AzureCPConfig.CreateConfiguration(ClaimsProviderConstants.CONFIG_ID, ClaimsProviderConstants.CONFIG_NAME, SPTrust.Name);
+            AzureADEntityProviderConfiguration.CreateConfiguration(ClaimsProviderConstants.CONFIG_ID, ClaimsProviderConstants.CONFIG_NAME, UnitTestsHelper.ClaimsProviderConfigName);
         }
 
         var service = SPFarm.Local.Services.GetValue<SPWebService>(String.Empty);
@@ -150,7 +152,7 @@ public class UnitTestsHelper
         }
     }
 
-    public static void InitializeConfiguration(AzureCPConfig config)
+    public static void InitializeConfiguration(AzureADEntityProviderConfiguration config)
     {
         config.ResetCurrentConfiguration();
 

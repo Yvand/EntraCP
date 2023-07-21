@@ -1,14 +1,16 @@
-﻿using Microsoft.SharePoint.Administration;
-using Microsoft.SharePoint.Administration.Claims;
+﻿using Microsoft.SharePoint.Administration.Claims;
+using Microsoft.SharePoint.Administration;
 using System;
 using System.Collections;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Linq;
 using System.Reflection;
-using WIF = System.Security.Claims;
+using System.Text;
+using System.Threading.Tasks;
+using WIF4_5 = System.Security.Claims;
 
-namespace azurecp
+namespace Yvand.ClaimsProviders.Configuration
 {
     public class IdentityClaimTypeConfig : ClaimTypeConfig
     {
@@ -153,9 +155,7 @@ namespace azurecp
             set { _ClaimValueType = value; }
         }
         [Persisted]
-        private string _ClaimValueType = WIF.ClaimValueTypes.String;
-
-
+        private string _ClaimValueType = WIF4_5.ClaimValueTypes.String;
 
         /// <summary>
         /// If set, its value can be used as a prefix in the people picker to create a permission without actually quyerying Azure AD

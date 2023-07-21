@@ -8,6 +8,8 @@ using System.Reflection;
 using System.Text;
 using System.Web.UI;
 using System.Web.UI.WebControls;
+using Yvand.ClaimsProviders;
+using Yvand.ClaimsProviders.Configuration;
 
 namespace azurecp.ControlTemplates
 {

@@ -7,7 +7,10 @@ using Microsoft.SharePoint.WebControls;
 using System;
 using System.Linq;
 using System.Web.UI;
-using static azurecp.ClaimsProviderLogging;
+using Yvand.ClaimsProviders;
+using Yvand.ClaimsProviders.Configuration;
+using Yvand.ClaimsProviders.Configuration.AzureAD;
+using static Yvand.ClaimsProviders.ClaimsProviderLogging;
 
 namespace azurecp.ControlTemplates
 {
@@ -36,8 +39,8 @@ namespace azurecp.ControlTemplates
             }
         }
 
-        private IAzureCPConfiguration _PersistedObject;
-        protected AzureCPConfig PersistedObject
+        private AzureADEntityProviderConfiguration _PersistedObject;
+        protected AzureADEntityProviderConfiguration PersistedObject
         {
             get
             {
@@ -45,16 +48,16 @@ namespace azurecp.ControlTemplates
                 {
                     if (_PersistedObject == null)
                     {
-                        _PersistedObject = AzureCPConfig.GetConfiguration(PersistedObjectName, this.CurrentTrustedLoginProvider.Name);
+                        _PersistedObject = AzureADEntityProviderConfiguration.GetConfiguration(PersistedObjectName);
                     }
                     if (_PersistedObject == null)
                     {
                         SPContext.Current.Web.AllowUnsafeUpdates = true;
-                        _PersistedObject = AzureCPConfig.CreateConfiguration(this.PersistedObjectID, this.PersistedObjectName, this.CurrentTrustedLoginProvider.Name);
+                        _PersistedObject = AzureADEntityProviderConfiguration.CreateConfiguration(this.PersistedObjectID, this.PersistedObjectName, this.ClaimsProviderName);
                         SPContext.Current.Web.AllowUnsafeUpdates = false;
                     }
                 });
-                return _PersistedObject as AzureCPConfig;
+                return _PersistedObject as AzureADEntityProviderConfiguration;
             }
             //set { _PersistedObject = value; }
         }
@@ -166,7 +169,7 @@ namespace azurecp.ControlTemplates
 
             if (CurrentTrustedLoginProvider == null)
             {
-                CurrentTrustedLoginProvider = AzureCP.GetSPTrustAssociatedWithCP(this.ClaimsProviderName);
+                CurrentTrustedLoginProvider = Utils.GetSPTrustAssociatedWithClaimsProvider(this.ClaimsProviderName);
                 if (CurrentTrustedLoginProvider == null)
                 {
                     Status |= ConfigStatus.NoSPTrustAssociation;
@@ -186,7 +189,7 @@ namespace azurecp.ControlTemplates
                 return Status;
             }
 
-            // AzureCPConfig.GetConfiguration will call method AzureCPConfig.CheckAndCleanConfiguration();
+            // AzureADEntityProviderConfiguration.GetConfiguration will call method AzureADEntityProviderConfiguration.CheckAndCleanConfiguration();
             //PersistedObject.CheckAndCleanConfiguration(CurrentTrustedLoginProvider.Name);
             PersistedObject.ClaimTypes.SPTrust = CurrentTrustedLoginProvider;
             if (IdentityCTConfig == null && Status == ConfigStatus.AllGood)

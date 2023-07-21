@@ -16,7 +16,10 @@ using System.Security.Cryptography.X509Certificates;
 using System.Threading.Tasks;
 using System.Web.UI.HtmlControls;
 using System.Web.UI.WebControls;
-using static azurecp.ClaimsProviderLogging;
+using Yvand.ClaimsProviders;
+using Yvand.ClaimsProviders.Configuration;
+using Yvand.ClaimsProviders.Configuration.AzureAD;
+using static Yvand.ClaimsProviders.ClaimsProviderLogging;
 
 namespace azurecp.ControlTemplates
 {
@@ -241,7 +244,7 @@ namespace azurecp.ControlTemplates
 
         protected void BtnResetAzureCPConfig_Click(Object sender, EventArgs e)
         {
-            AzureCPConfig.DeleteConfiguration(PersistedObjectName);
+            AzureADEntityProviderConfiguration.DeleteConfiguration(PersistedObjectName);
             Response.Redirect(Request.RawUrl, false);
         }
 
