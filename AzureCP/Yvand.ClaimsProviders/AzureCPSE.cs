@@ -5,37 +5,29 @@ using Microsoft.SharePoint.Utilities;
 using Microsoft.SharePoint.WebControls;
 using System;
 using System.Collections.Generic;
-using System.Collections.ObjectModel;
 using System.Diagnostics;
 using System.Linq;
 using System.Reflection;
-using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 using Yvand.ClaimsProviders.AzureAD;
 using Yvand.ClaimsProviders.Configuration;
 using Yvand.ClaimsProviders.Configuration.AzureAD;
-using WIF4_5 = System.Security.Claims;
 using static Yvand.ClaimsProviders.ClaimsProviderLogging;
+using WIF4_5 = System.Security.Claims;
 
 namespace Yvand.ClaimsProviders
 {
     public class AzureCPSE : SPClaimProvider
     {
         public static string ClaimsProviderName => "AzureCPSE";
-
         public override string Name => ClaimsProviderName;
-
         public override bool SupportsEntityInformation => true;
         public override bool SupportsHierarchy => true;
         public override bool SupportsResolve => true;
         public override bool SupportsSearch => true;
         public override bool SupportsUserKey => true;
-
         public AzureADEntityProvider EntityProvider { get; set; }
-
-        public OperationContext currentContext;
-
         private ReaderWriterLockSlim Lock_Config = new ReaderWriterLockSlim();
         protected virtual string PickerEntityDisplayText => "({0}) {1}";
         protected virtual string PickerEntityOnMouseOver => "{0}={1}";
@@ -53,9 +45,12 @@ namespace Yvand.ClaimsProviders
             EntityProviderBase<AzureADEntityProviderConfiguration>.SaveGlobalConfiguration(globalConfiguration);
         }
 
-        /// <summary>
-        /// Initializes claim provider. This method is reserved for internal use and is not intended to be called from external code or changed
-        /// </summary>
+        public static AzureADEntityProviderConfiguration CreateGlobalConfiguration()
+        {
+            AzureADEntityProviderConfiguration globalConfiguration = EntityProviderBase<AzureADEntityProviderConfiguration>.CreateGlobalConfiguration(ClaimsProviderConstants.CONFIGURATION_ID, ClaimsProviderConstants.CONFIGURATION_NAME, ClaimsProviderName);
+            return globalConfiguration;
+        }
+
         public bool ValidateLocalConfiguration(Uri context, string[] entityTypes)
         {
             if (!Utils.ShouldRun(context, ClaimsProviderName))
@@ -72,7 +67,7 @@ namespace Yvand.ClaimsProviders
             this.Lock_Config.EnterWriteLock();
             try
             {
-                success = this.EntityProvider.ValidateLocalConfiguration(ClaimsProviderConstants.CONFIGURATION_NAME);
+                success = this.EntityProvider.RefreshLocalConfigurationIfNeeded(ClaimsProviderConstants.CONFIGURATION_NAME);
             }
             catch (Exception ex)
             {
@@ -202,7 +197,7 @@ namespace Yvand.ClaimsProviders
         {
             using (new SPMonitoredScope($"[{ClaimsProviderName}] Total time spent to query Azure AD tenant(s)", 1000))
             {
-                List<DirectoryObject> results = await this.EntityProvider.SearchOrValidateUsersAsync(currentContext).ConfigureAwait(false);
+                List<DirectoryObject> results = await this.EntityProvider.SearchOrValidateEntitiesAsync(currentContext).ConfigureAwait(false);
                 return results;
             }
         }
@@ -599,22 +594,26 @@ namespace Yvand.ClaimsProviders
         protected override void FillClaimTypes(List<string> claimTypes)
         {
             if (claimTypes == null) { return; }
-            try
+            bool configIsValid = ValidateLocalConfiguration(null, null);
+            if (configIsValid)
             {
                 this.Lock_Config.EnterReadLock();
-                if (this.EntityProvider.LocalConfiguration.ProcessedClaimTypesList == null) { return; }
-                foreach (var claimTypeSettings in this.EntityProvider.LocalConfiguration.ProcessedClaimTypesList)
+                try
                 {
-                    claimTypes.Add(claimTypeSettings.ClaimType);
+
+                    foreach (var claimTypeSettings in this.EntityProvider.LocalConfiguration.ProcessedClaimTypesList)
+                    {
+                        claimTypes.Add(claimTypeSettings.ClaimType);
+                    }
                 }
-            }
-            catch (Exception ex)
-            {
-                ClaimsProviderLogging.LogException(ClaimsProviderName, "in FillClaimTypes", TraceCategory.Core, ex);
-            }
-            finally
-            {
-                this.Lock_Config.ExitReadLock();
+                catch (Exception ex)
+                {
+                    ClaimsProviderLogging.LogException(ClaimsProviderName, "in FillClaimTypes", TraceCategory.Core, ex);
+                }
+                finally
+                {
+                    this.Lock_Config.ExitReadLock();
+                }
             }
         }
 
@@ -864,26 +863,24 @@ namespace Yvand.ClaimsProviders
         {
             // Initialization may fail because there is no yet configuration (fresh install)
             // In this case, AzureCP should not return null because it causes null exceptions in SharePoint when users sign-in
-            ValidateLocalConfiguration(null, null);
-
-            this.Lock_Config.EnterReadLock();
-            try
+            bool configIsValid = ValidateLocalConfiguration(null, null);
+            if (configIsValid)
             {
-                if (this.EntityProvider.LocalConfiguration.SPTrust == null)
+                this.Lock_Config.EnterReadLock();
+                try
                 {
-                    return String.Empty;
+                    return this.EntityProvider.LocalConfiguration.SPTrust.IdentityClaimTypeInformation.MappedClaimType;
                 }
-                return this.EntityProvider.LocalConfiguration.SPTrust.IdentityClaimTypeInformation.MappedClaimType;
+                catch (Exception ex)
+                {
+                    ClaimsProviderLogging.LogException(ClaimsProviderName, "in GetClaimTypeForUserKey", TraceCategory.Rehydration, ex);
+                }
+                finally
+                {
+                    this.Lock_Config.ExitReadLock();
+                }
             }
-            catch (Exception ex)
-            {
-                ClaimsProviderLogging.LogException(ClaimsProviderName, "in GetClaimTypeForUserKey", TraceCategory.Rehydration, ex);
-            }
-            finally
-            {
-                this.Lock_Config.ExitReadLock();
-            }
-            return null;
+            return String.Empty;
         }
 
         /// <summary>
@@ -902,7 +899,7 @@ namespace Yvand.ClaimsProviders
             {
                 // If initialization failed but SPTrust is not null, rest of the method can be executed normally
                 // Otherwise return the entity
-                if (!initSucceeded && this.EntityProvider.LocalConfiguration.SPTrust == null)
+                if (!initSucceeded && this.EntityProvider.LocalConfiguration?.SPTrust == null)
                 {
                     return entity;
                 }

@@ -74,18 +74,18 @@
     <Reference Include="System.Web" />
   </ItemGroup>
   <ItemGroup>
-    <Compile Include="AzureAD\AzureADEntityProvider.cs" />
-    <Compile Include="AzureCPSE.cs" />
+    <Compile Include="Yvand.ClaimsProviders\AzureAD\AzureADEntityProvider.cs" />
+    <Compile Include="Yvand.ClaimsProviders\AzureCPSE.cs" />
     <Compile Include="AzureCPUserControl.cs">
       <SubType>ASPXCodeBehind</SubType>
     </Compile>
-    <Compile Include="ClaimsProviderLogging.cs" />
-    <Compile Include="Configuration\AzureAD\AzureADEntityProviderConfiguration.cs" />
-    <Compile Include="Configuration\AzureAD\AzureTenant.cs" />
-    <Compile Include="Configuration\ClaimsProviderConstants.cs" />
-    <Compile Include="Configuration\ClaimTypeConfig.cs" />
-    <Compile Include="Configuration\EntityProviderConfiguration.cs" />
-    <Compile Include="EntityProviderBase.cs" />
+    <Compile Include="Yvand.ClaimsProviders\ClaimsProviderLogging.cs" />
+    <Compile Include="Yvand.ClaimsProviders\Configuration\AzureAD\AzureADEntityProviderConfiguration.cs" />
+    <Compile Include="Yvand.ClaimsProviders\Configuration\AzureAD\AzureTenant.cs" />
+    <Compile Include="Yvand.ClaimsProviders\Configuration\ClaimsProviderConstants.cs" />
+    <Compile Include="Yvand.ClaimsProviders\Configuration\ClaimTypeConfig.cs" />
+    <Compile Include="Yvand.ClaimsProviders\Configuration\EntityProviderConfiguration.cs" />
+    <Compile Include="Yvand.ClaimsProviders\EntityProviderBase.cs" />
     <Compile Include="TEMPLATE\ADMIN\AzureCP\ClaimTypesConfig.ascx.cs">
       <DependentUpon>ClaimTypesConfig.ascx</DependentUpon>
       <SubType>ASPXCodeBehind</SubType>
@@ -104,7 +104,7 @@
       <DependentUpon>AzureCPSE.feature</DependentUpon>
     </Compile>
     <Compile Include="Properties\AssemblyInfo.cs" />
-    <Compile Include="Utils.cs" />
+    <Compile Include="Yvand.ClaimsProviders\Utils.cs" />
   </ItemGroup>
   <ItemGroup>
     <None Include="AzureCP.AdminLinks\SharePointProjectItem.spdata">

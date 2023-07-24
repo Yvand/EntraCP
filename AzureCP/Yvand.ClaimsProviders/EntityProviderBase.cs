@@ -1,19 +1,11 @@
-﻿using Microsoft.SharePoint.Administration;
+﻿using Microsoft.Graph.Models;
+using Microsoft.SharePoint.Administration;
 using System;
 using System.Collections.Generic;
-using System.Linq;
-using System.Text;
+using System.Reflection;
 using System.Threading.Tasks;
 using Yvand.ClaimsProviders.Configuration;
 using static Yvand.ClaimsProviders.ClaimsProviderLogging;
-using Yvand.ClaimsProviders.Configuration.AzureAD;
-using System.Threading;
-using System.Reflection;
-using Microsoft.IdentityModel.Protocols;
-using Microsoft.Graph.Models;
-using System.Security.AccessControl;
-using Microsoft.SharePoint.Administration.Claims;
-using Microsoft.SharePoint.WebControls;
 
 namespace Yvand.ClaimsProviders
 {
@@ -23,32 +15,23 @@ namespace Yvand.ClaimsProviders
         public TConfiguration LocalConfiguration { get; private set; }
         public long LocalConfigurationVersion = 0;
         public string ClaimsProviderName { get; set; }
-        public abstract Task<List<DirectoryObject>> SearchOrValidateUsersAsync(OperationContext currentContext);
+        public abstract Task<List<DirectoryObject>> SearchOrValidateEntitiesAsync(OperationContext currentContext);
         public abstract Task<List<Group>> GetEntityGroupsAsync(OperationContext currentContext);
 
         public EntityProviderBase(string claimsProviderName)
         {
             this.ClaimsProviderName = claimsProviderName;
         }
-        public bool ValidateLocalConfiguration(string configurationName)
+
+        /// <summary>
+        /// 
+        /// </summary>
+        /// <param name="configurationName"></param>
+        /// <returns>return true if local configuration is valid and up to date</returns>
+        public bool RefreshLocalConfigurationIfNeeded(string configurationName)
         {
             bool configIsVald = true;
-            this.UpdateLocalConfigurationIfNeeded(configurationName);
-            if (this.LocalConfiguration == null)
-            {
-                configIsVald = false;
-            }
-            if (this.LocalConfiguration.ClaimTypes == null || this.LocalConfiguration.ClaimTypes.Count == 0)
-            {
-                ClaimsProviderLogging.Log($"[{ClaimsProviderName}] Configuration '{configurationName}' was found but collection ClaimTypes is null or empty. Visit AzureCP admin pages in central administration to create it.",
-                    TraceSeverity.Unexpected, EventSeverity.Error, TraceCategory.Core);
-                configIsVald = false;
-            }
-            return configIsVald;
-        }
-
-        private TConfiguration UpdateLocalConfigurationIfNeeded(string configurationName)
-        {
+            //this.UpdateLocalConfigurationIfNeeded(configurationName);
             // Use reflection to call method GetConfiguration(string) of the generic type because TConfiguration.GetConfiguration(persistedObjectName) return Compiler Error CS0704
             //TConfiguration globalConfiguration = TConfiguration.GetConfiguration(persistedObjectName);
             //TConfiguration globalConfiguration = (TConfiguration)typeof(TConfiguration).GetMethod("GetConfiguration", new[] { typeof(string) }).Invoke(null, new object[] { persistedObjectName });
@@ -59,15 +42,14 @@ namespace Yvand.ClaimsProviders
                 ClaimsProviderLogging.Log($"[{ClaimsProviderName}] Cannot continue because configuration '{configurationName}' was not found in configuration database, visit AzureCP admin pages in central administration to create it.",
                     TraceSeverity.Unexpected, EventSeverity.Error, TraceCategory.Core);
                 this.LocalConfiguration = null;
-                return null;
+                return false;
             }
 
             if (this.LocalConfigurationVersion == ((SPPersistedObject)globalConfiguration).Version)
             {
                 ClaimsProviderLogging.Log($"[{ClaimsProviderName}] Configuration '{configurationName}' was found, version {((SPPersistedObject)globalConfiguration).Version.ToString()}",
                     TraceSeverity.VerboseEx, EventSeverity.Information, TraceCategory.Core);
-
-                return this.LocalConfiguration;
+                return true;
             }
 
             ClaimsProviderLogging.Log($"[{ClaimsProviderName}] Configuration '{configurationName}' was found with new version {globalConfiguration.Version.ToString()}, refreshing local copy",
@@ -77,8 +59,52 @@ namespace Yvand.ClaimsProviders
             this.LocalConfiguration = (TConfiguration)globalConfiguration.CopyConfiguration();
             this.LocalConfigurationVersion = ((SPPersistedObject)globalConfiguration).Version;
 
-            return this.LocalConfiguration;
+            //if (this.LocalConfiguration == null)
+            //{
+            //    configIsVald = false;
+            //}
+            //else
+            if (this.LocalConfiguration.ClaimTypes == null || this.LocalConfiguration.ClaimTypes.Count == 0)
+            {
+                ClaimsProviderLogging.Log($"[{ClaimsProviderName}] Configuration '{configurationName}' was found but collection ClaimTypes is null or empty. Visit AzureCP admin pages in central administration to create it.",
+                    TraceSeverity.Unexpected, EventSeverity.Error, TraceCategory.Core);
+                configIsVald = false;
+            }
+            return configIsVald;
         }
+
+        //private TConfiguration UpdateLocalConfigurationIfNeeded(string configurationName)
+        //{
+        //    // Use reflection to call method GetConfiguration(string) of the generic type because TConfiguration.GetConfiguration(persistedObjectName) return Compiler Error CS0704
+        //    //TConfiguration globalConfiguration = TConfiguration.GetConfiguration(persistedObjectName);
+        //    //TConfiguration globalConfiguration = (TConfiguration)typeof(TConfiguration).GetMethod("GetConfiguration", new[] { typeof(string) }).Invoke(null, new object[] { persistedObjectName });
+        //    TConfiguration globalConfiguration = GetGlobalConfiguration(configurationName);
+
+        //    if (globalConfiguration == null)
+        //    {
+        //        ClaimsProviderLogging.Log($"[{ClaimsProviderName}] Cannot continue because configuration '{configurationName}' was not found in configuration database, visit AzureCP admin pages in central administration to create it.",
+        //            TraceSeverity.Unexpected, EventSeverity.Error, TraceCategory.Core);
+        //        this.LocalConfiguration = null;
+        //        return null;
+        //    }
+
+        //    if (this.LocalConfigurationVersion == ((SPPersistedObject)globalConfiguration).Version)
+        //    {
+        //        ClaimsProviderLogging.Log($"[{ClaimsProviderName}] Configuration '{configurationName}' was found, version {((SPPersistedObject)globalConfiguration).Version.ToString()}",
+        //            TraceSeverity.VerboseEx, EventSeverity.Information, TraceCategory.Core);
+
+        //        return this.LocalConfiguration;
+        //    }
+
+        //    ClaimsProviderLogging.Log($"[{ClaimsProviderName}] Configuration '{configurationName}' was found with new version {globalConfiguration.Version.ToString()}, refreshing local copy",
+        //        TraceSeverity.Medium, EventSeverity.Information, TraceCategory.Core);
+
+        //    // Configuration needs to be refreshed, lock current thread in write mode
+        //    this.LocalConfiguration = (TConfiguration)globalConfiguration.CopyConfiguration();
+        //    this.LocalConfigurationVersion = ((SPPersistedObject)globalConfiguration).Version;
+
+        //    return this.LocalConfiguration;
+        //}
 
         /// <summary>
         /// Returns the configuration of AzureCP, but does not initialize the runtime settings

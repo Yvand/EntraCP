@@ -5,16 +5,13 @@ using Microsoft.Graph.Users;
 using Microsoft.Kiota.Abstractions;
 using Microsoft.Kiota.Http.HttpClientLibrary.Middleware.Options;
 using Microsoft.SharePoint.Administration;
-using Microsoft.SharePoint.Administration.Claims;
 using Microsoft.SharePoint.Utilities;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
 using System.Text;
-using System.Threading;
 using System.Threading.Tasks;
-using Yvand.ClaimsProviders;
 using Yvand.ClaimsProviders.Configuration;
 using Yvand.ClaimsProviders.Configuration.AzureAD;
 using static Yvand.ClaimsProviders.ClaimsProviderLogging;
@@ -30,7 +27,7 @@ namespace Yvand.ClaimsProviders.AzureAD
             throw new NotImplementedException();
         }
 
-        public async override Task<List<DirectoryObject>> SearchOrValidateUsersAsync(OperationContext currentContext)
+        public async override Task<List<DirectoryObject>> SearchOrValidateEntitiesAsync(OperationContext currentContext)
         {
             // this.CurrentConfiguration.AzureTenants must be cloned locally var to ensure its properties ($select / $filter) won't be updated by multiple threads
             List<AzureTenant> azureTenants = new List<AzureTenant>(this.LocalConfiguration.AzureTenants.Count);

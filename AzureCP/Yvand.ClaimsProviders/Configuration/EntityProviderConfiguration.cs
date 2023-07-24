@@ -229,12 +229,12 @@ namespace Yvand.ClaimsProviders.Configuration
                 {
                     // Identity claim type found, set IdentityClaimTypeConfig property
                     identityClaimTypeFound = true;
-                    IdentityClaimTypeConfig IdentityClaimTypeConfig = IdentityClaimTypeConfig.ConvertClaimTypeConfig(claimTypeConfig);
+                    this.IdentityClaimTypeConfig = IdentityClaimTypeConfig.ConvertClaimTypeConfig(claimTypeConfig);
                 }
                 else if (!groupClaimTypeFound && claimTypeConfig.EntityType == DirectoryObjectType.Group)
                 {
                     groupClaimTypeFound = true;
-                    ClaimTypeConfig MainGroupClaimTypeConfig = claimTypeConfig;
+                    this.MainGroupClaimTypeConfig = claimTypeConfig;
                 }
             }
 
@@ -250,26 +250,23 @@ namespace Yvand.ClaimsProviders.Configuration
             {
                 if (claimTypeConfig.EntityType == DirectoryObjectType.User)
                 {
-                    claimTypeConfig.ClaimType = IdentityClaimTypeConfig.ClaimType;
-                    claimTypeConfig.DirectoryObjectPropertyToShowAsDisplayText = IdentityClaimTypeConfig.DirectoryObjectPropertyToShowAsDisplayText;
+                    claimTypeConfig.ClaimType = this.IdentityClaimTypeConfig.ClaimType;
+                    claimTypeConfig.DirectoryObjectPropertyToShowAsDisplayText = this.IdentityClaimTypeConfig.DirectoryObjectPropertyToShowAsDisplayText;
                 }
                 else
                 {
                     // If not a user, it must be a group
-                    if (MainGroupClaimTypeConfig == null)
+                    if (this.MainGroupClaimTypeConfig == null)
                     {
                         continue;
                     }
-                    claimTypeConfig.ClaimType = MainGroupClaimTypeConfig.ClaimType;
-                    claimTypeConfig.DirectoryObjectPropertyToShowAsDisplayText = MainGroupClaimTypeConfig.DirectoryObjectPropertyToShowAsDisplayText;
-                    claimTypeConfig.ClaimTypeDisplayName = MainGroupClaimTypeConfig.ClaimTypeDisplayName;
+                    claimTypeConfig.ClaimType = this.MainGroupClaimTypeConfig.ClaimType;
+                    claimTypeConfig.DirectoryObjectPropertyToShowAsDisplayText = this.MainGroupClaimTypeConfig.DirectoryObjectPropertyToShowAsDisplayText;
+                    claimTypeConfig.ClaimTypeDisplayName = this.MainGroupClaimTypeConfig.ClaimTypeDisplayName;
                 }
                 additionalClaimTypeConfigList.Add(claimTypeConfig);
             }
 
-            // Write runtime settings
-            this.IdentityClaimTypeConfig = IdentityClaimTypeConfig;
-            this.MainGroupClaimTypeConfig = MainGroupClaimTypeConfig;
             this.ProcessedClaimTypesList = new List<ClaimTypeConfig>(claimTypesSetInTrust.Count + additionalClaimTypeConfigList.Count);
             this.ProcessedClaimTypesList.AddRange(claimTypesSetInTrust);
             this.ProcessedClaimTypesList.AddRange(additionalClaimTypeConfigList);
