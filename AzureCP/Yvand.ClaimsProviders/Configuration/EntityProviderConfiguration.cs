@@ -192,7 +192,7 @@ namespace Yvand.ClaimsProviders.Configuration
             this.Initialize();
         }
 
-        public virtual bool Initialize()
+        private bool Initialize()
         {
             if (!this.IsInitialized)
             {
@@ -321,11 +321,11 @@ namespace Yvand.ClaimsProviders.Configuration
         /// Returns a copy of the current object. This copy does not have any member of the base SharePoint base class set
         /// </summary>
         /// <returns></returns>
-        public EntityProviderConfiguration CopyConfiguration()
+        public virtual EntityProviderConfiguration CopyConfiguration()
         {
             // Cannot use reflection here to copy object because of the calls to methods CopyConfiguration() on some properties
-            EntityProviderConfiguration copy = new EntityProviderConfiguration();
-            copy.ClaimsProviderName = this.ClaimsProviderName;
+            EntityProviderConfiguration copy = new EntityProviderConfiguration(this.ClaimsProviderName);
+            //copy.ClaimsProviderName = this.ClaimsProviderName;
             copy.ClaimTypes = new ClaimTypeConfigCollection();
             copy.ClaimTypes.SPTrust = this.ClaimTypes.SPTrust;
             foreach (ClaimTypeConfig currentObject in this.ClaimTypes)

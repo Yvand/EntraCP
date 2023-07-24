@@ -57,7 +57,7 @@ namespace Yvand.ClaimsProviders
 
             // Configuration needs to be refreshed, lock current thread in write mode
             this.LocalConfiguration = (TConfiguration)globalConfiguration.CopyConfiguration();
-            this.LocalConfigurationVersion = ((SPPersistedObject)globalConfiguration).Version;
+            //this.LocalConfigurationVersion = ((SPPersistedObject)globalConfiguration).Version;    // YVANDEBUG
 
             //if (this.LocalConfiguration == null)
             //{

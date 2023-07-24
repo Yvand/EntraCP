@@ -57,15 +57,16 @@ namespace Yvand.ClaimsProviders.Configuration.AzureAD
             return success;
         }
 
-        public new AzureADEntityProviderConfiguration CopyConfiguration()
+        //public new AzureADEntityProviderConfiguration CopyConfiguration()
+        public override EntityProviderConfiguration CopyConfiguration()
         {
             // This is not possible to case an object to an inherited type from its base type: https://stackoverflow.com/questions/12565736/convert-base-class-to-derived-class
             //EntityProviderConfiguration baseCopy = base.CopyConfiguration();
             //AzureADEntityProviderConfiguration copy = (AzureADEntityProviderConfiguration)baseCopy;
-            AzureADEntityProviderConfiguration copy = new AzureADEntityProviderConfiguration();
+            AzureADEntityProviderConfiguration copy = new AzureADEntityProviderConfiguration(this.ClaimsProviderName);
 
             // Redo here the CopyConfiguration done in base class
-            copy.ClaimsProviderName = this.ClaimsProviderName;
+            //copy.ClaimsProviderName = this.ClaimsProviderName;
             copy.ClaimTypes = new ClaimTypeConfigCollection();
             copy.ClaimTypes.SPTrust = this.ClaimTypes.SPTrust;
             foreach (ClaimTypeConfig currentObject in this.ClaimTypes)
@@ -84,7 +85,6 @@ namespace Yvand.ClaimsProviders.Configuration.AzureAD
             copy.AzureTenants = this.AzureTenants;
             copy.FilterSecurityEnabledGroupsOnly = this.FilterSecurityEnabledGroupsOnly;
 
-            copy.Initialize();
             return copy;
         }
 
