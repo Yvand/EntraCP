@@ -31,7 +31,7 @@ namespace Yvand.ClaimsProviders.Configuration.AzureAD
         [Persisted]
         private bool _FilterSecurityEnabledGroupsOnly = false;
 
-        public AzureADEntityProviderConfiguration(){}
+        public AzureADEntityProviderConfiguration() : base() { }
         public AzureADEntityProviderConfiguration(string configurationName, SPPersistedObject parent, string claimsProviderName) : base(configurationName, parent, claimsProviderName)
         {
         }
@@ -40,13 +40,13 @@ namespace Yvand.ClaimsProviders.Configuration.AzureAD
         {
         }
 
-        public override bool InitializeDefaultSettings()
+        protected override bool InitializeDefaultSettings()
         {
             this.AzureTenants = new List<AzureTenant>();
             return base.InitializeDefaultSettings();
         }
 
-        public override bool InitializeRuntimeSettings()
+        protected override bool InitializeRuntimeSettings()
         {
             bool success = base.InitializeRuntimeSettings();
             // Set properties AuthenticationProvider and GraphService
@@ -57,12 +57,13 @@ namespace Yvand.ClaimsProviders.Configuration.AzureAD
             return success;
         }
 
-        new public AzureADEntityProviderConfiguration CopyConfiguration()
+        public override EntityProviderConfiguration CopyConfiguration()
         {
             EntityProviderConfiguration baseCopy = base.CopyConfiguration();
             AzureADEntityProviderConfiguration copy = (AzureADEntityProviderConfiguration)baseCopy;
             copy.AzureTenants = this.AzureTenants;
             copy.FilterSecurityEnabledGroupsOnly = this.FilterSecurityEnabledGroupsOnly;
+            copy.Initialize();
             return copy;
         }
 

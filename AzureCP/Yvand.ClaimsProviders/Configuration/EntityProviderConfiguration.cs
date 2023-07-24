@@ -163,6 +163,8 @@ namespace Yvand.ClaimsProviders.Configuration
         [Persisted]
         private int _MaxSearchResultsCount = 30; // SharePoint sets maxCount to 30 in method FillSearch
 
+        protected bool IsInitialized = false;
+
         // Runtime settings
         internal List<ClaimTypeConfig> RuntimeClaimTypesList { get; private set; }
         internal IEnumerable<ClaimTypeConfig> RuntimeMetadataConfig { get; private set; }
@@ -173,23 +175,31 @@ namespace Yvand.ClaimsProviders.Configuration
         public EntityProviderConfiguration(string persistedObjectName, SPPersistedObject parent, string claimsProviderName) : base(persistedObjectName, parent)
         {
             this.ClaimsProviderName = claimsProviderName;
-            this.InitializeDefaultSettings();
-            this.InitializeRuntimeSettings();
+            //this.InitializeDefaultSettings();
+            //this.InitializeRuntimeSettings();
+            this.Initialize();
         }
+
         public EntityProviderConfiguration(string claimsProviderName)
         {
             this.ClaimsProviderName = claimsProviderName;
-            this.InitializeDefaultSettings();
-            this.InitializeRuntimeSettings();
+            //this.InitializeDefaultSettings();
+            //this.InitializeRuntimeSettings();
+            this.Initialize();
         }
 
-        //public static AzureADEntityProviderConfiguration GetConfiguration(string persistedObjectName)
-        //{
-        //    ClaimsProviderLogging.Log($"YVANDEBUG - SHOULD NEVER BE CALLED - '{persistedObjectName}'", TraceSeverity.Unexpected, EventSeverity.Error, TraceCategory.Configuration);
-        //    return null;
-        //}
+        public virtual bool Initialize()
+        {
+            if(!this.IsInitialized)
+            {
+                this.InitializeDefaultSettings();
+                this.InitializeRuntimeSettings();
+                this.IsInitialized = true;
+            }
+            return this.IsInitialized;
+        }
 
-        public virtual bool InitializeDefaultSettings()
+        protected virtual bool InitializeDefaultSettings()
         {
             this.ClaimTypes = ReturnDefaultClaimTypesConfig();
             return true;
@@ -198,7 +208,7 @@ namespace Yvand.ClaimsProviders.Configuration
         /// <summary>
         /// </summary>
         /// <returns></returns>
-        public virtual bool InitializeRuntimeSettings()
+        protected virtual bool InitializeRuntimeSettings()
         {
             if (this.ClaimTypes?.Count <= 0)
             {
@@ -294,20 +304,21 @@ namespace Yvand.ClaimsProviders.Configuration
             this.InitializeRuntimeSettings();
         }
 
-        protected override void OnDeserialization()
-        {
-            base.OnDeserialization();
-            this.InitializeRuntimeSettings();
-        }
+        // This method fires 3 times in a raw just when the configurationis updated, and anyway it bypassws the logic to update only if needed (and safely in regards to thread safety)
+        //protected override void OnDeserialization()
+        //{
+        //    base.OnDeserialization();
+        //    this.InitializeRuntimeSettings();
+        //}
 
         /// <summary>
         /// Returns a copy of the current object. This copy does not have any member of the base SharePoint base class set
         /// </summary>
         /// <returns></returns>
-        public EntityProviderConfiguration CopyConfiguration()
+        public virtual EntityProviderConfiguration CopyConfiguration()
         {
             // Cannot use reflection here to copy object because of the calls to methods CopyConfiguration() on some properties
-            EntityProviderConfiguration copy = new EntityProviderConfiguration(this.ClaimsProviderName);
+            EntityProviderConfiguration copy = new EntityProviderConfiguration();
             copy.ClaimsProviderName = this.ClaimsProviderName;
             copy.ClaimTypes = new ClaimTypeConfigCollection();
             copy.ClaimTypes.SPTrust = this.ClaimTypes.SPTrust;
