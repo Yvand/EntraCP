@@ -397,7 +397,7 @@ namespace Yvand.ClaimsProviders
                 result.ClaimTypeConfig.EntityType != DirectoryObjectType.User)
             {
                 // Populate metadata of new PickerEntity
-                foreach (ClaimTypeConfig ctConfig in this.EntityProvider.LocalConfiguration.MetadataConfig.Where(x => x.EntityType == result.ClaimTypeConfig.EntityType))
+                foreach (ClaimTypeConfig ctConfig in this.EntityProvider.LocalConfiguration.RuntimeMetadataConfig.Where(x => x.EntityType == result.ClaimTypeConfig.EntityType))
                 {
                     // if there is actally a value in the GraphObject, then it can be set
                     string entityAttribValue = GetPropertyValue(result.UserOrGroupResult, ctConfig.DirectoryObjectProperty.ToString());
@@ -601,7 +601,7 @@ namespace Yvand.ClaimsProviders
                 try
                 {
 
-                    foreach (var claimTypeSettings in this.EntityProvider.LocalConfiguration.ProcessedClaimTypesList)
+                    foreach (var claimTypeSettings in this.EntityProvider.LocalConfiguration.RuntimeClaimTypesList)
                     {
                         claimTypes.Add(claimTypeSettings.ClaimType);
                     }
@@ -682,7 +682,7 @@ namespace Yvand.ClaimsProviders
                 if (!this.EntityProvider.LocalConfiguration.EnableAugmentation) { return; }
 
                 ClaimsProviderLogging.Log($"[{ClaimsProviderName}] Starting augmentation for user '{decodedEntity.Value}'.", TraceSeverity.Verbose, EventSeverity.Information, TraceCategory.Augmentation);
-                ClaimTypeConfig groupClaimTypeSettings = this.EntityProvider.LocalConfiguration.ProcessedClaimTypesList.FirstOrDefault(x => x.EntityType == DirectoryObjectType.Group);
+                ClaimTypeConfig groupClaimTypeSettings = this.EntityProvider.LocalConfiguration.RuntimeClaimTypesList.FirstOrDefault(x => x.EntityType == DirectoryObjectType.Group);
                 if (groupClaimTypeSettings == null)
                 {
                     ClaimsProviderLogging.Log($"[{ClaimsProviderName}] No claim type with EntityType 'Group' was found, please check claims mapping table.",
@@ -738,7 +738,7 @@ namespace Yvand.ClaimsProviders
                 if (hierarchyNodeID == null)
                 {
                     // Root level
-                    foreach (var azureObject in this.EntityProvider.LocalConfiguration.ProcessedClaimTypesList.FindAll(x => !x.UseMainClaimTypeOfDirectoryObject && aadEntityTypes.Contains(x.EntityType)))
+                    foreach (var azureObject in this.EntityProvider.LocalConfiguration.RuntimeClaimTypesList.FindAll(x => !x.UseMainClaimTypeOfDirectoryObject && aadEntityTypes.Contains(x.EntityType)))
                     {
                         hierarchy.AddChild(
                             new Microsoft.SharePoint.WebControls.SPProviderHierarchyNode(
@@ -822,7 +822,7 @@ namespace Yvand.ClaimsProviders
                     }
                     else
                     {
-                        ClaimTypeConfig ctConfig = this.EntityProvider.LocalConfiguration.ProcessedClaimTypesList.FirstOrDefault(x =>
+                        ClaimTypeConfig ctConfig = this.EntityProvider.LocalConfiguration.RuntimeClaimTypesList.FirstOrDefault(x =>
                             !x.UseMainClaimTypeOfDirectoryObject &&
                             String.Equals(x.ClaimType, entity.Claim.ClaimType, StringComparison.InvariantCultureIgnoreCase));
 

@@ -309,7 +309,8 @@ namespace azurecp.ControlTemplates
                     ApplicationSecret = this.TxtClientSecret.Text,
                     ExcludeGuests = this.ChkMemberUserTypeOnly.Checked,
                     ClientCertificatePrivateKey = cert,
-                    CloudInstance = (AzureCloudInstance)Enum.Parse(typeof(AzureCloudInstance), this.DDLAzureCloudInstance.SelectedValue),
+                    //CloudInstance = (AzureCloudInstance)Enum.Parse(typeof(AzureCloudInstance), this.DDLAzureCloudInstance.SelectedValue),
+                    CloudInstance = new Uri(this.DDLAzureCloudInstance.SelectedValue), //TODO nust convert enum type to Uri properly
                     ExtensionAttributesApplicationId = string.IsNullOrWhiteSpace(this.TxtExtensionAttributesApplicationId.Text) ? Guid.Empty : Guid.Parse(this.TxtExtensionAttributesApplicationId.Text)
                 });
 

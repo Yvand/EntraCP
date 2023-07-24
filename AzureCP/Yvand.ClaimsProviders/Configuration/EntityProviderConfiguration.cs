@@ -26,25 +26,25 @@ namespace Yvand.ClaimsProviders.Configuration
         int MaxSearchResultsCount { get; set; }
     }
 
-    /// <summary>
-    /// Define base settings that are not persisted
-    /// </summary>
-    public interface IRuntimeEntityProviderSettings
-    {
-        List<ClaimTypeConfig> ProcessedClaimTypesList { get; set; }
-        IEnumerable<ClaimTypeConfig> MetadataConfig { get; set; }
-        /// <summary>
-        /// ClaimTypeConfig mapped to the identity claim in the SPTrustedIdentityTokenIssuer
-        /// </summary>
-        IdentityClaimTypeConfig IdentityClaimTypeConfig { get; set; }
+    ///// <summary>
+    ///// Define base settings that are not persisted
+    ///// </summary>
+    //public interface IRuntimeEntityProviderSettings
+    //{
+    //    List<ClaimTypeConfig> ProcessedClaimTypesList { get; set; }
+    //    IEnumerable<ClaimTypeConfig> MetadataConfig { get; set; }
+    //    /// <summary>
+    //    /// ClaimTypeConfig mapped to the identity claim in the SPTrustedIdentityTokenIssuer
+    //    /// </summary>
+    //    IdentityClaimTypeConfig IdentityClaimTypeConfig { get; set; }
 
-        /// <summary>
-        /// Group ClaimTypeConfig used to set the claim type for other group ClaimTypeConfig that have UseMainClaimTypeOfDirectoryObject set to true
-        /// </summary>
-        ClaimTypeConfig MainGroupClaimTypeConfig { get; set; }
-    }
+    //    /// <summary>
+    //    /// Group ClaimTypeConfig used to set the claim type for other group ClaimTypeConfig that have UseMainClaimTypeOfDirectoryObject set to true
+    //    /// </summary>
+    //    ClaimTypeConfig MainGroupClaimTypeConfig { get; set; }
+    //}
 
-    public class EntityProviderConfiguration : SPPersistedObject, IPersistedEntityProviderSettings, IRuntimeEntityProviderSettings
+    public class EntityProviderConfiguration : SPPersistedObject, IPersistedEntityProviderSettings//, IRuntimeEntityProviderSettings
     {
         /// <summary>
         /// Configuration of claim types and their mapping with LDAP attribute/class
@@ -164,10 +164,10 @@ namespace Yvand.ClaimsProviders.Configuration
         private int _MaxSearchResultsCount = 30; // SharePoint sets maxCount to 30 in method FillSearch
 
         // Runtime settings
-        public List<ClaimTypeConfig> ProcessedClaimTypesList { get; set; }
-        public IdentityClaimTypeConfig IdentityClaimTypeConfig { get; set; }
-        public ClaimTypeConfig MainGroupClaimTypeConfig { get; set; }
-        public IEnumerable<ClaimTypeConfig> MetadataConfig { get; set; }
+        internal List<ClaimTypeConfig> RuntimeClaimTypesList { get; private set; }
+        internal IEnumerable<ClaimTypeConfig> RuntimeMetadataConfig { get; private set; }
+        internal IdentityClaimTypeConfig IdentityClaimTypeConfig { get; private set; }
+        internal ClaimTypeConfig MainGroupClaimTypeConfig { get; private set; }
 
         public EntityProviderConfiguration() { }
         public EntityProviderConfiguration(string persistedObjectName, SPPersistedObject parent, string claimsProviderName) : base(persistedObjectName, parent)
@@ -267,12 +267,12 @@ namespace Yvand.ClaimsProviders.Configuration
                 additionalClaimTypeConfigList.Add(claimTypeConfig);
             }
 
-            this.ProcessedClaimTypesList = new List<ClaimTypeConfig>(claimTypesSetInTrust.Count + additionalClaimTypeConfigList.Count);
-            this.ProcessedClaimTypesList.AddRange(claimTypesSetInTrust);
-            this.ProcessedClaimTypesList.AddRange(additionalClaimTypeConfigList);
+            this.RuntimeClaimTypesList = new List<ClaimTypeConfig>(claimTypesSetInTrust.Count + additionalClaimTypeConfigList.Count);
+            this.RuntimeClaimTypesList.AddRange(claimTypesSetInTrust);
+            this.RuntimeClaimTypesList.AddRange(additionalClaimTypeConfigList);
 
             // Get all PickerEntity metadata with a DirectoryObjectProperty set
-            this.MetadataConfig = this.ClaimTypes.Where(x =>
+            this.RuntimeMetadataConfig = this.ClaimTypes.Where(x =>
                 !String.IsNullOrEmpty(x.EntityDataKey) &&
                 x.DirectoryObjectProperty != AzureADObjectProperty.NotSet);
 

@@ -154,14 +154,14 @@ namespace Yvand.ClaimsProviders.AzureAD
             // Also add metadata properties to $select of corresponding object type
             if (firstUserObjectProcessed)
             {
-                foreach (ClaimTypeConfig ctConfig in LocalConfiguration.MetadataConfig.Where(x => x.EntityType == DirectoryObjectType.User))
+                foreach (ClaimTypeConfig ctConfig in LocalConfiguration.RuntimeMetadataConfig.Where(x => x.EntityType == DirectoryObjectType.User))
                 {
                     userSelectBuilder.Add(ctConfig.DirectoryObjectProperty.ToString());
                 }
             }
             if (firstGroupObjectProcessed)
             {
-                foreach (ClaimTypeConfig ctConfig in LocalConfiguration.MetadataConfig.Where(x => x.EntityType == DirectoryObjectType.Group))
+                foreach (ClaimTypeConfig ctConfig in LocalConfiguration.RuntimeMetadataConfig.Where(x => x.EntityType == DirectoryObjectType.Group))
                 {
                     groupSelectBuilder.Add(ctConfig.DirectoryObjectProperty.ToString());
                 }

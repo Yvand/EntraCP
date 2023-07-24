@@ -130,9 +130,12 @@ namespace Yvand.ClaimsProviders.Configuration.AzureAD
             }
         }
 
-        public AzureCloudInstance CloudInstance
+        public Uri CloudInstance
         {
-            get => (AzureCloudInstance)Enum.Parse(typeof(AzureCloudInstance), m_CloudInstance);
+            get => new Uri(this.m_CloudInstance);
+            //{
+            //    return (AzureCloudInstance)Enum.Parse(typeof(AzureCloudInstance), m_CloudInstance);
+            //}
             set => m_CloudInstance = value.ToString();
         }
         [Persisted]
@@ -187,7 +190,8 @@ namespace Yvand.ClaimsProviders.Configuration.AzureAD
 
                 TokenCredential tokenCredential;
                 TokenCredentialOptions tokenCredentialOptions = new TokenCredentialOptions();
-                tokenCredentialOptions.AuthorityHost = ClaimsProviderConstants.AzureCloudEndpoints.SingleOrDefault(kvp => kvp.Key == this.CloudInstance).Value;
+                //tokenCredentialOptions.AuthorityHost = ClaimsProviderConstants.AzureCloudEndpoints.SingleOrDefault(kvp => kvp.Value == this.CloudInstance).Value;
+                tokenCredentialOptions.AuthorityHost = this.CloudInstance;
                 //tokenCredentialOptions.AuthorityHost = AzureAuthorityHosts.AzurePublicCloud;
 
                 if (!String.IsNullOrWhiteSpace(ClientSecret))

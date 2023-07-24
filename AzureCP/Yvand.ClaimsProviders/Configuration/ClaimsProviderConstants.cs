@@ -28,7 +28,6 @@ namespace Yvand.ClaimsProviders.Configuration
             new KeyValuePair<AzureCloudInstance, Uri>(AzureCloudInstance.AzureChina, AzureAuthorityHosts.AzureChina),
             new KeyValuePair<AzureCloudInstance, Uri>(AzureCloudInstance.AzureGermany, AzureAuthorityHosts.AzureGermany),
             new KeyValuePair<AzureCloudInstance, Uri>(AzureCloudInstance.AzureUsGovernment, AzureAuthorityHosts.AzureGovernment),
-            new KeyValuePair<AzureCloudInstance, Uri>(AzureCloudInstance.None, AzureAuthorityHosts.AzurePublicCloud),
         };
         public static string GroupClaimEntityType { get; set; } = SPClaimEntityTypes.FormsRole;
         public static bool EnforceOnly1ClaimTypeForGroup => true;     // In AzureCP, only 1 claim type can be used to create group permissions
@@ -308,15 +307,15 @@ namespace Yvand.ClaimsProviders.Configuration
 
             if (currentRequestType == OperationType.Validation)
             {
-                this.InitializeValidation(currentConfiguration.ProcessedClaimTypesList);
+                this.InitializeValidation(currentConfiguration.RuntimeClaimTypesList);
             }
             else if (currentRequestType == OperationType.Search)
             {
-                this.InitializeSearch(currentConfiguration.ProcessedClaimTypesList, currentConfiguration.FilterExactMatchOnly);
+                this.InitializeSearch(currentConfiguration.RuntimeClaimTypesList, currentConfiguration.FilterExactMatchOnly);
             }
             else if (currentRequestType == OperationType.Augmentation)
             {
-                this.InitializeAugmentation(currentConfiguration.ProcessedClaimTypesList);
+                this.InitializeAugmentation(currentConfiguration.RuntimeClaimTypesList);
             }
         }
 
