@@ -14,16 +14,20 @@ namespace Yvand.ClaimsProviders.Configuration
     /// <summary>
     /// Define base settings that are persisted in a persisted object
     /// </summary>
-    public interface IPersistedEntityProviderSettings
+    public class IPersistedEntityProviderSettings : SPPersistedObject
     {
-        ClaimTypeConfigCollection ClaimTypes { get; set; }
-        bool AlwaysResolveUserInput { get; set; }
-        bool FilterExactMatchOnly { get; set; }
-        bool EnableAugmentation { get; set; }
-        string EntityDisplayTextPrefix { get; set; }
-        int Timeout { get; set; }
-        string CustomData { get; set; }
-        int MaxSearchResultsCount { get; set; }
+        // Class used as an interface becase, very unfortunately, protected set is not possible with an interface
+        public ClaimTypeConfigCollection ClaimTypes { get; protected set; }
+        public bool AlwaysResolveUserInput { get; set; }
+        public bool FilterExactMatchOnly { get; set; }
+        public bool EnableAugmentation { get; set; }
+        public string EntityDisplayTextPrefix { get; set; }
+        public int Timeout { get; set; }
+        public string CustomData { get; set; }
+        public int MaxSearchResultsCount { get; set; }
+
+        public IPersistedEntityProviderSettings() {}
+        public IPersistedEntityProviderSettings(string persistedObjectName, SPPersistedObject parent) : base(persistedObjectName, parent) { }
     }
 
     ///// <summary>
@@ -44,7 +48,7 @@ namespace Yvand.ClaimsProviders.Configuration
     //    ClaimTypeConfig MainGroupClaimTypeConfig { get; set; }
     //}
 
-    public class EntityProviderConfiguration : SPPersistedObject, IPersistedEntityProviderSettings//, IRuntimeEntityProviderSettings
+    public class EntityProviderConfiguration : IPersistedEntityProviderSettings // SPPersistedObject//, IPersistedEntityProviderSettings//, IRuntimeEntityProviderSettings
     {
         /// <summary>
         /// Configuration of claim types and their mapping with LDAP attribute/class
@@ -190,7 +194,7 @@ namespace Yvand.ClaimsProviders.Configuration
 
         public virtual bool Initialize()
         {
-            if(!this.IsInitialized)
+            if (!this.IsInitialized)
             {
                 this.InitializeDefaultSettings();
                 this.InitializeRuntimeSettings();
@@ -233,18 +237,19 @@ namespace Yvand.ClaimsProviders.Configuration
                 {
                     continue;
                 }
-                claimTypeConfig.ClaimTypeDisplayName = claimTypeInformation.DisplayName;
-                claimTypesSetInTrust.Add(claimTypeConfig);
-                if (String.Equals(this.SPTrust.IdentityClaimTypeInformation.MappedClaimType, claimTypeConfig.ClaimType, StringComparison.InvariantCultureIgnoreCase))
+                ClaimTypeConfig localClaimTypeConfig = claimTypeConfig.CopyConfiguration();
+                localClaimTypeConfig.ClaimTypeDisplayName = claimTypeInformation.DisplayName;
+                claimTypesSetInTrust.Add(localClaimTypeConfig);
+                if (String.Equals(this.SPTrust.IdentityClaimTypeInformation.MappedClaimType, localClaimTypeConfig.ClaimType, StringComparison.InvariantCultureIgnoreCase))
                 {
                     // Identity claim type found, set IdentityClaimTypeConfig property
                     identityClaimTypeFound = true;
-                    this.IdentityClaimTypeConfig = IdentityClaimTypeConfig.ConvertClaimTypeConfig(claimTypeConfig);
+                    this.IdentityClaimTypeConfig = IdentityClaimTypeConfig.ConvertClaimTypeConfig(localClaimTypeConfig);
                 }
-                else if (!groupClaimTypeFound && claimTypeConfig.EntityType == DirectoryObjectType.Group)
+                else if (!groupClaimTypeFound && localClaimTypeConfig.EntityType == DirectoryObjectType.Group)
                 {
                     groupClaimTypeFound = true;
-                    this.MainGroupClaimTypeConfig = claimTypeConfig;
+                    this.MainGroupClaimTypeConfig = localClaimTypeConfig;
                 }
             }
 
@@ -258,10 +263,11 @@ namespace Yvand.ClaimsProviders.Configuration
             List<ClaimTypeConfig> additionalClaimTypeConfigList = new List<ClaimTypeConfig>();
             foreach (ClaimTypeConfig claimTypeConfig in this.ClaimTypes.Where(x => x.UseMainClaimTypeOfDirectoryObject))
             {
-                if (claimTypeConfig.EntityType == DirectoryObjectType.User)
+                ClaimTypeConfig localClaimTypeConfig = claimTypeConfig.CopyConfiguration();
+                if (localClaimTypeConfig.EntityType == DirectoryObjectType.User)
                 {
-                    claimTypeConfig.ClaimType = this.IdentityClaimTypeConfig.ClaimType;
-                    claimTypeConfig.DirectoryObjectPropertyToShowAsDisplayText = this.IdentityClaimTypeConfig.DirectoryObjectPropertyToShowAsDisplayText;
+                    localClaimTypeConfig.ClaimType = this.IdentityClaimTypeConfig.ClaimType;
+                    localClaimTypeConfig.DirectoryObjectPropertyToShowAsDisplayText = this.IdentityClaimTypeConfig.DirectoryObjectPropertyToShowAsDisplayText;
                 }
                 else
                 {
@@ -270,11 +276,11 @@ namespace Yvand.ClaimsProviders.Configuration
                     {
                         continue;
                     }
-                    claimTypeConfig.ClaimType = this.MainGroupClaimTypeConfig.ClaimType;
-                    claimTypeConfig.DirectoryObjectPropertyToShowAsDisplayText = this.MainGroupClaimTypeConfig.DirectoryObjectPropertyToShowAsDisplayText;
-                    claimTypeConfig.ClaimTypeDisplayName = this.MainGroupClaimTypeConfig.ClaimTypeDisplayName;
+                    localClaimTypeConfig.ClaimType = this.MainGroupClaimTypeConfig.ClaimType;
+                    localClaimTypeConfig.DirectoryObjectPropertyToShowAsDisplayText = this.MainGroupClaimTypeConfig.DirectoryObjectPropertyToShowAsDisplayText;
+                    localClaimTypeConfig.ClaimTypeDisplayName = this.MainGroupClaimTypeConfig.ClaimTypeDisplayName;
                 }
-                additionalClaimTypeConfigList.Add(claimTypeConfig);
+                additionalClaimTypeConfigList.Add(localClaimTypeConfig);
             }
 
             this.RuntimeClaimTypesList = new List<ClaimTypeConfig>(claimTypesSetInTrust.Count + additionalClaimTypeConfigList.Count);
@@ -315,7 +321,7 @@ namespace Yvand.ClaimsProviders.Configuration
         /// Returns a copy of the current object. This copy does not have any member of the base SharePoint base class set
         /// </summary>
         /// <returns></returns>
-        public virtual EntityProviderConfiguration CopyConfiguration()
+        public EntityProviderConfiguration CopyConfiguration()
         {
             // Cannot use reflection here to copy object because of the calls to methods CopyConfiguration() on some properties
             EntityProviderConfiguration copy = new EntityProviderConfiguration();

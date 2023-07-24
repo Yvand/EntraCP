@@ -57,12 +57,33 @@ namespace Yvand.ClaimsProviders.Configuration.AzureAD
             return success;
         }
 
-        public override EntityProviderConfiguration CopyConfiguration()
+        public new AzureADEntityProviderConfiguration CopyConfiguration()
         {
-            EntityProviderConfiguration baseCopy = base.CopyConfiguration();
-            AzureADEntityProviderConfiguration copy = (AzureADEntityProviderConfiguration)baseCopy;
+            // This is not possible to case an object to an inherited type from its base type: https://stackoverflow.com/questions/12565736/convert-base-class-to-derived-class
+            //EntityProviderConfiguration baseCopy = base.CopyConfiguration();
+            //AzureADEntityProviderConfiguration copy = (AzureADEntityProviderConfiguration)baseCopy;
+            AzureADEntityProviderConfiguration copy = new AzureADEntityProviderConfiguration();
+
+            // Redo here the CopyConfiguration done in base class
+            copy.ClaimsProviderName = this.ClaimsProviderName;
+            copy.ClaimTypes = new ClaimTypeConfigCollection();
+            copy.ClaimTypes.SPTrust = this.ClaimTypes.SPTrust;
+            foreach (ClaimTypeConfig currentObject in this.ClaimTypes)
+            {
+                copy.ClaimTypes.Add(currentObject.CopyConfiguration(), false);
+            }
+            copy.AlwaysResolveUserInput = this.AlwaysResolveUserInput;
+            copy.FilterExactMatchOnly = this.FilterExactMatchOnly;
+            copy.EnableAugmentation = this.EnableAugmentation;
+            copy.EntityDisplayTextPrefix = this.EntityDisplayTextPrefix;
+            copy.Timeout = this.Timeout;
+            copy.CustomData = this.CustomData;
+            copy.MaxSearchResultsCount = this.MaxSearchResultsCount;
+
+            // Copy properties specific to type AzureADEntityProviderConfiguration
             copy.AzureTenants = this.AzureTenants;
             copy.FilterSecurityEnabledGroupsOnly = this.FilterSecurityEnabledGroupsOnly;
+
             copy.Initialize();
             return copy;
         }
