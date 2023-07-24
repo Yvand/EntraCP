@@ -75,7 +75,7 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="AzureAD\AzureADEntityProvider.cs" />
-    <Compile Include="AzureCP.cs" />
+    <Compile Include="AzureCPSE.cs" />
     <Compile Include="AzureCPUserControl.cs">
       <SubType>ASPXCodeBehind</SubType>
     </Compile>

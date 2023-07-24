@@ -265,12 +265,10 @@ namespace Yvand.ClaimsProviders.Configuration
             get
             {
                 // If innerCol is null, it means that collection is not correctly set in the persisted object, very likely because it was migrated from a previons version of AzureCP
-                // But this may not be the right place to handle this here: this should be handled in upper layer to clean the persisted object
-                //if (innerCol == null)
-                //{                    
-                //    ClaimTypeConfigCollection newConfig = AzureCPConfig.ReturnDefaultClaimTypesConfig();
-                //    this.innerCol = newConfig.innerCol;
-                //}
+                if (innerCol == null)
+                {
+                    return 0;
+                }
                 return innerCol.Count;
             }
         }

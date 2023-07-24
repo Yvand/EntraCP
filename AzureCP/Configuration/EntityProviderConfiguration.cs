@@ -173,11 +173,13 @@ namespace Yvand.ClaimsProviders.Configuration
         public EntityProviderConfiguration(string persistedObjectName, SPPersistedObject parent, string claimsProviderName) : base(persistedObjectName, parent)
         {
             this.ClaimsProviderName = claimsProviderName;
+            this.InitializeDefaultSettings();
             this.InitializeRuntimeSettings();
         }
         public EntityProviderConfiguration(string claimsProviderName)
         {
             this.ClaimsProviderName = claimsProviderName;
+            this.InitializeDefaultSettings();
             this.InitializeRuntimeSettings();
         }
 
@@ -186,6 +188,12 @@ namespace Yvand.ClaimsProviders.Configuration
         //    ClaimsProviderLogging.Log($"YVANDEBUG - SHOULD NEVER BE CALLED - '{persistedObjectName}'", TraceSeverity.Unexpected, EventSeverity.Error, TraceCategory.Configuration);
         //    return null;
         //}
+
+        public virtual bool InitializeDefaultSettings()
+        {
+            this.ClaimTypes = ReturnDefaultClaimTypesConfig();
+            return true;
+        }
 
         /// <summary>
         /// </summary>
@@ -320,6 +328,14 @@ namespace Yvand.ClaimsProviders.Configuration
             return copy;
         }
 
+        public virtual void ResetCurrentConfiguration()
+        {
 
+        }
+
+        public virtual ClaimTypeConfigCollection ReturnDefaultClaimTypesConfig()
+        {
+            throw new NotImplementedException();
+        }
     }
 }

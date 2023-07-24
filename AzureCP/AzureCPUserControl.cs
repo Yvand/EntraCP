@@ -48,12 +48,14 @@ namespace azurecp.ControlTemplates
                 {
                     if (_PersistedObject == null)
                     {
-                        _PersistedObject = AzureADEntityProviderConfiguration.GetConfiguration(PersistedObjectName);
+                        //_PersistedObject = AzureADEntityProviderConfiguration.GetConfiguration(PersistedObjectName);
+                        _PersistedObject = EntityProviderBase<AzureADEntityProviderConfiguration>.GetGlobalConfiguration(PersistedObjectName);
                     }
                     if (_PersistedObject == null)
                     {
                         SPContext.Current.Web.AllowUnsafeUpdates = true;
-                        _PersistedObject = AzureADEntityProviderConfiguration.CreateConfiguration(this.PersistedObjectID, this.PersistedObjectName, this.ClaimsProviderName);
+                        //_PersistedObject = AzureADEntityProviderConfiguration.CreateConfiguration(this.PersistedObjectID, this.PersistedObjectName, this.ClaimsProviderName);
+                        _PersistedObject = EntityProviderBase<AzureADEntityProviderConfiguration>.CreateGlobalConfiguration(this.PersistedObjectID, this.PersistedObjectName, this.ClaimsProviderName);
                         SPContext.Current.Web.AllowUnsafeUpdates = false;
                     }
                 });

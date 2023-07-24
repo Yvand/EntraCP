@@ -23,86 +23,7 @@ namespace Yvand.ClaimsProviders.AzureAD
 {
     public class AzureADEntityProvider : EntityProviderBase<AzureADEntityProviderConfiguration>
     {
-        public virtual string PersistedObjectName => ClaimsProviderConstants.CONFIG_NAME;
-        private object Lock_Init = new object();
-        //private ReaderWriterLockSlim Lock_Config = new ReaderWriterLockSlim();
-
-        //public AzureADEntityProvider(string providerInternalName)
-        //{
-        //    this.ProviderInternalName = providerInternalName;
-        //}
-
-        public AzureADEntityProvider(string providerInternalName, ref ReaderWriterLockSlim Lock_Config) : base(providerInternalName, ref Lock_Config) { }
-
-        /// <summary>
-        /// Initializes claim provider. This method is reserved for internal use and is not intended to be called from external code or changed
-        /// </summary>
-        public bool Initialize(Uri context, string[] entityTypes)
-        {
-            // Ensures thread safety to initialize class variables
-            lock (Lock_Init)
-            {
-                // 1ST PART: GET CONFIGURATION OBJECT
-                AzureADEntityProviderConfiguration globalConfiguration = null;
-                bool refreshConfig = false;
-                bool success = true;
-                try
-                {
-                    UpdateLocalCopyOfGlobalConfigurationIfNeeded(context, entityTypes, this.PersistedObjectName);
-                }
-                catch (Exception ex)
-                {
-                    success = false;
-                    ClaimsProviderLogging.LogException(ProviderInternalName, "in Initialize", TraceCategory.Core, ex);
-                }
-                return success;
-            }
-        }
-
-        ///// <summary>
-        ///// Override this method to return a custom configuration of AzureCP.
-        ///// DO NOT Override this method if you use a custom persisted object to store configuration in config DB.
-        ///// To use a custom persisted object, override property PersistedObjectName and set its name
-        ///// </summary>
-        ///// <returns></returns>
-        //public virtual AzureADEntityProviderConfiguration UpdateLocalCopyOfGlobalConfigurationIfNeeded(Uri context, string[] entityTypes, string persistedObjectName)
-        //{
-        //    AzureADEntityProviderConfiguration globalConfiguration = AzureADEntityProviderConfiguration.GetConfiguration(persistedObjectName);
-        //    if (globalConfiguration == null)
-        //    {
-        //        ClaimsProviderLogging.Log($"[{ProviderInternalName}] Cannot continue because configuration '{PersistedObjectName}' was not found in configuration database, visit AzureCP admin pages in central administration to create it.",
-        //            TraceSeverity.Unexpected, EventSeverity.Error, TraceCategory.Core);
-        //        return null;
-        //    }
-
-        //    if (this.CurrentConfigurationVersion == ((SPPersistedObject)globalConfiguration).Version)
-        //    {
-        //        ClaimsProviderLogging.Log($"[{ProviderInternalName}] Configuration '{PersistedObjectName}' was found, version {((SPPersistedObject)globalConfiguration).Version.ToString()}",
-        //            TraceSeverity.VerboseEx, EventSeverity.Information, TraceCategory.Core);
-
-        //        return this.CurrentConfiguration;
-        //    }
-
-        //    ClaimsProviderLogging.Log($"[{ProviderInternalName}] Configuration '{PersistedObjectName}' was found with new version {globalConfiguration.Version.ToString()}, refreshing local copy",
-        //        TraceSeverity.Medium, EventSeverity.Information, TraceCategory.Core);
-
-        //    // Configuration needs to be refreshed, lock current thread in write mode
-        //    this.Lock_Config.EnterWriteLock();
-        //    try
-        //    {
-        //        this.CurrentConfiguration = globalConfiguration.CopyConfiguration();
-        //        this.CurrentConfigurationVersion = ((SPPersistedObject)globalConfiguration).Version;
-        //    }
-        //    catch (Exception ex)
-        //    {
-        //        ClaimsProviderLogging.LogException(ProviderInternalName, "while refreshing configuration", TraceCategory.Core, ex);
-        //    }
-        //    finally
-        //    {
-        //        this.Lock_Config.ExitWriteLock();
-        //    }
-        //    return this.CurrentConfiguration;
-        //}
+        public AzureADEntityProvider(string providerInternalName) : base(providerInternalName) { }        
 
         public async override Task<List<Group>> GetEntityGroupsAsync(OperationContext currentContext)
         {
@@ -112,8 +33,8 @@ namespace Yvand.ClaimsProviders.AzureAD
         public async override Task<List<DirectoryObject>> SearchOrValidateUsersAsync(OperationContext currentContext)
         {
             // this.CurrentConfiguration.AzureTenants must be cloned locally var to ensure its properties ($select / $filter) won't be updated by multiple threads
-            List<AzureTenant> azureTenants = new List<AzureTenant>(this.CurrentConfiguration.AzureTenants.Count);
-            foreach (AzureTenant tenant in this.CurrentConfiguration.AzureTenants)
+            List<AzureTenant> azureTenants = new List<AzureTenant>(this.LocalConfiguration.AzureTenants.Count);
+            foreach (AzureTenant tenant in this.LocalConfiguration.AzureTenants)
             {
                 azureTenants.Add(tenant.CopyConfiguration());
             }
@@ -236,14 +157,14 @@ namespace Yvand.ClaimsProviders.AzureAD
             // Also add metadata properties to $select of corresponding object type
             if (firstUserObjectProcessed)
             {
-                foreach (ClaimTypeConfig ctConfig in CurrentConfiguration.MetadataConfig.Where(x => x.EntityType == DirectoryObjectType.User))
+                foreach (ClaimTypeConfig ctConfig in LocalConfiguration.MetadataConfig.Where(x => x.EntityType == DirectoryObjectType.User))
                 {
                     userSelectBuilder.Add(ctConfig.DirectoryObjectProperty.ToString());
                 }
             }
             if (firstGroupObjectProcessed)
             {
-                foreach (ClaimTypeConfig ctConfig in CurrentConfiguration.MetadataConfig.Where(x => x.EntityType == DirectoryObjectType.Group))
+                foreach (ClaimTypeConfig ctConfig in LocalConfiguration.MetadataConfig.Where(x => x.EntityType == DirectoryObjectType.Group))
                 {
                     groupSelectBuilder.Add(ctConfig.DirectoryObjectProperty.ToString());
                 }
@@ -294,7 +215,7 @@ namespace Yvand.ClaimsProviders.AzureAD
                 }
                 catch (Exception ex)
                 {
-                    ClaimsProviderLogging.LogException(ProviderInternalName, $"in QueryAzureADTenantsAsync while querying tenant '{tenant.Name}'", TraceCategory.Lookup, ex);
+                    ClaimsProviderLogging.LogException(ClaimsProviderName, $"in QueryAzureADTenantsAsync while querying tenant '{tenant.Name}'", TraceCategory.Lookup, ex);
                 }
                 finally
                 {
@@ -302,11 +223,11 @@ namespace Yvand.ClaimsProviders.AzureAD
                 }
                 if (tenantResults != null)
                 {
-                    ClaimsProviderLogging.Log($"[{ProviderInternalName}] Got {tenantResults.Count} users/groups in {timer.ElapsedMilliseconds.ToString()} ms from '{tenant.Name}' with input '{currentContext.Input}'", TraceSeverity.Medium, EventSeverity.Information, TraceCategory.Lookup);
+                    ClaimsProviderLogging.Log($"[{ClaimsProviderName}] Got {tenantResults.Count} users/groups in {timer.ElapsedMilliseconds.ToString()} ms from '{tenant.Name}' with input '{currentContext.Input}'", TraceSeverity.Medium, EventSeverity.Information, TraceCategory.Lookup);
                 }
                 else
                 {
-                    ClaimsProviderLogging.Log($"[{ProviderInternalName}] Got no result from '{tenant.Name}' with input '{currentContext.Input}', search took {timer.ElapsedMilliseconds.ToString()} ms", TraceSeverity.Medium, EventSeverity.Information, TraceCategory.Lookup);
+                    ClaimsProviderLogging.Log($"[{ClaimsProviderName}] Got no result from '{tenant.Name}' with input '{currentContext.Input}', search took {timer.ElapsedMilliseconds.ToString()} ms", TraceSeverity.Medium, EventSeverity.Information, TraceCategory.Lookup);
                 }
                 return tenantResults;
             });
@@ -331,18 +252,18 @@ namespace Yvand.ClaimsProviders.AzureAD
 
             if (tenant.GraphService == null)
             {
-                ClaimsProviderLogging.Log($"[{ProviderInternalName}] Cannot query Azure AD tenant '{tenant.Name}' because it was not initialized", TraceSeverity.Unexpected, EventSeverity.Error, TraceCategory.Lookup);
+                ClaimsProviderLogging.Log($"[{ClaimsProviderName}] Cannot query Azure AD tenant '{tenant.Name}' because it was not initialized", TraceSeverity.Unexpected, EventSeverity.Error, TraceCategory.Lookup);
                 return tenantResults;
             }
 
-            ClaimsProviderLogging.Log($"[{ProviderInternalName}] Querying Azure AD tenant '{tenant.Name}' for users and groups, with input '{currentContext.Input}'", TraceSeverity.VerboseEx, EventSeverity.Information, TraceCategory.Lookup);
+            ClaimsProviderLogging.Log($"[{ClaimsProviderName}] Querying Azure AD tenant '{tenant.Name}' for users and groups, with input '{currentContext.Input}'", TraceSeverity.VerboseEx, EventSeverity.Information, TraceCategory.Lookup);
             object lockAddResultToCollection = new object();
-            int timeout = this.CurrentConfiguration.Timeout;
+            int timeout = this.LocalConfiguration.Timeout;
             int maxRetry = currentContext.OperationType == OperationType.Validation ? 3 : 2;
 
             try
             {
-                using (new SPMonitoredScope($"[{ProviderInternalName}] Querying Azure AD tenant '{tenant.Name}' for users and groups, with input '{currentContext.Input}'", 1000))
+                using (new SPMonitoredScope($"[{ClaimsProviderName}] Querying Azure AD tenant '{tenant.Name}' for users and groups, with input '{currentContext.Input}'", 1000))
                 {
                     RetryHandlerOption retryHandlerOption = new RetryHandlerOption()
                     {
@@ -441,7 +362,7 @@ namespace Yvand.ClaimsProviders.AzureAD
                     GroupCollectionResponse groupCollectionResult = await returnedResponse.GetResponseByIdAsync<GroupCollectionResponse>(groupsRequestId).ConfigureAwait(false);
 
                     // Process users result
-                    ClaimsProviderLogging.Log($"[{ProviderInternalName}] Query to tenant '{tenant.Name}' returned {(userCollectionResult?.Value == null ? 0 : userCollectionResult.Value.Count)} user(s) with filter \"{tenant.UserFilter}\"", TraceSeverity.VerboseEx, EventSeverity.Information, TraceCategory.Lookup);
+                    ClaimsProviderLogging.Log($"[{ClaimsProviderName}] Query to tenant '{tenant.Name}' returned {(userCollectionResult?.Value == null ? 0 : userCollectionResult.Value.Count)} user(s) with filter \"{tenant.UserFilter}\"", TraceSeverity.VerboseEx, EventSeverity.Information, TraceCategory.Lookup);
                     if (userCollectionResult?.Value != null)
                     {
                         PageIterator<User, UserCollectionResponse> usersPageIterator = PageIterator<User, UserCollectionResponse>.CreatePageIterator(
@@ -495,16 +416,16 @@ namespace Yvand.ClaimsProviders.AzureAD
             }
             catch (OperationCanceledException)
             {
-                ClaimsProviderLogging.Log($"[{ProviderInternalName}] Queries on Azure AD tenant '{tenant.Name}' exceeded timeout of {timeout} ms and were cancelled.", TraceSeverity.Unexpected, EventSeverity.Error, TraceCategory.Lookup);
+                ClaimsProviderLogging.Log($"[{ClaimsProviderName}] Queries on Azure AD tenant '{tenant.Name}' exceeded timeout of {timeout} ms and were cancelled.", TraceSeverity.Unexpected, EventSeverity.Error, TraceCategory.Lookup);
             }
             catch (ServiceException ex)
             {
-                ClaimsProviderLogging.LogException(ProviderInternalName, $"Microsoft.Graph could not query tenant '{tenant.Name}'", TraceCategory.Lookup, ex);
+                ClaimsProviderLogging.LogException(ClaimsProviderName, $"Microsoft.Graph could not query tenant '{tenant.Name}'", TraceCategory.Lookup, ex);
             }
             catch (AggregateException ex)
             {
                 // Task.WaitAll throws an AggregateException, which contains all exceptions thrown by tasks it waited on
-                ClaimsProviderLogging.LogException(ProviderInternalName, $"while querying Azure AD tenant '{tenant.Name}'", TraceCategory.Lookup, ex);
+                ClaimsProviderLogging.LogException(ClaimsProviderName, $"while querying Azure AD tenant '{tenant.Name}'", TraceCategory.Lookup, ex);
             }
             finally
             {

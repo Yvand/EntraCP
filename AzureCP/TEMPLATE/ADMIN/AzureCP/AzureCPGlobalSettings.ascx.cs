@@ -104,7 +104,7 @@ namespace azurecp.ControlTemplates
             foreach (AzureADObjectProperty prop in aadPropValuesSorted)
             {
                 // Ensure property exists for the User object type
-                if (AzureCP.GetPropertyValue(new User(), prop.ToString()) == null) { continue; }
+                if (AzureCPSE.GetPropertyValue(new User(), prop.ToString()) == null) { continue; }
 
                 // Ensure property is of type System.String
                 PropertyInfo pi = typeof(User).GetProperty(prop.ToString());
@@ -244,7 +244,8 @@ namespace azurecp.ControlTemplates
 
         protected void BtnResetAzureCPConfig_Click(Object sender, EventArgs e)
         {
-            AzureADEntityProviderConfiguration.DeleteConfiguration(PersistedObjectName);
+            //AzureADEntityProviderConfiguration.DeleteConfiguration(PersistedObjectName);
+            EntityProviderBase<AzureADEntityProviderConfiguration>.DeleteGlobalConfiguration(PersistedObjectName);
             Response.Redirect(Request.RawUrl, false);
         }
 

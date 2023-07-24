@@ -20,33 +20,17 @@ using static Yvand.ClaimsProviders.ClaimsProviderLogging;
 
 namespace Yvand.ClaimsProviders
 {
-    public class ClaimTypesConfigurationForClaimsProvder
+    public class AzureCPSE : SPClaimProvider
     {
-        public List<ClaimTypeConfig> ProcessedClaimTypesList;
-        public IEnumerable<ClaimTypeConfig> MetadataConfig;
-        /// <summary>
-        /// ClaimTypeConfig mapped to the identity claim in the SPTrustedIdentityTokenIssuer
-        /// </summary>
-        IdentityClaimTypeConfig IdentityClaimTypeConfig;
+        public static string ClaimsProviderName => "AzureCPSE";
 
-        /// <summary>
-        /// Group ClaimTypeConfig used to set the claim type for other group ClaimTypeConfig that have UseMainClaimTypeOfDirectoryObject set to true
-        /// </summary>
-        ClaimTypeConfig MainGroupClaimTypeConfig;
-    }
-    public class AzureCP : SPClaimProvider
-    {
-        public static string ProviderInternalName => "AzureCPSE";
+        public override string Name => ClaimsProviderName;
 
-        public override string Name => throw new NotImplementedException();
-
-        public override bool SupportsEntityInformation => throw new NotImplementedException();
-
-        public override bool SupportsHierarchy => throw new NotImplementedException();
-
-        public override bool SupportsResolve => throw new NotImplementedException();
-
-        public override bool SupportsSearch => throw new NotImplementedException();
+        public override bool SupportsEntityInformation => true;
+        public override bool SupportsHierarchy => true;
+        public override bool SupportsResolve => true;
+        public override bool SupportsSearch => true;
+        public override bool SupportsUserKey => true;
 
         public AzureADEntityProvider EntityProvider { get; set; }
 
@@ -56,24 +40,50 @@ namespace Yvand.ClaimsProviders
         protected virtual string PickerEntityDisplayText => "({0}) {1}";
         protected virtual string PickerEntityOnMouseOver => "{0}={1}";
 
-        public AzureCP(string displayName) : base(displayName) { }
+        public AzureCPSE(string displayName) : base(displayName) { }
+
+        public static AzureADEntityProviderConfiguration GetGlobalConfiguration()
+        {
+            AzureADEntityProviderConfiguration entityConfig = EntityProviderBase<AzureADEntityProviderConfiguration>.GetGlobalConfiguration(ClaimsProviderConstants.CONFIGURATION_NAME);
+            return entityConfig;
+        }
+
+        public static void SaveGlobalConfiguration(AzureADEntityProviderConfiguration globalConfiguration)
+        {
+            EntityProviderBase<AzureADEntityProviderConfiguration>.SaveGlobalConfiguration(globalConfiguration);
+        }
 
         /// <summary>
         /// Initializes claim provider. This method is reserved for internal use and is not intended to be called from external code or changed
         /// </summary>
         public bool ValidateLocalConfiguration(Uri context, string[] entityTypes)
         {
-            if (!Utils.ShouldRun(context, AzureCP.ProviderInternalName))
+            if (!Utils.ShouldRun(context, ClaimsProviderName))
             {
                 return false;
             }
 
+            bool success;
             if (this.EntityProvider == null)
             {
-                this.EntityProvider = new AzureADEntityProvider(AzureCP.ProviderInternalName, ref this.Lock_Config);
+                this.EntityProvider = new AzureADEntityProvider(ClaimsProviderName);
             }
 
-            return this.EntityProvider.ValidateLocalConfiguration(context, entityTypes, ClaimsProviderConstants.CONFIG_NAME);
+            this.Lock_Config.EnterWriteLock();
+            try
+            {
+                success = this.EntityProvider.ValidateLocalConfiguration(ClaimsProviderConstants.CONFIGURATION_NAME);
+            }
+            catch (Exception ex)
+            {
+                success = false;
+                ClaimsProviderLogging.LogException(ClaimsProviderName, "while refreshing configuration", TraceCategory.Core, ex);
+            }
+            finally
+            {
+                this.Lock_Config.ExitWriteLock();
+            }
+            return success;
         }
 
         /// <summary>
@@ -87,14 +97,14 @@ namespace Yvand.ClaimsProviders
             List<PickerEntity> entities = new List<PickerEntity>();
             try
             {
-                if (this.EntityProvider.CurrentConfiguration.AlwaysResolveUserInput)
+                if (this.EntityProvider.LocalConfiguration.AlwaysResolveUserInput)
                 {
                     // Completely bypass query to Azure AD
                     entities = CreatePickerEntityForSpecificClaimTypes(
                         currentContext.Input,
                         currentContext.CurrentClaimTypeConfigList.FindAll(x => !x.UseMainClaimTypeOfDirectoryObject),
                         false);
-                    ClaimsProviderLogging.Log($"[{ProviderInternalName}] Created {entities.Count} entity(ies) without contacting Azure AD tenant(s) because AzureCP property AlwaysResolveUserInput is set to true.",
+                    ClaimsProviderLogging.Log($"[{ClaimsProviderName}] Created {entities.Count} entity(ies) without contacting Azure AD tenant(s) because AzureCP property AlwaysResolveUserInput is set to true.",
                         TraceSeverity.Medium, EventSeverity.Information, TraceCategory.Claims_Picking);
                     return entities;
                 }
@@ -131,7 +141,7 @@ namespace Yvand.ClaimsProviders
                         {
                             if (entities == null) { entities = new List<PickerEntity>(); }
                             entities.Add(entity);
-                            ClaimsProviderLogging.Log($"[{ProviderInternalName}] Created entity without contacting Azure AD tenant(s) because input started with prefix '{ctConfigWithInputPrefixMatch.PrefixToBypassLookup}', which is configured for claim type '{ctConfigWithInputPrefixMatch.ClaimType}'. Claim value: '{entity.Claim.Value}', claim type: '{entity.Claim.ClaimType}'",
+                            ClaimsProviderLogging.Log($"[{ClaimsProviderName}] Created entity without contacting Azure AD tenant(s) because input started with prefix '{ctConfigWithInputPrefixMatch.PrefixToBypassLookup}', which is configured for claim type '{ctConfigWithInputPrefixMatch.ClaimType}'. Claim value: '{entity.Claim.Value}', claim type: '{entity.Claim.ClaimType}'",
                                 TraceSeverity.VerboseEx, EventSeverity.Information, TraceCategory.Claims_Picking);
                             //return entities;
                         }
@@ -164,7 +174,7 @@ namespace Yvand.ClaimsProviders
                         if (entity != null)
                         {
                             entities = new List<PickerEntity>(1) { entity };
-                            ClaimsProviderLogging.Log($"[{ProviderInternalName}] Validated entity without contacting Azure AD tenant(s) because its claim type ('{currentContext.IncomingEntityClaimTypeConfig.ClaimType}') has property 'PrefixToBypassLookup' set in AzureCPConfig.ClaimTypes. Claim value: '{entity.Claim.Value}', claim type: '{entity.Claim.ClaimType}'",
+                            ClaimsProviderLogging.Log($"[{ClaimsProviderName}] Validated entity without contacting Azure AD tenant(s) because its claim type ('{currentContext.IncomingEntityClaimTypeConfig.ClaimType}') has property 'PrefixToBypassLookup' set in AzureCPConfig.ClaimTypes. Claim value: '{entity.Claim.Value}', claim type: '{entity.Claim.ClaimType}'",
                                 TraceSeverity.VerboseEx, EventSeverity.Information, TraceCategory.Claims_Picking);
                         }
                     }
@@ -172,7 +182,7 @@ namespace Yvand.ClaimsProviders
             }
             catch (Exception ex)
             {
-                ClaimsProviderLogging.LogException(ProviderInternalName, "in SearchOrValidate", TraceCategory.Claims_Picking, ex);
+                ClaimsProviderLogging.LogException(ClaimsProviderName, "in SearchOrValidate", TraceCategory.Claims_Picking, ex);
             }
             entities = this.ValidateEntities(currentContext, entities);
             return entities;
@@ -190,7 +200,7 @@ namespace Yvand.ClaimsProviders
 
         protected async Task<List<DirectoryObject>> SearchOrValidateInAzureADAsync(OperationContext currentContext)
         {
-            using (new SPMonitoredScope($"[{ProviderInternalName}] Total time spent to query Azure AD tenant(s)", 1000))
+            using (new SPMonitoredScope($"[{ClaimsProviderName}] Total time spent to query Azure AD tenant(s)", 1000))
             {
                 List<DirectoryObject> results = await this.EntityProvider.SearchOrValidateUsersAsync(currentContext).ConfigureAwait(false);
                 return results;
@@ -225,7 +235,7 @@ namespace Yvand.ClaimsProviders
                     currentObject = userOrGroup;
                     objectType = DirectoryObjectType.Group;
 
-                    if (this.EntityProvider.CurrentConfiguration.FilterSecurityEnabledGroupsOnly)
+                    if (this.EntityProvider.LocalConfiguration.FilterSecurityEnabledGroupsOnly)
                     {
                         Group group = (Group)userOrGroup;
                         // If Group.SecurityEnabled is not set, assume the group is not SecurityEnabled - verified per tests, it is not documentated in https://docs.microsoft.com/en-us/graph/api/resources/group?view=graph-rest-1.0
@@ -271,11 +281,11 @@ namespace Yvand.ClaimsProviders
                     {
                         if (objectType == DirectoryObjectType.User)
                         {
-                            claimTypeConfigToCompare = this.EntityProvider.CurrentConfiguration.IdentityClaimTypeConfig;
+                            claimTypeConfigToCompare = this.EntityProvider.LocalConfiguration.IdentityClaimTypeConfig;
                             if (String.Equals(((User)currentObject).UserType, ClaimsProviderConstants.GUEST_USERTYPE, StringComparison.InvariantCultureIgnoreCase))
                             {
                                 // For Guest users, use the value set in property DirectoryObjectPropertyForGuestUsers
-                                entityClaimValue = GetPropertyValue(currentObject, this.EntityProvider.CurrentConfiguration.IdentityClaimTypeConfig.DirectoryObjectPropertyForGuestUsers.ToString());
+                                entityClaimValue = GetPropertyValue(currentObject, this.EntityProvider.LocalConfiguration.IdentityClaimTypeConfig.DirectoryObjectPropertyForGuestUsers.ToString());
                             }
                             else
                             {
@@ -285,7 +295,7 @@ namespace Yvand.ClaimsProviders
                         }
                         else
                         {
-                            claimTypeConfigToCompare = this.EntityProvider.CurrentConfiguration.MainGroupClaimTypeConfig;
+                            claimTypeConfigToCompare = this.EntityProvider.LocalConfiguration.MainGroupClaimTypeConfig;
                             // Get the value of the DirectoryObjectProperty linked to current directory object
                             entityClaimValue = GetPropertyValue(currentObject, claimTypeConfigToCompare.DirectoryObjectProperty.ToString());
                         }
@@ -315,7 +325,7 @@ namespace Yvand.ClaimsProviders
             }
 
             List<PickerEntity> entities = new List<PickerEntity>();
-            ClaimsProviderLogging.Log($"[{ProviderInternalName}] {processedResults.Count} entity(ies) to create after filtering", TraceSeverity.Verbose, EventSeverity.Information, TraceCategory.Lookup);
+            ClaimsProviderLogging.Log($"[{ClaimsProviderName}] {processedResults.Count} entity(ies) to create after filtering", TraceSeverity.Verbose, EventSeverity.Information, TraceCategory.Lookup);
             foreach (AzureCPResult result in processedResults)
             {
                 entities.Add(CreatePickerEntityHelper(result));
@@ -331,7 +341,7 @@ namespace Yvand.ClaimsProviders
             string permissionClaimType = result.ClaimTypeConfig.ClaimType;
             bool isMappedClaimTypeConfig = false;
 
-            if (String.Equals(result.ClaimTypeConfig.ClaimType, this.EntityProvider.CurrentConfiguration.IdentityClaimTypeConfig.ClaimType, StringComparison.InvariantCultureIgnoreCase)
+            if (String.Equals(result.ClaimTypeConfig.ClaimType, this.EntityProvider.LocalConfiguration.IdentityClaimTypeConfig.ClaimType, StringComparison.InvariantCultureIgnoreCase)
                 || result.ClaimTypeConfig.UseMainClaimTypeOfDirectoryObject)
             {
                 isMappedClaimTypeConfig = true;
@@ -343,8 +353,8 @@ namespace Yvand.ClaimsProviders
                 string claimValueType;
                 if (result.ClaimTypeConfig.EntityType == DirectoryObjectType.User)
                 {
-                    permissionClaimType = this.EntityProvider.CurrentConfiguration.IdentityClaimTypeConfig.ClaimType;
-                    claimValueType = this.EntityProvider.CurrentConfiguration.IdentityClaimTypeConfig.ClaimValueType;
+                    permissionClaimType = this.EntityProvider.LocalConfiguration.IdentityClaimTypeConfig.ClaimType;
+                    claimValueType = this.EntityProvider.LocalConfiguration.IdentityClaimTypeConfig.ClaimValueType;
                     if (String.IsNullOrEmpty(entity.EntityType))
                     {
                         entity.EntityType = SPClaimEntityTypes.User;
@@ -352,8 +362,8 @@ namespace Yvand.ClaimsProviders
                 }
                 else
                 {
-                    permissionClaimType = this.EntityProvider.CurrentConfiguration.MainGroupClaimTypeConfig.ClaimType;
-                    claimValueType = this.EntityProvider.CurrentConfiguration.MainGroupClaimTypeConfig.ClaimValueType;
+                    permissionClaimType = this.EntityProvider.LocalConfiguration.MainGroupClaimTypeConfig.ClaimType;
+                    claimValueType = this.EntityProvider.LocalConfiguration.MainGroupClaimTypeConfig.ClaimValueType;
                     if (String.IsNullOrEmpty(entity.EntityType))
                     {
                         entity.EntityType = ClaimsProviderConstants.GroupClaimEntityType;
@@ -392,7 +402,7 @@ namespace Yvand.ClaimsProviders
                 result.ClaimTypeConfig.EntityType != DirectoryObjectType.User)
             {
                 // Populate metadata of new PickerEntity
-                foreach (ClaimTypeConfig ctConfig in this.EntityProvider.CurrentConfiguration.MetadataConfig.Where(x => x.EntityType == result.ClaimTypeConfig.EntityType))
+                foreach (ClaimTypeConfig ctConfig in this.EntityProvider.LocalConfiguration.MetadataConfig.Where(x => x.EntityType == result.ClaimTypeConfig.EntityType))
                 {
                     // if there is actally a value in the GraphObject, then it can be set
                     string entityAttribValue = GetPropertyValue(result.UserOrGroupResult, ctConfig.DirectoryObjectProperty.ToString());
@@ -400,12 +410,12 @@ namespace Yvand.ClaimsProviders
                     {
                         entity.EntityData[ctConfig.EntityDataKey] = entityAttribValue;
                         nbMetadata++;
-                        ClaimsProviderLogging.Log($"[{ProviderInternalName}] Set metadata '{ctConfig.EntityDataKey}' of new entity to '{entityAttribValue}'", TraceSeverity.VerboseEx, EventSeverity.Information, TraceCategory.Claims_Picking);
+                        ClaimsProviderLogging.Log($"[{ClaimsProviderName}] Set metadata '{ctConfig.EntityDataKey}' of new entity to '{entityAttribValue}'", TraceSeverity.VerboseEx, EventSeverity.Information, TraceCategory.Claims_Picking);
                     }
                 }
             }
             entity.DisplayText = FormatPermissionDisplayText(entity, isMappedClaimTypeConfig, result);
-            ClaimsProviderLogging.Log($"[{ProviderInternalName}] Created entity: display text: '{entity.DisplayText}', value: '{entity.Claim.Value}', claim type: '{entity.Claim.ClaimType}', and filled with {nbMetadata.ToString()} metadata.", TraceSeverity.VerboseEx, EventSeverity.Information, TraceCategory.Claims_Picking);
+            ClaimsProviderLogging.Log($"[{ClaimsProviderName}] Created entity: display text: '{entity.DisplayText}', value: '{entity.Claim.Value}', claim type: '{entity.Claim.ClaimType}', and filled with {nbMetadata.ToString()} metadata.", TraceSeverity.VerboseEx, EventSeverity.Information, TraceCategory.Claims_Picking);
             return entity;
         }
 
@@ -441,18 +451,18 @@ namespace Yvand.ClaimsProviders
                 if (!String.IsNullOrEmpty(ctConfig.EntityDataKey))
                 {
                     entity.EntityData[ctConfig.EntityDataKey] = entity.Claim.Value;
-                    ClaimsProviderLogging.Log($"[{ProviderInternalName}] Added metadata '{ctConfig.EntityDataKey}' with value '{entity.EntityData[ctConfig.EntityDataKey]}' to new entity", TraceSeverity.VerboseEx, EventSeverity.Information, TraceCategory.Claims_Picking);
+                    ClaimsProviderLogging.Log($"[{ClaimsProviderName}] Added metadata '{ctConfig.EntityDataKey}' with value '{entity.EntityData[ctConfig.EntityDataKey]}' to new entity", TraceSeverity.VerboseEx, EventSeverity.Information, TraceCategory.Claims_Picking);
                 }
 
                 AzureCPResult result = new AzureCPResult(null);
                 result.ClaimTypeConfig = ctConfig;
                 result.PermissionValue = input;
                 result.QueryMatchValue = input;
-                bool isIdentityClaimType = String.Equals(claim.ClaimType, this.EntityProvider.CurrentConfiguration.IdentityClaimTypeConfig.ClaimType, StringComparison.InvariantCultureIgnoreCase);
+                bool isIdentityClaimType = String.Equals(claim.ClaimType, this.EntityProvider.LocalConfiguration.IdentityClaimTypeConfig.ClaimType, StringComparison.InvariantCultureIgnoreCase);
                 entity.DisplayText = FormatPermissionDisplayText(entity, isIdentityClaimType, result);
 
                 entities.Add(entity);
-                ClaimsProviderLogging.Log($"[{ProviderInternalName}] Created entity: display text: '{entity.DisplayText}', value: '{entity.Claim.Value}', claim type: '{entity.Claim.ClaimType}'.", TraceSeverity.VerboseEx, EventSeverity.Information, TraceCategory.Claims_Picking);
+                ClaimsProviderLogging.Log($"[{ClaimsProviderName}] Created entity: display text: '{entity.DisplayText}', value: '{entity.Claim.Value}', claim type: '{entity.Claim.ClaimType}'.", TraceSeverity.VerboseEx, EventSeverity.Information, TraceCategory.Claims_Picking);
             }
             return entities.Count > 0 ? entities : null;
         }
@@ -479,7 +489,7 @@ namespace Yvand.ClaimsProviders
         /// <returns></returns>
         protected virtual string FormatPermissionDisplayText(PickerEntity entity, bool isMappedClaimTypeConfig, AzureCPResult result)
         {
-            string entityDisplayText = this.EntityProvider.CurrentConfiguration.EntityDisplayTextPrefix;
+            string entityDisplayText = this.EntityProvider.LocalConfiguration.EntityDisplayTextPrefix;
             if (result.ClaimTypeConfig.DirectoryObjectPropertyToShowAsDisplayText != AzureADObjectProperty.NotSet)
             {
                 if (!isMappedClaimTypeConfig || result.ClaimTypeConfig.EntityType == DirectoryObjectType.Group)
@@ -592,15 +602,15 @@ namespace Yvand.ClaimsProviders
             try
             {
                 this.Lock_Config.EnterReadLock();
-                if (this.EntityProvider.CurrentConfiguration.ProcessedClaimTypesList == null) { return; }
-                foreach (var claimTypeSettings in this.EntityProvider.CurrentConfiguration.ProcessedClaimTypesList)
+                if (this.EntityProvider.LocalConfiguration.ProcessedClaimTypesList == null) { return; }
+                foreach (var claimTypeSettings in this.EntityProvider.LocalConfiguration.ProcessedClaimTypesList)
                 {
                     claimTypes.Add(claimTypeSettings.ClaimType);
                 }
             }
             catch (Exception ex)
             {
-                ClaimsProviderLogging.LogException(ProviderInternalName, "in FillClaimTypes", TraceCategory.Core, ex);
+                ClaimsProviderLogging.LogException(ClaimsProviderName, "in FillClaimTypes", TraceCategory.Core, ex);
             }
             finally
             {
@@ -657,7 +667,7 @@ namespace Yvand.ClaimsProviders
             SPOriginalIssuerType loginType = SPOriginalIssuers.GetIssuerType(decodedEntity.OriginalIssuer);
             if (loginType != SPOriginalIssuerType.TrustedProvider && loginType != SPOriginalIssuerType.ClaimProvider)
             {
-                ClaimsProviderLogging.Log($"[{ProviderInternalName}] Not trying to augment '{decodedEntity.Value}' because his OriginalIssuer is '{decodedEntity.OriginalIssuer}'.",
+                ClaimsProviderLogging.Log($"[{ClaimsProviderName}] Not trying to augment '{decodedEntity.Value}' because his OriginalIssuer is '{decodedEntity.OriginalIssuer}'.",
                     TraceSeverity.VerboseEx, EventSeverity.Information, TraceCategory.Augmentation);
                 return;
             }
@@ -668,20 +678,20 @@ namespace Yvand.ClaimsProviders
             try
             {
                 // There can be multiple TrustedProvider on the farm, but AzureCP should only do augmentation if current entity is from TrustedProvider it is associated with
-                if (!String.Equals(decodedEntity.OriginalIssuer, this.EntityProvider.CurrentConfiguration.SPTrust.Name, StringComparison.InvariantCultureIgnoreCase)) { return; }
+                if (!String.Equals(decodedEntity.OriginalIssuer, this.EntityProvider.LocalConfiguration.SPTrust.Name, StringComparison.InvariantCultureIgnoreCase)) { return; }
 
-                if (!this.EntityProvider.CurrentConfiguration.EnableAugmentation) { return; }
+                if (!this.EntityProvider.LocalConfiguration.EnableAugmentation) { return; }
 
-                ClaimsProviderLogging.Log($"[{ProviderInternalName}] Starting augmentation for user '{decodedEntity.Value}'.", TraceSeverity.Verbose, EventSeverity.Information, TraceCategory.Augmentation);
-                ClaimTypeConfig groupClaimTypeSettings = this.EntityProvider.CurrentConfiguration.ProcessedClaimTypesList.FirstOrDefault(x => x.EntityType == DirectoryObjectType.Group);
+                ClaimsProviderLogging.Log($"[{ClaimsProviderName}] Starting augmentation for user '{decodedEntity.Value}'.", TraceSeverity.Verbose, EventSeverity.Information, TraceCategory.Augmentation);
+                ClaimTypeConfig groupClaimTypeSettings = this.EntityProvider.LocalConfiguration.ProcessedClaimTypesList.FirstOrDefault(x => x.EntityType == DirectoryObjectType.Group);
                 if (groupClaimTypeSettings == null)
                 {
-                    ClaimsProviderLogging.Log($"[{ProviderInternalName}] No claim type with EntityType 'Group' was found, please check claims mapping table.",
+                    ClaimsProviderLogging.Log($"[{ClaimsProviderName}] No claim type with EntityType 'Group' was found, please check claims mapping table.",
                         TraceSeverity.High, EventSeverity.Error, TraceCategory.Augmentation);
                     return;
                 }
 
-                OperationContext currentContext = new OperationContext(this.EntityProvider.CurrentConfiguration, OperationType.Augmentation, null, decodedEntity, context, null, null);
+                OperationContext currentContext = new OperationContext(this.EntityProvider.LocalConfiguration, OperationType.Augmentation, null, decodedEntity, context, null, null);
                 Stopwatch timer = new Stopwatch();
                 timer.Start();
                 Task<List<SPClaim>> resultsTask = null; //= GetGroupMembershipAsync(currentContext, groupClaimTypeSettings);
@@ -693,21 +703,21 @@ namespace Yvand.ClaimsProviders
                     foreach (SPClaim group in groups)
                     {
                         claims.Add(group);
-                        ClaimsProviderLogging.Log($"[{ProviderInternalName}] Added group '{group.Value}' to user '{currentContext.IncomingEntity.Value}'",
+                        ClaimsProviderLogging.Log($"[{ClaimsProviderName}] Added group '{group.Value}' to user '{currentContext.IncomingEntity.Value}'",
                             TraceSeverity.Verbose, EventSeverity.Information, TraceCategory.Augmentation);
                     }
-                    ClaimsProviderLogging.Log($"[{ProviderInternalName}] User '{currentContext.IncomingEntity.Value}' was augmented with {groups.Count.ToString()} groups in {timer.ElapsedMilliseconds.ToString()} ms",
+                    ClaimsProviderLogging.Log($"[{ClaimsProviderName}] User '{currentContext.IncomingEntity.Value}' was augmented with {groups.Count.ToString()} groups in {timer.ElapsedMilliseconds.ToString()} ms",
                         TraceSeverity.Medium, EventSeverity.Information, TraceCategory.Augmentation);
                 }
                 else
                 {
-                    ClaimsProviderLogging.Log($"[{ProviderInternalName}] No group found for user '{currentContext.IncomingEntity.Value}', search took {timer.ElapsedMilliseconds.ToString()} ms",
+                    ClaimsProviderLogging.Log($"[{ClaimsProviderName}] No group found for user '{currentContext.IncomingEntity.Value}', search took {timer.ElapsedMilliseconds.ToString()} ms",
                         TraceSeverity.Medium, EventSeverity.Information, TraceCategory.Augmentation);
                 }
             }
             catch (Exception ex)
             {
-                ClaimsProviderLogging.LogException(ProviderInternalName, "in AugmentEntity", TraceCategory.Augmentation, ex);
+                ClaimsProviderLogging.LogException(ClaimsProviderName, "in AugmentEntity", TraceCategory.Augmentation, ex);
             }
             finally
             {
@@ -729,11 +739,11 @@ namespace Yvand.ClaimsProviders
                 if (hierarchyNodeID == null)
                 {
                     // Root level
-                    foreach (var azureObject in this.EntityProvider.CurrentConfiguration.ProcessedClaimTypesList.FindAll(x => !x.UseMainClaimTypeOfDirectoryObject && aadEntityTypes.Contains(x.EntityType)))
+                    foreach (var azureObject in this.EntityProvider.LocalConfiguration.ProcessedClaimTypesList.FindAll(x => !x.UseMainClaimTypeOfDirectoryObject && aadEntityTypes.Contains(x.EntityType)))
                     {
                         hierarchy.AddChild(
                             new Microsoft.SharePoint.WebControls.SPProviderHierarchyNode(
-                                ProviderInternalName,
+                                ClaimsProviderName,
                                 azureObject.ClaimTypeDisplayName,
                                 azureObject.ClaimType,
                                 true));
@@ -742,7 +752,7 @@ namespace Yvand.ClaimsProviders
             }
             catch (Exception ex)
             {
-                ClaimsProviderLogging.LogException(ProviderInternalName, "in FillHierarchy", TraceCategory.Claims_Picking, ex);
+                ClaimsProviderLogging.LogException(ClaimsProviderName, "in FillHierarchy", TraceCategory.Claims_Picking, ex);
             }
             finally
             {
@@ -757,11 +767,11 @@ namespace Yvand.ClaimsProviders
             this.Lock_Config.EnterReadLock();
             try
             {
-                OperationContext currentContext = new OperationContext(this.EntityProvider.CurrentConfiguration, OperationType.Search, resolveInput, null, context, entityTypes, null);
+                OperationContext currentContext = new OperationContext(this.EntityProvider.LocalConfiguration, OperationType.Search, resolveInput, null, context, entityTypes, null);
             }
             catch (Exception ex)
             {
-                ClaimsProviderLogging.LogException(ProviderInternalName, "in FillResolve(string)", TraceCategory.Claims_Picking, ex);
+                ClaimsProviderLogging.LogException(ClaimsProviderName, "in FillResolve(string)", TraceCategory.Claims_Picking, ex);
             }
             finally
             {
@@ -778,13 +788,13 @@ namespace Yvand.ClaimsProviders
             {
                 // Ensure incoming claim should be validated by AzureCP
                 // Must be made after call to Initialize because SPTrustedLoginProvider name must be known
-                if (!String.Equals(resolveInput.OriginalIssuer, this.EntityProvider.CurrentConfiguration.SPTrust.Name, StringComparison.InvariantCultureIgnoreCase)) { return; }
+                if (!String.Equals(resolveInput.OriginalIssuer, this.EntityProvider.LocalConfiguration.SPTrust.Name, StringComparison.InvariantCultureIgnoreCase)) { return; }
 
-                OperationContext currentContext = new OperationContext(this.EntityProvider.CurrentConfiguration, OperationType.Search, resolveInput.Value, resolveInput, context, entityTypes, null);
+                OperationContext currentContext = new OperationContext(this.EntityProvider.LocalConfiguration, OperationType.Search, resolveInput.Value, resolveInput, context, entityTypes, null);
             }
             catch (Exception ex)
             {
-                ClaimsProviderLogging.LogException(ProviderInternalName, "in FillResolve(SPClaim)", TraceCategory.Claims_Picking, ex);
+                ClaimsProviderLogging.LogException(ClaimsProviderName, "in FillResolve(SPClaim)", TraceCategory.Claims_Picking, ex);
             }
             finally
             {
@@ -799,7 +809,7 @@ namespace Yvand.ClaimsProviders
             this.Lock_Config.EnterReadLock();
             try
             {
-                OperationContext currentContext = new OperationContext(this.EntityProvider.CurrentConfiguration, OperationType.Search, searchPattern, null, context, entityTypes, hierarchyNodeID);
+                OperationContext currentContext = new OperationContext(this.EntityProvider.LocalConfiguration, OperationType.Search, searchPattern, null, context, entityTypes, hierarchyNodeID);
                 List<PickerEntity> entities = this.SearchOrValidate(currentContext);
                 FillEntities(currentContext, ref entities);
                 if (entities == null || entities.Count == 0) { return; }
@@ -813,19 +823,19 @@ namespace Yvand.ClaimsProviders
                     }
                     else
                     {
-                        ClaimTypeConfig ctConfig = this.EntityProvider.CurrentConfiguration.ProcessedClaimTypesList.FirstOrDefault(x =>
+                        ClaimTypeConfig ctConfig = this.EntityProvider.LocalConfiguration.ProcessedClaimTypesList.FirstOrDefault(x =>
                             !x.UseMainClaimTypeOfDirectoryObject &&
                             String.Equals(x.ClaimType, entity.Claim.ClaimType, StringComparison.InvariantCultureIgnoreCase));
 
                         string nodeName = ctConfig != null ? ctConfig.ClaimTypeDisplayName : entity.Claim.ClaimType;
-                        matchNode = new SPProviderHierarchyNode(ProviderInternalName, nodeName, entity.Claim.ClaimType, true);
+                        matchNode = new SPProviderHierarchyNode(ClaimsProviderName, nodeName, entity.Claim.ClaimType, true);
                         searchTree.AddChild(matchNode);
                     }
                     matchNode.AddEntity(entity);
-                    ClaimsProviderLogging.Log($"[{ProviderInternalName}] Added entity: display text: '{entity.DisplayText}', claim value: '{entity.Claim.Value}', claim type: '{entity.Claim.ClaimType}'",
+                    ClaimsProviderLogging.Log($"[{ClaimsProviderName}] Added entity: display text: '{entity.DisplayText}', claim value: '{entity.Claim.Value}', claim type: '{entity.Claim.ClaimType}'",
                         TraceSeverity.Verbose, EventSeverity.Information, TraceCategory.Claims_Picking);
                 }
-                ClaimsProviderLogging.Log($"[{ProviderInternalName}] Returned {entities.Count} entities from input '{currentContext.Input}'",
+                ClaimsProviderLogging.Log($"[{ClaimsProviderName}] Returned {entities.Count} entities from input '{currentContext.Input}'",
                     TraceSeverity.Medium, EventSeverity.Information, TraceCategory.Claims_Picking);
             }
             catch (Exception ex)
@@ -844,6 +854,83 @@ namespace Yvand.ClaimsProviders
         /// <param name="resolved">List of entities created by LDAPCP</param>
         protected virtual void FillEntities(OperationContext currentContext, ref List<PickerEntity> resolved)
         {
+        }
+
+        /// <summary>
+        /// Return the identity claim type
+        /// </summary>
+        /// <returns></returns>
+        public override string GetClaimTypeForUserKey()
+        {
+            // Initialization may fail because there is no yet configuration (fresh install)
+            // In this case, AzureCP should not return null because it causes null exceptions in SharePoint when users sign-in
+            ValidateLocalConfiguration(null, null);
+
+            this.Lock_Config.EnterReadLock();
+            try
+            {
+                if (this.EntityProvider.LocalConfiguration.SPTrust == null)
+                {
+                    return String.Empty;
+                }
+                return this.EntityProvider.LocalConfiguration.SPTrust.IdentityClaimTypeInformation.MappedClaimType;
+            }
+            catch (Exception ex)
+            {
+                ClaimsProviderLogging.LogException(ClaimsProviderName, "in GetClaimTypeForUserKey", TraceCategory.Rehydration, ex);
+            }
+            finally
+            {
+                this.Lock_Config.ExitReadLock();
+            }
+            return null;
+        }
+
+        /// <summary>
+        /// Return the user key (SPClaim with identity claim type) from the incoming entity
+        /// </summary>
+        /// <param name="entity"></param>
+        /// <returns></returns>
+        protected override SPClaim GetUserKeyForEntity(SPClaim entity)
+        {
+            // Initialization may fail because there is no yet configuration (fresh install)
+            // In this case, AzureCP should not return null because it causes null exceptions in SharePoint when users sign-in
+            bool initSucceeded = ValidateLocalConfiguration(null, null);
+
+            this.Lock_Config.EnterReadLock();
+            try
+            {
+                // If initialization failed but SPTrust is not null, rest of the method can be executed normally
+                // Otherwise return the entity
+                if (!initSucceeded && this.EntityProvider.LocalConfiguration.SPTrust == null)
+                {
+                    return entity;
+                }
+
+                // There are 2 scenarios:
+                // 1: OriginalIssuer is "SecurityTokenService": Value looks like "05.t|contoso.local|yvand@contoso.local", claim type is "http://schemas.microsoft.com/sharepoint/2009/08/claims/userid" and it must be decoded properly
+                // 2: OriginalIssuer is AzureCP: in this case incoming entity is valid and returned as is
+                if (String.Equals(entity.OriginalIssuer, this.EntityProvider.LocalConfiguration.SPTrust.Name, StringComparison.InvariantCultureIgnoreCase))
+                {
+                    return entity;
+                }
+
+                SPClaimProviderManager cpm = SPClaimProviderManager.Local;
+                SPClaim curUser = SPClaimProviderManager.DecodeUserIdentifierClaim(entity);
+
+                ClaimsProviderLogging.Log($"[{ClaimsProviderName}] Returning user key for '{entity.Value}'",
+                    TraceSeverity.VerboseEx, EventSeverity.Information, TraceCategory.Rehydration);
+                return CreateClaim(this.EntityProvider.LocalConfiguration.SPTrust.IdentityClaimTypeInformation.MappedClaimType, curUser.Value, curUser.ValueType);
+            }
+            catch (Exception ex)
+            {
+                ClaimsProviderLogging.LogException(ClaimsProviderName, "in GetUserKeyForEntity", TraceCategory.Rehydration, ex);
+            }
+            finally
+            {
+                this.Lock_Config.ExitReadLock();
+            }
+            return null;
         }
     }
 

@@ -165,7 +165,7 @@ namespace Yvand.ClaimsProviders.Configuration.AzureAD
                 }
                 catch (CryptographicException ex)
                 {
-                    ClaimsProviderLogging.LogException(AzureCP.ProviderInternalName, $"while deserializating the certificate for tenant '{this.Name}'.", TraceCategory.Core, ex);
+                    ClaimsProviderLogging.LogException(AzureCPSE.ClaimsProviderName, $"while deserializating the certificate for tenant '{this.Name}'.", TraceCategory.Core, ex);
                 }
             }
         }
@@ -210,7 +210,7 @@ namespace Yvand.ClaimsProviders.Configuration.AzureAD
             }
             catch (Exception ex)
             {
-                ClaimsProviderLogging.LogException(AzureCP.ProviderInternalName, $"while setting client context for tenant '{this.Name}'.", TraceCategory.Core, ex);
+                ClaimsProviderLogging.LogException(AzureCPSE.ClaimsProviderName, $"while setting client context for tenant '{this.Name}'.", TraceCategory.Core, ex);
             }
         }
 

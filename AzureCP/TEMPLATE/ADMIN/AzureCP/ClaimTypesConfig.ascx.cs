@@ -76,7 +76,7 @@ namespace azurecp.ControlTemplates
                 foreach (object field in typeof(AzureADObjectProperty).GetFields())
                 {
                     string prop = ((System.Reflection.FieldInfo)field).Name;
-                    if (AzureCP.GetPropertyValue(new User(), prop) == null) { continue; }
+                    if (AzureCPSE.GetPropertyValue(new User(), prop) == null) { continue; }
                     //if (AzureCP.GetGraphPropertyValue(new Group(), prop) == null) continue;
                     //if (AzureCP.GetGraphPropertyValue(new Role(), prop) == null) continue;
 
@@ -311,14 +311,14 @@ namespace azurecp.ControlTemplates
                 // Ensure property exists for the current object type
                 if (azureObject.Value.EntityType == DirectoryObjectType.User)
                 {
-                    if (AzureCP.GetPropertyValue(new User(), prop.ToString()) == null)
+                    if (AzureCPSE.GetPropertyValue(new User(), prop.ToString()) == null)
                     {
                         continue;
                     }
                 }
                 else
                 {
-                    if (AzureCP.GetPropertyValue(new Group(), prop.ToString()) == null) 
+                    if (AzureCPSE.GetPropertyValue(new Group(), prop.ToString()) == null) 
                     { 
                         continue; 
                     }
