@@ -324,8 +324,10 @@ namespace Yvand.ClaimsProviders.Configuration
         public virtual EntityProviderConfiguration CopyConfiguration()
         {
             // Cannot use reflection here to copy object because of the calls to methods CopyConfiguration() on some properties
-            EntityProviderConfiguration copy = new EntityProviderConfiguration(this.ClaimsProviderName);
-            //copy.ClaimsProviderName = this.ClaimsProviderName;
+            //EntityProviderConfiguration copy = new EntityProviderConfiguration(this.ClaimsProviderName);
+            // Use default constructor to bypass initialization, which is useless since properties will be manually set here
+            EntityProviderConfiguration copy = new EntityProviderConfiguration();
+            copy.ClaimsProviderName = this.ClaimsProviderName;
             copy.ClaimTypes = new ClaimTypeConfigCollection();
             copy.ClaimTypes.SPTrust = this.ClaimTypes.SPTrust;
             foreach (ClaimTypeConfig currentObject in this.ClaimTypes)

@@ -63,10 +63,12 @@ namespace Yvand.ClaimsProviders.Configuration.AzureAD
             // This is not possible to case an object to an inherited type from its base type: https://stackoverflow.com/questions/12565736/convert-base-class-to-derived-class
             //EntityProviderConfiguration baseCopy = base.CopyConfiguration();
             //AzureADEntityProviderConfiguration copy = (AzureADEntityProviderConfiguration)baseCopy;
-            AzureADEntityProviderConfiguration copy = new AzureADEntityProviderConfiguration(this.ClaimsProviderName);
+            //AzureADEntityProviderConfiguration copy = new AzureADEntityProviderConfiguration(this.ClaimsProviderName);
+            // Use default constructor to bypass initialization, which is useless since properties will be manually set here
+            AzureADEntityProviderConfiguration copy = new AzureADEntityProviderConfiguration();
+            copy.ClaimsProviderName = this.ClaimsProviderName;
 
             // Redo here the CopyConfiguration done in base class
-            //copy.ClaimsProviderName = this.ClaimsProviderName;
             copy.ClaimTypes = new ClaimTypeConfigCollection();
             copy.ClaimTypes.SPTrust = this.ClaimTypes.SPTrust;
             foreach (ClaimTypeConfig currentObject in this.ClaimTypes)
