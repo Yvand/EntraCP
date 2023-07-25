@@ -76,7 +76,7 @@
   <ItemGroup>
     <Compile Include="Yvand.ClaimsProviders\AzureAD\AzureADEntityProvider.cs" />
     <Compile Include="Yvand.ClaimsProviders\AzureCPSE.cs" />
-    <Compile Include="AzureCPUserControl.cs">
+    <Compile Include="Yvand.ClaimsProviders\Administration\AzureCPUserControl.cs">
       <SubType>ASPXCodeBehind</SubType>
     </Compile>
     <Compile Include="Yvand.ClaimsProviders\ClaimsProviderLogging.cs" />

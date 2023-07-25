@@ -21,7 +21,7 @@ using Yvand.ClaimsProviders.Configuration;
 using Yvand.ClaimsProviders.Configuration.AzureAD;
 using static Yvand.ClaimsProviders.ClaimsProviderLogging;
 
-namespace azurecp.ControlTemplates
+namespace Yvand.ClaimsProviders.Administration
 {
     public partial class AzureCPGlobalSettings : AzureCPUserControl
     {

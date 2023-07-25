@@ -7,7 +7,7 @@
 // </auto-generated>
 //------------------------------------------------------------------------------
 
-namespace azurecp.ControlTemplates
+namespace Yvand.ClaimsProviders.Administration
 {
 
 

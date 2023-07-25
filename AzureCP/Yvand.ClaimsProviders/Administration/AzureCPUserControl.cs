@@ -1,5 +1,4 @@
-﻿using azurecp;
-using Microsoft.SharePoint;
+﻿using Microsoft.SharePoint;
 using Microsoft.SharePoint.Administration;
 using Microsoft.SharePoint.Administration.Claims;
 using Microsoft.SharePoint.Utilities;
@@ -12,7 +11,7 @@ using Yvand.ClaimsProviders.Configuration;
 using Yvand.ClaimsProviders.Configuration.AzureAD;
 using static Yvand.ClaimsProviders.ClaimsProviderLogging;
 
-namespace azurecp.ControlTemplates
+namespace Yvand.ClaimsProviders.Administration
 {
     public abstract class AzureCPUserControl : UserControl
     {

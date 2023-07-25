@@ -11,7 +11,7 @@ using System.Web.UI.WebControls;
 using Yvand.ClaimsProviders;
 using Yvand.ClaimsProviders.Configuration;
 
-namespace azurecp.ControlTemplates
+namespace Yvand.ClaimsProviders.Administration
 {
     public partial class ClaimTypesConfigUserControl : AzureCPUserControl
     {

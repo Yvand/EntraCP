@@ -1,7 +1,7 @@
 ﻿<%@ Assembly Name="$SharePoint.Project.AssemblyFullName$" %>
 <%@ Page Language="C#" AutoEventWireup="true" Inherits="Microsoft.SharePoint.WebControls.LayoutsPageBase" MasterPageFile="~/_admin/admin.master" %>
 <%@ Register TagPrefix="AzureCP" TagName="GlobalSettings" src="AzureCPGlobalSettings.ascx" %>
-<%@ Import Namespace="azurecp" %>
+<%@ Import Namespace="Yvand.ClaimsProviders.Configuration" %>
 <%@ Import Namespace="System.Diagnostics" %>
 <%@ Import Namespace="System.Reflection" %>
 
@@ -12,6 +12,6 @@
 </asp:Content>
 <asp:Content ID="Main" ContentPlaceHolderID="PlaceHolderMain" runat="server">
     <table border="0" cellspacing="0" cellpadding="0" width="100%">
-        <AzureCP:GlobalSettings ID="AzureCPGlobalSettings" Runat="server" ClaimsProviderName="AzureCP" PersistedObjectName="<%# ClaimsProviderConstants.CONFIG_NAME %>" PersistedObjectID="<%# ClaimsProviderConstants.CONFIG_ID %>" />
+        <AzureCP:GlobalSettings ID="AzureCPGlobalSettings" Runat="server" ClaimsProviderName="AzureCP" PersistedObjectName="<%# ClaimsProviderConstants.CONFIGURATION_NAME %>" PersistedObjectID="<%# ClaimsProviderConstants.CONFIGURATION_ID %>" />
     </table>
 </asp:Content>
