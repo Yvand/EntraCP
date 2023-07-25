@@ -677,7 +677,7 @@ namespace Yvand.ClaimsProviders
             try
             {
                 // There can be multiple TrustedProvider on the farm, but AzureCP should only do augmentation if current entity is from TrustedProvider it is associated with
-                if (!String.Equals(decodedEntity.OriginalIssuer, this.EntityProvider.LocalConfiguration.SPTrust.Name, StringComparison.InvariantCultureIgnoreCase)) { return; }
+                if (!String.Equals(decodedEntity.OriginalIssuer, this.EntityProvider.LocalConfiguration.OriginalIssuerName, StringComparison.InvariantCultureIgnoreCase)) { return; }
 
                 if (!this.EntityProvider.LocalConfiguration.EnableAugmentation) { return; }
 
@@ -693,19 +693,19 @@ namespace Yvand.ClaimsProviders
                 OperationContext currentContext = new OperationContext(this.EntityProvider.LocalConfiguration, OperationType.Augmentation, null, decodedEntity, context, null, null);
                 Stopwatch timer = new Stopwatch();
                 timer.Start();
-                Task<List<SPClaim>> resultsTask = null; //= GetGroupMembershipAsync(currentContext, groupClaimTypeSettings);
-                resultsTask.Wait();
-                List<SPClaim> groups = resultsTask.Result;
+                Task<List<string>> groupsTask = this.EntityProvider.GetEntityGroupsAsync(currentContext, groupClaimTypeSettings.DirectoryObjectProperty);
+                groupsTask.Wait();
+                List<string> groups = groupsTask.Result;
                 timer.Stop();
                 if (groups?.Count > 0)
                 {
-                    foreach (SPClaim group in groups)
+                    foreach (string group in groups)
                     {
-                        claims.Add(group);
-                        ClaimsProviderLogging.Log($"[{ClaimsProviderName}] Added group '{group.Value}' to user '{currentContext.IncomingEntity.Value}'",
+                        claims.Add(CreateClaim(groupClaimTypeSettings.ClaimType, group, groupClaimTypeSettings.ClaimValueType));
+                        ClaimsProviderLogging.Log($"[{ClaimsProviderName}] Added group '{group}' to user '{currentContext.IncomingEntity.Value}'",
                             TraceSeverity.Verbose, EventSeverity.Information, TraceCategory.Augmentation);
                     }
-                    ClaimsProviderLogging.Log($"[{ClaimsProviderName}] User '{currentContext.IncomingEntity.Value}' was augmented with {groups.Count.ToString()} groups in {timer.ElapsedMilliseconds.ToString()} ms",
+                    ClaimsProviderLogging.Log($"[{ClaimsProviderName}] User '{currentContext.IncomingEntity.Value}' was augmented with {groups.Count} groups in {timer.ElapsedMilliseconds} ms",
                         TraceSeverity.Medium, EventSeverity.Information, TraceCategory.Augmentation);
                 }
                 else
@@ -722,6 +722,13 @@ namespace Yvand.ClaimsProviders
             {
                 this.Lock_Config.ExitReadLock();
             }
+        }
+
+        protected virtual new SPClaim CreateClaim(string type, string value, string valueType)
+        {
+            // SPClaimProvider.CreateClaim sets property OriginalIssuer to SPOriginalIssuerType.ClaimProvider, which is not correct
+            //return CreateClaim(type, value, valueType);
+            return new SPClaim(type, value, valueType, this.EntityProvider.LocalConfiguration.OriginalIssuerName);
         }
 
         protected override void FillHierarchy(Uri context, string[] entityTypes, string hierarchyNodeID, int numberOfLevels, SPProviderHierarchyTree hierarchy)
@@ -787,7 +794,7 @@ namespace Yvand.ClaimsProviders
             {
                 // Ensure incoming claim should be validated by AzureCP
                 // Must be made after call to Initialize because SPTrustedLoginProvider name must be known
-                if (!String.Equals(resolveInput.OriginalIssuer, this.EntityProvider.LocalConfiguration.IssuerName, StringComparison.InvariantCultureIgnoreCase)) { return; }
+                if (!String.Equals(resolveInput.OriginalIssuer, this.EntityProvider.LocalConfiguration.OriginalIssuerName, StringComparison.InvariantCultureIgnoreCase)) { return; }
 
                 OperationContext currentContext = new OperationContext(this.EntityProvider.LocalConfiguration, OperationType.Validation, resolveInput.Value, resolveInput, context, entityTypes, null);
                 List<PickerEntity> entities = this.SearchOrValidate(currentContext);

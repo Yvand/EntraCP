@@ -1,30 +1,152 @@
 ﻿using Microsoft.Graph;
 using Microsoft.Graph.Groups;
+using Microsoft.Graph.Users.Item.GetMemberGroups;
+using Microsoft.Graph.Users.Item.MemberOf;
 using Microsoft.Graph.Models;
 using Microsoft.Graph.Users;
 using Microsoft.Kiota.Abstractions;
 using Microsoft.Kiota.Http.HttpClientLibrary.Middleware.Options;
 using Microsoft.SharePoint.Administration;
+using Microsoft.SharePoint.Administration.Claims;
 using Microsoft.SharePoint.Utilities;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
+using System.Net.NetworkInformation;
 using System.Text;
 using System.Threading.Tasks;
+using System.Web;
 using Yvand.ClaimsProviders.Configuration;
 using Yvand.ClaimsProviders.Configuration.AzureAD;
 using static Yvand.ClaimsProviders.ClaimsProviderLogging;
+using System.Reflection;
 
 namespace Yvand.ClaimsProviders.AzureAD
 {
     public class AzureADEntityProvider : EntityProviderBase<AzureADEntityProviderConfiguration>
     {
-        public AzureADEntityProvider(string providerInternalName) : base(providerInternalName) { }        
+        public AzureADEntityProvider(string providerInternalName) : base(providerInternalName) { }
 
-        public async override Task<List<Group>> GetEntityGroupsAsync(OperationContext currentContext)
+        public async override Task<List<string>> GetEntityGroupsAsync(OperationContext currentContext, AzureADObjectProperty groupProperty)
         {
-            throw new NotImplementedException();
+            List<AzureTenant> azureTenants = this.LocalConfiguration.AzureTenants;
+            // URL encode the filter to prevent that it gets truncated like this: "UserPrincipalName eq 'guest_contoso.com" instead of "UserPrincipalName eq 'guest_contoso.com#EXT#@TENANT.onmicrosoft.com'"
+            string getMemberUserFilter = $"{currentContext.IncomingEntityClaimTypeConfig.DirectoryObjectProperty} eq '{currentContext.IncomingEntity.Value}'";
+            string getGuestUserFilter = $"userType eq 'Guest' and {this.LocalConfiguration.IdentityClaimTypeConfig.DirectoryObjectPropertyForGuestUsers} eq '{currentContext.IncomingEntity.Value}'";
+
+            // Create a task for each tenant to query
+            IEnumerable<Task<List<string>>> tenantTasks = azureTenants.Select(async tenant =>
+            {
+                List<string> groupsInTenant = new List<string>();
+                Stopwatch timer = new Stopwatch();
+                timer.Start();
+                try
+                {
+                    // Search the user as a member
+                    var userCollectionResult = await tenant.GraphService.Users.GetAsync((config) =>
+                    {
+                        config.QueryParameters.Filter = getMemberUserFilter;
+                        config.QueryParameters.Select = new[] { "Id" };
+                        config.QueryParameters.Top = 1;
+                    }).ConfigureAwait(false);
+
+                    User user = userCollectionResult?.Value?.FirstOrDefault();
+                    if (user == null)
+                    {
+                        // If user was not found, he might be a Guest user. Query to check this: /users?$filter=userType eq 'Guest' and mail eq 'guest@live.com'&$select=userPrincipalName, Id
+                        //string guestFilter = HttpUtility.UrlEncode($"userType eq 'Guest' and {IdentityClaimTypeConfig.DirectoryObjectPropertyForGuestUsers} eq '{currentContext.IncomingEntity.Value}'");
+                        //userResult = await tenant.GraphService.Users.Request().Filter(guestFilter).Select(HttpUtility.UrlEncode("userPrincipalName, Id")).GetAsync().ConfigureAwait(false);
+                        //userResult = await Task.Run(() => tenant.GraphService.Users.Request().Filter(guestFilter).Select(HttpUtility.UrlEncode("userPrincipalName, Id")).GetAsync()).ConfigureAwait(false);
+                        userCollectionResult = await Task.Run(() => tenant.GraphService.Users.GetAsync((config) =>
+                        {
+                            config.QueryParameters.Filter = getGuestUserFilter;
+                            config.QueryParameters.Select = new[] { "Id" };
+                            config.QueryParameters.Top = 1;
+                        })).ConfigureAwait(false);
+                        user = userCollectionResult?.Value?.FirstOrDefault();
+                    }
+                    if (user == null) { return groupsInTenant; }
+
+                    if (groupProperty == AzureADObjectProperty.Id)
+                    {
+                        // POST to /v1.0/users/user@TENANT.onmicrosoft.com/microsoft.graph.getMemberGroups is the preferred way to return security groups as it includes nested groups
+                        // But it returns only the group IDs so it can be used only if groupClaimTypeConfig.DirectoryObjectProperty == AzureADObjectProperty.Id
+                        // For Guest users, it must be the id: POST to /v1.0/users/18ff6ae9-dd01-4008-a786-aabf71f1492a/microsoft.graph.getMemberGroups
+                        GetMemberGroupsPostRequestBody getGroupsOptions = new GetMemberGroupsPostRequestBody { SecurityEnabledOnly = this.LocalConfiguration.FilterSecurityEnabledGroupsOnly };
+                        GetMemberGroupsResponse memberGroupsResponse = await Task.Run(() => tenant.GraphService.Users[user.Id].GetMemberGroups.PostAsync(getGroupsOptions)).ConfigureAwait(false);
+                        if (memberGroupsResponse?.Value != null)
+                        {
+                            bool morePages;
+                            do
+                            {
+                                foreach (string groupID in memberGroupsResponse.Value)
+                                {
+                                    groupsInTenant.Add(groupID);
+                                }
+
+                                morePages = !string.IsNullOrWhiteSpace(memberGroupsResponse.OdataNextLink);
+                                if (morePages)
+                                {
+                                    var nextPageRequest = new GetMemberGroupsRequestBuilder(memberGroupsResponse.OdataNextLink, tenant.GraphService.RequestAdapter);
+                                    memberGroupsResponse = await Task.Run(() => nextPageRequest.PostAsync(getGroupsOptions)).ConfigureAwait(false);
+                                }
+                            }
+                            while (morePages);
+                        }
+                    }
+                    else
+                    {
+                        // Fallback to GET to /v1.0/users/user@TENANT.onmicrosoft.com/memberOf, which returns all group properties but does not return nested groups
+                        //IUserMemberOfCollectionWithReferencesPage memberGroupsResponse = await tenant.GraphService.Users[user.Id].MemberOf.Request().GetAsync().ConfigureAwait(false);
+                        DirectoryObjectCollectionResponse memberOfResponse = await Task.Run(() => tenant.GraphService.Users[user.Id].MemberOf.GetAsync()).ConfigureAwait(false);
+                        if (memberOfResponse?.Value != null)
+                        {
+                            do
+                            {
+                                foreach (Group group in memberOfResponse.Value.OfType<Group>())
+                                {
+                                    string groupClaimValue = GetPropertyValue(group, groupProperty.ToString());
+                                    groupsInTenant.Add(groupClaimValue);
+                                }
+
+                                if (!string.IsNullOrWhiteSpace(memberOfResponse.OdataNextLink))
+                                {
+                                    var nextPageRequest = new MemberOfRequestBuilder(memberOfResponse.OdataNextLink, tenant.GraphService.RequestAdapter);
+                                    memberOfResponse = await Task.Run(() => nextPageRequest.GetAsync()).ConfigureAwait(false);
+                                }
+                            }
+                            while (!string.IsNullOrWhiteSpace(memberOfResponse.OdataNextLink));
+                        }
+                    }
+                }
+                catch (Exception ex)
+                {
+                    ClaimsProviderLogging.LogException(ClaimsProviderName, $"in QueryAzureADTenantsAsync while querying tenant '{tenant.Name}'", TraceCategory.Lookup, ex);
+                }
+                finally
+                {
+                    timer.Stop();
+                }
+                if (groupsInTenant != null)
+                {
+                    ClaimsProviderLogging.Log($"[{ClaimsProviderName}] Got {groupsInTenant.Count} users/groups in {timer.ElapsedMilliseconds.ToString()} ms from '{tenant.Name}' with input '{currentContext.Input}'", TraceSeverity.Medium, EventSeverity.Information, TraceCategory.Lookup);
+                }
+                else
+                {
+                    ClaimsProviderLogging.Log($"[{ClaimsProviderName}] Got no result from '{tenant.Name}' with input '{currentContext.Input}', search took {timer.ElapsedMilliseconds.ToString()} ms", TraceSeverity.Medium, EventSeverity.Information, TraceCategory.Lookup);
+                }
+                return groupsInTenant;
+            });
+
+            List<string> groups = new List<string>();
+            // Wait for all tasks to complete
+            List<string>[] groupsInAllTenants = await Task.WhenAll(tenantTasks).ConfigureAwait(false);
+            for (int i = 0; i < groupsInAllTenants.Length; i++)
+            {
+                groups.AddRange(groupsInAllTenants[i]);
+            }
+            return groups;
         }
 
         public async override Task<List<DirectoryObject>> SearchOrValidateEntitiesAsync(OperationContext currentContext)
@@ -412,6 +534,73 @@ namespace Yvand.ClaimsProviders.AzureAD
             {
             }
             return tenantResults;
+        }
+
+        /// <summary>
+        /// Uses reflection to return the value of a public property for the given object
+        /// </summary>
+        /// <param name="directoryObject"></param>
+        /// <param name="propertyName"></param>
+        /// <returns>Null if property doesn't exist, String.Empty if property exists but has no value, actual value otherwise</returns>
+        public static string GetPropertyValue(DirectoryObject directoryObject, string propertyName)
+        {
+            if (directoryObject == null)
+            {
+                return null;
+            }
+
+            if (propertyName.StartsWith("extensionAttribute"))
+            {
+                try
+                {
+                    var returnString = string.Empty;
+                    if (directoryObject is User)
+                    {
+                        var userobject = (User)directoryObject;
+                        if (userobject.AdditionalData != null)
+                        {
+                            var obj = userobject.AdditionalData.FirstOrDefault(s => s.Key.EndsWith(propertyName));
+                            if (obj.Value != null)
+                            {
+                                returnString = obj.Value.ToString();
+                            }
+                            else
+                            {
+                                return null;
+                            }
+                        }
+                    }
+                    else if (directoryObject is Group)
+                    {
+                        var groupobject = (Group)directoryObject;
+                        if (groupobject.AdditionalData != null)
+                        {
+                            var obj = groupobject.AdditionalData.FirstOrDefault(s => s.Key.EndsWith(propertyName));
+                            if (obj.Value != null)
+                            {
+                                returnString = obj.Value.ToString();
+                            }
+                            else
+                            {
+                                return null;
+                            }
+                        }
+                    }
+                    return returnString == null ? propertyName : returnString;
+                }
+                catch
+                {
+                    return null;
+                }
+            }
+
+            PropertyInfo pi = directoryObject.GetType().GetProperty(propertyName);
+            if (pi == null)
+            {
+                return null;
+            }   // Property doesn't exist
+            object propertyValue = pi.GetValue(directoryObject, null);
+            return propertyValue == null ? String.Empty : propertyValue.ToString();
         }
     }
 }

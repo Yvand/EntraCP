@@ -145,7 +145,7 @@ namespace Yvand.ClaimsProviders.Configuration
         /// <summary>
         /// Returned issuer formatted like the property SPClaim.OriginalIssuer: "TrustedProvider:TrustedProviderName"
         /// </summary>
-        public string IssuerName => this.SPTrust != null ? SPOriginalIssuers.Format(SPOriginalIssuerType.TrustedProvider, this.SPTrust.Name) : String.Empty;
+        public string OriginalIssuerName => this.SPTrust != null ? SPOriginalIssuers.Format(SPOriginalIssuerType.TrustedProvider, this.SPTrust.Name) : String.Empty;
 
         [Persisted]
         private string ClaimsProviderVersion;

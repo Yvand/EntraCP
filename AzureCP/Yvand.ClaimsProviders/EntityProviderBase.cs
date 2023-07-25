@@ -16,7 +16,13 @@ namespace Yvand.ClaimsProviders
         public long LocalConfigurationVersion = 0;
         public string ClaimsProviderName { get; set; }
         public abstract Task<List<DirectoryObject>> SearchOrValidateEntitiesAsync(OperationContext currentContext);
-        public abstract Task<List<Group>> GetEntityGroupsAsync(OperationContext currentContext);
+        /// <summary>
+        /// Returns the groups the user is member of
+        /// </summary>
+        /// <param name="currentContext"></param>
+        /// <param name="groupClaimTypeConfig"></param>
+        /// <returns></returns>
+        public abstract Task<List<string>> GetEntityGroupsAsync(OperationContext currentContext, AzureADObjectProperty groupClaimTypeConfig);
 
         public EntityProviderBase(string claimsProviderName)
         {
