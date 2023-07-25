@@ -208,7 +208,7 @@ namespace Yvand.ClaimsProviders.AzureAD
                 try
                 {
                     timer.Start();
-                    tenantResults = await QueryAzureADTenantAsync(currentContext, tenant, true).ConfigureAwait(false);
+                    tenantResults = await QueryAzureADTenantAsync(currentContext, tenant).ConfigureAwait(false);
                 }
                 catch (Exception ex)
                 {
@@ -239,7 +239,7 @@ namespace Yvand.ClaimsProviders.AzureAD
             return allResults;
         }
 
-        protected virtual async Task<List<DirectoryObject>> QueryAzureADTenantAsync(OperationContext currentContext, AzureTenant tenant, bool firstAttempt)
+        protected virtual async Task<List<DirectoryObject>> QueryAzureADTenantAsync(OperationContext currentContext, AzureTenant tenant)
         {
             List<DirectoryObject> tenantResults = new List<DirectoryObject>();
             if (String.IsNullOrWhiteSpace(tenant.UserFilter) && String.IsNullOrWhiteSpace(tenant.GroupFilter))
@@ -295,9 +295,9 @@ namespace Yvand.ClaimsProviders.AzureAD
                             conf.QueryParameters = new UsersRequestBuilder.UsersRequestBuilderGetQueryParameters
                             {
                                 Count = true,
-                                //Filter = tenant.UserFilter,
+                                Filter = tenant.UserFilter,
                                 Select = tenant.UserSelect,
-                                Top = 2,    // YVANDEBUG
+                                Top = this.LocalConfiguration.MaxSearchResultsCount,
                             };
                             conf.Headers = new RequestHeaders
                             {
@@ -316,23 +316,6 @@ namespace Yvand.ClaimsProviders.AzureAD
                     string groupsRequestId = String.Empty;
                     if (!String.IsNullOrWhiteSpace(tenant.GroupFilter))
                     {
-                        GroupsRequestBuilder.GroupsRequestBuilderGetRequestConfiguration groupsRequestConfig = new GroupsRequestBuilder.GroupsRequestBuilderGetRequestConfiguration
-                        {
-                            QueryParameters = new GroupsRequestBuilder.GroupsRequestBuilderGetQueryParameters
-                            {
-                                Count = true,
-                                Filter = tenant.GroupFilter,
-                                Select = tenant.GroupSelect,
-                            },
-                            Headers = new RequestHeaders
-                                {
-                                    { "ConsistencyLevel", "eventual" }
-                                },
-                            Options = new List<IRequestOption>
-                                {
-                                    retryHandlerOption,
-                                }
-                        };
                         RequestInformation groupRequest = tenant.GraphService.Groups.ToGetRequestInformation(conf =>
                         {
                             conf.QueryParameters = new GroupsRequestBuilder.GroupsRequestBuilderGetQueryParameters
@@ -340,6 +323,7 @@ namespace Yvand.ClaimsProviders.AzureAD
                                 Count = true,
                                 Filter = tenant.GroupFilter,
                                 Select = tenant.GroupSelect,
+                                Top = this.LocalConfiguration.MaxSearchResultsCount,
                             };
                             conf.Headers = new RequestHeaders
                             {
@@ -358,8 +342,8 @@ namespace Yvand.ClaimsProviders.AzureAD
                     UserCollectionResponse userCollectionResult = await returnedResponse.GetResponseByIdAsync<UserCollectionResponse>(usersRequestId).ConfigureAwait(false);
                     GroupCollectionResponse groupCollectionResult = await returnedResponse.GetResponseByIdAsync<GroupCollectionResponse>(groupsRequestId).ConfigureAwait(false);
 
-                    // Process users result
                     ClaimsProviderLogging.Log($"[{ClaimsProviderName}] Query to tenant '{tenant.Name}' returned {(userCollectionResult?.Value == null ? 0 : userCollectionResult.Value.Count)} user(s) with filter \"{tenant.UserFilter}\"", TraceSeverity.VerboseEx, EventSeverity.Information, TraceCategory.Lookup);
+                    // Process users result
                     if (userCollectionResult?.Value != null)
                     {
                         PageIterator<User, UserCollectionResponse> usersPageIterator = PageIterator<User, UserCollectionResponse>.CreatePageIterator(

@@ -16,6 +16,7 @@ using System.Text;
 using System.Threading.Tasks;
 using static Yvand.ClaimsProviders.ClaimsProviderLogging;
 using Azure.Core.Pipeline;
+using System.Security.Cryptography.Xml;
 
 namespace Yvand.ClaimsProviders.Configuration.AzureAD
 {
@@ -181,21 +182,25 @@ namespace Yvand.ClaimsProviders.Configuration.AzureAD
         {
             try
             {
-                var proxyAddress = "http://localhost:8888";
-                var webProxy = new WebProxy(new Uri(proxyAddress));
-                HttpClientHandler clientProxy = new HttpClientHandler { Proxy = webProxy };
+                string proxyAddress = "http://localhost:8888";
+
+                WebProxy webProxy = null;
+                HttpClientTransport clientTransportProxy = null;
+                if (!String.IsNullOrWhiteSpace(proxyAddress))
+                {
+                    webProxy = new WebProxy(new Uri(proxyAddress));
+                    HttpClientHandler clientProxy = new HttpClientHandler { Proxy = webProxy };
+                    clientTransportProxy = new HttpClientTransport(clientProxy);
+                }                
 
                 var handlers = GraphClientFactory.CreateDefaultHandlers();
 #if DEBUG
                 handlers.Add(new ChaosHandler());
 #endif
 
-                ClientSecretCredentialOptions options = new ClientSecretCredentialOptions
-                {
-                    // Create a new Azure.Core.HttpClientTransport
-                    Transport = new HttpClientTransport(clientProxy),
-                    AuthorityHost = this.CloudInstance,
-                };
+                ClientSecretCredentialOptions options = new ClientSecretCredentialOptions();
+                options.AuthorityHost = this.CloudInstance;
+                if (clientTransportProxy != null) { options.Transport = clientTransportProxy; }
 
                 TokenCredential tokenCredential;
                 if (!String.IsNullOrWhiteSpace(ClientSecret))

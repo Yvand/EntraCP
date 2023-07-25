@@ -24,14 +24,13 @@ namespace Yvand.ClaimsProviders
         }
 
         /// <summary>
-        /// 
+        /// Ensure that property LocalConfiguration is valid and up to date
         /// </summary>
         /// <param name="configurationName"></param>
         /// <returns>return true if local configuration is valid and up to date</returns>
         public bool RefreshLocalConfigurationIfNeeded(string configurationName)
         {
             bool configIsVald = true;
-            //this.UpdateLocalConfigurationIfNeeded(configurationName);
             // Use reflection to call method GetConfiguration(string) of the generic type because TConfiguration.GetConfiguration(persistedObjectName) return Compiler Error CS0704
             //TConfiguration globalConfiguration = TConfiguration.GetConfiguration(persistedObjectName);
             //TConfiguration globalConfiguration = (TConfiguration)typeof(TConfiguration).GetMethod("GetConfiguration", new[] { typeof(string) }).Invoke(null, new object[] { persistedObjectName });
@@ -47,23 +46,22 @@ namespace Yvand.ClaimsProviders
 
             if (this.LocalConfigurationVersion == globalConfiguration.Version)
             {
-                ClaimsProviderLogging.Log($"[{ClaimsProviderName}] Configuration '{configurationName}' was found, version {globalConfiguration.Version}",
+                ClaimsProviderLogging.Log($"[{ClaimsProviderName}] Configuration '{configurationName}' is up to date with version {this.LocalConfigurationVersion}.",
                     TraceSeverity.VerboseEx, EventSeverity.Information, TraceCategory.Core);
                 return true;
             }
 
-            ClaimsProviderLogging.Log($"[{ClaimsProviderName}] Configuration '{configurationName}' was found with new version {globalConfiguration.Version}, refreshing local copy",
+            ClaimsProviderLogging.Log($"[{ClaimsProviderName}] Configuration '{globalConfiguration.Name}' has new version {globalConfiguration.Version}, refreshing local copy",
                 TraceSeverity.Medium, EventSeverity.Information, TraceCategory.Core);
 
-            // Configuration needs to be refreshed, lock current thread in write mode
             this.LocalConfiguration = (TConfiguration)globalConfiguration.CopyConfiguration();
-#if !DEBUG
+#if !DEBUGx
             this.LocalConfigurationVersion = ((SPPersistedObject)globalConfiguration).Version;
 #endif
 
             if (this.LocalConfiguration.ClaimTypes == null || this.LocalConfiguration.ClaimTypes.Count == 0)
             {
-                ClaimsProviderLogging.Log($"[{ClaimsProviderName}] Configuration '{configurationName}' was found but collection ClaimTypes is null or empty. Visit AzureCP admin pages in central administration to create it.",
+                ClaimsProviderLogging.Log($"[{ClaimsProviderName}] Configuration '{this.LocalConfiguration.Name}' was found but collection ClaimTypes is empty. Visit AzureCP admin pages in central administration to create it.",
                     TraceSeverity.Unexpected, EventSeverity.Error, TraceCategory.Core);
                 configIsVald = false;
             }
@@ -80,7 +78,6 @@ namespace Yvand.ClaimsProviders
             SPFarm parent = SPFarm.Local;
             try
             {
-                //TConfiguration persistedObject = parent.GetChild<TConfiguration>(persistedObjectName);
                 TConfiguration persistedObject = (TConfiguration)parent.GetObject(configurationName, parent.Id, typeof(TConfiguration));
                 return persistedObject;
             }
@@ -116,9 +113,9 @@ namespace Yvand.ClaimsProviders
         /// <returns></returns>
         public static TConfiguration CreateGlobalConfiguration(string configurationID, string configurationName, string claimsProviderName)
         {
-            if (String.IsNullOrEmpty(claimsProviderName))
+            if (String.IsNullOrWhiteSpace(claimsProviderName))
             {
-                throw new ArgumentNullException("spTrustName");
+                throw new ArgumentNullException("claimsProviderName");
             }
 
             // Ensure it doesn't already exists and delete it if so
@@ -135,9 +132,7 @@ namespace Yvand.ClaimsProviders
             ConstructorInfo ctorWithParameters = typeof(TConfiguration).GetConstructor(new[] { typeof(string), typeof(SPFarm), typeof(string) });
             TConfiguration config = (TConfiguration)ctorWithParameters.Invoke(new object[] { configurationName, SPFarm.Local, claimsProviderName });
 
-            //config.ResetCurrentConfiguration();
             config.Id = new Guid(configurationID);
-            //config.Update();
             // If parameter ensure is true, the call will not throw if the object already exists.
             config.Update(true);
             ClaimsProviderLogging.Log($"Created configuration '{configurationName}' with Id {config.Id}", TraceSeverity.Medium, EventSeverity.Information, TraceCategory.Core);
