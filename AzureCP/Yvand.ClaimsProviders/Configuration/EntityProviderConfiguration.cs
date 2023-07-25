@@ -26,7 +26,7 @@ namespace Yvand.ClaimsProviders.Configuration
         public string CustomData { get; set; }
         public int MaxSearchResultsCount { get; set; }
 
-        public IPersistedEntityProviderSettings() {}
+        public IPersistedEntityProviderSettings() { }
         public IPersistedEntityProviderSettings(string persistedObjectName, SPPersistedObject parent) : base(persistedObjectName, parent) { }
     }
 
@@ -142,6 +142,11 @@ namespace Yvand.ClaimsProviders.Configuration
             }
         }
 
+        /// <summary>
+        /// Returned issuer formatted like the property SPClaim.OriginalIssuer: "TrustedProvider:TrustedProviderName"
+        /// </summary>
+        public string IssuerName => this.SPTrust != null ? SPOriginalIssuers.Format(SPOriginalIssuerType.TrustedProvider, this.SPTrust.Name) : String.Empty;
+
         [Persisted]
         private string ClaimsProviderVersion;
 
@@ -167,7 +172,7 @@ namespace Yvand.ClaimsProviders.Configuration
         [Persisted]
         private int _MaxSearchResultsCount = 30; // SharePoint sets maxCount to 30 in method FillSearch
 
-        protected bool IsInitialized = false;
+        public bool RuntimeSettingsInitialized { get; private set; }
 
         // Runtime settings
         internal List<ClaimTypeConfig> RuntimeClaimTypesList { get; private set; }
@@ -192,15 +197,14 @@ namespace Yvand.ClaimsProviders.Configuration
             this.Initialize();
         }
 
-        private bool Initialize()
+        private void Initialize()
         {
-            if (!this.IsInitialized)
-            {
-                this.InitializeDefaultSettings();
-                this.InitializeRuntimeSettings();
-                this.IsInitialized = true;
-            }
-            return this.IsInitialized;
+            //if (!this.IsInitialized)
+            //{
+            this.InitializeDefaultSettings();
+            this.InitializeRuntimeSettings();
+            //}
+            //return this.IsInitialized;
         }
 
         protected virtual bool InitializeDefaultSettings()
@@ -214,6 +218,11 @@ namespace Yvand.ClaimsProviders.Configuration
         /// <returns></returns>
         protected virtual bool InitializeRuntimeSettings()
         {
+            if (this.RuntimeSettingsInitialized)
+            {
+                return true;
+            }
+
             if (this.ClaimTypes?.Count <= 0)
             {
                 ClaimsProviderLogging.Log($"[{this.ClaimsProviderName}] Cannot continue because configuration '{this.Name}' has 0 claim configured.",
@@ -292,7 +301,26 @@ namespace Yvand.ClaimsProviders.Configuration
                 !String.IsNullOrEmpty(x.EntityDataKey) &&
                 x.DirectoryObjectProperty != AzureADObjectProperty.NotSet);
 
+            this.RuntimeSettingsInitialized = true;
             return true;
+        }
+
+        public override void Update()
+        {
+            base.Update();
+            ClaimsProviderLogging.Log($"Successfully updated configuration '{this.Name}' with Id {this.Id}", TraceSeverity.Medium, EventSeverity.Information, TraceCategory.Core);
+        }
+
+        public override void Update(bool ensure)
+        {
+            // If parameter ensure is true, the call will not throw if the object already exists.
+            base.Update(ensure);
+            ClaimsProviderLogging.Log($"Successfully updated configuration '{this.Name}' with Id {this.Id}", TraceSeverity.Medium, EventSeverity.Information, TraceCategory.Core);
+        }
+
+        protected override void Validate()
+        {
+            base.Validate();
         }
 
         /// <summary>
@@ -341,6 +369,8 @@ namespace Yvand.ClaimsProviders.Configuration
             copy.Timeout = this.Timeout;
             copy.CustomData = this.CustomData;
             copy.MaxSearchResultsCount = this.MaxSearchResultsCount;
+            
+            copy.InitializeRuntimeSettings();
             return copy;
         }
 

@@ -15,6 +15,7 @@ using System.Security.Cryptography;
 using System.Text;
 using System.Threading.Tasks;
 using static Yvand.ClaimsProviders.ClaimsProviderLogging;
+using Azure.Core.Pipeline;
 
 namespace Yvand.ClaimsProviders.Configuration.AzureAD
 {
@@ -176,41 +177,46 @@ namespace Yvand.ClaimsProviders.Configuration.AzureAD
         /// <summary>
         /// Set properties AuthenticationProvider and GraphService
         /// </summary>
-        public void InitializeGraphForAppOnlyAuth(string claimsProviderName, int timeout)
+        public void InitializeGraphForAppOnlyAuth(int timeout)
         {
             try
             {
+                var proxyAddress = "http://localhost:8888";
+                var webProxy = new WebProxy(new Uri(proxyAddress));
+                HttpClientHandler clientProxy = new HttpClientHandler { Proxy = webProxy };
+
                 var handlers = GraphClientFactory.CreateDefaultHandlers();
-                handlers.Add(new ChaosHandler());   // DEBUG
-                // PROXY ISSUE: https://github.com/microsoftgraph/msgraph-sdk-dotnet/issues/1456
-                //HttpClient httpClient = GraphClientFactory.Create(handlers: handlers, proxy: new WebProxy(new Uri("http://localhost:8888"), false));
-                HttpClient httpClient = GraphClientFactory.Create(proxy: new WebProxy(new Uri("http://localhost:8888"), false));
-                //httpClient.Timeout = TimeSpan.FromMilliseconds(1000 * 10);
-                httpClient.Timeout = TimeSpan.FromMilliseconds(timeout);
+#if DEBUG
+                handlers.Add(new ChaosHandler());
+#endif
+
+                ClientSecretCredentialOptions options = new ClientSecretCredentialOptions
+                {
+                    // Create a new Azure.Core.HttpClientTransport
+                    Transport = new HttpClientTransport(clientProxy),
+                    AuthorityHost = this.CloudInstance,
+                };
 
                 TokenCredential tokenCredential;
-                TokenCredentialOptions tokenCredentialOptions = new TokenCredentialOptions();
-                //tokenCredentialOptions.AuthorityHost = ClaimsProviderConstants.AzureCloudEndpoints.SingleOrDefault(kvp => kvp.Value == this.CloudInstance).Value;
-                tokenCredentialOptions.AuthorityHost = this.CloudInstance;
-                //tokenCredentialOptions.AuthorityHost = AzureAuthorityHosts.AzurePublicCloud;
-
                 if (!String.IsNullOrWhiteSpace(ClientSecret))
                 {
-                    tokenCredential = new ClientSecretCredential(this.Name, this.ApplicationId, this.ApplicationSecret, tokenCredentialOptions);
+                    tokenCredential = new ClientSecretCredential(this.Name, this.ApplicationId, this.ApplicationSecret, options);
                 }
                 else
                 {
-                    tokenCredential = new ClientCertificateCredential(this.Name, this.ApplicationId, this.ClientCertificatePrivateKey, tokenCredentialOptions);
+                    tokenCredential = new ClientCertificateCredential(this.Name, this.ApplicationId, this.ClientCertificatePrivateKey, options);
                 }
+
+                var scopes = new[] { "https://graph.microsoft.com/.default" };
+                HttpClient httpClient = GraphClientFactory.Create(handlers: handlers, proxy: webProxy);
+                httpClient.Timeout = TimeSpan.FromMilliseconds(timeout);
 
                 // https://learn.microsoft.com/en-us/graph/sdks/customize-client?tabs=csharp
                 var authProvider = new Microsoft.Graph.Authentication.AzureIdentityAuthenticationProvider(
                     credential: tokenCredential,
-                    //allowedHosts: new[] { AzureAuthorityHosts.AzurePublicCloud.ToString() },
                     scopes: new[] { "https://graph.microsoft.com/.default",
                 });
                 this.GraphService = new GraphServiceClient(httpClient, authProvider);
-                //this.GraphService = new GraphServiceClient(tokenCredential, new[] { "User.Read.All", "GroupMember.Read.All" });
             }
             catch (Exception ex)
             {

@@ -156,113 +156,51 @@ namespace Yvand.ClaimsProviders.Configuration
         /// <summary>
         /// Indicates what kind of operation SharePoint is requesting
         /// </summary>
-        public OperationType OperationType
-        {
-            get => _OperationType;
-            set => _OperationType = value;
-        }
-        private OperationType _OperationType;
+        public OperationType OperationType { get; private set; }
 
         /// <summary>
         /// Set only if request is a validation or an augmentation, to the incoming entity provided by SharePoint
         /// </summary>
-        public SPClaim IncomingEntity
-        {
-            get => _IncomingEntity;
-            set => _IncomingEntity = value;
-        }
-        private SPClaim _IncomingEntity;
+        public SPClaim IncomingEntity { get; private set; }
 
         /// <summary>
         /// User submitting the query in the poeple picker, retrieved from HttpContext. Can be null
         /// </summary>
-        public SPClaim UserInHttpContext
-        {
-            get => _UserInHttpContext;
-            set => _UserInHttpContext = value;
-        }
-        private SPClaim _UserInHttpContext;
+        public SPClaim UserInHttpContext { get; private set; }
 
         /// <summary>
         /// Uri provided by SharePoint
         /// </summary>
-        public Uri UriContext
-        {
-            get => _UriContext;
-            set => _UriContext = value;
-        }
-        private Uri _UriContext;
+        public Uri UriContext { get; private set; }
 
         /// <summary>
         /// EntityTypes expected by SharePoint in the entities returned
         /// </summary>
-        public DirectoryObjectType[] DirectoryObjectTypes
-        {
-            get => _DirectoryObjectTypes;
-            set => _DirectoryObjectTypes = value;
-        }
-        private DirectoryObjectType[] _DirectoryObjectTypes;
+        public DirectoryObjectType[] DirectoryObjectTypes { get; private set; }
 
-        public string HierarchyNodeID
-        {
-            get => _HierarchyNodeID;
-            set => _HierarchyNodeID = value;
-        }
-        private string _HierarchyNodeID;
-
-        //public int MaxCount
-        //{
-        //    get => _MaxCount;
-        //    set => _MaxCount = value;
-        //}
-        //private int _MaxCount;
+        public string HierarchyNodeID { get; private set; }
 
         /// <summary>
         /// If request is a validation: contains the value of the SPClaim. If request is a search: contains the input
         /// </summary>
-        public string Input
-        {
-            get => _Input;
-            set => _Input = value;
-        }
-        private string _Input;
+        public string Input { get; private set; }
 
-        public bool InputHasKeyword
-        {
-            get => _InputHasKeyword;
-            set => _InputHasKeyword = value;
-        }
-        private bool _InputHasKeyword;
+        public bool InputHasKeyword { get; private set; }
 
         /// <summary>
         /// Indicates if search operation should return only results that exactly match the Input
         /// </summary>
-        public bool ExactSearch
-        {
-            get => _ExactSearch;
-            set => _ExactSearch = value;
-        }
-        private bool _ExactSearch;
+        public bool ExactSearch { get; private set; }
 
         /// <summary>
         /// Set only if request is a validation or an augmentation, to the ClaimTypeConfig that matches the ClaimType of the incoming entity
         /// </summary>
-        public ClaimTypeConfig IncomingEntityClaimTypeConfig
-        {
-            get => _IncomingEntityClaimTypeConfig;
-            set => _IncomingEntityClaimTypeConfig = value;
-        }
-        private ClaimTypeConfig _IncomingEntityClaimTypeConfig;
+        public ClaimTypeConfig IncomingEntityClaimTypeConfig { get; private set; }
 
         /// <summary>
         /// Contains the relevant list of ClaimTypeConfig for every type of request. In case of validation or augmentation, it will contain only 1 item.
         /// </summary>
-        public List<ClaimTypeConfig> CurrentClaimTypeConfigList
-        {
-            get => _CurrentClaimTypeConfigList;
-            set => _CurrentClaimTypeConfigList = value;
-        }
-        private List<ClaimTypeConfig> _CurrentClaimTypeConfigList;
+        public List<ClaimTypeConfig> CurrentClaimTypeConfigList { get; private set; }
 
         public OperationContext(EntityProviderConfiguration currentConfiguration, OperationType currentRequestType, string input, SPClaim incomingEntity, Uri context, string[] entityTypes, string hierarchyNodeID)
         {
@@ -322,11 +260,11 @@ namespace Yvand.ClaimsProviders.Configuration
         /// <summary>
         /// Validation is when SharePoint expects exactly 1 PickerEntity from the incoming SPClaim
         /// </summary>
-        /// <param name="processedClaimTypeConfigList"></param>
-        protected void InitializeValidation(List<ClaimTypeConfig> processedClaimTypeConfigList)
+        /// <param name="runtimeClaimTypesList"></param>
+        protected void InitializeValidation(List<ClaimTypeConfig> runtimeClaimTypesList)
         {
             if (this.IncomingEntity == null) { throw new ArgumentNullException("IncomingEntity"); }
-            this.IncomingEntityClaimTypeConfig = processedClaimTypeConfigList.FirstOrDefault(x =>
+            this.IncomingEntityClaimTypeConfig = runtimeClaimTypesList.FirstOrDefault(x =>
                String.Equals(x.ClaimType, this.IncomingEntity.ClaimType, StringComparison.InvariantCultureIgnoreCase) &&
                !x.UseMainClaimTypeOfDirectoryObject);
 
@@ -336,9 +274,10 @@ namespace Yvand.ClaimsProviders.Configuration
                 throw new InvalidOperationException($"[{AzureCPSE.ClaimsProviderName}] Unable validate entity \"{this.IncomingEntity.Value}\" because its claim type \"{this.IncomingEntity.ClaimType}\" was not found in the ClaimTypes list of current configuration.");
             }
 
-            // CurrentClaimTypeConfigList must also be set
-            this.CurrentClaimTypeConfigList = new List<ClaimTypeConfig>(1);
-            this.CurrentClaimTypeConfigList.Add(this.IncomingEntityClaimTypeConfig);
+            this.CurrentClaimTypeConfigList = new List<ClaimTypeConfig>(1)
+            {
+                this.IncomingEntityClaimTypeConfig
+            };
             this.ExactSearch = true;
             this.Input = this.IncomingEntity.Value;
         }
@@ -346,28 +285,28 @@ namespace Yvand.ClaimsProviders.Configuration
         /// <summary>
         /// Search is when SharePoint expects a list of any PickerEntity that match input provided
         /// </summary>
-        /// <param name="processedClaimTypeConfigList"></param>
-        protected void InitializeSearch(List<ClaimTypeConfig> processedClaimTypeConfigList, bool exactSearch)
+        /// <param name="runtimeClaimTypesList"></param>
+        protected void InitializeSearch(List<ClaimTypeConfig> runtimeClaimTypesList, bool exactSearch)
         {
             this.ExactSearch = exactSearch;
             if (!String.IsNullOrEmpty(this.HierarchyNodeID))
             {
                 // Restrict search to ClaimType currently selected in the hierarchy (may return multiple results if identity claim type)
-                CurrentClaimTypeConfigList = processedClaimTypeConfigList.FindAll(x =>
+                CurrentClaimTypeConfigList = runtimeClaimTypesList.FindAll(x =>
                     String.Equals(x.ClaimType, this.HierarchyNodeID, StringComparison.InvariantCultureIgnoreCase) &&
                     this.DirectoryObjectTypes.Contains(x.EntityType));
             }
             else
             {
                 // List<T>.FindAll returns an empty list if no result found: http://msdn.microsoft.com/en-us/library/fh1w7y8z(v=vs.110).aspx
-                CurrentClaimTypeConfigList = processedClaimTypeConfigList.FindAll(x => this.DirectoryObjectTypes.Contains(x.EntityType));
+                CurrentClaimTypeConfigList = runtimeClaimTypesList.FindAll(x => this.DirectoryObjectTypes.Contains(x.EntityType));
             }
         }
 
-        protected void InitializeAugmentation(List<ClaimTypeConfig> processedClaimTypeConfigList)
+        protected void InitializeAugmentation(List<ClaimTypeConfig> runtimeClaimTypesList)
         {
             if (this.IncomingEntity == null) { throw new ArgumentNullException("IncomingEntity"); }
-            this.IncomingEntityClaimTypeConfig = processedClaimTypeConfigList.FirstOrDefault(x =>
+            this.IncomingEntityClaimTypeConfig = runtimeClaimTypesList.FirstOrDefault(x =>
                String.Equals(x.ClaimType, this.IncomingEntity.ClaimType, StringComparison.InvariantCultureIgnoreCase) &&
                !x.UseMainClaimTypeOfDirectoryObject);
 

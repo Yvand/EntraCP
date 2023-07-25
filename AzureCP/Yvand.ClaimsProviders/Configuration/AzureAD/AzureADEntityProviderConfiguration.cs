@@ -52,7 +52,7 @@ namespace Yvand.ClaimsProviders.Configuration.AzureAD
             // Set properties AuthenticationProvider and GraphService
             foreach (var tenant in this.AzureTenants)
             {
-                tenant.InitializeGraphForAppOnlyAuth(this.ClaimsProviderName, this.Timeout);
+                tenant.InitializeGraphForAppOnlyAuth(this.Timeout);
             }
             return success;
         }
@@ -87,6 +87,7 @@ namespace Yvand.ClaimsProviders.Configuration.AzureAD
             copy.AzureTenants = this.AzureTenants;
             copy.FilterSecurityEnabledGroupsOnly = this.FilterSecurityEnabledGroupsOnly;
 
+            copy.InitializeRuntimeSettings();
             return copy;
         }
 

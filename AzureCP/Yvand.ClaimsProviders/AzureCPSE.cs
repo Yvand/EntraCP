@@ -787,9 +787,21 @@ namespace Yvand.ClaimsProviders
             {
                 // Ensure incoming claim should be validated by AzureCP
                 // Must be made after call to Initialize because SPTrustedLoginProvider name must be known
-                if (!String.Equals(resolveInput.OriginalIssuer, this.EntityProvider.LocalConfiguration.SPTrust.Name, StringComparison.InvariantCultureIgnoreCase)) { return; }
+                if (!String.Equals(resolveInput.OriginalIssuer, this.EntityProvider.LocalConfiguration.IssuerName, StringComparison.InvariantCultureIgnoreCase)) { return; }
 
-                OperationContext currentContext = new OperationContext(this.EntityProvider.LocalConfiguration, OperationType.Search, resolveInput.Value, resolveInput, context, entityTypes, null);
+                OperationContext currentContext = new OperationContext(this.EntityProvider.LocalConfiguration, OperationType.Validation, resolveInput.Value, resolveInput, context, entityTypes, null);
+                List<PickerEntity> entities = this.SearchOrValidate(currentContext);
+                if (entities?.Count == 1)
+                {
+                    resolved.Add(entities[0]);
+                    ClaimsProviderLogging.Log($"[{ClaimsProviderName}] Validated entity: display text: '{entities[0].DisplayText}', claim value: '{entities[0].Claim.Value}', claim type: '{entities[0].Claim.ClaimType}'",
+                        TraceSeverity.High, EventSeverity.Information, TraceCategory.Claims_Picking);
+                }
+                else
+                {
+                    int entityCount = entities == null ? 0 : entities.Count;
+                    ClaimsProviderLogging.Log($"[{ClaimsProviderName}] Validation failed: found {entityCount.ToString()} entities instead of 1 for incoming claim with value '{currentContext.IncomingEntity.Value}' and type '{currentContext.IncomingEntity.ClaimType}'", TraceSeverity.Unexpected, EventSeverity.Error, TraceCategory.Claims_Picking);
+                }
             }
             catch (Exception ex)
             {

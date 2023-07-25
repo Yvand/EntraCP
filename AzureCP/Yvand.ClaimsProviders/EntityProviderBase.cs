@@ -45,25 +45,22 @@ namespace Yvand.ClaimsProviders
                 return false;
             }
 
-            if (this.LocalConfigurationVersion == ((SPPersistedObject)globalConfiguration).Version)
+            if (this.LocalConfigurationVersion == globalConfiguration.Version)
             {
-                ClaimsProviderLogging.Log($"[{ClaimsProviderName}] Configuration '{configurationName}' was found, version {((SPPersistedObject)globalConfiguration).Version.ToString()}",
+                ClaimsProviderLogging.Log($"[{ClaimsProviderName}] Configuration '{configurationName}' was found, version {globalConfiguration.Version}",
                     TraceSeverity.VerboseEx, EventSeverity.Information, TraceCategory.Core);
                 return true;
             }
 
-            ClaimsProviderLogging.Log($"[{ClaimsProviderName}] Configuration '{configurationName}' was found with new version {globalConfiguration.Version.ToString()}, refreshing local copy",
+            ClaimsProviderLogging.Log($"[{ClaimsProviderName}] Configuration '{configurationName}' was found with new version {globalConfiguration.Version}, refreshing local copy",
                 TraceSeverity.Medium, EventSeverity.Information, TraceCategory.Core);
 
             // Configuration needs to be refreshed, lock current thread in write mode
             this.LocalConfiguration = (TConfiguration)globalConfiguration.CopyConfiguration();
-            //this.LocalConfigurationVersion = ((SPPersistedObject)globalConfiguration).Version;    // YVANDEBUG
+#if !DEBUG
+            this.LocalConfigurationVersion = ((SPPersistedObject)globalConfiguration).Version;
+#endif
 
-            //if (this.LocalConfiguration == null)
-            //{
-            //    configIsVald = false;
-            //}
-            //else
             if (this.LocalConfiguration.ClaimTypes == null || this.LocalConfiguration.ClaimTypes.Count == 0)
             {
                 ClaimsProviderLogging.Log($"[{ClaimsProviderName}] Configuration '{configurationName}' was found but collection ClaimTypes is null or empty. Visit AzureCP admin pages in central administration to create it.",
@@ -72,39 +69,6 @@ namespace Yvand.ClaimsProviders
             }
             return configIsVald;
         }
-
-        //private TConfiguration UpdateLocalConfigurationIfNeeded(string configurationName)
-        //{
-        //    // Use reflection to call method GetConfiguration(string) of the generic type because TConfiguration.GetConfiguration(persistedObjectName) return Compiler Error CS0704
-        //    //TConfiguration globalConfiguration = TConfiguration.GetConfiguration(persistedObjectName);
-        //    //TConfiguration globalConfiguration = (TConfiguration)typeof(TConfiguration).GetMethod("GetConfiguration", new[] { typeof(string) }).Invoke(null, new object[] { persistedObjectName });
-        //    TConfiguration globalConfiguration = GetGlobalConfiguration(configurationName);
-
-        //    if (globalConfiguration == null)
-        //    {
-        //        ClaimsProviderLogging.Log($"[{ClaimsProviderName}] Cannot continue because configuration '{configurationName}' was not found in configuration database, visit AzureCP admin pages in central administration to create it.",
-        //            TraceSeverity.Unexpected, EventSeverity.Error, TraceCategory.Core);
-        //        this.LocalConfiguration = null;
-        //        return null;
-        //    }
-
-        //    if (this.LocalConfigurationVersion == ((SPPersistedObject)globalConfiguration).Version)
-        //    {
-        //        ClaimsProviderLogging.Log($"[{ClaimsProviderName}] Configuration '{configurationName}' was found, version {((SPPersistedObject)globalConfiguration).Version.ToString()}",
-        //            TraceSeverity.VerboseEx, EventSeverity.Information, TraceCategory.Core);
-
-        //        return this.LocalConfiguration;
-        //    }
-
-        //    ClaimsProviderLogging.Log($"[{ClaimsProviderName}] Configuration '{configurationName}' was found with new version {globalConfiguration.Version.ToString()}, refreshing local copy",
-        //        TraceSeverity.Medium, EventSeverity.Information, TraceCategory.Core);
-
-        //    // Configuration needs to be refreshed, lock current thread in write mode
-        //    this.LocalConfiguration = (TConfiguration)globalConfiguration.CopyConfiguration();
-        //    this.LocalConfigurationVersion = ((SPPersistedObject)globalConfiguration).Version;
-
-        //    return this.LocalConfiguration;
-        //}
 
         /// <summary>
         /// Returns the configuration of AzureCP, but does not initialize the runtime settings
