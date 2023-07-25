@@ -64,7 +64,7 @@ namespace azurecp.ControlTemplates
                 PropertyCollectionBinder pcb = new PropertyCollectionBinder();
                 foreach (AzureTenant tenant in PersistedObject.AzureTenants)
                 {
-                    pcb.AddRow(tenant.Identifier, tenant.Name, tenant.ApplicationId, tenant.CloudInstance.ToString(), tenant.ExtensionAttributesApplicationId);
+                    pcb.AddRow(tenant.Identifier, tenant.Name, tenant.ClientId, tenant.CloudInstance.ToString(), tenant.ExtensionAttributesApplicationId);
                 }
                 pcb.BindGrid(grdAzureTenants);
             }
@@ -305,9 +305,9 @@ namespace azurecp.ControlTemplates
                 new AzureTenant
                 {
                     Name = this.TxtTenantName.Text,
-                    ApplicationId = this.TxtClientId.Text,
-                    ApplicationSecret = this.TxtClientSecret.Text,
-                    ExcludeGuests = this.ChkMemberUserTypeOnly.Checked,
+                    ClientId = this.TxtClientId.Text,
+                    ClientSecret = this.TxtClientSecret.Text,
+                    ExcludeGuestUsers = this.ChkMemberUserTypeOnly.Checked,
                     ClientCertificatePrivateKey = cert,
                     //CloudInstance = (AzureCloudInstance)Enum.Parse(typeof(AzureCloudInstance), this.DDLAzureCloudInstance.SelectedValue),
                     CloudInstance = new Uri(this.DDLAzureCloudInstance.SelectedValue), //TODO nust convert enum type to Uri properly

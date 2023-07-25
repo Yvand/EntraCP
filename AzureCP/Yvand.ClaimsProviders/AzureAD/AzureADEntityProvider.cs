@@ -475,11 +475,11 @@ namespace Yvand.ClaimsProviders.AzureAD
                             {
                                 lock (lockAddResultToCollection)
                                 {
-                                    if (tenant.ExcludeMembers == true && !String.Equals(user.UserType, ClaimsProviderConstants.MEMBER_USERTYPE, StringComparison.InvariantCultureIgnoreCase))
+                                    if (tenant.ExcludeMemberUsers == true && !String.Equals(user.UserType, ClaimsProviderConstants.MEMBER_USERTYPE, StringComparison.InvariantCultureIgnoreCase))
                                     {
                                         tenantResults.Add(user);
                                     }
-                                    else if (tenant.ExcludeGuests == true && !String.Equals(user.UserType, ClaimsProviderConstants.GUEST_USERTYPE, StringComparison.InvariantCultureIgnoreCase))
+                                    else if (tenant.ExcludeGuestUsers == true && !String.Equals(user.UserType, ClaimsProviderConstants.GUEST_USERTYPE, StringComparison.InvariantCultureIgnoreCase))
                                     {
                                         tenantResults.Add(user);
                                     }

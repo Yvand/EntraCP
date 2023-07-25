@@ -20,6 +20,14 @@ namespace Yvand.ClaimsProviders.Configuration.AzureAD
         [Persisted]
         private List<AzureTenant> _AzureTenants;
 
+        public string ProxyAddress
+        {
+            get => _ProxyAddress;
+            set => _ProxyAddress = value;
+        }
+        [Persisted]
+        private string _ProxyAddress;
+
         /// <summary>
         /// Set if only AAD groups with securityEnabled = true should be returned - https://docs.microsoft.com/en-us/graph/api/resources/groups-overview?view=graph-rest-1.0
         /// </summary>
@@ -49,10 +57,9 @@ namespace Yvand.ClaimsProviders.Configuration.AzureAD
         protected override bool InitializeRuntimeSettings()
         {
             bool success = base.InitializeRuntimeSettings();
-            // Set properties AuthenticationProvider and GraphService
             foreach (var tenant in this.AzureTenants)
             {
-                tenant.InitializeGraphForAppOnlyAuth(this.Timeout);
+                tenant.InitializeGraphForAppOnlyAuth(this.Timeout, this.ProxyAddress);
             }
             return success;
         }

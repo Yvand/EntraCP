@@ -24,131 +24,111 @@ namespace Yvand.ClaimsProviders.Configuration.AzureAD
     {
         public Guid Identifier
         {
-            get => Id;
-            set => Id = value;
+            get => _Identifier;
+            set => _Identifier = value;
         }
         [Persisted]
-        private Guid Id = Guid.NewGuid();
+        private Guid _Identifier = Guid.NewGuid();
 
         /// <summary>
-        /// Name of the tenant, e.g. TENANTNAME.onMicrosoft.com
+        /// Tenant Name or ID
         /// </summary>
         public string Name
         {
-            get => TenantName;
-            set => TenantName = value;
+            get => _Name;
+            set => _Name = value;
         }
         [Persisted]
-        private string TenantName;
+        private string _Name;
 
         /// <summary>
-        /// Application ID of the application created in Azure AD tenant to authorize AzureCP
+        /// Application (client) ID of the app registration created for AzureCP in the Azure AD tenant
         /// </summary>
-        public string ApplicationId
+        public string ClientId
         {
-            get => ClientId;
-            set => ClientId = value;
+            get => _ClientId;
+            set => _ClientId = value;
         }
         [Persisted]
-        private string ClientId;
+        private string _ClientId;
 
         /// <summary>
-        /// Password of the application
+        /// Client secret of the app registration created for AzureCP in the Azure AD tenant
         /// </summary>
-        public string ApplicationSecret
+        public string ClientSecret
         {
-            get => ClientSecret;
-            set => ClientSecret = value;
+            get => _ClientSecret;
+            set => _ClientSecret = value;
         }
         [Persisted]
-        private string ClientSecret;
+        private string _ClientSecret;
 
-        /// <summary>
-        /// Set to true to return only Member users from this tenant
-        /// </summary>
-        public bool ExcludeMembers
+        public bool ExcludeMemberUsers
         {
-            get => ExcludeMemberUsers;
-            set => ExcludeMemberUsers = value;
+            get => _ExcludeMemberUsers;
+            set => _ExcludeMemberUsers = value;
         }
         [Persisted]
-        private bool ExcludeMemberUsers = false;
+        private bool _ExcludeMemberUsers = false;
 
-        /// <summary>
-        /// Set to true to return only Guest users from this tenant
-        /// </summary>
-        public bool ExcludeGuests
+        public bool ExcludeGuestUsers
         {
-            get => ExcludeGuestUsers;
-            set => ExcludeGuestUsers = value;
+            get => _ExcludeGuestUsers;
+            set => _ExcludeGuestUsers = value;
         }
         [Persisted]
-        private bool ExcludeGuestUsers = false;
+        private bool _ExcludeGuestUsers = false;
 
         /// <summary>
         /// Client ID of AD Connect used in extension attribues
         /// </summary>
         [Persisted]
-        private Guid ExtensionAttributesApplicationIdPersisted;
+        private Guid _ExtensionAttributesApplicationId;
 
         public Guid ExtensionAttributesApplicationId
         {
-            get => ExtensionAttributesApplicationIdPersisted;
-            set => ExtensionAttributesApplicationIdPersisted = value;
+            get => _ExtensionAttributesApplicationId;
+            set => _ExtensionAttributesApplicationId = value;
         }
 
+        /// <summary>
+        /// Client certificate with its private key, of the app registration created for AzureCP
+        /// </summary>
         public X509Certificate2 ClientCertificatePrivateKey
         {
             get
             {
-                return m_ClientCertificatePrivateKey;
+                return _ClientCertificatePrivateKey;
             }
             set
             {
                 if (value == null) { return; }
-                m_ClientCertificatePrivateKey = value;
+                _ClientCertificatePrivateKey = value;
                 try
                 {
                     // https://stackoverflow.com/questions/32354790/how-to-check-is-x509certificate2-exportable-or-not
-                    m_ClientCertificatePrivateKeyRawData = value.Export(X509ContentType.Pfx, ClaimsProviderConstants.ClientCertificatePrivateKeyPassword);
+                    ClientCertificatePrivateKeyRawData = value.Export(X509ContentType.Pfx, ClaimsProviderConstants.ClientCertificatePrivateKeyPassword);
                 }
                 catch (CryptographicException ex)
                 {
                     // X509Certificate2.Export() is expected to fail if the private key is not exportable, which depends on the X509KeyStorageFlags used when creating the X509Certificate2 object
                     //ClaimsProviderLogging.LogException(AzureCP._ProviderInternalName, $"while setting the certificate for tenant '{this.Name}'. Is the private key of the certificate exportable?", TraceCategory.Core, ex);
-                    //throw;  // The caller should be informed that the certificate could not be set
                 }
             }
         }
-        private X509Certificate2 m_ClientCertificatePrivateKey;
+        private X509Certificate2 _ClientCertificatePrivateKey;
         [Persisted]
-        private byte[] m_ClientCertificatePrivateKeyRawData;
-
-        public string AuthenticationMode
-        {
-            get
-            {
-                return String.IsNullOrWhiteSpace(this.ClientSecret) ? "ClientCertificate" : "ClientSecret";
-            }
-        }
+        private byte[] ClientCertificatePrivateKeyRawData;
 
         public Uri CloudInstance
         {
-            get => new Uri(this.m_CloudInstance);
-            //{
-            //    return (AzureCloudInstance)Enum.Parse(typeof(AzureCloudInstance), m_CloudInstance);
-            //}
-            set => m_CloudInstance = value.ToString();
+            get => new Uri(this._CloudInstance);
+            set => _CloudInstance = value.ToString();
         }
         [Persisted]
-        private string m_CloudInstance = AzureAuthorityHosts.AzurePublicCloud.ToString();
+        private string _CloudInstance = AzureAuthorityHosts.AzurePublicCloud.ToString();
 
-        /// <summary>
-        /// Instance of the IAuthenticationProvider class for this specific Azure AD tenant
-        /// </summary>
-        //private AADAppOnlyAuthenticationProvider AuthenticationProvider { get; set; }
-
-        public GraphServiceClient GraphService { get; set; }
+        public GraphServiceClient GraphService { get; private set; }
 
         public string UserFilter { get; set; }
         public string GroupFilter { get; set; }
@@ -161,12 +141,12 @@ namespace Yvand.ClaimsProviders.Configuration.AzureAD
 
         protected override void OnDeserialization()
         {
-            if (m_ClientCertificatePrivateKeyRawData != null)
+            if (ClientCertificatePrivateKeyRawData != null)
             {
                 try
                 {
                     // EphemeralKeySet: Keep the private key in-memory, it won't be written to disk - https://www.pkisolutions.com/handling-x509keystorageflags-in-applications/
-                    m_ClientCertificatePrivateKey = ImportPfxCertificateBlob(m_ClientCertificatePrivateKeyRawData, ClaimsProviderConstants.ClientCertificatePrivateKeyPassword, X509KeyStorageFlags.EphemeralKeySet);
+                    _ClientCertificatePrivateKey = ImportPfxCertificateBlob(ClientCertificatePrivateKeyRawData, ClaimsProviderConstants.ClientCertificatePrivateKeyPassword, X509KeyStorageFlags.EphemeralKeySet);
                 }
                 catch (CryptographicException ex)
                 {
@@ -178,12 +158,10 @@ namespace Yvand.ClaimsProviders.Configuration.AzureAD
         /// <summary>
         /// Set properties AuthenticationProvider and GraphService
         /// </summary>
-        public void InitializeGraphForAppOnlyAuth(int timeout)
+        public void InitializeGraphForAppOnlyAuth(int timeout, string proxyAddress)
         {
             try
             {
-                string proxyAddress = "http://localhost:8888";
-
                 WebProxy webProxy = null;
                 HttpClientTransport clientTransportProxy = null;
                 if (!String.IsNullOrWhiteSpace(proxyAddress))
@@ -203,13 +181,13 @@ namespace Yvand.ClaimsProviders.Configuration.AzureAD
                 if (clientTransportProxy != null) { options.Transport = clientTransportProxy; }
 
                 TokenCredential tokenCredential;
-                if (!String.IsNullOrWhiteSpace(ClientSecret))
+                if (!String.IsNullOrWhiteSpace(_ClientSecret))
                 {
-                    tokenCredential = new ClientSecretCredential(this.Name, this.ApplicationId, this.ApplicationSecret, options);
+                    tokenCredential = new ClientSecretCredential(this.Name, this.ClientId, this.ClientSecret, options);
                 }
                 else
                 {
-                    tokenCredential = new ClientCertificateCredential(this.Name, this.ApplicationId, this.ClientCertificatePrivateKey, options);
+                    tokenCredential = new ClientCertificateCredential(this.Name, this.ClientId, this.ClientCertificatePrivateKey, options);
                 }
 
                 var scopes = new[] { "https://graph.microsoft.com/.default" };
@@ -258,7 +236,7 @@ namespace Yvand.ClaimsProviders.Configuration.AzureAD
         /// <param name="newApplicationSecret">New application (client) secret</param>
         public void UpdateCredentials(string newApplicationSecret)
         {
-            SetCredentials(this.ApplicationId, newApplicationSecret);
+            SetCredentials(this.ClientId, newApplicationSecret);
         }
 
         /// <summary>
@@ -268,8 +246,8 @@ namespace Yvand.ClaimsProviders.Configuration.AzureAD
         /// <param name="applicationSecret">Application (client) secret</param>
         public void SetCredentials(string applicationId, string applicationSecret)
         {
-            this.ApplicationId = applicationId;
-            this.ApplicationSecret = applicationSecret;
+            this.ClientId = applicationId;
+            this.ClientSecret = applicationSecret;
             this.ClientCertificatePrivateKey = null;
         }
 
@@ -279,7 +257,7 @@ namespace Yvand.ClaimsProviders.Configuration.AzureAD
         /// <param name="newCertificate">New certificate with its private key</param>
         public void UpdateCredentials(X509Certificate2 newCertificate)
         {
-            SetCredentials(this.ApplicationId, newCertificate);
+            SetCredentials(this.ClientId, newCertificate);
         }
 
         /// <summary>
@@ -289,8 +267,8 @@ namespace Yvand.ClaimsProviders.Configuration.AzureAD
         /// <param name="certificate">Certificate with its private key</param>
         public void SetCredentials(string applicationId, X509Certificate2 certificate)
         {
-            this.ApplicationId = applicationId;
-            this.ApplicationSecret = String.Empty;
+            this.ClientId = applicationId;
+            this.ClientSecret = String.Empty;
             this.ClientCertificatePrivateKey = certificate;
         }
 
