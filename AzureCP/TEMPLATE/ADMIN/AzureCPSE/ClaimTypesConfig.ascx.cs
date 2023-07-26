@@ -52,7 +52,7 @@ namespace Yvand.ClaimsProviders.Administration
                 return;
             }
 
-            TrustName = CurrentTrustedLoginProvider.Name;
+            TrustName = Configuration.SPTrust.Name;
             if (!this.IsPostBack)
             {
                 // NEW ITEM FORM
@@ -96,7 +96,7 @@ namespace Yvand.ClaimsProviders.Administration
             // Copy claims list in a key value pair so that each item has a unique ID that can be used later for update/delete operations
             ClaimsMapping = new List<KeyValuePair<int, ClaimTypeConfig>>();
             int i = 0;
-            foreach (ClaimTypeConfig attr in this.PersistedObject.ClaimTypes)
+            foreach (ClaimTypeConfig attr in this.Configuration.ClaimTypes)
             {
                 ClaimsMapping.Add(new KeyValuePair<int, ClaimTypeConfig>(i++, attr));
             }
@@ -150,7 +150,7 @@ namespace Yvand.ClaimsProviders.Administration
                     tc.Controls.Add(new LiteralControl(String.Format(HtmlEditLink, attr.Key) + "&nbsp;&nbsp;"));
                 }
                 // But we don't allow to delete identity claim
-                if (!String.Equals(attr.Value.ClaimType, CurrentTrustedLoginProvider.IdentityClaimTypeInformation.MappedClaimType, StringComparison.InvariantCultureIgnoreCase))
+                if (!String.Equals(attr.Value.ClaimType, Configuration.SPTrust.IdentityClaimTypeInformation.MappedClaimType, StringComparison.InvariantCultureIgnoreCase))
                 {
                     LinkButton LnkDeleteItem = new LinkButton();
                     LnkDeleteItem.ID = "DeleteItemLink_" + attr.Key;
@@ -189,12 +189,12 @@ namespace Yvand.ClaimsProviders.Administration
                     {
                         html = String.Format(HtmlCellClaimType, attr.Value.ClaimType, attr.Key);
                         c = GetTableCell(html);
-                        if (String.Equals(CurrentTrustedLoginProvider.IdentityClaimTypeInformation.MappedClaimType, attr.Value.ClaimType, StringComparison.InvariantCultureIgnoreCase) && !attr.Value.UseMainClaimTypeOfDirectoryObject)
+                        if (String.Equals(Configuration.SPTrust.IdentityClaimTypeInformation.MappedClaimType, attr.Value.ClaimType, StringComparison.InvariantCultureIgnoreCase) && !attr.Value.UseMainClaimTypeOfDirectoryObject)
                         {
                             tr.CssClass = "azurecp-rowidentityclaim";
                             identityClaimPresent = true;
                         }
-                        else if (CurrentTrustedLoginProvider.ClaimTypeInformation.FirstOrDefault(x => String.Equals(x.MappedClaimType, attr.Value.ClaimType, StringComparison.InvariantCultureIgnoreCase)) == null)
+                        else if (Configuration.SPTrust.ClaimTypeInformation.FirstOrDefault(x => String.Equals(x.MappedClaimType, attr.Value.ClaimType, StringComparison.InvariantCultureIgnoreCase)) == null)
                         {
                             tr.CssClass = "azurecp-rowClaimTypeNotUsedInTrust";
                         }
@@ -252,7 +252,7 @@ namespace Yvand.ClaimsProviders.Administration
 
             if (!identityClaimPresent && !pendingUpdate)
             {
-                LabelErrorMessage.Text = String.Format(TextErrorNoIdentityClaimType, CurrentTrustedLoginProvider.DisplayName, CurrentTrustedLoginProvider.IdentityClaimTypeInformation.MappedClaimType);
+                LabelErrorMessage.Text = String.Format(TextErrorNoIdentityClaimType, Configuration.SPTrust.DisplayName, Configuration.SPTrust.IdentityClaimTypeInformation.MappedClaimType);
             }
         }
 
@@ -369,7 +369,7 @@ namespace Yvand.ClaimsProviders.Administration
 
             string itemId = e.CommandArgument.ToString();
             ClaimTypeConfig ctConfig = ClaimsMapping.Find(x => x.Key == Convert.ToInt32(itemId)).Value;
-            PersistedObject.ClaimTypes.Remove(ctConfig);
+            Configuration.ClaimTypes.Remove(ctConfig);
             CommitChanges();
             this.BuildAttributesListTable(false);
         }
@@ -415,7 +415,7 @@ namespace Yvand.ClaimsProviders.Administration
             try
             {
                 // ClaimTypeConfigCollection.Update() may thrown an exception if new ClaimTypeConfig is not valid for any reason
-                PersistedObject.ClaimTypes.Update(existingCTConfig.ClaimType, newCTConfig);
+                Configuration.ClaimTypes.Update(existingCTConfig.ClaimType, newCTConfig);
             }
             catch (Exception ex)
             {
@@ -429,8 +429,8 @@ namespace Yvand.ClaimsProviders.Administration
 
         protected void BtnReset_Click(object sender, EventArgs e)
         {
-            PersistedObject.ResetClaimTypesList();
-            PersistedObject.Update();
+            Configuration.ResetClaimTypesList();
+            Configuration.Update();
             Response.Redirect(Request.Url.ToString());
         }
 
@@ -487,7 +487,7 @@ namespace Yvand.ClaimsProviders.Administration
             try
             {
                 // ClaimTypeConfigCollection.Add() may thrown an exception if new ClaimTypeConfig is not valid for any reason
-                PersistedObject.ClaimTypes.Add(newCTConfig);
+                Configuration.ClaimTypes.Add(newCTConfig);
             }
             catch (Exception ex)
             {

@@ -23,56 +23,53 @@ namespace Yvand.ClaimsProviders.Administration
         /// <summary>
         /// This member is used in the markup code and cannot be made as a property
         /// </summary>
-        public string PersistedObjectName;
+        public string ConfigurationName;
 
-        private Guid _PersistedObjectID;
-        public string PersistedObjectID
+        private Guid _ConfigurationID;
+        public string ConfigurationID
         {
             get
             {
-                return (this._PersistedObjectID == null || this._PersistedObjectID == Guid.Empty) ? String.Empty : this._PersistedObjectID.ToString();
+                return (this._ConfigurationID == null || this._ConfigurationID == Guid.Empty) ? String.Empty : this._ConfigurationID.ToString();
             }
             set
             {
-                this._PersistedObjectID = new Guid(value);
+                this._ConfigurationID = new Guid(value);
             }
         }
 
-        private AzureADEntityProviderConfiguration _PersistedObject;
-        protected AzureADEntityProviderConfiguration PersistedObject
+        private AzureADEntityProviderConfiguration _Configuration;
+        protected AzureADEntityProviderConfiguration Configuration
         {
             get
             {
                 SPSecurity.RunWithElevatedPrivileges(delegate ()
                 {
-                    if (_PersistedObject == null)
+                    if (_Configuration == null)
                     {
-                        //_PersistedObject = AzureADEntityProviderConfiguration.GetConfiguration(PersistedObjectName);
-                        _PersistedObject = EntityProviderBase<AzureADEntityProviderConfiguration>.GetGlobalConfiguration(PersistedObjectName);
+                        _Configuration = EntityProviderBase<AzureADEntityProviderConfiguration>.GetGlobalConfiguration(ConfigurationName);
                     }
-                    if (_PersistedObject == null)
+                    if (_Configuration == null)
                     {
                         SPContext.Current.Web.AllowUnsafeUpdates = true;
-                        //_PersistedObject = AzureADEntityProviderConfiguration.CreateConfiguration(this.PersistedObjectID, this.PersistedObjectName, this.ClaimsProviderName);
-                        _PersistedObject = EntityProviderBase<AzureADEntityProviderConfiguration>.CreateGlobalConfiguration(this.PersistedObjectID, this.PersistedObjectName, this.ClaimsProviderName);
+                        _Configuration = EntityProviderBase<AzureADEntityProviderConfiguration>.CreateGlobalConfiguration(this.ConfigurationID, this.ConfigurationName, this.ClaimsProviderName);
                         SPContext.Current.Web.AllowUnsafeUpdates = false;
                     }
                 });
-                return _PersistedObject as AzureADEntityProviderConfiguration;
+                return _Configuration as AzureADEntityProviderConfiguration;
             }
-            //set { _PersistedObject = value; }
         }
 
-        protected SPTrustedLoginProvider CurrentTrustedLoginProvider;
+        //protected SPTrustedLoginProvider CurrentTrustedLoginProvider;
         protected IdentityClaimTypeConfig IdentityCTConfig;
         protected ConfigStatus Status;
 
-        protected long PersistedObjectVersion
+        protected long ConfigurationVersion
         {
             get
             {
                 if (ViewState[ViewStatePersistedObjectVersionKey] == null)
-                    ViewState.Add(ViewStatePersistedObjectVersionKey, PersistedObject.Version);
+                    ViewState.Add(ViewStatePersistedObjectVersionKey, Configuration.Version);
                 return (long)ViewState[ViewStatePersistedObjectVersionKey];
             }
             set { ViewState[ViewStatePersistedObjectVersionKey] = value; }
@@ -99,7 +96,7 @@ namespace Yvand.ClaimsProviders.Administration
 
                 if ((Status & ConfigStatus.NoIdentityClaimType) == ConfigStatus.NoIdentityClaimType)
                 {
-                    return String.Format(TextErrorNoIdentityClaimType, CurrentTrustedLoginProvider.DisplayName, CurrentTrustedLoginProvider.IdentityClaimTypeInformation.MappedClaimType);
+                    return String.Format(TextErrorNoIdentityClaimType, Configuration.SPTrust.DisplayName, Configuration.SPTrust.IdentityClaimTypeInformation.MappedClaimType);
                 }
 
                 if ((Status & ConfigStatus.PersistedObjectStale) == ConfigStatus.PersistedObjectStale)
@@ -147,20 +144,20 @@ namespace Yvand.ClaimsProviders.Administration
                 // But only during initial page load, otherwise it would reset bindings in other controls like SPGridView
                 DataBind();
                 ViewState.Add("ClaimsProviderName", ClaimsProviderName);
-                ViewState.Add("PersistedObjectName", PersistedObjectName);
-                ViewState.Add("PersistedObjectID", PersistedObjectID);
+                ViewState.Add("PersistedObjectName", ConfigurationName);
+                ViewState.Add("PersistedObjectID", ConfigurationID);
             }
             else
             {
                 ClaimsProviderName = ViewState["ClaimsProviderName"].ToString();
-                PersistedObjectName = ViewState["PersistedObjectName"].ToString();
-                PersistedObjectID = ViewState["PersistedObjectID"].ToString();
+                ConfigurationName = ViewState["PersistedObjectName"].ToString();
+                ConfigurationID = ViewState["PersistedObjectID"].ToString();
             }
 
             Status = ConfigStatus.AllGood;
             if (String.IsNullOrEmpty(ClaimsProviderName)) { Status |= ConfigStatus.ClaimsProviderNamePropNotSet; }
-            if (String.IsNullOrEmpty(PersistedObjectName)) { Status |= ConfigStatus.PersistedObjectNamePropNotSet; }
-            if (String.IsNullOrEmpty(PersistedObjectID)) { Status |= ConfigStatus.PersistedObjectIDPropNotSet; }
+            if (String.IsNullOrEmpty(ConfigurationName)) { Status |= ConfigStatus.PersistedObjectNamePropNotSet; }
+            if (String.IsNullOrEmpty(ConfigurationID)) { Status |= ConfigStatus.PersistedObjectIDPropNotSet; }
             if (Status != ConfigStatus.AllGood)
             {
                 ClaimsProviderLogging.Log($"[{ClaimsProviderName}] {MostImportantError}", TraceSeverity.Unexpected, EventSeverity.Error, TraceCategory.Configuration);
@@ -168,17 +165,17 @@ namespace Yvand.ClaimsProviders.Administration
                 return Status;
             }
 
-            if (CurrentTrustedLoginProvider == null)
+            if (Configuration.SPTrust == null)
             {
-                CurrentTrustedLoginProvider = Utils.GetSPTrustAssociatedWithClaimsProvider(this.ClaimsProviderName);
-                if (CurrentTrustedLoginProvider == null)
-                {
-                    Status |= ConfigStatus.NoSPTrustAssociation;
-                    return Status;
-                }
+                //CurrentTrustedLoginProvider = Utils.GetSPTrustAssociatedWithClaimsProvider(this.ClaimsProviderName);
+                //if (CurrentTrustedLoginProvider == null)
+                //{
+                Status |= ConfigStatus.NoSPTrustAssociation;
+                return Status;
+                //}
             }
 
-            if (PersistedObject == null)
+            if (Configuration == null)
             {
                 Status |= ConfigStatus.PersistedObjectNotFound;
             }
@@ -192,16 +189,16 @@ namespace Yvand.ClaimsProviders.Administration
 
             // AzureADEntityProviderConfiguration.GetConfiguration will call method AzureADEntityProviderConfiguration.CheckAndCleanConfiguration();
             //PersistedObject.CheckAndCleanConfiguration(CurrentTrustedLoginProvider.Name);
-            PersistedObject.ClaimTypes.SPTrust = CurrentTrustedLoginProvider;
+            //Configuration.ClaimTypes.SPTrust = CurrentTrustedLoginProvider;
             if (IdentityCTConfig == null && Status == ConfigStatus.AllGood)
             {
-                IdentityCTConfig = PersistedObject.ClaimTypes.FirstOrDefault(x => String.Equals(CurrentTrustedLoginProvider.IdentityClaimTypeInformation.MappedClaimType, x.ClaimType, StringComparison.InvariantCultureIgnoreCase) && !x.UseMainClaimTypeOfDirectoryObject) as IdentityClaimTypeConfig;
+                IdentityCTConfig = Configuration.ClaimTypes.FirstOrDefault(x => String.Equals(Configuration.SPTrust.IdentityClaimTypeInformation.MappedClaimType, x.ClaimType, StringComparison.InvariantCultureIgnoreCase) && !x.UseMainClaimTypeOfDirectoryObject) as IdentityClaimTypeConfig;
                 if (IdentityCTConfig == null)
                 {
                     Status |= ConfigStatus.NoIdentityClaimType;
                 }
             }
-            if (PersistedObjectVersion != PersistedObject.Version)
+            if (ConfigurationVersion != Configuration.Version)
             {
                 Status |= ConfigStatus.PersistedObjectStale;
             }
@@ -215,8 +212,8 @@ namespace Yvand.ClaimsProviders.Administration
 
         public virtual void CommitChanges()
         {
-            PersistedObject.Update();
-            PersistedObjectVersion = PersistedObject.Version;
+            Configuration.Update();
+            ConfigurationVersion = Configuration.Version;
         }
     }
 

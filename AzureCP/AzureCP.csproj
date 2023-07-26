@@ -86,19 +86,19 @@
     <Compile Include="Yvand.ClaimsProviders\Configuration\ClaimTypeConfig.cs" />
     <Compile Include="Yvand.ClaimsProviders\Configuration\EntityProviderConfiguration.cs" />
     <Compile Include="Yvand.ClaimsProviders\EntityProviderBase.cs" />
-    <Compile Include="TEMPLATE\ADMIN\AzureCP\ClaimTypesConfig.ascx.cs">
+    <Compile Include="TEMPLATE\ADMIN\AzureCPSE\ClaimTypesConfig.ascx.cs">
       <DependentUpon>ClaimTypesConfig.ascx</DependentUpon>
       <SubType>ASPXCodeBehind</SubType>
     </Compile>
-    <Compile Include="TEMPLATE\ADMIN\AzureCP\ClaimTypesConfig.ascx.designer.cs">
+    <Compile Include="TEMPLATE\ADMIN\AzureCPSE\ClaimTypesConfig.ascx.designer.cs">
       <DependentUpon>ClaimTypesConfig.ascx.cs</DependentUpon>
     </Compile>
-    <Compile Include="TEMPLATE\ADMIN\AzureCP\AzureCPGlobalSettings.ascx.cs">
-      <DependentUpon>AzureCPGlobalSettings.ascx</DependentUpon>
+    <Compile Include="TEMPLATE\ADMIN\AzureCPSE\GlobalSettings.ascx.cs">
+      <DependentUpon>GlobalSettings.ascx</DependentUpon>
       <SubType>ASPXCodeBehind</SubType>
     </Compile>
-    <Compile Include="TEMPLATE\ADMIN\AzureCP\AzureCPGlobalSettings.ascx.designer.cs">
-      <DependentUpon>AzureCPGlobalSettings.ascx.cs</DependentUpon>
+    <Compile Include="TEMPLATE\ADMIN\AzureCPSE\GlobalSettings.ascx.designer.cs">
+      <DependentUpon>GlobalSettings.ascx.cs</DependentUpon>
     </Compile>
     <Compile Include="Features\AzureCPSE\AzureCPSE.EventReceiver.cs">
       <DependentUpon>AzureCPSE.feature</DependentUpon>
@@ -107,14 +107,14 @@
     <Compile Include="Yvand.ClaimsProviders\Utils.cs" />
   </ItemGroup>
   <ItemGroup>
-    <None Include="AzureCP.AdminLinks\SharePointProjectItem.spdata">
+    <None Include="AzureCPSE.Administration.Links\SharePointProjectItem.spdata">
       <SharePointProjectItemId>{c15a0bf3-126a-42e6-af6b-5880f2e9af42}</SharePointProjectItemId>
     </None>
     <None Include="AzureCP.snk" />
     <None Include="Features\AzureCPSE\AzureCPSE.feature">
       <FeatureId>{70b104e2-19df-4cb1-9802-c98eaf14d84e}</FeatureId>
     </None>
-    <None Include="Features\AzureCPSE_Administration\AzureCPSE_Administration.feature">
+    <None Include="Features\AzureCPSE.Administration\AzureCPSE.Administration.feature">
       <FeatureId>{b82964c9-f57c-4826-b1dd-f03f63c7f197}</FeatureId>
     </None>
     <None Include="Package\Package.package">
@@ -143,19 +143,19 @@
     </PackageReference>
   </ItemGroup>
   <ItemGroup>
-    <Content Include="AzureCP.AdminLinks\Elements.xml" />
-    <Content Include="TEMPLATE\ADMIN\AzureCP\ClaimTypesConfig.ascx" />
-    <Content Include="TEMPLATE\ADMIN\AzureCP\AzureCPGlobalSettings.ascx" />
+    <Content Include="AzureCPSE.Administration.Links\Elements.xml" />
+    <Content Include="TEMPLATE\ADMIN\AzureCPSE\ClaimTypesConfig.ascx" />
+    <Content Include="TEMPLATE\ADMIN\AzureCPSE\GlobalSettings.ascx" />
     <Content Include="Features\AzureCPSE\AzureCPSE.Template.xml">
       <DependentUpon>AzureCPSE.feature</DependentUpon>
     </Content>
-    <Content Include="Features\AzureCPSE_Administration\AzureCPSE_Administration.Template.xml">
-      <DependentUpon>AzureCPSE_Administration.feature</DependentUpon>
+    <Content Include="Features\AzureCPSE.Administration\AzureCPSE.Administration.Template.xml">
+      <DependentUpon>AzureCPSE.Administration.feature</DependentUpon>
     </Content>
-    <Content Include="TEMPLATE\ADMIN\AzureCP\AzureCPSettings.aspx" />
-    <Content Include="TEMPLATE\ADMIN\AzureCP\ClaimTypesConfig.aspx" />
-    <Content Include="TEMPLATE\LAYOUTS\AzureCP\AzureCP_logo_small.png" />
-    <Content Include="TEMPLATE\LAYOUTS\AzureCP\jquery-1.9.1.min.js" />
+    <Content Include="TEMPLATE\ADMIN\AzureCPSE\GlobalSettings.aspx" />
+    <Content Include="TEMPLATE\ADMIN\AzureCPSE\ClaimTypesConfig.aspx" />
+    <Content Include="TEMPLATE\LAYOUTS\AzureCPSE\AzureCP_logo_small.png" />
+    <Content Include="TEMPLATE\LAYOUTS\AzureCPSE\jquery-1.9.1.min.js" />
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <PropertyGroup>

@@ -23,7 +23,7 @@ using static Yvand.ClaimsProviders.ClaimsProviderLogging;
 
 namespace Yvand.ClaimsProviders.Administration
 {
-    public partial class AzureCPGlobalSettings : AzureCPUserControl
+    public partial class GlobalSettings : AzureCPUserControl
     {
         readonly string TextErrorNewTenantFieldsMissing = "Some mandatory fields are missing.";
         readonly string TextErrorTestAzureADConnection = "Unable to get access token for tenant '{0}': {1}";
@@ -59,10 +59,10 @@ namespace Yvand.ClaimsProviders.Administration
 
         void PopulateConnectionsGrid()
         {
-            if (PersistedObject.AzureTenants != null)
+            if (Configuration.AzureTenants != null)
             {
                 PropertyCollectionBinder pcb = new PropertyCollectionBinder();
-                foreach (AzureTenant tenant in PersistedObject.AzureTenants)
+                foreach (AzureTenant tenant in Configuration.AzureTenants)
                 {
                     pcb.AddRow(tenant.Identifier, tenant.Name, tenant.ClientId, tenant.CloudInstance.ToString(), tenant.ExtensionAttributesApplicationId);
                 }
@@ -83,10 +83,10 @@ namespace Yvand.ClaimsProviders.Administration
             }
             this.DDLDirectoryPropertyMemberUsers.Items.FindByValue(((int)IdentityCTConfig.DirectoryObjectProperty).ToString()).Selected = true;
             this.DDLDirectoryPropertyGuestUsers.Items.FindByValue(((int)IdentityCTConfig.DirectoryObjectPropertyForGuestUsers).ToString()).Selected = true;
-            this.ChkAlwaysResolveUserInput.Checked = PersistedObject.AlwaysResolveUserInput;
-            this.ChkFilterExactMatchOnly.Checked = PersistedObject.FilterExactMatchOnly;
-            this.ChkAugmentAADRoles.Checked = PersistedObject.EnableAugmentation;
-            this.ChkFilterSecurityEnabledGroupsOnly.Checked = PersistedObject.FilterSecurityEnabledGroupsOnly;
+            this.ChkAlwaysResolveUserInput.Checked = Configuration.AlwaysResolveUserInput;
+            this.ChkFilterExactMatchOnly.Checked = Configuration.FilterExactMatchOnly;
+            this.ChkAugmentAADRoles.Checked = Configuration.EnableAugmentation;
+            this.ChkFilterSecurityEnabledGroupsOnly.Checked = Configuration.FilterSecurityEnabledGroupsOnly;
 
             AzureCloudInstance[] azureCloudInstanceValues = (AzureCloudInstance[])Enum.GetValues(typeof(AzureCloudInstance));
             foreach (var azureCloudInstanceValue in azureCloudInstanceValues)
@@ -120,16 +120,16 @@ namespace Yvand.ClaimsProviders.Administration
         protected void grdAzureTenants_RowDeleting(object sender, GridViewDeleteEventArgs e)
         {
             if (ValidatePrerequisite() != ConfigStatus.AllGood) { return; }
-            if (PersistedObject.AzureTenants == null) { return; }
+            if (Configuration.AzureTenants == null) { return; }
 
             GridViewRow rowToDelete = grdAzureTenants.Rows[e.RowIndex];
             Guid Id = new Guid(rowToDelete.Cells[0].Text);
-            AzureTenant tenantToRemove = PersistedObject.AzureTenants.FirstOrDefault(x => x.Identifier == Id);
+            AzureTenant tenantToRemove = Configuration.AzureTenants.FirstOrDefault(x => x.Identifier == Id);
             if (tenantToRemove != null)
             {
-                PersistedObject.AzureTenants.Remove(tenantToRemove);
+                Configuration.AzureTenants.Remove(tenantToRemove);
                 CommitChanges();
-                ClaimsProviderLogging.Log($"Azure AD tenant '{tenantToRemove.Name}' was successfully removed from configuration '{PersistedObjectName}'", TraceSeverity.Medium, EventSeverity.Information, TraceCategory.Configuration);
+                ClaimsProviderLogging.Log($"Azure AD tenant '{tenantToRemove.Name}' was successfully removed from configuration '{ConfigurationName}'", TraceSeverity.Medium, EventSeverity.Information, TraceCategory.Configuration);
                 PopulateConnectionsGrid();
             }
         }
@@ -150,19 +150,19 @@ namespace Yvand.ClaimsProviders.Administration
             AzureADObjectProperty newUserIdentifier = (AzureADObjectProperty)Convert.ToInt32(this.DDLDirectoryPropertyMemberUsers.SelectedValue);
             if (newUserIdentifier != AzureADObjectProperty.NotSet)
             {
-                PersistedObject.ClaimTypes.UpdateUserIdentifier(newUserIdentifier);
+                Configuration.ClaimTypes.UpdateUserIdentifier(newUserIdentifier);
             }
 
             AzureADObjectProperty newIdentifierForGuestUsers = (AzureADObjectProperty)Convert.ToInt32(this.DDLDirectoryPropertyGuestUsers.SelectedValue);
             if (newIdentifierForGuestUsers != AzureADObjectProperty.NotSet)
             {
-                PersistedObject.ClaimTypes.UpdateIdentifierForGuestUsers(newIdentifierForGuestUsers);
+                Configuration.ClaimTypes.UpdateIdentifierForGuestUsers(newIdentifierForGuestUsers);
             }
 
-            PersistedObject.AlwaysResolveUserInput = this.ChkAlwaysResolveUserInput.Checked;
-            PersistedObject.FilterExactMatchOnly = this.ChkFilterExactMatchOnly.Checked;
-            PersistedObject.EnableAugmentation = this.ChkAugmentAADRoles.Checked;
-            PersistedObject.FilterSecurityEnabledGroupsOnly = this.ChkFilterSecurityEnabledGroupsOnly.Checked;
+            Configuration.AlwaysResolveUserInput = this.ChkAlwaysResolveUserInput.Checked;
+            Configuration.FilterExactMatchOnly = this.ChkFilterExactMatchOnly.Checked;
+            Configuration.EnableAugmentation = this.ChkAugmentAADRoles.Checked;
+            Configuration.FilterSecurityEnabledGroupsOnly = this.ChkFilterSecurityEnabledGroupsOnly.Checked;
 
             if (commitChanges) { CommitChanges(); }
             return true;
@@ -245,7 +245,7 @@ namespace Yvand.ClaimsProviders.Administration
         protected void BtnResetAzureCPConfig_Click(Object sender, EventArgs e)
         {
             //AzureADEntityProviderConfiguration.DeleteConfiguration(PersistedObjectName);
-            EntityProviderBase<AzureADEntityProviderConfiguration>.DeleteGlobalConfiguration(PersistedObjectName);
+            EntityProviderBase<AzureADEntityProviderConfiguration>.DeleteGlobalConfiguration(ConfigurationName);
             Response.Redirect(Request.RawUrl, false);
         }
 
@@ -297,11 +297,11 @@ namespace Yvand.ClaimsProviders.Administration
                 }
             }
 
-            if (PersistedObject.AzureTenants == null)
+            if (Configuration.AzureTenants == null)
             {
-                PersistedObject.AzureTenants = new List<AzureTenant>();
+                Configuration.AzureTenants = new List<AzureTenant>();
             }
-            this.PersistedObject.AzureTenants.Add(
+            this.Configuration.AzureTenants.Add(
                 new AzureTenant
                 {
                     Name = this.TxtTenantName.Text,
@@ -315,7 +315,7 @@ namespace Yvand.ClaimsProviders.Administration
                 });
 
             CommitChanges();
-            ClaimsProviderLogging.Log($"Azure AD tenant '{this.TxtTenantName.Text}' was successfully added to configuration '{PersistedObjectName}'", TraceSeverity.Medium, EventSeverity.Information, TraceCategory.Configuration);
+            ClaimsProviderLogging.Log($"Azure AD tenant '{this.TxtTenantName.Text}' was successfully added to configuration '{ConfigurationName}'", TraceSeverity.Medium, EventSeverity.Information, TraceCategory.Configuration);
 
             PopulateConnectionsGrid();
             this.TxtTenantName.Text = "TENANTNAME.onMicrosoft.com";

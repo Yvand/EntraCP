@@ -11,7 +11,7 @@ namespace Yvand.ClaimsProviders.Administration
 {
 
 
-    public partial class AzureCPGlobalSettings
+    public partial class GlobalSettings
     {
 
         /// <summary>
