@@ -1,10 +1,13 @@
-﻿using Microsoft.SharePoint;
+﻿using Microsoft.Graph.Models;
+using Microsoft.SharePoint;
 using Microsoft.SharePoint.Administration;
 using Microsoft.SharePoint.Administration.Claims;
 using Microsoft.SharePoint.Utilities;
 using Microsoft.SharePoint.WebControls;
 using System;
+using System.IdentityModel.Metadata;
 using System.Linq;
+using System.Reflection;
 using System.Web.UI;
 using Yvand.ClaimsProviders;
 using Yvand.ClaimsProviders.Configuration;
@@ -13,7 +16,7 @@ using static Yvand.ClaimsProviders.ClaimsProviderLogging;
 
 namespace Yvand.ClaimsProviders.Administration
 {
-    // Using a generic class with a UserControl seems not possible: https://stackoverflow.com/questions/74733106/asp-net-webforms-usercontrol-with-generic-type-parameter
+    // Sadly, using a generic class with a UserControl seems not possible: https://stackoverflow.com/questions/74733106/asp-net-webforms-usercontrol-with-generic-type-parameter
     //public abstract class AzureCPUserControl<TConfiguration> : UserControl where TConfiguration : EntityProviderConfiguration
     public abstract class AzureCPUserControl : UserControl
     {
@@ -39,6 +42,14 @@ namespace Yvand.ClaimsProviders.Administration
                 this._ConfigurationID = new Guid(value);
             }
         }
+
+        //protected virtual Type ConfigType
+        //{
+        //    get
+        //    {
+        //        return typeof(AzureADEntityProviderConfiguration);
+        //    }
+        //}
 
         private AzureADEntityProviderConfiguration _Configuration;
         protected AzureADEntityProviderConfiguration Configuration

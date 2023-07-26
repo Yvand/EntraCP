@@ -36,7 +36,7 @@ namespace Yvand.ClaimsProviders.AzureAD
             string getGuestUserFilter = $"userType eq 'Guest' and {this.LocalConfiguration.IdentityClaimTypeConfig.DirectoryObjectPropertyForGuestUsers} eq '{currentContext.IncomingEntity.Value}'";
 
             // Create a task for each tenant to query
-            IEnumerable<Task<List<string>>> tenantTasks = azureTenants.Select(async tenant =>
+            IEnumerable <Task<List<string>>> tenantTasks = azureTenants.Select(async tenant =>
             {
                 List<string> groupsInTenant = new List<string>();
                 Stopwatch timer = new Stopwatch();
@@ -77,52 +77,39 @@ namespace Yvand.ClaimsProviders.AzureAD
                         GetMemberGroupsResponse memberGroupsResponse = await Task.Run(() => tenant.GraphService.Users[user.Id].GetMemberGroups.PostAsync(getGroupsOptions)).ConfigureAwait(false);
                         if (memberGroupsResponse?.Value != null)
                         {
-                            bool morePages;
-                            do
+                            PageIterator<string, GetMemberGroupsResponse> memberGroupsPageIterator = PageIterator<string, GetMemberGroupsResponse>.CreatePageIterator(
+                            tenant.GraphService,
+                            memberGroupsResponse,
+                            (groupId) =>
                             {
-                                foreach (string groupID in memberGroupsResponse.Value)
-                                {
-                                    groupsInTenant.Add(groupID);
-                                }
-
-                                morePages = !string.IsNullOrWhiteSpace(memberGroupsResponse.OdataNextLink);
-                                if (morePages)
-                                {
-                                    var nextPageRequest = new GetMemberGroupsRequestBuilder(memberGroupsResponse.OdataNextLink, tenant.GraphService.RequestAdapter);
-                                    memberGroupsResponse = await Task.Run(() => nextPageRequest.PostAsync(getGroupsOptions)).ConfigureAwait(false);
-                                }
-                            }
-                            while (morePages);
+                                groupsInTenant.Add(groupId);
+                                return true; // return true to continue the iteration
+                            });
+                            await memberGroupsPageIterator.IterateAsync().ConfigureAwait(false);
                         }
                     }
                     else
                     {
                         // Fallback to GET to /v1.0/users/user@TENANT.onmicrosoft.com/memberOf, which returns all group properties but does not return nested groups
-                        //IUserMemberOfCollectionWithReferencesPage memberGroupsResponse = await tenant.GraphService.Users[user.Id].MemberOf.Request().GetAsync().ConfigureAwait(false);
                         DirectoryObjectCollectionResponse memberOfResponse = await Task.Run(() => tenant.GraphService.Users[user.Id].MemberOf.GetAsync()).ConfigureAwait(false);
                         if (memberOfResponse?.Value != null)
                         {
-                            do
+                            PageIterator<Group, DirectoryObjectCollectionResponse> memberGroupsPageIterator = PageIterator<Group, DirectoryObjectCollectionResponse>.CreatePageIterator(
+                            tenant.GraphService,
+                            memberOfResponse,
+                            (group) =>
                             {
-                                foreach (Group group in memberOfResponse.Value.OfType<Group>())
-                                {
-                                    string groupClaimValue = GetPropertyValue(group, groupProperty.ToString());
-                                    groupsInTenant.Add(groupClaimValue);
-                                }
-
-                                if (!string.IsNullOrWhiteSpace(memberOfResponse.OdataNextLink))
-                                {
-                                    var nextPageRequest = new MemberOfRequestBuilder(memberOfResponse.OdataNextLink, tenant.GraphService.RequestAdapter);
-                                    memberOfResponse = await Task.Run(() => nextPageRequest.GetAsync()).ConfigureAwait(false);
-                                }
-                            }
-                            while (!string.IsNullOrWhiteSpace(memberOfResponse.OdataNextLink));
+                                string groupClaimValue = GetPropertyValue(group, groupProperty.ToString());
+                                groupsInTenant.Add(groupClaimValue);
+                                return true; // return true to continue the iteration
+                            });
+                            await memberGroupsPageIterator.IterateAsync().ConfigureAwait(false);
                         }
                     }
                 }
                 catch (Exception ex)
                 {
-                    ClaimsProviderLogging.LogException(ClaimsProviderName, $"in QueryAzureADTenantsAsync while querying tenant '{tenant.Name}'", TraceCategory.Lookup, ex);
+                    ClaimsProviderLogging.LogException(ClaimsProviderName, $"while getting groups for user '{currentContext.IncomingEntity.Value}' in tenant '{tenant.Name}'", TraceCategory.Augmentation, ex);
                 }
                 finally
                 {
@@ -130,11 +117,11 @@ namespace Yvand.ClaimsProviders.AzureAD
                 }
                 if (groupsInTenant != null)
                 {
-                    ClaimsProviderLogging.Log($"[{ClaimsProviderName}] Got {groupsInTenant.Count} users/groups in {timer.ElapsedMilliseconds.ToString()} ms from '{tenant.Name}' with input '{currentContext.Input}'", TraceSeverity.Medium, EventSeverity.Information, TraceCategory.Lookup);
+                    ClaimsProviderLogging.Log($"[{ClaimsProviderName}] Got {groupsInTenant.Count} users/groups in {timer.ElapsedMilliseconds.ToString()} ms from '{tenant.Name}' with input '{currentContext.Input}'", TraceSeverity.Medium, EventSeverity.Information, TraceCategory.Augmentation);
                 }
                 else
                 {
-                    ClaimsProviderLogging.Log($"[{ClaimsProviderName}] Got no result from '{tenant.Name}' with input '{currentContext.Input}', search took {timer.ElapsedMilliseconds.ToString()} ms", TraceSeverity.Medium, EventSeverity.Information, TraceCategory.Lookup);
+                    ClaimsProviderLogging.Log($"[{ClaimsProviderName}] Got no group for user '{currentContext.IncomingEntity.Value}' in tenant, search took {timer.ElapsedMilliseconds} ms", TraceSeverity.Medium, EventSeverity.Information, TraceCategory.Augmentation);
                 }
                 return groupsInTenant;
             });

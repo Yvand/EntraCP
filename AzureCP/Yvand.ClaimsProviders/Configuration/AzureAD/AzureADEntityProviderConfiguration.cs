@@ -93,6 +93,7 @@ namespace Yvand.ClaimsProviders.Configuration.AzureAD
             // Copy properties specific to type AzureADEntityProviderConfiguration
             copy.AzureTenants = this.AzureTenants;
             copy.FilterSecurityEnabledGroupsOnly = this.FilterSecurityEnabledGroupsOnly;
+            copy.ProxyAddress = this.ProxyAddress;
 
             copy.InitializeRuntimeSettings();
             return copy;
