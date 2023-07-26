@@ -72,17 +72,17 @@ namespace Yvand.ClaimsProviders.Administration
 
         private void PopulateFields()
         {
-            if (IdentityCTConfig.DirectoryObjectPropertyToShowAsDisplayText == AzureADObjectProperty.NotSet)
+            if (Configuration.IdentityClaimTypeConfig.DirectoryObjectPropertyToShowAsDisplayText == AzureADObjectProperty.NotSet)
             {
                 this.RbIdentityDefault.Checked = true;
             }
             else
             {
                 this.RbIdentityCustomGraphProperty.Checked = true;
-                this.DDLGraphPropertyToDisplay.Items.FindByValue(((int)IdentityCTConfig.DirectoryObjectPropertyToShowAsDisplayText).ToString()).Selected = true;
+                this.DDLGraphPropertyToDisplay.Items.FindByValue(((int)Configuration.IdentityClaimTypeConfig.DirectoryObjectPropertyToShowAsDisplayText).ToString()).Selected = true;
             }
-            this.DDLDirectoryPropertyMemberUsers.Items.FindByValue(((int)IdentityCTConfig.DirectoryObjectProperty).ToString()).Selected = true;
-            this.DDLDirectoryPropertyGuestUsers.Items.FindByValue(((int)IdentityCTConfig.DirectoryObjectPropertyForGuestUsers).ToString()).Selected = true;
+            this.DDLDirectoryPropertyMemberUsers.Items.FindByValue(((int)Configuration.IdentityClaimTypeConfig.DirectoryObjectProperty).ToString()).Selected = true;
+            this.DDLDirectoryPropertyGuestUsers.Items.FindByValue(((int)Configuration.IdentityClaimTypeConfig.DirectoryObjectPropertyForGuestUsers).ToString()).Selected = true;
             this.ChkAlwaysResolveUserInput.Checked = Configuration.AlwaysResolveUserInput;
             this.ChkFilterExactMatchOnly.Checked = Configuration.FilterExactMatchOnly;
             this.ChkAugmentAADRoles.Checked = Configuration.EnableAugmentation;
@@ -140,11 +140,11 @@ namespace Yvand.ClaimsProviders.Administration
 
             if (this.RbIdentityCustomGraphProperty.Checked)
             {
-                IdentityCTConfig.DirectoryObjectPropertyToShowAsDisplayText = (AzureADObjectProperty)Convert.ToInt32(this.DDLGraphPropertyToDisplay.SelectedValue);
+                Configuration.IdentityClaimTypeConfig.DirectoryObjectPropertyToShowAsDisplayText = (AzureADObjectProperty)Convert.ToInt32(this.DDLGraphPropertyToDisplay.SelectedValue);
             }
             else
             {
-                IdentityCTConfig.DirectoryObjectPropertyToShowAsDisplayText = AzureADObjectProperty.NotSet;
+                Configuration.IdentityClaimTypeConfig.DirectoryObjectPropertyToShowAsDisplayText = AzureADObjectProperty.NotSet;
             }
 
             AzureADObjectProperty newUserIdentifier = (AzureADObjectProperty)Convert.ToInt32(this.DDLDirectoryPropertyMemberUsers.SelectedValue);

@@ -54,7 +54,7 @@ namespace Yvand.ClaimsProviders.Configuration.AzureAD
             return base.InitializeDefaultSettings();
         }
 
-        protected override bool InitializeRuntimeSettings()
+        public override bool InitializeRuntimeSettings()
         {
             bool success = base.InitializeRuntimeSettings();
             foreach (var tenant in this.AzureTenants)

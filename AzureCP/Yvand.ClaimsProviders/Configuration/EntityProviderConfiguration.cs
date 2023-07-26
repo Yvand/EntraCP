@@ -216,7 +216,7 @@ namespace Yvand.ClaimsProviders.Configuration
         /// <summary>
         /// </summary>
         /// <returns></returns>
-        protected virtual bool InitializeRuntimeSettings()
+        public virtual bool InitializeRuntimeSettings()
         {
             if (this.RuntimeSettingsInitialized)
             {
@@ -308,6 +308,7 @@ namespace Yvand.ClaimsProviders.Configuration
         public override void Update()
         {
             base.Update();
+            this.RuntimeSettingsInitialized = false;
             ClaimsProviderLogging.Log($"Successfully updated configuration '{this.Name}' with Id {this.Id}", TraceSeverity.High, EventSeverity.Information, TraceCategory.Core);
         }
 
@@ -315,6 +316,7 @@ namespace Yvand.ClaimsProviders.Configuration
         {
             // If parameter ensure is true, the call will not throw if the object already exists.
             base.Update(ensure);
+            this.RuntimeSettingsInitialized = false;
             ClaimsProviderLogging.Log($"Successfully updated configuration '{this.Name}' with Id {this.Id}", TraceSeverity.High, EventSeverity.Information, TraceCategory.Core);
         }
 

@@ -47,7 +47,7 @@ namespace Yvand.ClaimsProviders.Administration
                 {
                     if (_Configuration == null)
                     {
-                        _Configuration = EntityProviderBase<AzureADEntityProviderConfiguration>.GetGlobalConfiguration(ConfigurationName);
+                        _Configuration = EntityProviderBase<AzureADEntityProviderConfiguration>.GetGlobalConfiguration(ConfigurationName, true);
                     }
                     if (_Configuration == null)
                     {
@@ -61,7 +61,7 @@ namespace Yvand.ClaimsProviders.Administration
         }
 
         //protected SPTrustedLoginProvider CurrentTrustedLoginProvider;
-        protected IdentityClaimTypeConfig IdentityCTConfig;
+        //protected IdentityClaimTypeConfig IdentityCTConfig;
         protected ConfigStatus Status;
 
         protected long ConfigurationVersion
@@ -190,13 +190,17 @@ namespace Yvand.ClaimsProviders.Administration
             // AzureADEntityProviderConfiguration.GetConfiguration will call method AzureADEntityProviderConfiguration.CheckAndCleanConfiguration();
             //PersistedObject.CheckAndCleanConfiguration(CurrentTrustedLoginProvider.Name);
             //Configuration.ClaimTypes.SPTrust = CurrentTrustedLoginProvider;
-            if (IdentityCTConfig == null && Status == ConfigStatus.AllGood)
+            //if (IdentityCTConfig == null && Status == ConfigStatus.AllGood)
+            //{
+            //    IdentityCTConfig = Configuration.ClaimTypes.FirstOrDefault(x => String.Equals(Configuration.SPTrust.IdentityClaimTypeInformation.MappedClaimType, x.ClaimType, StringComparison.InvariantCultureIgnoreCase) && !x.UseMainClaimTypeOfDirectoryObject) as IdentityClaimTypeConfig;
+            //    if (IdentityCTConfig == null)
+            //    {
+            //        Status |= ConfigStatus.NoIdentityClaimType;
+            //    }
+            //}
+            if (Configuration.IdentityClaimTypeConfig == null)
             {
-                IdentityCTConfig = Configuration.ClaimTypes.FirstOrDefault(x => String.Equals(Configuration.SPTrust.IdentityClaimTypeInformation.MappedClaimType, x.ClaimType, StringComparison.InvariantCultureIgnoreCase) && !x.UseMainClaimTypeOfDirectoryObject) as IdentityClaimTypeConfig;
-                if (IdentityCTConfig == null)
-                {
-                    Status |= ConfigStatus.NoIdentityClaimType;
-                }
+                Status |= ConfigStatus.NoIdentityClaimType;
             }
             if (ConfigurationVersion != Configuration.Version)
             {

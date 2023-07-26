@@ -15,6 +15,6 @@
 </asp:Content>
 <asp:Content ID="Main" ContentPlaceHolderID="PlaceHolderMain" runat="server">
     <table border="0" cellspacing="0" cellpadding="0" width="100%">
-        <AzureCP:ClaimTypesConfigUC ID="AzureCPClaimsList" Runat="server" ClaimsProviderName="AzureCP" PersistedObjectName="<%# ClaimsProviderConstants.CONFIGURATION_NAME %>" PersistedObjectID="<%# ClaimsProviderConstants.CONFIGURATION_ID %>" />
+        <AzureCP:ClaimTypesConfigUC ID="ClaimsListConfiguration" Runat="server" ClaimsProviderName="<%# AzureCPSE.ClaimsProviderName %>" ConfigurationName="<%# ClaimsProviderConstants.CONFIGURATION_NAME %>" ConfigurationID="<%# ClaimsProviderConstants.CONFIGURATION_ID %>" />
     </table>
 </asp:Content>

@@ -79,13 +79,17 @@ namespace Yvand.ClaimsProviders
         /// </summary>
         /// <param name="configurationName">Name of the configuration</param>
         /// <returns></returns>
-        public static TConfiguration GetGlobalConfiguration(string configurationName)
+        public static TConfiguration GetGlobalConfiguration(string configurationName, bool initializeRuntimeSettings = false)
         {
             SPFarm parent = SPFarm.Local;
             try
             {
-                TConfiguration persistedObject = (TConfiguration)parent.GetObject(configurationName, parent.Id, typeof(TConfiguration));
-                return persistedObject;
+                TConfiguration configuration = (TConfiguration)parent.GetObject(configurationName, parent.Id, typeof(TConfiguration));
+                if (configuration != null && initializeRuntimeSettings == true)
+                {
+                    configuration.InitializeRuntimeSettings();
+                }
+                return configuration;
             }
             catch (Exception ex)
             {
@@ -100,13 +104,13 @@ namespace Yvand.ClaimsProviders
         /// <param name="configurationName">Name of persisted object to delete</param>
         public static void DeleteGlobalConfiguration(string configurationName)
         {
-            TConfiguration config = GetGlobalConfiguration(configurationName);
-            if (config == null)
+            TConfiguration configuration = GetGlobalConfiguration(configurationName);
+            if (configuration == null)
             {
                 ClaimsProviderLogging.Log($"Configuration '{configurationName}' was not found in configuration database", TraceSeverity.Medium, EventSeverity.Error, TraceCategory.Core);
                 return;
             }
-            config.Delete();
+            configuration.Delete();
             ClaimsProviderLogging.Log($"Configuration '{configurationName}' was successfully deleted from configuration database", TraceSeverity.High, EventSeverity.Information, TraceCategory.Core);
         }
 
@@ -141,7 +145,7 @@ namespace Yvand.ClaimsProviders
             config.Id = new Guid(configurationID);
             // If parameter ensure is true, the call will not throw if the object already exists.
             config.Update(true);
-            ClaimsProviderLogging.Log($"Created configuration '{configurationName}' with Id {config.Id}", TraceSeverity.Medium, EventSeverity.Information, TraceCategory.Core);
+            ClaimsProviderLogging.Log($"Created configuration '{configurationName}' with Id {config.Id}", TraceSeverity.High, EventSeverity.Information, TraceCategory.Core);
             return config;
         }
 
