@@ -297,6 +297,9 @@ namespace Yvand.ClaimsProviders.Administration
                 }
             }
 
+            Uri cloudInstance = ClaimsProviderConstants.AzureCloudEndpoints.FirstOrDefault(item => item.Key == (AzureCloudInstance)Enum.Parse(typeof(AzureCloudInstance), this.DDLAzureCloudInstance.SelectedValue)).Value;
+
+
             if (Configuration.AzureTenants == null)
             {
                 Configuration.AzureTenants = new List<AzureTenant>();
@@ -310,7 +313,7 @@ namespace Yvand.ClaimsProviders.Administration
                     ExcludeGuestUsers = this.ChkMemberUserTypeOnly.Checked,
                     ClientCertificatePrivateKey = cert,
                     //CloudInstance = (AzureCloudInstance)Enum.Parse(typeof(AzureCloudInstance), this.DDLAzureCloudInstance.SelectedValue),
-                    CloudInstance = new Uri(this.DDLAzureCloudInstance.SelectedValue), //TODO nust convert enum type to Uri properly
+                    CloudInstance = cloudInstance,
                     ExtensionAttributesApplicationId = string.IsNullOrWhiteSpace(this.TxtExtensionAttributesApplicationId.Text) ? Guid.Empty : Guid.Parse(this.TxtExtensionAttributesApplicationId.Text)
                 });
 

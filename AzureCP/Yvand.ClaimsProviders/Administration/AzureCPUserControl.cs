@@ -13,6 +13,8 @@ using static Yvand.ClaimsProviders.ClaimsProviderLogging;
 
 namespace Yvand.ClaimsProviders.Administration
 {
+    // Using a generic class with a UserControl seems not possible: https://stackoverflow.com/questions/74733106/asp-net-webforms-usercontrol-with-generic-type-parameter
+    //public abstract class AzureCPUserControl<TConfiguration> : UserControl where TConfiguration : EntityProviderConfiguration
     public abstract class AzureCPUserControl : UserControl
     {
         /// <summary>
@@ -56,12 +58,10 @@ namespace Yvand.ClaimsProviders.Administration
                         SPContext.Current.Web.AllowUnsafeUpdates = false;
                     }
                 });
-                return _Configuration as AzureADEntityProviderConfiguration;
+                return _Configuration;
             }
         }
 
-        //protected SPTrustedLoginProvider CurrentTrustedLoginProvider;
-        //protected IdentityClaimTypeConfig IdentityCTConfig;
         protected ConfigStatus Status;
 
         protected long ConfigurationVersion
@@ -167,12 +167,8 @@ namespace Yvand.ClaimsProviders.Administration
 
             if (Configuration.SPTrust == null)
             {
-                //CurrentTrustedLoginProvider = Utils.GetSPTrustAssociatedWithClaimsProvider(this.ClaimsProviderName);
-                //if (CurrentTrustedLoginProvider == null)
-                //{
                 Status |= ConfigStatus.NoSPTrustAssociation;
                 return Status;
-                //}
             }
 
             if (Configuration == null)
@@ -187,17 +183,6 @@ namespace Yvand.ClaimsProviders.Administration
                 return Status;
             }
 
-            // AzureADEntityProviderConfiguration.GetConfiguration will call method AzureADEntityProviderConfiguration.CheckAndCleanConfiguration();
-            //PersistedObject.CheckAndCleanConfiguration(CurrentTrustedLoginProvider.Name);
-            //Configuration.ClaimTypes.SPTrust = CurrentTrustedLoginProvider;
-            //if (IdentityCTConfig == null && Status == ConfigStatus.AllGood)
-            //{
-            //    IdentityCTConfig = Configuration.ClaimTypes.FirstOrDefault(x => String.Equals(Configuration.SPTrust.IdentityClaimTypeInformation.MappedClaimType, x.ClaimType, StringComparison.InvariantCultureIgnoreCase) && !x.UseMainClaimTypeOfDirectoryObject) as IdentityClaimTypeConfig;
-            //    if (IdentityCTConfig == null)
-            //    {
-            //        Status |= ConfigStatus.NoIdentityClaimType;
-            //    }
-            //}
             if (Configuration.IdentityClaimTypeConfig == null)
             {
                 Status |= ConfigStatus.NoIdentityClaimType;

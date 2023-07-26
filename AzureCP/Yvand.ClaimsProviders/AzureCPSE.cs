@@ -34,9 +34,9 @@ namespace Yvand.ClaimsProviders
 
         public AzureCPSE(string displayName) : base(displayName) { }
 
-        public static AzureADEntityProviderConfiguration GetGlobalConfiguration()
+        public static AzureADEntityProviderConfiguration GetGlobalConfiguration(bool initializeRuntimeSettings = false)
         {
-            AzureADEntityProviderConfiguration entityConfig = EntityProviderBase<AzureADEntityProviderConfiguration>.GetGlobalConfiguration(ClaimsProviderConstants.CONFIGURATION_NAME);
+            AzureADEntityProviderConfiguration entityConfig = EntityProviderBase<AzureADEntityProviderConfiguration>.GetGlobalConfiguration(ClaimsProviderConstants.CONFIGURATION_NAME, initializeRuntimeSettings);
             return entityConfig;
         }
 
