@@ -22,7 +22,7 @@ namespace Yvand.ClaimsProviders.Configuration
         /// <summary>
         /// List of Microsoft Graph service root endpoints based on National Cloud as described on https://docs.microsoft.com/en-us/graph/deployments
         /// </summary>
-        public static List<KeyValuePair<AzureCloudInstance, Uri>> AzureCloudEndpoints = new List<KeyValuePair<AzureCloudInstance, Uri>>()
+        public static List<KeyValuePair<AzureCloudInstance, Uri>> AzureCloudEndpoints => new List<KeyValuePair<AzureCloudInstance, Uri>>()
         {
             new KeyValuePair<AzureCloudInstance, Uri>(AzureCloudInstance.AzurePublic, AzureAuthorityHosts.AzurePublicCloud),
             new KeyValuePair<AzureCloudInstance, Uri>(AzureCloudInstance.AzureChina, AzureAuthorityHosts.AzureChina),
@@ -35,8 +35,8 @@ namespace Yvand.ClaimsProviders.Configuration
         public static string PUBLICSITEURL => "https://azurecp.yvand.net/";
         public static string GUEST_USERTYPE => "Guest";
         public static string MEMBER_USERTYPE => "Member";
-        private static object Sync_SetClaimsProviderVersion = new object();
-        public static readonly string ClientCertificatePrivateKeyPassword = "YVANDwRrEHVHQ57ge?uda";
+        public static string ClientCertificatePrivateKeyPassword => "YVANDwRrEHVHQ57ge?uda";
+        private static object Lock_SetClaimsProviderVersion = new object();
         private static string _ClaimsProviderVersion;
         public static string ClaimsProviderVersion
         {
@@ -48,7 +48,7 @@ namespace Yvand.ClaimsProviders.Configuration
                 }
 
                 // Method FileVersionInfo.GetVersionInfo() may hang and block all LDAPCP threads, so it is read only 1 time
-                lock (Sync_SetClaimsProviderVersion)
+                lock (Lock_SetClaimsProviderVersion)
                 {
                     if (!String.IsNullOrEmpty(_ClaimsProviderVersion))
                     {

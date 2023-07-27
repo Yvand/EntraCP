@@ -34,7 +34,7 @@ namespace Yvand.ClaimsProviders
             // Wrapper function for base FeatureActivated. 
             // Used because base keywork can lead to unverifiable code inside lambda expression
             base.FeatureActivated(properties);
-            SPSecurity.RunWithElevatedPrivileges(delegate ()
+            SPSecurity.RunWithElevatedPrivileges((SPSecurity.CodeToRunElevated)delegate ()
             {
                 try
                 {
@@ -52,14 +52,14 @@ namespace Yvand.ClaimsProviders
                 }
                 catch (Exception ex)
                 {
-                    ClaimsProviderLogging.LogException(AzureCPSE.ClaimsProviderName, $"activating farm-scoped feature for claims provider \"{AzureCPSE.ClaimsProviderName}\"", ClaimsProviderLogging.TraceCategory.Configuration, ex);
+                    ClaimsProviderLogging.LogException((string)AzureCPSE.ClaimsProviderName, $"activating farm-scoped feature for claims provider \"{AzureCPSE.ClaimsProviderName}\"", ClaimsProviderLogging.TraceCategory.Configuration, ex);
                 }
             });
         }
 
         public override void FeatureUninstalling(SPFeatureReceiverProperties properties)
         {
-            SPSecurity.RunWithElevatedPrivileges(delegate ()
+            SPSecurity.RunWithElevatedPrivileges((SPSecurity.CodeToRunElevated)delegate ()
             {
                 try
                 {
@@ -69,23 +69,23 @@ namespace Yvand.ClaimsProviders
                 }
                 catch (Exception ex)
                 {
-                    ClaimsProviderLogging.LogException(AzureCPSE.ClaimsProviderName, $"deactivating farm-scoped feature for claims provider \"{AzureCPSE.ClaimsProviderName}\"", ClaimsProviderLogging.TraceCategory.Configuration, ex);
+                    ClaimsProviderLogging.LogException((string)AzureCPSE.ClaimsProviderName, $"deactivating farm-scoped feature for claims provider \"{AzureCPSE.ClaimsProviderName}\"", ClaimsProviderLogging.TraceCategory.Configuration, ex);
                 }
             });
         }
 
         public override void FeatureDeactivating(SPFeatureReceiverProperties properties)
         {
-            SPSecurity.RunWithElevatedPrivileges(delegate ()
+            SPSecurity.RunWithElevatedPrivileges((SPSecurity.CodeToRunElevated)delegate ()
             {
                 try
                 {
                     ClaimsProviderLogging.Log($"[{AzureCPSE.ClaimsProviderName}] Deactivating farm-scoped feature for claims provider \"{AzureCPSE.ClaimsProviderName}\": Removing claims provider from the farm (but not its configuration)", TraceSeverity.High, EventSeverity.Information, ClaimsProviderLogging.TraceCategory.Configuration);
-                    base.RemoveClaimProvider(AzureCPSE.ClaimsProviderName);
+                    base.RemoveClaimProvider((string)AzureCPSE.ClaimsProviderName);
                 }
                 catch (Exception ex)
                 {
-                    ClaimsProviderLogging.LogException(AzureCPSE.ClaimsProviderName, $"deactivating farm-scoped feature for claims provider \"{AzureCPSE.ClaimsProviderName}\"", ClaimsProviderLogging.TraceCategory.Configuration, ex);
+                    ClaimsProviderLogging.LogException((string)AzureCPSE.ClaimsProviderName, $"deactivating farm-scoped feature for claims provider \"{AzureCPSE.ClaimsProviderName}\"", ClaimsProviderLogging.TraceCategory.Configuration, ex);
                 }
             });
         }
