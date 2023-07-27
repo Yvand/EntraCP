@@ -1,5 +1,5 @@
 ﻿<%@ Assembly Name="$SharePoint.Project.AssemblyFullName$" %>
-<%@ Control Language="C#" AutoEventWireup="true" CodeBehind="GlobalSettings.ascx.cs" Inherits="Yvand.ClaimsProviders.Administration.GlobalSettings" %>
+<%@ Control Language="C#" AutoEventWireup="true" CodeBehind="GlobalSettings.ascx.cs" Inherits="Yvand.ClaimsProviders.Administration.GlobalSettingsUserControl" %>
 <%@ Register TagPrefix="Utilities" Namespace="Microsoft.SharePoint.Utilities" Assembly="Microsoft.SharePoint, Version=15.0.0.0, Culture=neutral, PublicKeyToken=71e9bce111e9429c" %>
 <%@ Register TagPrefix="asp" Namespace="System.Web.UI" Assembly="System.Web.Extensions, Version=4.0.0.0, Culture=neutral, PublicKeyToken=31bf3856ad364e35" %>
 <%@ Register TagPrefix="wssuc" TagName="InputFormSection" Src="~/_controltemplates/InputFormSection.ascx" %>
@@ -134,10 +134,10 @@
 			<wssawc:SPGridView runat="server" ID="grdAzureTenants" AutoGenerateColumns="false" OnRowDeleting="grdAzureTenants_RowDeleting">
 				<Columns>
 					<asp:BoundField DataField="Id" ItemStyle-CssClass="Azurecp-HideCol" HeaderStyle-CssClass="Azurecp-HideCol"/>
-					<asp:BoundField HeaderText="Tenant name" DataField="TenantName"/>
+					<asp:BoundField HeaderText="Tenant" DataField="TenantName"/>
 					<asp:BoundField HeaderText="Application ID" DataField="ClientID"/>
                     <asp:BoundField HeaderText="Cloud instance" DataField="CloudInstance" />
-                    <asp:BoundField HeaderText="AD Connect Client ID" DataField="ExtensionAttributesApplicationId" />
+                    <asp:BoundField HeaderText="Extension Attributes Application ID" DataField="ExtensionAttributesApplicationId" />
 					<asp:CommandField HeaderText="Action" ButtonType="Button" DeleteText="Remove" ShowDeleteButton="True" />
 				</Columns>
 			</wssawc:SPGridView>

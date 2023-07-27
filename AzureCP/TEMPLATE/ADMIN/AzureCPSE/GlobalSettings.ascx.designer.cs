@@ -11,7 +11,7 @@ namespace Yvand.ClaimsProviders.Administration
 {
 
 
-    public partial class GlobalSettings
+    public partial class GlobalSettingsUserControl
     {
 
         /// <summary>
