@@ -1,9 +1,10 @@
-﻿using azurecp;
+﻿using Yvand.ClaimsProviders;
 using Microsoft.SharePoint.Administration.Claims;
 using NUnit.Framework;
 using System;
 using System.Linq;
 using System.Security.Claims;
+using Yvand.ClaimsProviders.Configuration;
 
 namespace AzureCP.Tests
 {

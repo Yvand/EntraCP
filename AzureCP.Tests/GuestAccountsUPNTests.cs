@@ -1,5 +1,6 @@
-﻿using azurecp;
+﻿using Yvand.ClaimsProviders;
 using NUnit.Framework;
+using Yvand.ClaimsProviders.Configuration;
 
 namespace AzureCP.Tests
 {
@@ -14,7 +15,7 @@ namespace AzureCP.Tests
             base.InitializeConfiguration();
 
             // Extra initialization for current test class
-            Config.ClaimTypes.UpdateIdentifierForGuestUsers(AzureADObjectProperty.UserPrincipalName);
+            Config.ClaimTypes.UpdateIdentifierForGuestUsers(DirectoryObjectProperty.UserPrincipalName);
             Config.EnableAugmentation = true;
             Config.Update();
         }

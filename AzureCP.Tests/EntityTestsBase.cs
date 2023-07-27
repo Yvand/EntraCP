@@ -40,8 +40,8 @@ namespace AzureCP.Tests
             Config.EnableAugmentation = true;
             foreach (var tenant in Config.AzureTenants)
             {
-                tenant.ExcludeGuests = ExcludeGuestUsers;
-                tenant.ExcludeMembers = ExcludeMemberUsers;
+                tenant.ExcludeGuestUsers = ExcludeGuestUsers;
+                tenant.ExcludeMemberUsers = ExcludeMemberUsers;
             }
             Config.Update();
         }

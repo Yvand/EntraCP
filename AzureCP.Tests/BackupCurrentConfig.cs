@@ -1,4 +1,4 @@
-﻿using azurecp;
+﻿using Yvand.ClaimsProviders;
 using NUnit.Framework;
 using System;
 using System.Diagnostics;
@@ -19,13 +19,13 @@ namespace AzureCP.Tests
         public void Init()
         {
             Trace.WriteLine($"{DateTime.Now.ToString("s")} Start backup of current AzureCP configuration");
-            Config = AzureADEntityProviderConfiguration.GetConfiguration(UnitTestsHelper.ClaimsProviderConfigName);
+            Config = AzureCPSE.GetConfiguration();
             if (Config == null)
             {
                 Trace.TraceWarning($"{DateTime.Now.ToString("s")} Configuration {UnitTestsHelper.ClaimsProviderConfigName} does not exist, create it with default settings...");
-                Config = AzureADEntityProviderConfiguration.CreateConfiguration(ClaimsProviderConstants.CONFIG_ID, ClaimsProviderConstants.CONFIG_NAME, UnitTestsHelper.SPTrust.Name);
+                Config = AzureCPSE.CreateConfiguration();
             }
-            BackupConfig = Config.CopyConfiguration();
+            BackupConfig = Config.CopyConfiguration() as AzureADEntityProviderConfiguration;
             InitializeConfiguration();
         }
 
@@ -40,8 +40,9 @@ namespace AzureCP.Tests
         [OneTimeTearDown]
         public void Cleanup()
         {
-            Config.ApplyConfiguration(BackupConfig);
-            Config.Update();
+            //Config.ApplyConfiguration(BackupConfig);
+            //Config.Update();
+            AzureCPSE.SaveConfiguration(BackupConfig);
             Trace.WriteLine($"{DateTime.Now.ToString("s")} Restored original settings of AzureCP configuration");
         }
     }

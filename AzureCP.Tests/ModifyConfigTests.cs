@@ -1,7 +1,8 @@
-﻿using azurecp;
+﻿using Yvand.ClaimsProviders;
 using NUnit.Framework;
 using System;
 using System.Linq;
+using Yvand.ClaimsProviders.Configuration;
 
 namespace AzureCP.Tests
 {
@@ -17,30 +18,30 @@ namespace AzureCP.Tests
 
             // Add a ClaimTypeConfig with a claim type already set should throw exception InvalidOperationException
             ctConfig.ClaimType = UnitTestsHelper.SPTrust.IdentityClaimTypeInformation.MappedClaimType;
-            ctConfig.DirectoryObjectProperty = UnitTestsHelper.RandomObjectProperty;
+            ctConfig.EntityProperty = UnitTestsHelper.RandomObjectProperty;
             Assert.Throws<InvalidOperationException>(() => Config.ClaimTypes.Add(ctConfig), $"Add a ClaimTypeConfig with a claim type already set should throw exception InvalidOperationException with this message: \"Claim type '{UnitTestsHelper.SPTrust.IdentityClaimTypeInformation.MappedClaimType}' already exists in the collection\"");
 
             // Add a ClaimTypeConfig with UseMainClaimTypeOfDirectoryObject = false (default value) and DirectoryObjectProperty not set should throw exception InvalidOperationException
             ctConfig.ClaimType = UnitTestsHelper.RandomClaimType;
-            ctConfig.DirectoryObjectProperty = AzureADObjectProperty.NotSet;
+            ctConfig.EntityProperty = DirectoryObjectProperty.NotSet;
             Assert.Throws<InvalidOperationException>(() => Config.ClaimTypes.Add(ctConfig), $"Add a ClaimTypeConfig with UseMainClaimTypeOfDirectoryObject = false (default value) and DirectoryObjectProperty not set should throw exception InvalidOperationException with this message: \"Property DirectoryObjectProperty is required\"");
 
             // Add a ClaimTypeConfig with UseMainClaimTypeOfDirectoryObject = true and ClaimType set should throw exception InvalidOperationException
             ctConfig.ClaimType = UnitTestsHelper.RandomClaimType;
-            ctConfig.DirectoryObjectProperty = UnitTestsHelper.RandomObjectProperty;
+            ctConfig.EntityProperty = UnitTestsHelper.RandomObjectProperty;
             ctConfig.UseMainClaimTypeOfDirectoryObject = true;
             Assert.Throws<InvalidOperationException>(() => Config.ClaimTypes.Add(ctConfig), $"Add a ClaimTypeConfig with UseMainClaimTypeOfDirectoryObject = true and ClaimType set should throw exception InvalidOperationException with this message: \"No claim type should be set if UseMainClaimTypeOfDirectoryObject is set to true\"");
             
             // Add a ClaimTypeConfig with EntityType 'Group' should throw exception InvalidOperationException since 1 already exists by default and AzureCP allows only 1 claim type for EntityType 'Group'
             ctConfig.ClaimType = UnitTestsHelper.RandomClaimType;
-            ctConfig.DirectoryObjectProperty = UnitTestsHelper.RandomObjectProperty;
+            ctConfig.EntityProperty = UnitTestsHelper.RandomObjectProperty;
             ctConfig.EntityType = DirectoryObjectType.Group;
             ctConfig.UseMainClaimTypeOfDirectoryObject = false;
             Assert.Throws<InvalidOperationException>(() => Config.ClaimTypes.Add(ctConfig), $"Add a ClaimTypeConfig with EntityType 'Group' should throw exception InvalidOperationException with this message: \"A claim type for EntityType 'Group' already exists in the collection\"");
 
             // Add a valid ClaimTypeConfig should succeed
             ctConfig.ClaimType = UnitTestsHelper.RandomClaimType;
-            ctConfig.DirectoryObjectProperty = UnitTestsHelper.RandomObjectProperty;
+            ctConfig.EntityProperty = UnitTestsHelper.RandomObjectProperty;
             ctConfig.EntityType = DirectoryObjectType.User;
             ctConfig.UseMainClaimTypeOfDirectoryObject = false;
             Assert.DoesNotThrow(() => Config.ClaimTypes.Add(ctConfig), $"Add a valid ClaimTypeConfig should succeed");
@@ -74,7 +75,7 @@ namespace AzureCP.Tests
             var firstCTConfig = Config.ClaimTypes.FirstOrDefault(x => !String.IsNullOrEmpty(x.ClaimType));
 
             // Add a ClaimTypeConfig with property ClaimType already defined in another ClaimTypeConfig should throw exception InvalidOperationException
-            ClaimTypeConfig ctConfig = new ClaimTypeConfig() { ClaimType = firstCTConfig.ClaimType, DirectoryObjectProperty = UnitTestsHelper.RandomObjectProperty };
+            ClaimTypeConfig ctConfig = new ClaimTypeConfig() { ClaimType = firstCTConfig.ClaimType, EntityProperty = UnitTestsHelper.RandomObjectProperty };
             Assert.Throws<InvalidOperationException>(() => Config.ClaimTypes.Add(ctConfig), $"Add a ClaimTypeConfig with property ClaimType already defined in another ClaimTypeConfig should throw exception InvalidOperationException with this message: \"Claim type '{firstCTConfig.ClaimType}' already exists in the collection\"");
 
             // Modify an existing claim type to set a claim type already defined should throw exception InvalidOperationException
@@ -95,7 +96,7 @@ namespace AzureCP.Tests
             // Set a PrefixToBypassLookup on an existing item and add a new item with the same PrefixToBypassLookup should throw exception InvalidOperationException
             var firstCTConfig = Config.ClaimTypes.FirstOrDefault(x => !String.IsNullOrEmpty(x.ClaimType));
             firstCTConfig.PrefixToBypassLookup = prefixToBypassLookup;
-            ClaimTypeConfig ctConfig = new ClaimTypeConfig() { ClaimType = UnitTestsHelper.RandomClaimType, PrefixToBypassLookup = prefixToBypassLookup, DirectoryObjectProperty = UnitTestsHelper.RandomObjectProperty };
+            ClaimTypeConfig ctConfig = new ClaimTypeConfig() { ClaimType = UnitTestsHelper.RandomClaimType, PrefixToBypassLookup = prefixToBypassLookup, EntityProperty = UnitTestsHelper.RandomObjectProperty };
             Assert.Throws<InvalidOperationException>(() => Config.Update(), $"Set a duplicate PrefixToBypassLookup on an existing item and add a new item with the same PrefixToBypassLookup should throw exception InvalidOperationException with this message: \"{ConfigUpdateErrorMessage}\"");
         }
 
@@ -111,7 +112,7 @@ namespace AzureCP.Tests
             // Remove one of the duplicated EntityDataKey
             Config.ClaimTypes.FirstOrDefault(x => x.EntityDataKey == entityDataKey).EntityDataKey = String.Empty;
             // Set an EntityDataKey on an existing item and add a new item with the same EntityDataKey should throw exception InvalidOperationException
-            ClaimTypeConfig ctConfig = new ClaimTypeConfig() { ClaimType = UnitTestsHelper.RandomClaimType, EntityDataKey = entityDataKey, DirectoryObjectProperty = UnitTestsHelper.RandomObjectProperty };
+            ClaimTypeConfig ctConfig = new ClaimTypeConfig() { ClaimType = UnitTestsHelper.RandomClaimType, EntityDataKey = entityDataKey, EntityProperty = UnitTestsHelper.RandomObjectProperty };
             Assert.Throws<InvalidOperationException>(() => Config.ClaimTypes.Add(ctConfig), $"Set an EntityDataKey on an existing item and add a new item with the same EntityDataKey should throw exception InvalidOperationException with this message: \"Entity metadata '{entityDataKey}' already exists in the collection for the directory object User\"");
         }
 
@@ -121,15 +122,15 @@ namespace AzureCP.Tests
             ClaimTypeConfig existingCTConfig = Config.ClaimTypes.FirstOrDefault(x => !String.IsNullOrEmpty(x.ClaimType) && x.EntityType == DirectoryObjectType.User);
 
             // Create a new ClaimTypeConfig with a DirectoryObjectProperty already set should throw exception InvalidOperationException
-            ClaimTypeConfig ctConfig = new ClaimTypeConfig() { ClaimType = UnitTestsHelper.RandomClaimType, EntityType = DirectoryObjectType.User, DirectoryObjectProperty = existingCTConfig.DirectoryObjectProperty };
-            Assert.Throws<InvalidOperationException>(() => Config.ClaimTypes.Add(ctConfig), $"Create a new ClaimTypeConfig with a DirectoryObjectProperty already set should throw exception InvalidOperationException with this message: \"An item with property '{existingCTConfig.DirectoryObjectProperty.ToString()}' already exists for the object type 'User'\"");
+            ClaimTypeConfig ctConfig = new ClaimTypeConfig() { ClaimType = UnitTestsHelper.RandomClaimType, EntityType = DirectoryObjectType.User, EntityProperty = existingCTConfig.EntityProperty };
+            Assert.Throws<InvalidOperationException>(() => Config.ClaimTypes.Add(ctConfig), $"Create a new ClaimTypeConfig with a DirectoryObjectProperty already set should throw exception InvalidOperationException with this message: \"An item with property '{existingCTConfig.EntityProperty.ToString()}' already exists for the object type 'User'\"");
 
             // Add a valid ClaimTypeConfig should succeed (done for next test)
-            ctConfig.DirectoryObjectProperty = UnitTestsHelper.RandomObjectProperty;
+            ctConfig.EntityProperty = UnitTestsHelper.RandomObjectProperty;
             Assert.DoesNotThrow(() => Config.ClaimTypes.Add(ctConfig), $"Add a valid ClaimTypeConfig should succeed");
 
             // Update an existing ClaimTypeConfig with a DirectoryObjectProperty already set should throw exception InvalidOperationException
-            ctConfig.DirectoryObjectProperty = existingCTConfig.DirectoryObjectProperty;
+            ctConfig.EntityProperty = existingCTConfig.EntityProperty;
             Assert.Throws<InvalidOperationException>(() => Config.Update(), $"Update an existing ClaimTypeConfig with a DirectoryObjectProperty already set should throw exception InvalidOperationException with this message: \"{ConfigUpdateErrorMessage}\"");
 
             // Delete the ClaimTypeConfig should succeed
@@ -143,28 +144,28 @@ namespace AzureCP.Tests
             backupIdentityCTConfig = backupIdentityCTConfig.CopyConfiguration() as IdentityClaimTypeConfig;
 
             // Member UserType
-            Assert.Throws<ArgumentNullException>(() => Config.ClaimTypes.UpdateUserIdentifier(AzureADObjectProperty.NotSet), $"Update user identifier with value NotSet should throw exception ArgumentNullException");
+            Assert.Throws<ArgumentNullException>(() => Config.ClaimTypes.UpdateUserIdentifier(DirectoryObjectProperty.NotSet), $"Update user identifier with value NotSet should throw exception ArgumentNullException");
 
             bool configUpdated = Config.ClaimTypes.UpdateUserIdentifier(UnitTestsHelper.RandomObjectProperty);
-            Assert.IsTrue(configUpdated, $"Update user identifier with any AzureADObjectProperty should succeed and return true");
+            Assert.IsTrue(configUpdated, $"Update user identifier with any DirectoryObjectProperty should succeed and return true");
 
-            configUpdated = Config.ClaimTypes.UpdateUserIdentifier(backupIdentityCTConfig.DirectoryObjectProperty);
-            Assert.IsTrue(configUpdated, $"Update user identifier with any AzureADObjectProperty should succeed and return true");
+            configUpdated = Config.ClaimTypes.UpdateUserIdentifier(backupIdentityCTConfig.EntityProperty);
+            Assert.IsTrue(configUpdated, $"Update user identifier with any DirectoryObjectProperty should succeed and return true");
 
-            configUpdated = Config.ClaimTypes.UpdateUserIdentifier(backupIdentityCTConfig.DirectoryObjectProperty);
-            Assert.IsFalse(configUpdated, $"Update user identifier with the same AzureADObjectProperty should not change anything and return false");
+            configUpdated = Config.ClaimTypes.UpdateUserIdentifier(backupIdentityCTConfig.EntityProperty);
+            Assert.IsFalse(configUpdated, $"Update user identifier with the same DirectoryObjectProperty should not change anything and return false");
 
             // Guest UserType
-            Assert.Throws<ArgumentNullException>(() => Config.ClaimTypes.UpdateIdentifierForGuestUsers(AzureADObjectProperty.NotSet), $"Update user identifier of Guest UserType with value NotSet should throw exception ArgumentNullException");
+            Assert.Throws<ArgumentNullException>(() => Config.ClaimTypes.UpdateIdentifierForGuestUsers(DirectoryObjectProperty.NotSet), $"Update user identifier of Guest UserType with value NotSet should throw exception ArgumentNullException");
 
             configUpdated = Config.ClaimTypes.UpdateIdentifierForGuestUsers(UnitTestsHelper.RandomObjectProperty);
-            Assert.IsTrue(configUpdated, $"Update user identifier of Guest UserType with any AzureADObjectProperty should succeed and return true");
+            Assert.IsTrue(configUpdated, $"Update user identifier of Guest UserType with any DirectoryObjectProperty should succeed and return true");
 
             configUpdated = Config.ClaimTypes.UpdateIdentifierForGuestUsers(backupIdentityCTConfig.DirectoryObjectPropertyForGuestUsers);
-            Assert.IsTrue(configUpdated, $"Update user identifier of Guest UserType with any AzureADObjectProperty should succeed and return true");
+            Assert.IsTrue(configUpdated, $"Update user identifier of Guest UserType with any DirectoryObjectProperty should succeed and return true");
 
             configUpdated = Config.ClaimTypes.UpdateIdentifierForGuestUsers(backupIdentityCTConfig.DirectoryObjectPropertyForGuestUsers);
-            Assert.IsFalse(configUpdated, $"Update user identifier of Guest UserType with the same AzureADObjectProperty should not change anything and return false");
+            Assert.IsFalse(configUpdated, $"Update user identifier of Guest UserType with the same DirectoryObjectProperty should not change anything and return false");
         }
     }
 }

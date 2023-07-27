@@ -1,4 +1,4 @@
-﻿using azurecp;
+﻿using Yvand.ClaimsProviders;
 using DataAccess;
 using Microsoft.SharePoint;
 using Microsoft.SharePoint.Administration;
@@ -21,8 +21,8 @@ using Yvand.ClaimsProviders.Configuration.AzureAD;
 [SetUpFixture]
 public class UnitTestsHelper
 {
-    public static readonly Yvand.ClaimsProviders.AzureCP ClaimsProvider = new Yvand.ClaimsProviders.AzureCP(UnitTestsHelper.ClaimsProviderName);
-    public static string ClaimsProviderName => "AzureCP";
+    public static readonly AzureCPSE ClaimsProvider = new AzureCPSE(UnitTestsHelper.ClaimsProviderName);
+    public static string ClaimsProviderName => "AzureCPSE";
     public static readonly string ClaimsProviderConfigName = TestContext.Parameters["ClaimsProviderConfigName"];
     private static Uri TestSiteCollUri;
     public static readonly string TestSiteRelativePath = $"/sites/{TestContext.Parameters["TestSiteCollectionName"]}";
@@ -36,7 +36,7 @@ public class UnitTestsHelper
 
     public static string RandomClaimType => "http://schemas.yvand.net/ws/claims/random";
     public static string RandomClaimValue => "IDoNotExist";
-    public static AzureADObjectProperty RandomObjectProperty => AzureADObjectProperty.AccountEnabled;
+    public static DirectoryObjectProperty RandomObjectProperty => DirectoryObjectProperty.AccountEnabled;
 
     public static readonly string TrustedGroupToAdd_ClaimType = TestContext.Parameters["TrustedGroupToAdd_ClaimType"];
     public static readonly string TrustedGroupToAdd_ClaimValue = TestContext.Parameters["TrustedGroupToAdd_ClaimValue"];
@@ -61,7 +61,7 @@ public class UnitTestsHelper
         logFileListener = new TextWriterTraceListener(TestContext.Parameters["TestLogFileName"]);
         Trace.Listeners.Add(logFileListener);
         Trace.AutoFlush = true;
-        Trace.TraceInformation($"{DateTime.Now.ToString("s")} Start integration tests of {ClaimsProviderName} {FileVersionInfo.GetVersionInfo(Assembly.GetAssembly(typeof(azurecp.AzureCP)).Location).FileVersion}.");
+        Trace.TraceInformation($"{DateTime.Now.ToString("s")} Start integration tests of {ClaimsProviderName} {FileVersionInfo.GetVersionInfo(Assembly.GetAssembly(typeof(AzureCPSE)).Location).FileVersion}.");
         Trace.WriteLine($"{DateTime.Now.ToString("s")} DataFile_AllAccounts_Search: {DataFile_AllAccounts_Search}");
         Trace.WriteLine($"{DateTime.Now.ToString("s")} DataFile_AllAccounts_Validate: {DataFile_AllAccounts_Validate}");
         Trace.WriteLine($"{DateTime.Now.ToString("s")} DataFile_GuestAccountsUPN_Search: {DataFile_GuestAccountsUPN_Search}");
@@ -83,10 +83,10 @@ public class UnitTestsHelper
             Trace.WriteLine($"{DateTime.Now.ToString("s")} SPTrust: {SPTrust.Name}");
         }
 
-        AzureADEntityProviderConfiguration config = AzureADEntityProviderConfiguration.GetConfiguration(UnitTestsHelper.ClaimsProviderConfigName);
+        AzureADEntityProviderConfiguration config = AzureCPSE.GetConfiguration();
         if (config == null)
         {
-            AzureADEntityProviderConfiguration.CreateConfiguration(ClaimsProviderConstants.CONFIG_ID, ClaimsProviderConstants.CONFIG_NAME, UnitTestsHelper.ClaimsProviderConfigName);
+            AzureCPSE.CreateConfiguration();
         }
 
         var service = SPFarm.Local.Services.GetValue<SPWebService>(String.Empty);
@@ -144,7 +144,7 @@ public class UnitTestsHelper
     [OneTimeTearDown]
     public static void Cleanup()
     {
-        Trace.WriteLine($"{DateTime.Now.ToString("s")} Integration tests of {ClaimsProviderName} {FileVersionInfo.GetVersionInfo(Assembly.GetAssembly(typeof(azurecp.AzureCP)).Location).FileVersion} finished.");
+        Trace.WriteLine($"{DateTime.Now.ToString("s")} Integration tests of {ClaimsProviderName} {FileVersionInfo.GetVersionInfo(Assembly.GetAssembly(typeof(AzureCPSE)).Location).FileVersion} finished.");
         Trace.Flush();
         if (logFileListener != null)
         {

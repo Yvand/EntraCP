@@ -24,7 +24,7 @@ namespace Yvand.ClaimsProviders.AzureAD
 {
     public class AzureADEntityProvider : EntityProviderBase<AzureADEntityProviderConfiguration>
     {
-        public AzureADEntityProvider(string providerInternalName) : base(providerInternalName) { }
+        public AzureADEntityProvider(string claimsProviderName) : base(claimsProviderName) { }
 
         public async override Task<List<string>> GetEntityGroupsAsync(OperationContext currentContext, DirectoryObjectProperty groupProperty)
         {
