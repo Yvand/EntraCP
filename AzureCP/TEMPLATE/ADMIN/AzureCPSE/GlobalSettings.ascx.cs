@@ -313,8 +313,7 @@ namespace Yvand.ClaimsProviders.Administration
                     ClientId = this.TxtClientId.Text,
                     ClientSecret = this.TxtClientSecret.Text,
                     ExcludeGuestUsers = this.ChkMemberUserTypeOnly.Checked,
-                    ClientCertificatePrivateKey = cert,
-                    //CloudInstance = (AzureCloudInstance)Enum.Parse(typeof(AzureCloudInstance), this.DDLAzureCloudInstance.SelectedValue),
+                    ClientCertificateWithPrivateKey = cert,
                     AzureAuthority = cloudInstance,
                     ExtensionAttributesApplicationId = string.IsNullOrWhiteSpace(this.TxtExtensionAttributesApplicationId.Text) ? Guid.Empty : Guid.Parse(this.TxtExtensionAttributesApplicationId.Text)
                 });

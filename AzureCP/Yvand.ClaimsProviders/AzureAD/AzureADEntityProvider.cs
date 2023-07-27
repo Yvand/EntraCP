@@ -21,6 +21,9 @@ using Yvand.ClaimsProviders.Configuration;
 using Yvand.ClaimsProviders.Configuration.AzureAD;
 using static Yvand.ClaimsProviders.ClaimsProviderLogging;
 using System.Reflection;
+using Azure.Identity;
+using Microsoft.Identity.Client;
+using static System.Net.WebRequestMethods;
 
 namespace Yvand.ClaimsProviders.AzureAD
 {
@@ -30,13 +33,13 @@ namespace Yvand.ClaimsProviders.AzureAD
 
         public async override Task<List<string>> GetEntityGroupsAsync(OperationContext currentContext, AzureADObjectProperty groupProperty)
         {
-            List<AzureTenant> azureTenants = this.LocalConfiguration.AzureTenants;
+            List<AzureTenant> azureTenants = this.Configuration.AzureTenants;
             // URL encode the filter to prevent that it gets truncated like this: "UserPrincipalName eq 'guest_contoso.com" instead of "UserPrincipalName eq 'guest_contoso.com#EXT#@TENANT.onmicrosoft.com'"
             string getMemberUserFilter = $"{currentContext.IncomingEntityClaimTypeConfig.DirectoryObjectProperty} eq '{currentContext.IncomingEntity.Value}'";
-            string getGuestUserFilter = $"userType eq 'Guest' and {this.LocalConfiguration.IdentityClaimTypeConfig.DirectoryObjectPropertyForGuestUsers} eq '{currentContext.IncomingEntity.Value}'";
+            string getGuestUserFilter = $"userType eq 'Guest' and {this.Configuration.IdentityClaimTypeConfig.DirectoryObjectPropertyForGuestUsers} eq '{currentContext.IncomingEntity.Value}'";
 
             // Create a task for each tenant to query
-            IEnumerable <Task<List<string>>> tenantTasks = azureTenants.Select(async tenant =>
+            IEnumerable<Task<List<string>>> tenantTasks = azureTenants.Select(async tenant =>
             {
                 List<string> groupsInTenant = new List<string>();
                 Stopwatch timer = new Stopwatch();
@@ -73,7 +76,7 @@ namespace Yvand.ClaimsProviders.AzureAD
                         // POST to /v1.0/users/user@TENANT.onmicrosoft.com/microsoft.graph.getMemberGroups is the preferred way to return security groups as it includes nested groups
                         // But it returns only the group IDs so it can be used only if groupClaimTypeConfig.DirectoryObjectProperty == AzureADObjectProperty.Id
                         // For Guest users, it must be the id: POST to /v1.0/users/18ff6ae9-dd01-4008-a786-aabf71f1492a/microsoft.graph.getMemberGroups
-                        GetMemberGroupsPostRequestBody getGroupsOptions = new GetMemberGroupsPostRequestBody { SecurityEnabledOnly = this.LocalConfiguration.FilterSecurityEnabledGroupsOnly };
+                        GetMemberGroupsPostRequestBody getGroupsOptions = new GetMemberGroupsPostRequestBody { SecurityEnabledOnly = this.Configuration.FilterSecurityEnabledGroupsOnly };
                         GetMemberGroupsResponse memberGroupsResponse = await Task.Run(() => tenant.GraphService.Users[user.Id].GetMemberGroups.PostAsync(getGroupsOptions)).ConfigureAwait(false);
                         if (memberGroupsResponse?.Value != null)
                         {
@@ -139,8 +142,8 @@ namespace Yvand.ClaimsProviders.AzureAD
         public async override Task<List<DirectoryObject>> SearchOrValidateEntitiesAsync(OperationContext currentContext)
         {
             // this.CurrentConfiguration.AzureTenants must be cloned locally var to ensure its properties ($select / $filter) won't be updated by multiple threads
-            List<AzureTenant> azureTenants = new List<AzureTenant>(this.LocalConfiguration.AzureTenants.Count);
-            foreach (AzureTenant tenant in this.LocalConfiguration.AzureTenants)
+            List<AzureTenant> azureTenants = new List<AzureTenant>(this.Configuration.AzureTenants.Count);
+            foreach (AzureTenant tenant in this.Configuration.AzureTenants)
             {
                 azureTenants.Add(tenant.CopyConfiguration());
             }
@@ -263,14 +266,14 @@ namespace Yvand.ClaimsProviders.AzureAD
             // Also add metadata properties to $select of corresponding object type
             if (firstUserObjectProcessed)
             {
-                foreach (ClaimTypeConfig ctConfig in LocalConfiguration.RuntimeMetadataConfig.Where(x => x.EntityType == DirectoryObjectType.User))
+                foreach (ClaimTypeConfig ctConfig in Configuration.RuntimeMetadataConfig.Where(x => x.EntityType == DirectoryObjectType.User))
                 {
                     userSelectBuilder.Add(ctConfig.DirectoryObjectProperty.ToString());
                 }
             }
             if (firstGroupObjectProcessed)
             {
-                foreach (ClaimTypeConfig ctConfig in LocalConfiguration.RuntimeMetadataConfig.Where(x => x.EntityType == DirectoryObjectType.Group))
+                foreach (ClaimTypeConfig ctConfig in Configuration.RuntimeMetadataConfig.Where(x => x.EntityType == DirectoryObjectType.Group))
                 {
                     groupSelectBuilder.Add(ctConfig.DirectoryObjectProperty.ToString());
                 }
@@ -364,7 +367,7 @@ namespace Yvand.ClaimsProviders.AzureAD
 
             ClaimsProviderLogging.Log($"[{ClaimsProviderName}] Querying Azure AD tenant '{tenant.Name}' for users and groups, with input '{currentContext.Input}'", TraceSeverity.VerboseEx, EventSeverity.Information, TraceCategory.Lookup);
             object lockAddResultToCollection = new object();
-            int timeout = this.LocalConfiguration.Timeout;
+            int timeout = this.Configuration.Timeout;
             int maxRetry = currentContext.OperationType == OperationType.Validation ? 3 : 2;
 
             try
@@ -389,12 +392,6 @@ namespace Yvand.ClaimsProviders.AzureAD
 
                     // Build the batch
                     BatchRequestContent batchRequestContent = new BatchRequestContent(tenant.GraphService);
-
-
-                    // Allow Advanced query as documented in  https://learn.microsoft.com/en-us/graph/sdks/create-requests?tabs=csharp#retrieve-a-list-of-entities
-                    // Add ConsistencyLevel header to eventual and $count=true to fix $filter on CompanyName - https://github.com/Yvand/AzureCP/issues/166
-                    //// (Only work for non-batched requests)
-                    ///
                     string usersRequestId = String.Empty;
                     if (!String.IsNullOrWhiteSpace(tenant.UserFilter))
                     {
@@ -406,15 +403,17 @@ namespace Yvand.ClaimsProviders.AzureAD
                                 Count = true,
                                 Filter = tenant.UserFilter,
                                 Select = tenant.UserSelect,
-                                Top = this.LocalConfiguration.MaxSearchResultsCount,
+                                Top = this.Configuration.MaxSearchResultsCount,
                             };
                             conf.Headers = new RequestHeaders
                             {
-                                    { "ConsistencyLevel", "eventual" }
+                                // Allow Advanced query as documented in  https://learn.microsoft.com/en-us/graph/sdks/create-requests?tabs=csharp#retrieve-a-list-of-entities
+                                //to fix $filter on CompanyName - https://github.com/Yvand/AzureCP/issues/166
+                                { "ConsistencyLevel", "eventual" }
                             };
                             conf.Options = new List<IRequestOption>
                             {
-                                    retryHandlerOption,
+                                retryHandlerOption,
                             };
                         });
                         // Using AddBatchRequestStepAsync adds each request as a step with no specified order of execution
@@ -432,15 +431,17 @@ namespace Yvand.ClaimsProviders.AzureAD
                                 Count = true,
                                 Filter = tenant.GroupFilter,
                                 Select = tenant.GroupSelect,
-                                Top = this.LocalConfiguration.MaxSearchResultsCount,
+                                Top = this.Configuration.MaxSearchResultsCount,
                             };
                             conf.Headers = new RequestHeaders
                             {
-                                    { "ConsistencyLevel", "eventual" }
+                                // Allow Advanced query as documented in  https://learn.microsoft.com/en-us/graph/sdks/create-requests?tabs=csharp#retrieve-a-list-of-entities
+                                //to fix $filter on CompanyName - https://github.com/Yvand/AzureCP/issues/166
+                                { "ConsistencyLevel", "eventual" }
                             };
                             conf.Options = new List<IRequestOption>
                             {
-                                    retryHandlerOption,
+                                retryHandlerOption,
                             };
                         });
                         // Using AddBatchRequestStepAsync adds each request as a step with no specified order of execution
@@ -508,9 +509,17 @@ namespace Yvand.ClaimsProviders.AzureAD
             {
                 ClaimsProviderLogging.Log($"[{ClaimsProviderName}] Queries on Azure AD tenant '{tenant.Name}' exceeded timeout of {timeout} ms and were cancelled.", TraceSeverity.Unexpected, EventSeverity.Error, TraceCategory.Lookup);
             }
+            catch (AuthenticationFailedException ex)
+            {
+                ClaimsProviderLogging.LogException(ClaimsProviderName, $": Could not authenticate for tenant '{tenant.Name}'", TraceCategory.Lookup, ex);
+            }
+            catch (MsalServiceException ex)
+            {
+                ClaimsProviderLogging.LogException(ClaimsProviderName, $": Msal could not query tenant '{tenant.Name}'", TraceCategory.Lookup, ex);
+            }
             catch (ServiceException ex)
             {
-                ClaimsProviderLogging.LogException(ClaimsProviderName, $"Microsoft.Graph could not query tenant '{tenant.Name}'", TraceCategory.Lookup, ex);
+                ClaimsProviderLogging.LogException(ClaimsProviderName, $": Microsoft.Graph could not query tenant '{tenant.Name}'", TraceCategory.Lookup, ex);
             }
             catch (AggregateException ex)
             {

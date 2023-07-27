@@ -92,22 +92,22 @@ namespace Yvand.ClaimsProviders.Configuration.AzureAD
         }
 
         /// <summary>
-        /// Client certificate with its private key, of the app registration created for AzureCP
+        /// Gets or set the client certificate with its private key, configured in the app registration for AzureCP
         /// </summary>
-        public X509Certificate2 ClientCertificatePrivateKey
+        public X509Certificate2 ClientCertificateWithPrivateKey
         {
             get
             {
-                return _ClientCertificatePrivateKey;
+                return _ClientCertificateWithPrivateKey;
             }
             set
             {
                 if (value == null) { return; }
-                _ClientCertificatePrivateKey = value;
+                _ClientCertificateWithPrivateKey = value;
                 try
                 {
                     // https://stackoverflow.com/questions/32354790/how-to-check-is-x509certificate2-exportable-or-not
-                    ClientCertificatePrivateKeyRawData = value.Export(X509ContentType.Pfx, ClaimsProviderConstants.ClientCertificatePrivateKeyPassword);
+                    _ClientCertificateWithPrivateKeyRawData = value.Export(X509ContentType.Pfx, ClaimsProviderConstants.ClientCertificatePrivateKeyPassword);
                 }
                 catch (CryptographicException ex)
                 {
@@ -116,9 +116,9 @@ namespace Yvand.ClaimsProviders.Configuration.AzureAD
                 }
             }
         }
-        private X509Certificate2 _ClientCertificatePrivateKey;
+        private X509Certificate2 _ClientCertificateWithPrivateKey;
         [Persisted]
-        private byte[] ClientCertificatePrivateKeyRawData;
+        private byte[] _ClientCertificateWithPrivateKeyRawData;
 
         public Uri AzureAuthority
         {
@@ -150,15 +150,17 @@ namespace Yvand.ClaimsProviders.Configuration.AzureAD
 
         protected override void OnDeserialization()
         {
-            if (ClientCertificatePrivateKeyRawData != null)
+            if (_ClientCertificateWithPrivateKeyRawData != null)
             {
                 try
                 {
+                    // Sets the local X509Certificate2 object from the persisted raw data stored in the configuration database
                     // EphemeralKeySet: Keep the private key in-memory, it won't be written to disk - https://www.pkisolutions.com/handling-x509keystorageflags-in-applications/
-                    _ClientCertificatePrivateKey = ImportPfxCertificateBlob(ClientCertificatePrivateKeyRawData, ClaimsProviderConstants.ClientCertificatePrivateKeyPassword, X509KeyStorageFlags.EphemeralKeySet);
+                    _ClientCertificateWithPrivateKey = ImportPfxCertificateBlob(_ClientCertificateWithPrivateKeyRawData, ClaimsProviderConstants.ClientCertificatePrivateKeyPassword, X509KeyStorageFlags.EphemeralKeySet);
                 }
                 catch (CryptographicException ex)
                 {
+                    // It may fail with CryptographicException: The system cannot find the file specified, but it does not have any impact
                     ClaimsProviderLogging.LogException(AzureCPSE.ClaimsProviderName, $"while deserializating the certificate for tenant '{this.Name}'.", TraceCategory.Core, ex);
                 }
             }
@@ -196,7 +198,7 @@ namespace Yvand.ClaimsProviders.Configuration.AzureAD
                 }
                 else
                 {
-                    tokenCredential = new ClientCertificateCredential(this.Name, this.ClientId, this.ClientCertificatePrivateKey, options);
+                    tokenCredential = new ClientCertificateCredential(this.Name, this.ClientId, this.ClientCertificateWithPrivateKey, options);
                 }
 
                 var scopes = new[] { "https://graph.microsoft.com/.default" };
@@ -257,7 +259,7 @@ namespace Yvand.ClaimsProviders.Configuration.AzureAD
         {
             this.ClientId = applicationId;
             this.ClientSecret = applicationSecret;
-            this.ClientCertificatePrivateKey = null;
+            this.ClientCertificateWithPrivateKey = null;
         }
 
         /// <summary>
@@ -278,7 +280,7 @@ namespace Yvand.ClaimsProviders.Configuration.AzureAD
         {
             this.ClientId = applicationId;
             this.ClientSecret = String.Empty;
-            this.ClientCertificatePrivateKey = certificate;
+            this.ClientCertificateWithPrivateKey = certificate;
         }
 
         /// <summary>

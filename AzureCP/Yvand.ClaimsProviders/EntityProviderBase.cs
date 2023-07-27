@@ -13,15 +13,27 @@ namespace Yvand.ClaimsProviders
     where TConfiguration : EntityProviderConfiguration
     {
         /// <summary>
-        /// The local configuration, which is a copy of the global configuration stored in a persisted object
+        /// Gets the local configuration, which is a copy of the global configuration stored in a persisted object
         /// </summary>
-        public TConfiguration LocalConfiguration { get; private set; }
+        public TConfiguration Configuration { get; private set; }
+        
         /// <summary>
-        /// The version of the local configuration
+        /// Gets the version of the local configuration
         /// </summary>
-        public long LocalConfigurationVersion { get; private set; }
-        public string ClaimsProviderName { get; set; }
+        public long ConfigurationVersion { get; private set; }
+        
+        /// <summary>
+        /// Gets the name of the claims provider using this class
+        /// </summary>
+        public string ClaimsProviderName { get; private set; }
+        
+        /// <summary>
+        /// Returns a list of users and groups
+        /// </summary>
+        /// <param name="currentContext"></param>
+        /// <returns></returns>
         public abstract Task<List<DirectoryObject>> SearchOrValidateEntitiesAsync(OperationContext currentContext);
+        
         /// <summary>
         /// Returns the groups the user is member of
         /// </summary>
@@ -52,13 +64,13 @@ namespace Yvand.ClaimsProviders
             {
                 ClaimsProviderLogging.Log($"[{ClaimsProviderName}] Cannot continue because configuration '{configurationName}' was not found in configuration database, visit AzureCP admin pages in central administration to create it.",
                     TraceSeverity.Unexpected, EventSeverity.Error, TraceCategory.Core);
-                this.LocalConfiguration = null;
+                this.Configuration = null;
                 return false;
             }
 
-            if (this.LocalConfigurationVersion == globalConfiguration.Version)
+            if (this.ConfigurationVersion == globalConfiguration.Version)
             {
-                ClaimsProviderLogging.Log($"[{ClaimsProviderName}] Configuration '{configurationName}' is up to date with version {this.LocalConfigurationVersion}.",
+                ClaimsProviderLogging.Log($"[{ClaimsProviderName}] Configuration '{configurationName}' is up to date with version {this.ConfigurationVersion}.",
                     TraceSeverity.VerboseEx, EventSeverity.Information, TraceCategory.Core);
                 return true;
             }
@@ -66,14 +78,14 @@ namespace Yvand.ClaimsProviders
             ClaimsProviderLogging.Log($"[{ClaimsProviderName}] Configuration '{globalConfiguration.Name}' has new version {globalConfiguration.Version}, refreshing local copy",
                 TraceSeverity.Medium, EventSeverity.Information, TraceCategory.Core);
 
-            this.LocalConfiguration = (TConfiguration)globalConfiguration.CopyConfiguration();
+            this.Configuration = (TConfiguration)globalConfiguration.CopyConfiguration();
 #if !DEBUGx
-            this.LocalConfigurationVersion = ((SPPersistedObject)globalConfiguration).Version;
+            this.ConfigurationVersion = ((SPPersistedObject)globalConfiguration).Version;
 #endif
 
-            if (this.LocalConfiguration.ClaimTypes == null || this.LocalConfiguration.ClaimTypes.Count == 0)
+            if (this.Configuration.ClaimTypes == null || this.Configuration.ClaimTypes.Count == 0)
             {
-                ClaimsProviderLogging.Log($"[{ClaimsProviderName}] Configuration '{this.LocalConfiguration.Name}' was found but collection ClaimTypes is empty. Visit AzureCP admin pages in central administration to create it.",
+                ClaimsProviderLogging.Log($"[{ClaimsProviderName}] Configuration '{this.Configuration.Name}' was found but collection ClaimTypes is empty. Visit AzureCP admin pages in central administration to create it.",
                     TraceSeverity.Unexpected, EventSeverity.Error, TraceCategory.Core);
                 configIsVald = false;
             }
@@ -81,9 +93,10 @@ namespace Yvand.ClaimsProviders
         }
 
         /// <summary>
-        /// Returns the configuration of AzureCP, but does not initialize the runtime settings
+        /// Returns the global configuration, stored as a persisted object in the SharePoint configuration database
         /// </summary>
-        /// <param name="configurationName">Name of the configuration</param>
+        /// <param name="configurationName">The name of the configuration</param>
+        /// <param name="initializeRuntimeSettings">Set to true to initialize the runtime settings</param>
         /// <returns></returns>
         public static TConfiguration GetGlobalConfiguration(string configurationName, bool initializeRuntimeSettings = false)
         {
@@ -105,7 +118,7 @@ namespace Yvand.ClaimsProviders
         }
 
         /// <summary>
-        /// Delete persisted object from configuration database
+        /// Deletes the global configuration (persisted object) from the SharePoint configuration database
         /// </summary>
         /// <param name="configurationName">Name of persisted object to delete</param>
         public static void DeleteGlobalConfiguration(string configurationName)
@@ -121,11 +134,12 @@ namespace Yvand.ClaimsProviders
         }
 
         /// <summary>
-        /// Create a persisted object with default configuration of AzureCP.
+        /// Create the persisted object that stores the global configuration, in the SharePoint configuration database.
+        /// It will delete the configuration if it already exists.
         /// </summary>
-        /// <param name="configurationID">GUID of the configuration, stored as a persisted object into SharePoint configuration database</param>
-        /// <param name="configurationName">Name of the configuration, stored as a persisted object into SharePoint configuration database</param>
-        /// <param name="claimsProviderName">Name of the SPTrustedLoginProvider that claims provider is associated with</param>
+        /// <param name="configurationID">GUID of the persisted object</param>
+        /// <param name="configurationName">Name of the persisted object</param>
+        /// <param name="claimsProviderName">Name of the claims provider associated with this configuration</param>
         /// <returns></returns>
         public static TConfiguration CreateGlobalConfiguration(string configurationID, string configurationName, string claimsProviderName)
         {

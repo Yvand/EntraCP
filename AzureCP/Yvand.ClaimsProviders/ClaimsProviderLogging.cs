@@ -65,13 +65,13 @@ namespace Yvand.ClaimsProviders
             }
         }
 
-        public static void LogException(string ProviderInternalName, string faultyAction, TraceCategory category, Exception ex)
+        public static void LogException(string ClaimsProviderName, string customMessage, TraceCategory category, Exception ex)
         {
             try
             {
                 if (ex is AggregateException)
                 {
-                    StringBuilder message = new StringBuilder($"[{ProviderInternalName}] Unexpected error(s) occurred {faultyAction}:");
+                    StringBuilder message = new StringBuilder($"[{ClaimsProviderName}] Unexpected error(s) {customMessage}:");
                     string excetpionMessage = Environment.NewLine + "[EXCEPTION {0}]: {1}: {2}. Callstack: {3}";
                     var aggEx = ex as AggregateException;
                     int count = 1;
@@ -92,14 +92,14 @@ namespace Yvand.ClaimsProviders
                 }
                 else
                 {
-                    string message = "[{0}] Unexpected error occurred {1}: {2}: {3}, Callstack: {4}";
+                    string message = "[{0}] Unexpected error {1}: {2}: {3}, Callstack: {4}";
                     if (ex.InnerException != null)
                     {
-                        message = String.Format(message, ProviderInternalName, faultyAction, ex.InnerException.GetType().FullName, ex.InnerException.Message, ex.InnerException.StackTrace);
+                        message = String.Format(message, ClaimsProviderName, customMessage, ex.InnerException.GetType().FullName, ex.InnerException.Message, ex.InnerException.StackTrace);
                     }
                     else
                     {
-                        message = String.Format(message, ProviderInternalName, faultyAction, ex.GetType().FullName, ex.Message, ex.StackTrace);
+                        message = String.Format(message, ClaimsProviderName, customMessage, ex.GetType().FullName, ex.Message, ex.StackTrace);
                     }
                     WriteTrace(category, TraceSeverity.Unexpected, message);
                 }
