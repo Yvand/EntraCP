@@ -1,29 +1,24 @@
-﻿using Microsoft.Graph;
+﻿using Azure.Identity;
+using Microsoft.Graph;
 using Microsoft.Graph.Groups;
-using Microsoft.Graph.Users.Item.GetMemberGroups;
-using Microsoft.Graph.Users.Item.MemberOf;
 using Microsoft.Graph.Models;
 using Microsoft.Graph.Users;
+using Microsoft.Graph.Users.Item.GetMemberGroups;
+using Microsoft.Identity.Client;
 using Microsoft.Kiota.Abstractions;
 using Microsoft.Kiota.Http.HttpClientLibrary.Middleware.Options;
 using Microsoft.SharePoint.Administration;
-using Microsoft.SharePoint.Administration.Claims;
 using Microsoft.SharePoint.Utilities;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
-using System.Net.NetworkInformation;
+using System.Reflection;
 using System.Text;
 using System.Threading.Tasks;
-using System.Web;
 using Yvand.ClaimsProviders.Configuration;
 using Yvand.ClaimsProviders.Configuration.AzureAD;
 using static Yvand.ClaimsProviders.ClaimsProviderLogging;
-using System.Reflection;
-using Azure.Identity;
-using Microsoft.Identity.Client;
-using static System.Net.WebRequestMethods;
 
 namespace Yvand.ClaimsProviders.AzureAD
 {

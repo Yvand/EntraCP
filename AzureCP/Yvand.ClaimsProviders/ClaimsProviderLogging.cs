@@ -1,11 +1,10 @@
-﻿using Microsoft.SharePoint.Administration;
-using Microsoft.SharePoint;
+﻿using Microsoft.SharePoint;
+using Microsoft.SharePoint.Administration;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
 using System.Text;
-using System.Threading.Tasks;
 
 namespace Yvand.ClaimsProviders
 {

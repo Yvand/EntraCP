@@ -405,8 +405,8 @@ namespace Yvand.ClaimsProviders.Configuration
         /// <param name="newItem">New version of ClaimTypeConfig object</param>
         public void Update(string oldClaimType, ClaimTypeConfig newItem)
         {
-            if (String.IsNullOrEmpty(oldClaimType)) { throw new ArgumentNullException("oldClaimType"); }
-            if (newItem == null) { throw new ArgumentNullException("newItem"); }
+            if (String.IsNullOrEmpty(oldClaimType)) { throw new ArgumentNullException(nameof(oldClaimType)); }
+            if (newItem == null) { throw new ArgumentNullException(nameof(newItem)); }
 
             // If SPTrustedLoginProvider is set, additional checks can be done
             if (SPTrust != null)
@@ -458,7 +458,7 @@ namespace Yvand.ClaimsProviders.Configuration
         /// <returns>True if the identity ClaimTypeConfig was successfully updated</returns>
         public bool UpdateUserIdentifier(DirectoryObjectProperty newIdentifier)
         {
-            if (newIdentifier == DirectoryObjectProperty.NotSet) { throw new ArgumentNullException("newIdentifier"); }
+            if (newIdentifier == DirectoryObjectProperty.NotSet) { throw new ArgumentNullException(nameof(newIdentifier)); }
 
             bool identifierUpdated = false;
             IdentityClaimTypeConfig identityClaimType = innerCol.FirstOrDefault(x => x is IdentityClaimTypeConfig) as IdentityClaimTypeConfig;
@@ -496,7 +496,7 @@ namespace Yvand.ClaimsProviders.Configuration
         /// <returns></returns>
         public bool UpdateIdentifierForGuestUsers(DirectoryObjectProperty newIdentifier)
         {
-            if (newIdentifier == DirectoryObjectProperty.NotSet) { throw new ArgumentNullException("newIdentifier"); }
+            if (newIdentifier == DirectoryObjectProperty.NotSet) { throw new ArgumentNullException(nameof(newIdentifier)); }
 
             bool identifierUpdated = false;
             IdentityClaimTypeConfig identityClaimType = innerCol.FirstOrDefault(x => x is IdentityClaimTypeConfig) as IdentityClaimTypeConfig;
@@ -553,7 +553,7 @@ namespace Yvand.ClaimsProviders.Configuration
 
         public void CopyTo(ClaimTypeConfig[] array, int arrayIndex)
         {
-            if (array == null) { throw new ArgumentNullException("The array cannot be null."); }
+            if (array == null) { throw new ArgumentNullException(nameof(array)); }
             if (arrayIndex < 0) { throw new ArgumentOutOfRangeException("The starting array index cannot be negative."); }
             if (Count > array.Length - arrayIndex + 1) { throw new ArgumentException("The destination array has fewer elements than the collection."); }
 
@@ -588,7 +588,7 @@ namespace Yvand.ClaimsProviders.Configuration
         {
             if (String.IsNullOrEmpty(claimType))
             {
-                throw new ArgumentNullException("claimType");
+                throw new ArgumentNullException(nameof(claimType));
             }
             if (SPTrust != null && String.Equals(claimType, SPTrust.IdentityClaimTypeInformation.MappedClaimType, StringComparison.InvariantCultureIgnoreCase))
             {
@@ -620,7 +620,7 @@ namespace Yvand.ClaimsProviders.Configuration
 
         public ClaimTypeConfig GetByClaimType(string claimType)
         {
-            if (String.IsNullOrEmpty(claimType)) { throw new ArgumentNullException("claimType"); }
+            if (String.IsNullOrEmpty(claimType)) { throw new ArgumentNullException(nameof(claimType)); }
             ClaimTypeConfig ctConfig = innerCol.FirstOrDefault(x => String.Equals(claimType, x.ClaimType, StringComparison.InvariantCultureIgnoreCase));
             return ctConfig;
         }

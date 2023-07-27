@@ -1,4 +1,5 @@
 ﻿using Azure.Core;
+using Azure.Core.Pipeline;
 using Azure.Identity;
 using Microsoft.Graph;
 using Microsoft.Identity.Client;
@@ -7,16 +8,12 @@ using Microsoft.SharePoint.Administration;
 using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Net.Http;
 using System.Net;
+using System.Net.Http;
 using System.Reflection;
-using System.Security.Cryptography.X509Certificates;
 using System.Security.Cryptography;
-using System.Text;
-using System.Threading.Tasks;
+using System.Security.Cryptography.X509Certificates;
 using static Yvand.ClaimsProviders.ClaimsProviderLogging;
-using Azure.Core.Pipeline;
-using System.Security.Cryptography.Xml;
 
 namespace Yvand.ClaimsProviders.Configuration.AzureAD
 {
@@ -103,6 +100,7 @@ namespace Yvand.ClaimsProviders.Configuration.AzureAD
             set
             {
                 if (value == null) { return; }
+                if (!value.HasPrivateKey) { throw new ArgumentException("The certificate cannot be imported because it does not have a private key"); }
                 _ClientCertificateWithPrivateKey = value;
                 try
                 {
@@ -138,15 +136,12 @@ namespace Yvand.ClaimsProviders.Configuration.AzureAD
         }
 
         public GraphServiceClient GraphService { get; private set; }
-
         public string UserFilter { get; set; }
         public string GroupFilter { get; set; }
         public string[] UserSelect { get; set; }
         public string[] GroupSelect { get; set; }
 
-        public AzureTenant()
-        {
-        }
+        public AzureTenant() { }
 
         protected override void OnDeserialization()
         {
@@ -167,9 +162,9 @@ namespace Yvand.ClaimsProviders.Configuration.AzureAD
         }
 
         /// <summary>
-        /// Set properties AuthenticationProvider and GraphService
+        /// Initializes the authentication to Microsoft Graph
         /// </summary>
-        public void InitializeGraphForAppOnlyAuth(int timeout, string proxyAddress)
+        public void InitializeAuthentication(int timeout, string proxyAddress)
         {
             try
             {
@@ -222,7 +217,7 @@ namespace Yvand.ClaimsProviders.Configuration.AzureAD
         /// Returns a copy of the current object. This copy does not have any member of the base SharePoint base class set
         /// </summary>
         /// <returns></returns>
-        internal AzureTenant CopyConfiguration()
+        public AzureTenant CopyConfiguration()
         {
             AzureTenant copy = new AzureTenant();
             // Copy non-inherited public properties
@@ -242,49 +237,31 @@ namespace Yvand.ClaimsProviders.Configuration.AzureAD
         }
 
         /// <summary>
-        /// Update the credentials used to connect to the Azure AD tenant
+        /// Sets the credentials used to connect to the Azure AD tenant
         /// </summary>
-        /// <param name="newApplicationSecret">New application (client) secret</param>
-        public void UpdateCredentials(string newApplicationSecret)
+        /// <param name="clientId">Application (client) ID</param>
+        /// <param name="clientSecret">Application (client) secret</param>
+        public void SetCredentials(string clientId, string clientSecret)
         {
-            SetCredentials(this.ClientId, newApplicationSecret);
-        }
-
-        /// <summary>
-        /// Set the credentials used to connect to the Azure AD tenant
-        /// </summary>
-        /// <param name="applicationId">Application (client) ID</param>
-        /// <param name="applicationSecret">Application (client) secret</param>
-        public void SetCredentials(string applicationId, string applicationSecret)
-        {
-            this.ClientId = applicationId;
-            this.ClientSecret = applicationSecret;
+            this.ClientId = clientId;
+            this.ClientSecret = clientSecret;
             this.ClientCertificateWithPrivateKey = null;
         }
 
         /// <summary>
-        /// Update the credentials used to connect to the Azure AD tenant
+        /// Sets the credentials used to connect to the Azure AD tenant
         /// </summary>
-        /// <param name="newCertificate">New certificate with its private key</param>
-        public void UpdateCredentials(X509Certificate2 newCertificate)
+        /// <param name="clientId">Application (client) secret</param>
+        /// <param name="clientCertificateWithPrivateKey">Client certificate with its private key</param>
+        public void SetCredentials(string clientId, X509Certificate2 clientCertificateWithPrivateKey)
         {
-            SetCredentials(this.ClientId, newCertificate);
-        }
-
-        /// <summary>
-        /// Set the credentials used to connect to the Azure AD tenant
-        /// </summary>
-        /// <param name="applicationId">Application (client) secret</param>
-        /// <param name="certificate">Certificate with its private key</param>
-        public void SetCredentials(string applicationId, X509Certificate2 certificate)
-        {
-            this.ClientId = applicationId;
+            this.ClientId = clientId;
             this.ClientSecret = String.Empty;
-            this.ClientCertificateWithPrivateKey = certificate;
+            this.ClientCertificateWithPrivateKey = clientCertificateWithPrivateKey;
         }
 
         /// <summary>
-        /// Import the input blob certificate into a pfx X509Certificate2 object
+        /// Imports the input blob into a pfx X509Certificate2 object with its private key
         /// </summary>
         /// <param name="blob"></param>
         /// <param name="certificatePassword"></param>
@@ -299,7 +276,7 @@ namespace Yvand.ClaimsProviders.Configuration.AzureAD
 
             if (String.IsNullOrWhiteSpace(certificatePassword))
             {
-                // If passwordless, import private key as documented in https://support.microsoft.com/en-us/topic/kb5025823-change-in-how-net-applications-import-x-509-certificates-bf81c936-af2b-446e-9f7a-016f4713b46b
+                // If passwordless, import the private key as documented in https://support.microsoft.com/en-us/topic/kb5025823-change-in-how-net-applications-import-x-509-certificates-bf81c936-af2b-446e-9f7a-016f4713b46b
                 return new X509Certificate2(blob, (string)null, keyStorageFlags);
             }
             else

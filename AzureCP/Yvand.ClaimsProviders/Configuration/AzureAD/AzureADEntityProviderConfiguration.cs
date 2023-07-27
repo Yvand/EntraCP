@@ -3,9 +3,6 @@ using Microsoft.SharePoint.Administration.Claims;
 using Microsoft.SharePoint.WebControls;
 using System;
 using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 using static Yvand.ClaimsProviders.ClaimsProviderLogging;
 
 namespace Yvand.ClaimsProviders.Configuration.AzureAD
@@ -59,7 +56,7 @@ namespace Yvand.ClaimsProviders.Configuration.AzureAD
             bool success = base.InitializeRuntimeSettings();
             foreach (var tenant in this.AzureTenants)
             {
-                tenant.InitializeGraphForAppOnlyAuth(this.Timeout, this.ProxyAddress);
+                tenant.InitializeAuthentication(this.Timeout, this.ProxyAddress);
             }
             return success;
         }
@@ -124,7 +121,7 @@ namespace Yvand.ClaimsProviders.Configuration.AzureAD
         {
             if (String.IsNullOrWhiteSpace(claimsProviderName))
             {
-                throw new ArgumentNullException("claimsProviderName cannot be null.");
+                throw new ArgumentNullException(nameof(claimsProviderName));
             }
 
             SPTrustedLoginProvider spTrust = Utils.GetSPTrustAssociatedWithClaimsProvider(claimsProviderName);

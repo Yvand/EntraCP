@@ -7,10 +7,8 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
 using System.Reflection;
-using System.Text;
-using System.Threading.Tasks;
-using static Yvand.ClaimsProviders.ClaimsProviderLogging;
 using System.Web;
+using static Yvand.ClaimsProviders.ClaimsProviderLogging;
 using WIF4_5 = System.Security.Claims;
 
 namespace Yvand.ClaimsProviders.Configuration
@@ -263,7 +261,7 @@ namespace Yvand.ClaimsProviders.Configuration
         /// <param name="runtimeClaimTypesList"></param>
         protected void InitializeValidation(List<ClaimTypeConfig> runtimeClaimTypesList)
         {
-            if (this.IncomingEntity == null) { throw new ArgumentNullException("IncomingEntity"); }
+            if (this.IncomingEntity == null) { throw new ArgumentNullException(nameof(this.IncomingEntity)); }
             this.IncomingEntityClaimTypeConfig = runtimeClaimTypesList.FirstOrDefault(x =>
                String.Equals(x.ClaimType, this.IncomingEntity.ClaimType, StringComparison.InvariantCultureIgnoreCase) &&
                !x.UseMainClaimTypeOfDirectoryObject);
@@ -305,7 +303,7 @@ namespace Yvand.ClaimsProviders.Configuration
 
         protected void InitializeAugmentation(List<ClaimTypeConfig> runtimeClaimTypesList)
         {
-            if (this.IncomingEntity == null) { throw new ArgumentNullException("IncomingEntity"); }
+            if (this.IncomingEntity == null) { throw new ArgumentNullException(nameof(this.IncomingEntity)); }
             this.IncomingEntityClaimTypeConfig = runtimeClaimTypesList.FirstOrDefault(x =>
                String.Equals(x.ClaimType, this.IncomingEntity.ClaimType, StringComparison.InvariantCultureIgnoreCase) &&
                !x.UseMainClaimTypeOfDirectoryObject);

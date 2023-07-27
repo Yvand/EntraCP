@@ -1,13 +1,10 @@
-﻿using Microsoft.SharePoint.Administration.Claims;
-using Microsoft.SharePoint.Administration;
+﻿using Microsoft.SharePoint.Administration;
+using Microsoft.SharePoint.Administration.Claims;
 using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 using static Yvand.ClaimsProviders.ClaimsProviderLogging;
-using Yvand.ClaimsProviders.Configuration.AzureAD;
 
 namespace Yvand.ClaimsProviders.Configuration
 {

@@ -145,7 +145,7 @@ namespace Yvand.ClaimsProviders
         {
             if (String.IsNullOrWhiteSpace(claimsProviderName))
             {
-                throw new ArgumentNullException("claimsProviderName");
+                throw new ArgumentNullException(nameof(claimsProviderName));
             }
 
             // Ensure it doesn't already exists and delete it if so

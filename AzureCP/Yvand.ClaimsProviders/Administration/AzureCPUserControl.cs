@@ -1,15 +1,8 @@
-﻿using Microsoft.Graph.Models;
-using Microsoft.SharePoint;
+﻿using Microsoft.SharePoint;
 using Microsoft.SharePoint.Administration;
-using Microsoft.SharePoint.Administration.Claims;
 using Microsoft.SharePoint.Utilities;
-using Microsoft.SharePoint.WebControls;
 using System;
-using System.IdentityModel.Metadata;
-using System.Linq;
-using System.Reflection;
 using System.Web.UI;
-using Yvand.ClaimsProviders;
 using Yvand.ClaimsProviders.Configuration;
 using Yvand.ClaimsProviders.Configuration.AzureAD;
 using static Yvand.ClaimsProviders.ClaimsProviderLogging;
