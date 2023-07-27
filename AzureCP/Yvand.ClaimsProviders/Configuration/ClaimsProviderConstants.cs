@@ -77,7 +77,7 @@ namespace Yvand.ClaimsProviders.Configuration
 #endif
     }
 
-    public enum AzureADObjectProperty
+    public enum DirectoryObjectProperty
     {
         NotSet,
         AccountEnabled,

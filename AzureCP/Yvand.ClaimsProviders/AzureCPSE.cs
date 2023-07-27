@@ -27,12 +27,15 @@ namespace Yvand.ClaimsProviders
         public override bool SupportsResolve => true;
         public override bool SupportsSearch => true;
         public override bool SupportsUserKey => true;
-        public AzureADEntityProvider EntityProvider { get; set; }
+        public AzureADEntityProvider EntityProvider { get; private set; }
         private ReaderWriterLockSlim Lock_LocalConfigurationRefresh = new ReaderWriterLockSlim();
         protected virtual string PickerEntityDisplayText => "({0}) {1}";
         protected virtual string PickerEntityOnMouseOver => "{0}={1}";
 
-        public AzureCPSE(string displayName) : base(displayName) { }
+        public AzureCPSE(string displayName) : base(displayName) 
+        {
+            this.EntityProvider = new AzureADEntityProvider(Name);
+        }
 
         public static AzureADEntityProviderConfiguration GetConfiguration(bool initializeRuntimeSettings = false)
         {
@@ -60,7 +63,7 @@ namespace Yvand.ClaimsProviders
             }
         }
 
-        public bool ValidateLocalConfiguration(Uri context, string[] entityTypes)
+        public bool ValidateLocalConfiguration(Uri context)
         {
             if (!Utils.ShouldRun(context, Name))
             {
@@ -68,11 +71,6 @@ namespace Yvand.ClaimsProviders
             }
 
             bool success;
-            if (this.EntityProvider == null)
-            {
-                this.EntityProvider = new AzureADEntityProvider(Name);
-            }
-
             this.Lock_LocalConfigurationRefresh.EnterWriteLock();
             try
             {
@@ -254,7 +252,7 @@ namespace Yvand.ClaimsProviders
                 foreach (ClaimTypeConfig ctConfig in ctConfigs.Where(x => x.EntityType == objectType))
                 {
                     // Get value with of current GraphProperty
-                    string directoryObjectPropertyValue = GetPropertyValue(currentObject, ctConfig.DirectoryObjectProperty.ToString());
+                    string directoryObjectPropertyValue = GetPropertyValue(currentObject, ctConfig.EntityProperty.ToString());
 
                     if (ctConfig is IdentityClaimTypeConfig)
                     {
@@ -294,14 +292,14 @@ namespace Yvand.ClaimsProviders
                             else
                             {
                                 // Get the value of the DirectoryObjectProperty linked to current directory object
-                                entityClaimValue = GetPropertyValue(currentObject, claimTypeConfigToCompare.DirectoryObjectProperty.ToString());
+                                entityClaimValue = GetPropertyValue(currentObject, claimTypeConfigToCompare.EntityProperty.ToString());
                             }
                         }
                         else
                         {
                             claimTypeConfigToCompare = this.EntityProvider.Configuration.MainGroupClaimTypeConfig;
                             // Get the value of the DirectoryObjectProperty linked to current directory object
-                            entityClaimValue = GetPropertyValue(currentObject, claimTypeConfigToCompare.DirectoryObjectProperty.ToString());
+                            entityClaimValue = GetPropertyValue(currentObject, claimTypeConfigToCompare.EntityProperty.ToString());
                         }
 
                         if (String.IsNullOrEmpty(entityClaimValue)) { continue; }
@@ -392,7 +390,7 @@ namespace Yvand.ClaimsProviders
             //entity.EntityGroupName = "";
             entity.Description = String.Format(
                 PickerEntityOnMouseOver,
-                result.ClaimTypeConfig.DirectoryObjectProperty.ToString(),
+                result.ClaimTypeConfig.EntityProperty.ToString(),
                 result.DirectoryObjectPropertyValue);
 
             int nbMetadata = 0;
@@ -404,7 +402,7 @@ namespace Yvand.ClaimsProviders
                 foreach (ClaimTypeConfig ctConfig in this.EntityProvider.Configuration.RuntimeMetadataConfig.Where(x => x.EntityType == result.ClaimTypeConfig.EntityType))
                 {
                     // if there is actally a value in the GraphObject, then it can be set
-                    string entityAttribValue = GetPropertyValue(result.DirectoryEntity, ctConfig.DirectoryObjectProperty.ToString());
+                    string entityAttribValue = GetPropertyValue(result.DirectoryEntity, ctConfig.EntityProperty.ToString());
                     if (!String.IsNullOrEmpty(entityAttribValue))
                     {
                         entity.EntityData[ctConfig.EntityDataKey] = entityAttribValue;
@@ -445,7 +443,7 @@ namespace Yvand.ClaimsProviders
                     entity.EntityType = ctConfig.EntityType == DirectoryObjectType.User ? SPClaimEntityTypes.User : ClaimsProviderConstants.GroupClaimEntityType;
                 }
                 //entity.EntityGroupName = "";
-                entity.Description = String.Format(PickerEntityOnMouseOver, ctConfig.DirectoryObjectProperty.ToString(), input);
+                entity.Description = String.Format(PickerEntityOnMouseOver, ctConfig.EntityProperty.ToString(), input);
 
                 if (!String.IsNullOrEmpty(ctConfig.EntityDataKey))
                 {
@@ -486,14 +484,14 @@ namespace Yvand.ClaimsProviders
         protected virtual string FormatPermissionDisplayText(PickerEntity entity, bool isMappedClaimTypeConfig, ClaimsProviderEntityResult result)
         {
             string entityDisplayText = this.EntityProvider.Configuration.EntityDisplayTextPrefix;
-            if (result.ClaimTypeConfig.DirectoryObjectPropertyToShowAsDisplayText != AzureADObjectProperty.NotSet)
+            if (result.ClaimTypeConfig.EntityPropertyToUseAsDisplayText != DirectoryObjectProperty.NotSet)
             {
                 if (!isMappedClaimTypeConfig || result.ClaimTypeConfig.EntityType == DirectoryObjectType.Group)
                 {
                     entityDisplayText += "(" + result.ClaimTypeConfig.ClaimTypeDisplayName + ") ";
                 }
 
-                string graphPropertyToDisplayValue = GetPropertyValue(result.DirectoryEntity, result.ClaimTypeConfig.DirectoryObjectPropertyToShowAsDisplayText.ToString());
+                string graphPropertyToDisplayValue = GetPropertyValue(result.DirectoryEntity, result.ClaimTypeConfig.EntityPropertyToUseAsDisplayText.ToString());
                 if (!String.IsNullOrEmpty(graphPropertyToDisplayValue))
                 {
                     entityDisplayText += graphPropertyToDisplayValue;
@@ -595,7 +593,7 @@ namespace Yvand.ClaimsProviders
         protected override void FillClaimTypes(List<string> claimTypes)
         {
             if (claimTypes == null) { return; }
-            bool configIsValid = ValidateLocalConfiguration(null, null);
+            bool configIsValid = ValidateLocalConfiguration(null);
             if (configIsValid)
             {
                 this.Lock_LocalConfigurationRefresh.EnterReadLock();
@@ -672,7 +670,7 @@ namespace Yvand.ClaimsProviders
                 return;
             }
 
-            if (!ValidateLocalConfiguration(context, null)) { return; }
+            if (!ValidateLocalConfiguration(context)) { return; }
 
             this.Lock_LocalConfigurationRefresh.EnterReadLock();
             try
@@ -694,7 +692,7 @@ namespace Yvand.ClaimsProviders
                 OperationContext currentContext = new OperationContext(this.EntityProvider.Configuration, OperationType.Augmentation, null, decodedEntity, context, null, null);
                 Stopwatch timer = new Stopwatch();
                 timer.Start();
-                Task<List<string>> groupsTask = this.EntityProvider.GetEntityGroupsAsync(currentContext, groupClaimTypeSettings.DirectoryObjectProperty);
+                Task<List<string>> groupsTask = this.EntityProvider.GetEntityGroupsAsync(currentContext, groupClaimTypeSettings.EntityProperty);
                 groupsTask.Wait();
                 List<string> groups = groupsTask.Result;
                 timer.Stop();
@@ -738,7 +736,7 @@ namespace Yvand.ClaimsProviders
             if (entityTypes.Contains(SPClaimEntityTypes.User)) { aadEntityTypes.Add(DirectoryObjectType.User); }
             if (entityTypes.Contains(ClaimsProviderConstants.GroupClaimEntityType)) { aadEntityTypes.Add(DirectoryObjectType.Group); }
 
-            if (!ValidateLocalConfiguration(context, entityTypes)) { return; }
+            if (!ValidateLocalConfiguration(context)) { return; }
 
             this.Lock_LocalConfigurationRefresh.EnterReadLock();
             try
@@ -769,7 +767,7 @@ namespace Yvand.ClaimsProviders
 
         protected override void FillResolve(Uri context, string[] entityTypes, string resolveInput, List<PickerEntity> resolved)
         {
-            if (!ValidateLocalConfiguration(context, entityTypes)) { return; }
+            if (!ValidateLocalConfiguration(context)) { return; }
 
             this.Lock_LocalConfigurationRefresh.EnterReadLock();
             try
@@ -788,7 +786,7 @@ namespace Yvand.ClaimsProviders
 
         protected override void FillResolve(Uri context, string[] entityTypes, SPClaim resolveInput, List<PickerEntity> resolved)
         {
-            if (!ValidateLocalConfiguration(context, entityTypes)) { return; }
+            if (!ValidateLocalConfiguration(context)) { return; }
 
             this.Lock_LocalConfigurationRefresh.EnterReadLock();
             try
@@ -823,7 +821,7 @@ namespace Yvand.ClaimsProviders
 
         protected override void FillSearch(Uri context, string[] entityTypes, string searchPattern, string hierarchyNodeID, int maxCount, SPProviderHierarchyTree searchTree)
         {
-            if (!ValidateLocalConfiguration(context, entityTypes)) { return; }
+            if (!ValidateLocalConfiguration(context)) { return; }
 
             this.Lock_LocalConfigurationRefresh.EnterReadLock();
             try
@@ -883,7 +881,7 @@ namespace Yvand.ClaimsProviders
         {
             // Initialization may fail because there is no yet configuration (fresh install)
             // In this case, AzureCP should not return null because it causes null exceptions in SharePoint when users sign-in
-            bool configIsValid = ValidateLocalConfiguration(null, null);
+            bool configIsValid = ValidateLocalConfiguration(null);
             if (configIsValid)
             {
                 this.Lock_LocalConfigurationRefresh.EnterReadLock();
@@ -912,7 +910,7 @@ namespace Yvand.ClaimsProviders
         {
             // Initialization may fail because there is no yet configuration (fresh install)
             // In this case, AzureCP should not return null because it causes null exceptions in SharePoint when users sign-in
-            bool initSucceeded = ValidateLocalConfiguration(null, null);
+            bool initSucceeded = ValidateLocalConfiguration(null);
 
             this.Lock_LocalConfigurationRefresh.EnterReadLock();
             try

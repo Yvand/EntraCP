@@ -240,7 +240,7 @@ namespace Yvand.ClaimsProviders.Configuration
                 ClaimTypeConfig claimTypeConfig = this.ClaimTypes.FirstOrDefault(x =>
                     String.Equals(x.ClaimType, claimTypeInformation.MappedClaimType, StringComparison.InvariantCultureIgnoreCase) &&
                     !x.UseMainClaimTypeOfDirectoryObject &&
-                    x.DirectoryObjectProperty != AzureADObjectProperty.NotSet);
+                    x.EntityProperty != DirectoryObjectProperty.NotSet);
 
                 if (claimTypeConfig == null)
                 {
@@ -276,7 +276,7 @@ namespace Yvand.ClaimsProviders.Configuration
                 if (localClaimTypeConfig.EntityType == DirectoryObjectType.User)
                 {
                     localClaimTypeConfig.ClaimType = this.IdentityClaimTypeConfig.ClaimType;
-                    localClaimTypeConfig.DirectoryObjectPropertyToShowAsDisplayText = this.IdentityClaimTypeConfig.DirectoryObjectPropertyToShowAsDisplayText;
+                    localClaimTypeConfig.EntityPropertyToUseAsDisplayText = this.IdentityClaimTypeConfig.EntityPropertyToUseAsDisplayText;
                 }
                 else
                 {
@@ -286,7 +286,7 @@ namespace Yvand.ClaimsProviders.Configuration
                         continue;
                     }
                     localClaimTypeConfig.ClaimType = this.MainGroupClaimTypeConfig.ClaimType;
-                    localClaimTypeConfig.DirectoryObjectPropertyToShowAsDisplayText = this.MainGroupClaimTypeConfig.DirectoryObjectPropertyToShowAsDisplayText;
+                    localClaimTypeConfig.EntityPropertyToUseAsDisplayText = this.MainGroupClaimTypeConfig.EntityPropertyToUseAsDisplayText;
                     localClaimTypeConfig.ClaimTypeDisplayName = this.MainGroupClaimTypeConfig.ClaimTypeDisplayName;
                 }
                 additionalClaimTypeConfigList.Add(localClaimTypeConfig);
@@ -299,7 +299,7 @@ namespace Yvand.ClaimsProviders.Configuration
             // Get all PickerEntity metadata with a DirectoryObjectProperty set
             this.RuntimeMetadataConfig = this.ClaimTypes.Where(x =>
                 !String.IsNullOrEmpty(x.EntityDataKey) &&
-                x.DirectoryObjectProperty != AzureADObjectProperty.NotSet);
+                x.EntityProperty != DirectoryObjectProperty.NotSet);
 
             this.RuntimeSettingsInitialized = true;
             return true;
@@ -359,8 +359,7 @@ namespace Yvand.ClaimsProviders.Configuration
             // Use default constructor to bypass initialization, which is useless since properties will be manually set here
             EntityProviderConfiguration copy = new EntityProviderConfiguration();
             copy.ClaimsProviderName = this.ClaimsProviderName;
-            copy.ClaimTypes = new ClaimTypeConfigCollection();
-            copy.ClaimTypes.SPTrust = this.ClaimTypes.SPTrust;
+            copy.ClaimTypes = new ClaimTypeConfigCollection(this.ClaimTypes.SPTrust);
             foreach (ClaimTypeConfig currentObject in this.ClaimTypes)
             {
                 copy.ClaimTypes.Add(currentObject.CopyConfiguration(), false);

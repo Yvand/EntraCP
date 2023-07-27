@@ -31,11 +31,11 @@ namespace Yvand.ClaimsProviders.AzureAD
     {
         public AzureADEntityProvider(string providerInternalName) : base(providerInternalName) { }
 
-        public async override Task<List<string>> GetEntityGroupsAsync(OperationContext currentContext, AzureADObjectProperty groupProperty)
+        public async override Task<List<string>> GetEntityGroupsAsync(OperationContext currentContext, DirectoryObjectProperty groupProperty)
         {
             List<AzureTenant> azureTenants = this.Configuration.AzureTenants;
             // URL encode the filter to prevent that it gets truncated like this: "UserPrincipalName eq 'guest_contoso.com" instead of "UserPrincipalName eq 'guest_contoso.com#EXT#@TENANT.onmicrosoft.com'"
-            string getMemberUserFilter = $"{currentContext.IncomingEntityClaimTypeConfig.DirectoryObjectProperty} eq '{currentContext.IncomingEntity.Value}'";
+            string getMemberUserFilter = $"{currentContext.IncomingEntityClaimTypeConfig.EntityProperty} eq '{currentContext.IncomingEntity.Value}'";
             string getGuestUserFilter = $"userType eq 'Guest' and {this.Configuration.IdentityClaimTypeConfig.DirectoryObjectPropertyForGuestUsers} eq '{currentContext.IncomingEntity.Value}'";
 
             // Create a task for each tenant to query
@@ -71,7 +71,7 @@ namespace Yvand.ClaimsProviders.AzureAD
                     }
                     if (user == null) { return groupsInTenant; }
 
-                    if (groupProperty == AzureADObjectProperty.Id)
+                    if (groupProperty == DirectoryObjectProperty.Id)
                     {
                         // POST to /v1.0/users/user@TENANT.onmicrosoft.com/microsoft.graph.getMemberGroups is the preferred way to return security groups as it includes nested groups
                         // But it returns only the group IDs so it can be used only if groupClaimTypeConfig.DirectoryObjectProperty == AzureADObjectProperty.Id
@@ -183,7 +183,7 @@ namespace Yvand.ClaimsProviders.AzureAD
             bool firstGroupObjectProcessed = false;
             foreach (ClaimTypeConfig ctConfig in currentContext.CurrentClaimTypeConfigList)
             {
-                string currentPropertyString = ctConfig.DirectoryObjectProperty.ToString();
+                string currentPropertyString = ctConfig.EntityProperty.ToString();
                 if (currentPropertyString.StartsWith("extensionAttribute"))
                 {
                     currentPropertyString = String.Format("{0}_{1}_{2}", "extension", "EXTENSIONATTRIBUTESAPPLICATIONID", currentPropertyString);
@@ -201,7 +201,7 @@ namespace Yvand.ClaimsProviders.AzureAD
                 }
 
                 // Id needs a specific check: input must be a valid GUID AND equals filter must be used, otherwise Azure AD will throw an error
-                if (ctConfig.DirectoryObjectProperty == AzureADObjectProperty.Id)
+                if (ctConfig.EntityProperty == DirectoryObjectProperty.Id)
                 {
                     Guid idGuid = new Guid();
                     if (!Guid.TryParse(input, out idGuid))
@@ -268,14 +268,14 @@ namespace Yvand.ClaimsProviders.AzureAD
             {
                 foreach (ClaimTypeConfig ctConfig in Configuration.RuntimeMetadataConfig.Where(x => x.EntityType == DirectoryObjectType.User))
                 {
-                    userSelectBuilder.Add(ctConfig.DirectoryObjectProperty.ToString());
+                    userSelectBuilder.Add(ctConfig.EntityProperty.ToString());
                 }
             }
             if (firstGroupObjectProcessed)
             {
                 foreach (ClaimTypeConfig ctConfig in Configuration.RuntimeMetadataConfig.Where(x => x.EntityType == DirectoryObjectType.Group))
                 {
-                    groupSelectBuilder.Add(ctConfig.DirectoryObjectProperty.ToString());
+                    groupSelectBuilder.Add(ctConfig.EntityProperty.ToString());
                 }
             }
 

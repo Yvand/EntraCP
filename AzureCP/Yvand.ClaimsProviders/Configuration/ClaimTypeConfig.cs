@@ -14,13 +14,13 @@ namespace Yvand.ClaimsProviders.Configuration
 {
     public class IdentityClaimTypeConfig : ClaimTypeConfig
     {
-        public AzureADObjectProperty DirectoryObjectPropertyForGuestUsers
+        public DirectoryObjectProperty DirectoryObjectPropertyForGuestUsers
         {
-            get { return (AzureADObjectProperty)Enum.ToObject(typeof(AzureADObjectProperty), _DirectoryObjectPropertyForGuestUsers); }
+            get { return (DirectoryObjectProperty)Enum.ToObject(typeof(DirectoryObjectProperty), _DirectoryObjectPropertyForGuestUsers); }
             set { _DirectoryObjectPropertyForGuestUsers = (int)value; }
         }
         [Persisted]
-        private int _DirectoryObjectPropertyForGuestUsers = (int)AzureADObjectProperty.Mail;
+        private int _DirectoryObjectPropertyForGuestUsers = (int)DirectoryObjectProperty.Mail;
 
         public IdentityClaimTypeConfig()
         {
@@ -37,8 +37,8 @@ namespace Yvand.ClaimsProviders.Configuration
             identityCTConfig.ClaimType = ctConfig.ClaimType;
             identityCTConfig.ClaimTypeDisplayName = ctConfig.ClaimTypeDisplayName;
             identityCTConfig.ClaimValueType = ctConfig.ClaimValueType;
-            identityCTConfig.DirectoryObjectProperty = ctConfig.DirectoryObjectProperty;
-            identityCTConfig.DirectoryObjectPropertyToShowAsDisplayText = ctConfig.DirectoryObjectPropertyToShowAsDisplayText;
+            identityCTConfig.EntityProperty = ctConfig.EntityProperty;
+            identityCTConfig.EntityPropertyToUseAsDisplayText = ctConfig.EntityPropertyToUseAsDisplayText;
             identityCTConfig.EntityDataKey = ctConfig.EntityDataKey;
             identityCTConfig.EntityType = ctConfig.EntityType;
             identityCTConfig.FilterExactMatchOnly = ctConfig.FilterExactMatchOnly;
@@ -56,21 +56,30 @@ namespace Yvand.ClaimsProviders.Configuration
         /// <summary>
         /// Azure AD attribute mapped to the claim type
         /// </summary>
-        public AzureADObjectProperty DirectoryObjectProperty
+        public DirectoryObjectProperty EntityProperty
         {
-            get { return (AzureADObjectProperty)Enum.ToObject(typeof(AzureADObjectProperty), _DirectoryObjectProperty); }
-            set { _DirectoryObjectProperty = (int)value; }
+            get {
+                return String.IsNullOrWhiteSpace(_EntityProperty) ?
+                    DirectoryObjectProperty.NotSet :
+                    (DirectoryObjectProperty)Enum.Parse(typeof(DirectoryObjectProperty), _EntityProperty);
+            }
+            set { _EntityProperty = value.ToString(); }
         }
         [Persisted]
-        private int _DirectoryObjectProperty;
+        private string _EntityProperty;
 
         public DirectoryObjectType EntityType
         {
-            get { return (DirectoryObjectType)Enum.ToObject(typeof(DirectoryObjectType), _DirectoryObjectType); }
-            set { _DirectoryObjectType = (int)value; }
+            get
+            {
+                return String.IsNullOrWhiteSpace(_EntityType) ?
+                    DirectoryObjectType.User :
+                    (DirectoryObjectType)Enum.Parse(typeof(DirectoryObjectType), _EntityType);
+            }
+            set { _EntityType = value.ToString(); }
         }
         [Persisted]
-        private int _DirectoryObjectType;
+        private string _EntityType;
 
         /// <summary>
         /// Set if this will create a User or a Group permission. Values allowed are "User" or "FormsRole"
@@ -101,7 +110,7 @@ namespace Yvand.ClaimsProviders.Configuration
         {
             get
             {
-                if (this.DirectoryObjectProperty == AzureADObjectProperty.Id)
+                if (this.EntityProperty == DirectoryObjectProperty.Id)
                 {
                     return false;
                 }
@@ -117,11 +126,11 @@ namespace Yvand.ClaimsProviders.Configuration
         /// </summary>
         public bool UseMainClaimTypeOfDirectoryObject
         {
-            get { return _CreateAsIdentityClaim; }
-            set { _CreateAsIdentityClaim = value; }
+            get { return _UseMainClaimTypeOfDirectoryObject; }
+            set { _UseMainClaimTypeOfDirectoryObject = value; }
         }
         [Persisted]
-        private bool _CreateAsIdentityClaim = false;
+        private bool _UseMainClaimTypeOfDirectoryObject = false;
 
         /// <summary>
         /// Can contain a member of class PeopleEditorEntityDataKey http://msdn.microsoft.com/en-us/library/office/microsoft.sharepoint.webcontrols.peopleeditorentitydatakeys_members(v=office.15).aspx
@@ -168,16 +177,21 @@ namespace Yvand.ClaimsProviders.Configuration
         [Persisted]
         private string _PrefixToBypassLookup;
 
-        public AzureADObjectProperty DirectoryObjectPropertyToShowAsDisplayText
+        public DirectoryObjectProperty EntityPropertyToUseAsDisplayText
         {
-            get { return (AzureADObjectProperty)Enum.ToObject(typeof(AzureADObjectProperty), _DirectoryObjectPropertyToShowAsDisplayText); }
-            set { _DirectoryObjectPropertyToShowAsDisplayText = (int)value; }
+            get
+            {
+                return String.IsNullOrWhiteSpace(_EntityPropertyToUseAsDisplayText) ?
+                    DirectoryObjectProperty.NotSet :
+                    (DirectoryObjectProperty)Enum.Parse(typeof(DirectoryObjectProperty), _EntityPropertyToUseAsDisplayText);
+            }
+            set { _EntityPropertyToUseAsDisplayText = value.ToString(); }
         }
         [Persisted]
-        private int _DirectoryObjectPropertyToShowAsDisplayText;
+        private string _EntityPropertyToUseAsDisplayText;
 
         /// <summary>
-        /// Set to only return values that exactly match the input
+        /// Gets or sets a Boolean value specifying whether claims provider should only return values that match exactly the input
         /// </summary>
         public bool FilterExactMatchOnly
         {
@@ -278,15 +292,11 @@ namespace Yvand.ClaimsProviders.Configuration
         /// <summary>
         /// If set, more checks can be done when collection is changed
         /// </summary>
-        public SPTrustedLoginProvider SPTrust
-        {
-            get => _SPTrust;
-            set => _SPTrust = value;
-        }
-        private SPTrustedLoginProvider _SPTrust;
+        public SPTrustedLoginProvider SPTrust { get; private set; }
 
-        public ClaimTypeConfigCollection()
+        public ClaimTypeConfigCollection(SPTrustedLoginProvider spTrust)
         {
+            this.SPTrust = spTrust;
         }
 
         internal ClaimTypeConfigCollection(ref Collection<ClaimTypeConfig> innerCol)
@@ -307,7 +317,7 @@ namespace Yvand.ClaimsProviders.Configuration
 
         internal void Add(ClaimTypeConfig item, bool strictChecks)
         {
-            if (item.DirectoryObjectProperty == AzureADObjectProperty.NotSet)
+            if (item.EntityProperty == DirectoryObjectProperty.NotSet)
             {
                 throw new InvalidOperationException($"Property DirectoryObjectProperty is required");
             }
@@ -339,14 +349,14 @@ namespace Yvand.ClaimsProviders.Configuration
 
             if (Contains(item, new ClaimTypeConfigSameDirectoryConfiguration()))
             {
-                throw new InvalidOperationException($"An item with property '{item.DirectoryObjectProperty}' already exists for the object type '{item.EntityType}'");
+                throw new InvalidOperationException($"An item with property '{item.EntityProperty}' already exists for the object type '{item.EntityType}'");
             }
 
             if (Contains(item))
             {
                 if (String.IsNullOrEmpty(item.ClaimType))
                 {
-                    throw new InvalidOperationException($"This configuration with DirectoryObjectProperty '{item.DirectoryObjectProperty}' and EntityType '{item.EntityType}' already exists in the collection");
+                    throw new InvalidOperationException($"This configuration with DirectoryObjectProperty '{item.EntityProperty}' and EntityType '{item.EntityType}' already exists in the collection");
                 }
                 else
                 {
@@ -419,7 +429,7 @@ namespace Yvand.ClaimsProviders.Configuration
             }
 
             // Create a temp collection that is a copy of current collection
-            ClaimTypeConfigCollection testUpdateCollection = new ClaimTypeConfigCollection();
+            ClaimTypeConfigCollection testUpdateCollection = new ClaimTypeConfigCollection(this.SPTrust);
             foreach (ClaimTypeConfig curCTConfig in innerCol)
             {
                 testUpdateCollection.Add(curCTConfig.CopyConfiguration(), false);
@@ -430,7 +440,7 @@ namespace Yvand.ClaimsProviders.Configuration
             ctConfigToUpdate.ApplyConfiguration(newItem);
 
             // Test change in testUpdateCollection by adding all items in a new temp collection
-            ClaimTypeConfigCollection testNewItemCollection = new ClaimTypeConfigCollection();
+            ClaimTypeConfigCollection testNewItemCollection = new ClaimTypeConfigCollection(this.SPTrust);
             foreach (ClaimTypeConfig curCTConfig in testUpdateCollection)
             {
                 // ClaimTypeConfigCollection.Add() may thrown an exception if newItem is not valid for any reason
@@ -446,9 +456,9 @@ namespace Yvand.ClaimsProviders.Configuration
         /// </summary>
         /// <param name="newIdentifier">new DirectoryObjectProperty</param>
         /// <returns>True if the identity ClaimTypeConfig was successfully updated</returns>
-        public bool UpdateUserIdentifier(AzureADObjectProperty newIdentifier)
+        public bool UpdateUserIdentifier(DirectoryObjectProperty newIdentifier)
         {
-            if (newIdentifier == AzureADObjectProperty.NotSet) { throw new ArgumentNullException("newIdentifier"); }
+            if (newIdentifier == DirectoryObjectProperty.NotSet) { throw new ArgumentNullException("newIdentifier"); }
 
             bool identifierUpdated = false;
             IdentityClaimTypeConfig identityClaimType = innerCol.FirstOrDefault(x => x is IdentityClaimTypeConfig) as IdentityClaimTypeConfig;
@@ -457,7 +467,7 @@ namespace Yvand.ClaimsProviders.Configuration
                 return identifierUpdated;
             }
 
-            if (identityClaimType.DirectoryObjectProperty == newIdentifier)
+            if (identityClaimType.EntityProperty == newIdentifier)
             {
                 return identifierUpdated;
             }
@@ -467,14 +477,14 @@ namespace Yvand.ClaimsProviders.Configuration
             {
                 ClaimTypeConfig curCT = (ClaimTypeConfig)innerCol[i];
                 if (curCT.EntityType == DirectoryObjectType.User &&
-                    curCT.DirectoryObjectProperty == newIdentifier)
+                    curCT.EntityProperty == newIdentifier)
                 {
                     innerCol.RemoveAt(i);
                     break;  // There can be only 1 potential duplicate
                 }
             }
 
-            identityClaimType.DirectoryObjectProperty = newIdentifier;
+            identityClaimType.EntityProperty = newIdentifier;
             identifierUpdated = true;
             return identifierUpdated;
         }
@@ -484,9 +494,9 @@ namespace Yvand.ClaimsProviders.Configuration
         /// </summary>
         /// <param name="newIdentifier">new DirectoryObjectPropertyForGuestUsers</param>
         /// <returns></returns>
-        public bool UpdateIdentifierForGuestUsers(AzureADObjectProperty newIdentifier)
+        public bool UpdateIdentifierForGuestUsers(DirectoryObjectProperty newIdentifier)
         {
-            if (newIdentifier == AzureADObjectProperty.NotSet) { throw new ArgumentNullException("newIdentifier"); }
+            if (newIdentifier == DirectoryObjectProperty.NotSet) { throw new ArgumentNullException("newIdentifier"); }
 
             bool identifierUpdated = false;
             IdentityClaimTypeConfig identityClaimType = innerCol.FirstOrDefault(x => x is IdentityClaimTypeConfig) as IdentityClaimTypeConfig;
@@ -672,7 +682,7 @@ namespace Yvand.ClaimsProviders.Configuration
         public override bool Equals(ClaimTypeConfig existingCTConfig, ClaimTypeConfig newCTConfig)
         {
             if (String.Equals(existingCTConfig.ClaimType, newCTConfig.ClaimType, StringComparison.InvariantCultureIgnoreCase) &&
-                existingCTConfig.DirectoryObjectProperty == newCTConfig.DirectoryObjectProperty &&
+                existingCTConfig.EntityProperty == newCTConfig.EntityProperty &&
                 existingCTConfig.EntityType == newCTConfig.EntityType)
             {
                 return true;
@@ -685,7 +695,7 @@ namespace Yvand.ClaimsProviders.Configuration
 
         public override int GetHashCode(ClaimTypeConfig ct)
         {
-            string hCode = ct.ClaimType + ct.DirectoryObjectProperty + ct.EntityType;
+            string hCode = ct.ClaimType + ct.EntityProperty + ct.EntityType;
             return hCode.GetHashCode();
         }
     }
@@ -710,7 +720,7 @@ namespace Yvand.ClaimsProviders.Configuration
 
         public override int GetHashCode(ClaimTypeConfig ct)
         {
-            string hCode = ct.ClaimType + ct.DirectoryObjectProperty + ct.EntityType;
+            string hCode = ct.ClaimType + ct.EntityProperty + ct.EntityType;
             return hCode.GetHashCode();
         }
     }
@@ -736,7 +746,7 @@ namespace Yvand.ClaimsProviders.Configuration
 
         public override int GetHashCode(ClaimTypeConfig ct)
         {
-            string hCode = ct.ClaimType + ct.DirectoryObjectProperty + ct.EntityType;
+            string hCode = ct.ClaimType + ct.EntityProperty + ct.EntityType;
             return hCode.GetHashCode();
         }
     }
@@ -800,7 +810,7 @@ namespace Yvand.ClaimsProviders.Configuration
     {
         public override bool Equals(ClaimTypeConfig existingCTConfig, ClaimTypeConfig newCTConfig)
         {
-            if (existingCTConfig.DirectoryObjectProperty == newCTConfig.DirectoryObjectProperty &&
+            if (existingCTConfig.EntityProperty == newCTConfig.EntityProperty &&
                 existingCTConfig.EntityType == newCTConfig.EntityType)
             {
                 return true;
@@ -813,7 +823,7 @@ namespace Yvand.ClaimsProviders.Configuration
 
         public override int GetHashCode(ClaimTypeConfig ct)
         {
-            string hCode = ct.DirectoryObjectProperty.ToString() + ct.EntityType;
+            string hCode = ct.EntityProperty.ToString() + ct.EntityType;
             return hCode.GetHashCode();
         }
     }

@@ -73,7 +73,7 @@ namespace Yvand.ClaimsProviders.Administration
 
                 DdlNewGraphProperty.Items.Add(String.Empty);
                 DdlNewGraphPropertyToDisplay.Items.Add(String.Empty);
-                foreach (object field in typeof(AzureADObjectProperty).GetFields())
+                foreach (object field in typeof(DirectoryObjectProperty).GetFields())
                 {
                     string prop = ((System.Reflection.FieldInfo)field).Name;
                     if (AzureCPSE.GetPropertyValue(new User(), prop) == null) { continue; }
@@ -306,7 +306,7 @@ namespace Yvand.ClaimsProviders.Administration
             directoryObjectTypeOptions.Append(String.Format(option, DirectoryObjectType.Group.ToString(), selectedText, DirectoryObjectType.Group.ToString()));
 
             // Build DirectoryObjectProperty and DirectoryObjectPropertyToShowAsDisplayText lists
-            foreach (AzureADObjectProperty prop in Enum.GetValues(typeof(AzureADObjectProperty)))
+            foreach (DirectoryObjectProperty prop in Enum.GetValues(typeof(DirectoryObjectProperty)))
             {
                 // Ensure property exists for the current object type
                 if (azureObject.Value.EntityType == DirectoryObjectType.User)
@@ -324,9 +324,9 @@ namespace Yvand.ClaimsProviders.Administration
                     }
                 }
 
-                graphPropertySelected = azureObject.Value.DirectoryObjectProperty == prop ? "selected" : String.Empty;
+                graphPropertySelected = azureObject.Value.EntityProperty == prop ? "selected" : String.Empty;
 
-                if (azureObject.Value.DirectoryObjectPropertyToShowAsDisplayText == prop)
+                if (azureObject.Value.EntityPropertyToUseAsDisplayText == prop)
                 {
                     graphPropertyToDisplaySelected = "selected";
                     graphPropertyToDisplayFound = true;
@@ -342,10 +342,10 @@ namespace Yvand.ClaimsProviders.Administration
 
             // Insert at 1st position AzureADObjectProperty.NotSet in GraphPropertyToDisplay DDL and select it if needed
             string selectNotSet = graphPropertyToDisplayFound ? String.Empty : "selected";
-            graphPropertyToDisplayOptions = graphPropertyToDisplayOptions.Insert(0, String.Format(option, AzureADObjectProperty.NotSet, selectNotSet, AzureADObjectProperty.NotSet));
+            graphPropertyToDisplayOptions = graphPropertyToDisplayOptions.Insert(0, String.Format(option, DirectoryObjectProperty.NotSet, selectNotSet, DirectoryObjectProperty.NotSet));
 
-            htmlCellGraphProperty = String.Format(HtmlCellGraphProperty, azureObject.Value.DirectoryObjectProperty, azureObject.Key, graphPropertyOptions.ToString());
-            string graphPropertyToDisplaySpanDisplay = azureObject.Value.DirectoryObjectPropertyToShowAsDisplayText == AzureADObjectProperty.NotSet ? String.Empty : azureObject.Value.DirectoryObjectPropertyToShowAsDisplayText.ToString();
+            htmlCellGraphProperty = String.Format(HtmlCellGraphProperty, azureObject.Value.EntityProperty, azureObject.Key, graphPropertyOptions.ToString());
+            string graphPropertyToDisplaySpanDisplay = azureObject.Value.EntityPropertyToUseAsDisplayText == DirectoryObjectProperty.NotSet ? String.Empty : azureObject.Value.EntityPropertyToUseAsDisplayText.ToString();
             htmlCellGraphPropertyToDisplay = String.Format(HtmlCellGraphPropertyToDisplay, graphPropertyToDisplaySpanDisplay, azureObject.Key, graphPropertyToDisplayOptions.ToString());
             htmlCellDirectoryObjectType = String.Format(HtmlCellDirectoryObjectType, azureObject.Value.EntityType, azureObject.Key, directoryObjectTypeOptions.ToString());
         }
@@ -400,16 +400,16 @@ namespace Yvand.ClaimsProviders.Administration
             newCTConfig.PrefixToBypassLookup = formData["input_PrefixToBypassLookup_" + itemId];
             newCTConfig.EntityDataKey = formData["list_Metadata_" + itemId];
 
-            AzureADObjectProperty prop;
-            bool convertSuccess = Enum.TryParse<AzureADObjectProperty>(formData["list_graphproperty_" + itemId], out prop);
+            DirectoryObjectProperty prop;
+            bool convertSuccess = Enum.TryParse<DirectoryObjectProperty>(formData["list_graphproperty_" + itemId], out prop);
             if (convertSuccess)
             {
-                newCTConfig.DirectoryObjectProperty = prop;
+                newCTConfig.EntityProperty = prop;
             }
-            convertSuccess = Enum.TryParse<AzureADObjectProperty>(formData["list_GraphPropertyToDisplay_" + itemId], out prop);
+            convertSuccess = Enum.TryParse<DirectoryObjectProperty>(formData["list_GraphPropertyToDisplay_" + itemId], out prop);
             if (convertSuccess)
             {
-                newCTConfig.DirectoryObjectPropertyToShowAsDisplayText = prop;
+                newCTConfig.EntityPropertyToUseAsDisplayText = prop;
             }
 
             try
@@ -442,8 +442,8 @@ namespace Yvand.ClaimsProviders.Administration
         protected void BtnCreateNewItem_Click(object sender, EventArgs e)
         {
             string newClaimType = TxtNewClaimType.Text.Trim();
-            AzureADObjectProperty newDirectoryObjectProp;
-            Enum.TryParse<AzureADObjectProperty>(DdlNewGraphProperty.SelectedValue, out newDirectoryObjectProp);
+            DirectoryObjectProperty newDirectoryObjectProp;
+            Enum.TryParse<DirectoryObjectProperty>(DdlNewGraphProperty.SelectedValue, out newDirectoryObjectProp);
             DirectoryObjectType newDirectoryObjectType;
             Enum.TryParse<DirectoryObjectType>(DdlNewDirectoryObjectType.SelectedValue, out newDirectoryObjectType);
             bool useMainClaimTypeOfDirectoryObject = false;
@@ -477,12 +477,12 @@ namespace Yvand.ClaimsProviders.Administration
 
             ClaimTypeConfig newCTConfig = new ClaimTypeConfig();
             newCTConfig.ClaimType = newClaimType;
-            newCTConfig.DirectoryObjectProperty = newDirectoryObjectProp;
+            newCTConfig.EntityProperty = newDirectoryObjectProp;
             newCTConfig.EntityType = newDirectoryObjectType;
             newCTConfig.UseMainClaimTypeOfDirectoryObject = useMainClaimTypeOfDirectoryObject;
             newCTConfig.EntityDataKey = DdlNewEntityMetadata.SelectedValue;
-            bool convertSuccess = Enum.TryParse<AzureADObjectProperty>(DdlNewGraphPropertyToDisplay.SelectedValue, out newDirectoryObjectProp);
-            newCTConfig.DirectoryObjectPropertyToShowAsDisplayText = convertSuccess ? newDirectoryObjectProp : AzureADObjectProperty.NotSet;
+            bool convertSuccess = Enum.TryParse<DirectoryObjectProperty>(DdlNewGraphPropertyToDisplay.SelectedValue, out newDirectoryObjectProp);
+            newCTConfig.EntityPropertyToUseAsDisplayText = convertSuccess ? newDirectoryObjectProp : DirectoryObjectProperty.NotSet;
 
             try
             {

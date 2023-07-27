@@ -72,16 +72,16 @@ namespace Yvand.ClaimsProviders.Administration
 
         private void PopulateFields()
         {
-            if (Configuration.IdentityClaimTypeConfig.DirectoryObjectPropertyToShowAsDisplayText == AzureADObjectProperty.NotSet)
+            if (Configuration.IdentityClaimTypeConfig.EntityPropertyToUseAsDisplayText == DirectoryObjectProperty.NotSet)
             {
                 this.RbIdentityDefault.Checked = true;
             }
             else
             {
                 this.RbIdentityCustomGraphProperty.Checked = true;
-                this.DDLGraphPropertyToDisplay.Items.FindByValue(((int)Configuration.IdentityClaimTypeConfig.DirectoryObjectPropertyToShowAsDisplayText).ToString()).Selected = true;
+                this.DDLGraphPropertyToDisplay.Items.FindByValue(((int)Configuration.IdentityClaimTypeConfig.EntityPropertyToUseAsDisplayText).ToString()).Selected = true;
             }
-            this.DDLDirectoryPropertyMemberUsers.Items.FindByValue(((int)Configuration.IdentityClaimTypeConfig.DirectoryObjectProperty).ToString()).Selected = true;
+            this.DDLDirectoryPropertyMemberUsers.Items.FindByValue(((int)Configuration.IdentityClaimTypeConfig.EntityProperty).ToString()).Selected = true;
             this.DDLDirectoryPropertyGuestUsers.Items.FindByValue(((int)Configuration.IdentityClaimTypeConfig.DirectoryObjectPropertyForGuestUsers).ToString()).Selected = true;
             this.ChkAlwaysResolveUserInput.Checked = Configuration.AlwaysResolveUserInput;
             this.ChkFilterExactMatchOnly.Checked = Configuration.FilterExactMatchOnly;
@@ -100,9 +100,9 @@ namespace Yvand.ClaimsProviders.Administration
 
         private void BuildGraphPropertyDDL()
         {
-            AzureADObjectProperty[] aadPropValues = (AzureADObjectProperty[])Enum.GetValues(typeof(AzureADObjectProperty));
-            IEnumerable<AzureADObjectProperty> aadPropValuesSorted = aadPropValues.OrderBy(v => v.ToString());
-            foreach (AzureADObjectProperty prop in aadPropValuesSorted)
+            DirectoryObjectProperty[] aadPropValues = (DirectoryObjectProperty[])Enum.GetValues(typeof(DirectoryObjectProperty));
+            IEnumerable<DirectoryObjectProperty> aadPropValuesSorted = aadPropValues.OrderBy(v => v.ToString());
+            foreach (DirectoryObjectProperty prop in aadPropValuesSorted)
             {
                 // Ensure property exists for the User object type
                 if (AzureCPSE.GetPropertyValue(new User(), prop.ToString()) == null) { continue; }
@@ -141,21 +141,21 @@ namespace Yvand.ClaimsProviders.Administration
 
             if (this.RbIdentityCustomGraphProperty.Checked)
             {
-                Configuration.IdentityClaimTypeConfig.DirectoryObjectPropertyToShowAsDisplayText = (AzureADObjectProperty)Convert.ToInt32(this.DDLGraphPropertyToDisplay.SelectedValue);
+                Configuration.IdentityClaimTypeConfig.EntityPropertyToUseAsDisplayText = (DirectoryObjectProperty)Convert.ToInt32(this.DDLGraphPropertyToDisplay.SelectedValue);
             }
             else
             {
-                Configuration.IdentityClaimTypeConfig.DirectoryObjectPropertyToShowAsDisplayText = AzureADObjectProperty.NotSet;
+                Configuration.IdentityClaimTypeConfig.EntityPropertyToUseAsDisplayText = DirectoryObjectProperty.NotSet;
             }
 
-            AzureADObjectProperty newUserIdentifier = (AzureADObjectProperty)Convert.ToInt32(this.DDLDirectoryPropertyMemberUsers.SelectedValue);
-            if (newUserIdentifier != AzureADObjectProperty.NotSet)
+            DirectoryObjectProperty newUserIdentifier = (DirectoryObjectProperty)Convert.ToInt32(this.DDLDirectoryPropertyMemberUsers.SelectedValue);
+            if (newUserIdentifier != DirectoryObjectProperty.NotSet)
             {
                 Configuration.ClaimTypes.UpdateUserIdentifier(newUserIdentifier);
             }
 
-            AzureADObjectProperty newIdentifierForGuestUsers = (AzureADObjectProperty)Convert.ToInt32(this.DDLDirectoryPropertyGuestUsers.SelectedValue);
-            if (newIdentifierForGuestUsers != AzureADObjectProperty.NotSet)
+            DirectoryObjectProperty newIdentifierForGuestUsers = (DirectoryObjectProperty)Convert.ToInt32(this.DDLDirectoryPropertyGuestUsers.SelectedValue);
+            if (newIdentifierForGuestUsers != DirectoryObjectProperty.NotSet)
             {
                 Configuration.ClaimTypes.UpdateIdentifierForGuestUsers(newIdentifierForGuestUsers);
             }

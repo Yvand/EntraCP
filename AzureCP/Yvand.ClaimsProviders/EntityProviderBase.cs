@@ -40,7 +40,7 @@ namespace Yvand.ClaimsProviders
         /// <param name="currentContext"></param>
         /// <param name="groupClaimTypeConfig"></param>
         /// <returns></returns>
-        public abstract Task<List<string>> GetEntityGroupsAsync(OperationContext currentContext, AzureADObjectProperty groupClaimTypeConfig);
+        public abstract Task<List<string>> GetEntityGroupsAsync(OperationContext currentContext, DirectoryObjectProperty groupClaimTypeConfig);
 
         public EntityProviderBase(string claimsProviderName)
         {
