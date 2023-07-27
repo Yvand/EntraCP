@@ -12,8 +12,14 @@ namespace Yvand.ClaimsProviders
     public abstract class EntityProviderBase<TConfiguration>
     where TConfiguration : EntityProviderConfiguration
     {
+        /// <summary>
+        /// The local configuration, which is a copy of the global configuration stored in a persisted object
+        /// </summary>
         public TConfiguration LocalConfiguration { get; private set; }
-        public long LocalConfigurationVersion = 0;
+        /// <summary>
+        /// The version of the local configuration
+        /// </summary>
+        public long LocalConfigurationVersion { get; private set; }
         public string ClaimsProviderName { get; set; }
         public abstract Task<List<DirectoryObject>> SearchOrValidateEntitiesAsync(OperationContext currentContext);
         /// <summary>

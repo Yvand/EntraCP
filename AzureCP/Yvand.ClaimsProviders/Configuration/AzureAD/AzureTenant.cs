@@ -120,13 +120,22 @@ namespace Yvand.ClaimsProviders.Configuration.AzureAD
         [Persisted]
         private byte[] ClientCertificatePrivateKeyRawData;
 
-        public Uri CloudInstance
+        public Uri AzureAuthority
         {
-            get => new Uri(this._CloudInstance);
-            set => _CloudInstance = value.ToString();
+            get => new Uri(this._AzureAuthority);
+            set => _AzureAuthority = value.ToString();
         }
         [Persisted]
-        private string _CloudInstance = AzureAuthorityHosts.AzurePublicCloud.ToString();
+        private string _AzureAuthority = AzureAuthorityHosts.AzurePublicCloud.ToString();
+        public AzureCloudInstance CloudInstance
+        {
+            get
+            {
+                if (AzureAuthority == null) { return AzureCloudInstance.AzurePublic; }
+                KeyValuePair<AzureCloudInstance, Uri> kvp = ClaimsProviderConstants.AzureCloudEndpoints.FirstOrDefault(item => item.Value.Equals(this.AzureAuthority));
+                return kvp.Equals(default(KeyValuePair<AzureCloudInstance, Uri>)) ? AzureCloudInstance.AzurePublic : kvp.Key;
+            }
+        }
 
         public GraphServiceClient GraphService { get; private set; }
 
@@ -169,7 +178,7 @@ namespace Yvand.ClaimsProviders.Configuration.AzureAD
                     webProxy = new WebProxy(new Uri(proxyAddress));
                     HttpClientHandler clientProxy = new HttpClientHandler { Proxy = webProxy };
                     clientTransportProxy = new HttpClientTransport(clientProxy);
-                }                
+                }
 
                 var handlers = GraphClientFactory.CreateDefaultHandlers();
 #if DEBUG
@@ -177,7 +186,7 @@ namespace Yvand.ClaimsProviders.Configuration.AzureAD
 #endif
 
                 ClientSecretCredentialOptions options = new ClientSecretCredentialOptions();
-                options.AuthorityHost = this.CloudInstance;
+                options.AuthorityHost = this.AzureAuthority;
                 if (clientTransportProxy != null) { options.Transport = clientTransportProxy; }
 
                 TokenCredential tokenCredential;

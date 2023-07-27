@@ -262,6 +262,15 @@
 			<asp:Checkbox Runat="server" Name="ChkAugmentAADRoles" ID="ChkAugmentAADRoles" Text="Retrieve Azure AD groups" />
 		</template_inputformcontrols>
     </wssuc:inputformsection>
+    <wssuc:inputformsection runat="server" title="Proxy" >
+		<template_description>
+			<wssawc:EncodedLiteral runat="server" text="Configure the proxy if it is needed for AzureCP to connect to Microsoft Graph." EncodeMethod='HtmlEncodeAllowSimpleTextFormatting'/>
+		</template_description>
+        <template_inputformcontrols>
+            <label for="<%= InputProxyAddress.ClientID %>">Proxy address:</label><br/>
+            <wssawc:InputFormTextBox title="Proxy address" class="ms-input" ID="InputProxyAddress" Columns="50" Runat="server" />
+		</template_inputformcontrols>
+    </wssuc:inputformsection>
     <wssuc:inputformsection runat="server" title="Type of groups">
         <template_description>
 			<wssawc:EncodedLiteral runat="server" text="Set if all " EncodeMethod='HtmlEncodeAllowSimpleTextFormatting'/>

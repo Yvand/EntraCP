@@ -8,10 +8,10 @@
 <asp:Content ID="PageHead" ContentPlaceHolderID="PlaceHolderAdditionalPageHead" runat="server">
 </asp:Content>
 <asp:Content ID="PageTitle" ContentPlaceHolderID="PlaceHolderPageTitle" runat="server">
-    Claim types configuration for AzureCP
+    Claim types configuration for AzureCPSE
 </asp:Content>
 <asp:Content ID="PageTitleInTitleArea" ContentPlaceHolderID="PlaceHolderPageTitleInTitleArea" runat="server">
-    <%= String.Format("AzureCP {0} - <a href=\"{1}\" target=\"_blank\">Visit AzureCP site</a>", FileVersionInfo.GetVersionInfo(Assembly.GetAssembly(typeof(AzureCPSE)).Location).FileVersion, ClaimsProviderConstants.PUBLICSITEURL) %>
+    <%= String.Format("AzureCPSE {0} - <a href=\"{1}\" target=\"_blank\">Visit AzureCP site</a>", FileVersionInfo.GetVersionInfo(Assembly.GetAssembly(typeof(AzureCPSE)).Location).FileVersion, ClaimsProviderConstants.PUBLICSITEURL) %>
 </asp:Content>
 <asp:Content ID="Main" ContentPlaceHolderID="PlaceHolderMain" runat="server">
     <table border="0" cellspacing="0" cellpadding="0" width="100%">

@@ -87,6 +87,7 @@ namespace Yvand.ClaimsProviders.Administration
             this.ChkFilterExactMatchOnly.Checked = Configuration.FilterExactMatchOnly;
             this.ChkAugmentAADRoles.Checked = Configuration.EnableAugmentation;
             this.ChkFilterSecurityEnabledGroupsOnly.Checked = Configuration.FilterSecurityEnabledGroupsOnly;
+            this.InputProxyAddress.Text = Configuration.ProxyAddress;
 
             AzureCloudInstance[] azureCloudInstanceValues = (AzureCloudInstance[])Enum.GetValues(typeof(AzureCloudInstance));
             foreach (var azureCloudInstanceValue in azureCloudInstanceValues)
@@ -163,6 +164,7 @@ namespace Yvand.ClaimsProviders.Administration
             Configuration.FilterExactMatchOnly = this.ChkFilterExactMatchOnly.Checked;
             Configuration.EnableAugmentation = this.ChkAugmentAADRoles.Checked;
             Configuration.FilterSecurityEnabledGroupsOnly = this.ChkFilterSecurityEnabledGroupsOnly.Checked;
+            Configuration.ProxyAddress = this.InputProxyAddress.Text;
 
             if (commitChanges) { CommitChanges(); }
             return true;
@@ -313,7 +315,7 @@ namespace Yvand.ClaimsProviders.Administration
                     ExcludeGuestUsers = this.ChkMemberUserTypeOnly.Checked,
                     ClientCertificatePrivateKey = cert,
                     //CloudInstance = (AzureCloudInstance)Enum.Parse(typeof(AzureCloudInstance), this.DDLAzureCloudInstance.SelectedValue),
-                    CloudInstance = cloudInstance,
+                    AzureAuthority = cloudInstance,
                     ExtensionAttributesApplicationId = string.IsNullOrWhiteSpace(this.TxtExtensionAttributesApplicationId.Text) ? Guid.Empty : Guid.Parse(this.TxtExtensionAttributesApplicationId.Text)
                 });
 

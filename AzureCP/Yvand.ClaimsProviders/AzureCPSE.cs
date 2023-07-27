@@ -34,21 +34,30 @@ namespace Yvand.ClaimsProviders
 
         public AzureCPSE(string displayName) : base(displayName) { }
 
-        public static AzureADEntityProviderConfiguration GetGlobalConfiguration(bool initializeRuntimeSettings = false)
+        public static AzureADEntityProviderConfiguration GetConfiguration(bool initializeRuntimeSettings = false)
         {
-            AzureADEntityProviderConfiguration entityConfig = EntityProviderBase<AzureADEntityProviderConfiguration>.GetGlobalConfiguration(ClaimsProviderConstants.CONFIGURATION_NAME, initializeRuntimeSettings);
-            return entityConfig;
+            AzureADEntityProviderConfiguration configuration = EntityProviderBase<AzureADEntityProviderConfiguration>.GetGlobalConfiguration(ClaimsProviderConstants.CONFIGURATION_NAME, initializeRuntimeSettings);
+            return configuration;
         }
 
-        public static void SaveGlobalConfiguration(AzureADEntityProviderConfiguration globalConfiguration)
+        public static void SaveConfiguration(AzureADEntityProviderConfiguration configuration)
         {
-            EntityProviderBase<AzureADEntityProviderConfiguration>.SaveGlobalConfiguration(globalConfiguration);
+            EntityProviderBase<AzureADEntityProviderConfiguration>.SaveGlobalConfiguration(configuration);
         }
 
-        public static AzureADEntityProviderConfiguration CreateGlobalConfiguration()
+        public static AzureADEntityProviderConfiguration CreateConfiguration()
         {
-            AzureADEntityProviderConfiguration globalConfiguration = EntityProviderBase<AzureADEntityProviderConfiguration>.CreateGlobalConfiguration(ClaimsProviderConstants.CONFIGURATION_ID, ClaimsProviderConstants.CONFIGURATION_NAME, ClaimsProviderName);
-            return globalConfiguration;
+            AzureADEntityProviderConfiguration configuration = EntityProviderBase<AzureADEntityProviderConfiguration>.CreateGlobalConfiguration(ClaimsProviderConstants.CONFIGURATION_ID, ClaimsProviderConstants.CONFIGURATION_NAME, ClaimsProviderName);
+            return configuration;
+        }
+
+        public static void DeleteConfiguration()
+        {
+            AzureADEntityProviderConfiguration configuration = EntityProviderBase<AzureADEntityProviderConfiguration>.GetGlobalConfiguration(ClaimsProviderConstants.CONFIGURATION_NAME);
+            if (configuration != null)
+            {
+                configuration.Delete();
+            }
         }
 
         public bool ValidateLocalConfiguration(Uri context, string[] entityTypes)
