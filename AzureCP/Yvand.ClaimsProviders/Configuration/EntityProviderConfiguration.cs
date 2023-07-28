@@ -304,6 +304,7 @@ namespace Yvand.ClaimsProviders.Configuration
 
         public override void Update()
         {
+            this.ValidateConfiguration();
             base.Update();
             this.RuntimeSettingsInitialized = false;
             ClaimsProviderLogging.Log($"Successfully updated configuration '{this.Name}' with Id {this.Id}", TraceSeverity.High, EventSeverity.Information, TraceCategory.Core);
@@ -311,10 +312,32 @@ namespace Yvand.ClaimsProviders.Configuration
 
         public override void Update(bool ensure)
         {
+            this.ValidateConfiguration();
             // If parameter ensure is true, the call will not throw if the object already exists.
             base.Update(ensure);
             this.RuntimeSettingsInitialized = false;
             ClaimsProviderLogging.Log($"Successfully updated configuration '{this.Name}' with Id {this.Id}", TraceSeverity.High, EventSeverity.Information, TraceCategory.Core);
+        }
+
+        /// <summary>
+        /// Ensures that the current configuration is valid and can be safely saved and used
+        /// </summary>
+        /// <exception cref="InvalidOperationException"></exception>
+        public virtual void ValidateConfiguration()
+        {
+            // In case ClaimTypes collection was modified, test if it is still valid before committed changes to database
+            try
+            {
+                ClaimTypeConfigCollection testUpdateCollection = new ClaimTypeConfigCollection(this.SPTrust);
+                foreach (ClaimTypeConfig curCTConfig in this.ClaimTypes)
+                {
+                    testUpdateCollection.Add(curCTConfig, false);
+                }
+            }
+            catch (InvalidOperationException ex)
+            {
+                throw new InvalidOperationException("Some changes made to list ClaimTypes are invalid and cannot be committed to configuration database. Inspect inner exception for more details about the error.", ex);
+            }
         }
 
         public override void Delete()
