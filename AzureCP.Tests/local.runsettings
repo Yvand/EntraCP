@@ -13,7 +13,7 @@
     <Parameter name="TestSiteCollectionName" value="AzureCP.UnitTests" />
     <Parameter name="TrustedGroupToAdd_ClaimType" value="http://schemas.microsoft.com/ws/2008/06/identity/claims/role" />
     <Parameter name="TrustedGroupToAdd_ClaimValue" value="30ef0958-c003-4667-a0ad-ef9783acaf25" />
-    <Parameter name="ClaimsProviderConfigName" value="AzureCPConfig" />
+    <Parameter name="ClaimsProviderConfigName" value="AzureCPSEConfig" />
     <Parameter name="TestLogFileName" value="AzureCPIntegrationTests.log" />
   </TestRunParameters>
 </RunSettings>

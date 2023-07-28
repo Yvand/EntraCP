@@ -166,51 +166,67 @@ namespace Yvand.ClaimsProviders.Configuration.AzureAD
         /// </summary>
         public void InitializeAuthentication(int timeout, string proxyAddress)
         {
-            try
+            if (String.IsNullOrWhiteSpace(this.ClientSecret) && this.ClientCertificateWithPrivateKey == null)
             {
-                WebProxy webProxy = null;
-                HttpClientTransport clientTransportProxy = null;
-                if (!String.IsNullOrWhiteSpace(proxyAddress))
-                {
-                    webProxy = new WebProxy(new Uri(proxyAddress));
-                    HttpClientHandler clientProxy = new HttpClientHandler { Proxy = webProxy };
-                    clientTransportProxy = new HttpClientTransport(clientProxy);
-                }
+                ClaimsProviderLogging.Log($"[{AzureCPSE.ClaimsProviderName}] Cannot initialize authentication for tenant {this.Name} because both properties {nameof(ClientSecret)} and {nameof(ClientCertificateWithPrivateKey)} are not set.", TraceSeverity.Unexpected, EventSeverity.Error, TraceCategory.Configuration);
+                return;
+            }
+            if (String.IsNullOrWhiteSpace(this.ClientId))
+            {
+                ClaimsProviderLogging.Log($"[{AzureCPSE.ClaimsProviderName}] Cannot initialize authentication for tenant {this.Name} because the property {nameof(ClientId)} is not set.", TraceSeverity.Unexpected, EventSeverity.Error, TraceCategory.Configuration);
+                return;
+            }
+            if (String.IsNullOrWhiteSpace(this.Name))
+            {
+                ClaimsProviderLogging.Log($"[{AzureCPSE.ClaimsProviderName}] Cannot initialize authentication because the property {nameof(Name)} of current tenant is not set.", TraceSeverity.Unexpected, EventSeverity.Error, TraceCategory.Configuration);
+                return;
+            }
+            
+            //try
+            //{
+            WebProxy webProxy = null;
+            HttpClientTransport clientTransportProxy = null;
+            if (!String.IsNullOrWhiteSpace(proxyAddress))
+            {
+                webProxy = new WebProxy(new Uri(proxyAddress));
+                HttpClientHandler clientProxy = new HttpClientHandler { Proxy = webProxy };
+                clientTransportProxy = new HttpClientTransport(clientProxy);
+            }
 
-                var handlers = GraphClientFactory.CreateDefaultHandlers();
+            var handlers = GraphClientFactory.CreateDefaultHandlers();
 #if DEBUG
-                handlers.Add(new ChaosHandler());
+            handlers.Add(new ChaosHandler());
 #endif
 
-                ClientSecretCredentialOptions options = new ClientSecretCredentialOptions();
-                options.AuthorityHost = this.AzureAuthority;
-                if (clientTransportProxy != null) { options.Transport = clientTransportProxy; }
+            ClientSecretCredentialOptions options = new ClientSecretCredentialOptions();
+            options.AuthorityHost = this.AzureAuthority;
+            if (clientTransportProxy != null) { options.Transport = clientTransportProxy; }
 
-                TokenCredential tokenCredential;
-                if (!String.IsNullOrWhiteSpace(_ClientSecret))
-                {
-                    tokenCredential = new ClientSecretCredential(this.Name, this.ClientId, this.ClientSecret, options);
-                }
-                else
-                {
-                    tokenCredential = new ClientCertificateCredential(this.Name, this.ClientId, this.ClientCertificateWithPrivateKey, options);
-                }
-
-                var scopes = new[] { "https://graph.microsoft.com/.default" };
-                HttpClient httpClient = GraphClientFactory.Create(handlers: handlers, proxy: webProxy);
-                httpClient.Timeout = TimeSpan.FromMilliseconds(timeout);
-
-                // https://learn.microsoft.com/en-us/graph/sdks/customize-client?tabs=csharp
-                var authProvider = new Microsoft.Graph.Authentication.AzureIdentityAuthenticationProvider(
-                    credential: tokenCredential,
-                    scopes: new[] { "https://graph.microsoft.com/.default",
-                });
-                this.GraphService = new GraphServiceClient(httpClient, authProvider);
-            }
-            catch (Exception ex)
+            TokenCredential tokenCredential;
+            if (!String.IsNullOrWhiteSpace(this.ClientSecret))
             {
-                ClaimsProviderLogging.LogException(AzureCPSE.ClaimsProviderName, $"while setting client context for tenant '{this.Name}'.", TraceCategory.Core, ex);
+                tokenCredential = new ClientSecretCredential(this.Name, this.ClientId, this.ClientSecret, options);
             }
+            else
+            {
+                tokenCredential = new ClientCertificateCredential(this.Name, this.ClientId, this.ClientCertificateWithPrivateKey, options);
+            }
+
+            var scopes = new[] { "https://graph.microsoft.com/.default" };
+            HttpClient httpClient = GraphClientFactory.Create(handlers: handlers, proxy: webProxy);
+            httpClient.Timeout = TimeSpan.FromMilliseconds(timeout);
+
+            // https://learn.microsoft.com/en-us/graph/sdks/customize-client?tabs=csharp
+            var authProvider = new Microsoft.Graph.Authentication.AzureIdentityAuthenticationProvider(
+                credential: tokenCredential,
+                scopes: new[] { "https://graph.microsoft.com/.default",
+            });
+            this.GraphService = new GraphServiceClient(httpClient, authProvider);
+            //}
+            //catch (Exception ex)
+            //{
+            //    ClaimsProviderLogging.LogException(AzureCPSE.ClaimsProviderName, $"while setting client context for tenant '{this.Name}'.", TraceCategory.Core, ex);
+            //}
         }
 
         /// <summary>

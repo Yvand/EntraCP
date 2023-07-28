@@ -22,7 +22,7 @@ namespace AzureCP.Tests
             Config = AzureCPSE.GetConfiguration();
             if (Config == null)
             {
-                Trace.TraceWarning($"{DateTime.Now.ToString("s")} Configuration {UnitTestsHelper.ClaimsProviderConfigName} does not exist, create it with default settings...");
+                Trace.TraceWarning($"{DateTime.Now.ToString("s")} Configuration for AzureCPSE does not exist, create it with default settings...");
                 Config = AzureCPSE.CreateConfiguration();
             }
             BackupConfig = Config.CopyConfiguration() as AzureADEntityProviderConfiguration;

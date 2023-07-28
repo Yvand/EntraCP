@@ -2,6 +2,7 @@
 using NUnit.Framework;
 using System;
 using System.Security.Claims;
+using Yvand.ClaimsProviders.Configuration;
 
 namespace AzureCP.Tests
 {
@@ -63,11 +64,11 @@ namespace AzureCP.Tests
             }
 
             int expectedResultCount = registrationData.ExpectedResultCount;
-            if (ExcludeGuestUsers && String.Equals(registrationData.UserType, UnitTestsHelper.GUEST_USERTYPE, StringComparison.InvariantCultureIgnoreCase))
+            if (ExcludeGuestUsers && String.Equals(registrationData.UserType, ClaimsProviderConstants.GUEST_USERTYPE, StringComparison.InvariantCultureIgnoreCase))
             {
                 expectedResultCount = 0;
             }
-            if (ExcludeMemberUsers && String.Equals(registrationData.UserType, UnitTestsHelper.MEMBER_USERTYPE, StringComparison.InvariantCultureIgnoreCase))
+            if (ExcludeMemberUsers && String.Equals(registrationData.UserType, ClaimsProviderConstants.MEMBER_USERTYPE, StringComparison.InvariantCultureIgnoreCase))
             {
                 expectedResultCount = 0;
             }
@@ -83,16 +84,16 @@ namespace AzureCP.Tests
             if (!TestValidation) { return; }
 
             bool shouldValidate = registrationData.ShouldValidate;
-            if (ExcludeGuestUsers && String.Equals(registrationData.UserType, UnitTestsHelper.GUEST_USERTYPE, StringComparison.InvariantCultureIgnoreCase))
+            if (ExcludeGuestUsers && String.Equals(registrationData.UserType, ClaimsProviderConstants.GUEST_USERTYPE, StringComparison.InvariantCultureIgnoreCase))
             {
                 shouldValidate = false;
             }
-            if (ExcludeMemberUsers && String.Equals(registrationData.UserType, UnitTestsHelper.MEMBER_USERTYPE, StringComparison.InvariantCultureIgnoreCase))
+            if (ExcludeMemberUsers && String.Equals(registrationData.UserType, ClaimsProviderConstants.MEMBER_USERTYPE, StringComparison.InvariantCultureIgnoreCase))
             {
                 shouldValidate = false;
             }
 
-            SPClaim inputClaim = new SPClaim(UnitTestsHelper.SPTrust.IdentityClaimTypeInformation.MappedClaimType, registrationData.ClaimValue, ClaimValueTypes.String, SPOriginalIssuers.Format(SPOriginalIssuerType.TrustedProvider, UnitTestsHelper.SPTrust.Name));
+            SPClaim inputClaim = new SPClaim(Config.SPTrust.IdentityClaimTypeInformation.MappedClaimType, registrationData.ClaimValue, ClaimValueTypes.String, SPOriginalIssuers.Format(SPOriginalIssuerType.TrustedProvider, Config.SPTrust.Name));
             UnitTestsHelper.TestValidationOperation(inputClaim, shouldValidate, registrationData.ClaimValue);
         }
 
@@ -102,7 +103,7 @@ namespace AzureCP.Tests
         {
             if (!TestAugmentation) { return; }
 
-            UnitTestsHelper.TestAugmentationOperation(UnitTestsHelper.SPTrust.IdentityClaimTypeInformation.MappedClaimType, registrationData.ClaimValue, registrationData.IsMemberOfTrustedGroup);
+            UnitTestsHelper.TestAugmentationOperation(Config.SPTrust.IdentityClaimTypeInformation.MappedClaimType, registrationData.ClaimValue, registrationData.IsMemberOfTrustedGroup);
         }
 
 #if DEBUG
@@ -132,7 +133,7 @@ namespace AzureCP.Tests
         {
             if (!TestValidation) { return; }
 
-            SPClaim inputClaim = new SPClaim(claimType, claimValue, ClaimValueTypes.String, SPOriginalIssuers.Format(SPOriginalIssuerType.TrustedProvider, UnitTestsHelper.SPTrust.Name));
+            SPClaim inputClaim = new SPClaim(claimType, claimValue, ClaimValueTypes.String, SPOriginalIssuers.Format(SPOriginalIssuerType.TrustedProvider, Config.SPTrust.Name));
             UnitTestsHelper.TestValidationOperation(inputClaim, shouldValidate, claimValue);
         }
 
@@ -141,7 +142,7 @@ namespace AzureCP.Tests
         {
             if (!TestAugmentation) { return; }
 
-            UnitTestsHelper.TestAugmentationOperation(UnitTestsHelper.SPTrust.IdentityClaimTypeInformation.MappedClaimType, claimValue, shouldHavePermissions);
+            UnitTestsHelper.TestAugmentationOperation(Config.SPTrust.IdentityClaimTypeInformation.MappedClaimType, claimValue, shouldHavePermissions);
         }
 #endif
     }

@@ -21,13 +21,11 @@ using Yvand.ClaimsProviders.Configuration.AzureAD;
 [SetUpFixture]
 public class UnitTestsHelper
 {
-    public static readonly AzureCPSE ClaimsProvider = new AzureCPSE(UnitTestsHelper.ClaimsProviderName);
-    public static string ClaimsProviderName => "AzureCPSE";
-    public static readonly string ClaimsProviderConfigName = TestContext.Parameters["ClaimsProviderConfigName"];
-    private static Uri TestSiteCollUri;
-    public static readonly string TestSiteRelativePath = $"/sites/{TestContext.Parameters["TestSiteCollectionName"]}";
+    public static readonly AzureCPSE ClaimsProvider = new AzureCPSE("AzureCPSE");
+    public static string TestSiteRelativePath => $"/sites/{TestContext.Parameters["TestSiteCollectionName"]}";
+    private static Uri TestSiteCollUri = new Uri($"http://spsites{TestSiteRelativePath}");
     public const int MaxTime = 50000;
-    public static readonly string FarmAdmin = TestContext.Parameters["FarmAdmin"];
+    public static string FarmAdmin => TestContext.Parameters["FarmAdmin"];
 #if DEBUG
     public const int TestRepeatCount = 1;
 #else
@@ -38,20 +36,17 @@ public class UnitTestsHelper
     public static string RandomClaimValue => "IDoNotExist";
     public static DirectoryObjectProperty RandomObjectProperty => DirectoryObjectProperty.AccountEnabled;
 
-    public static readonly string TrustedGroupToAdd_ClaimType = TestContext.Parameters["TrustedGroupToAdd_ClaimType"];
-    public static readonly string TrustedGroupToAdd_ClaimValue = TestContext.Parameters["TrustedGroupToAdd_ClaimValue"];
-    public static readonly SPClaim TrustedGroup = new SPClaim(TrustedGroupToAdd_ClaimType, TrustedGroupToAdd_ClaimValue, ClaimValueTypes.String, SPOriginalIssuers.Format(SPOriginalIssuerType.TrustedProvider, SPTrust.Name));
+    public static string TrustedGroupToAdd_ClaimType => TestContext.Parameters["TrustedGroupToAdd_ClaimType"];
+    public static string TrustedGroupToAdd_ClaimValue => TestContext.Parameters["TrustedGroupToAdd_ClaimValue"];
+    public static SPClaim TrustedGroup => new SPClaim(TrustedGroupToAdd_ClaimType, TrustedGroupToAdd_ClaimValue, ClaimValueTypes.String, SPOriginalIssuers.Format(SPOriginalIssuerType.TrustedProvider, ClaimsProvider.EntityProvider.Configuration.SPTrust.Name));
 
-    public static string GUEST_USERTYPE => ClaimsProviderConstants.GUEST_USERTYPE;
-    public static string MEMBER_USERTYPE => ClaimsProviderConstants.MEMBER_USERTYPE;
+    public static string AzureTenantsJsonFile => TestContext.Parameters["AzureTenantsJsonFile"];
+    public static string DataFile_GuestAccountsUPN_Search => TestContext.Parameters["DataFile_GuestAccountsUPN_Search"];
+    public static string DataFile_GuestAccountsUPN_Validate => TestContext.Parameters["DataFile_GuestAccountsUPN_Validate"];
+    public static string DataFile_AllAccounts_Search => TestContext.Parameters["DataFile_AllAccounts_Search"];
+    public static string DataFile_AllAccounts_Validate => TestContext.Parameters["DataFile_AllAccounts_Validate"];
 
-    public static readonly string AzureTenantsJsonFile = TestContext.Parameters["AzureTenantsJsonFile"];
-    public static readonly string DataFile_GuestAccountsUPN_Search = TestContext.Parameters["DataFile_GuestAccountsUPN_Search"];
-    public static readonly string DataFile_GuestAccountsUPN_Validate = TestContext.Parameters["DataFile_GuestAccountsUPN_Validate"];
-    public static readonly string DataFile_AllAccounts_Search = TestContext.Parameters["DataFile_AllAccounts_Search"];
-    public static readonly string DataFile_AllAccounts_Validate = TestContext.Parameters["DataFile_AllAccounts_Validate"];
-
-    public static SPTrustedLoginProvider SPTrust => SPSecurityTokenServiceManager.Local.TrustedLoginProviders.FirstOrDefault(x => String.Equals(x.ClaimProviderName, UnitTestsHelper.ClaimsProviderName, StringComparison.InvariantCultureIgnoreCase));
+    //public static SPTrustedLoginProvider SPTrust => SPSecurityTokenServiceManager.Local.TrustedLoginProviders.FirstOrDefault(x => String.Equals(x.ClaimProviderName, AzureCPSE.ClaimsProviderName, StringComparison.InvariantCultureIgnoreCase));
 
     static TextWriterTraceListener logFileListener;
 
@@ -61,27 +56,12 @@ public class UnitTestsHelper
         logFileListener = new TextWriterTraceListener(TestContext.Parameters["TestLogFileName"]);
         Trace.Listeners.Add(logFileListener);
         Trace.AutoFlush = true;
-        Trace.TraceInformation($"{DateTime.Now.ToString("s")} Start integration tests of {ClaimsProviderName} {FileVersionInfo.GetVersionInfo(Assembly.GetAssembly(typeof(AzureCPSE)).Location).FileVersion}.");
+        Trace.TraceInformation($"{DateTime.Now.ToString("s")} Start integration tests of {AzureCPSE.ClaimsProviderName} {FileVersionInfo.GetVersionInfo(Assembly.GetAssembly(typeof(AzureCPSE)).Location).FileVersion}.");
         Trace.WriteLine($"{DateTime.Now.ToString("s")} DataFile_AllAccounts_Search: {DataFile_AllAccounts_Search}");
         Trace.WriteLine($"{DateTime.Now.ToString("s")} DataFile_AllAccounts_Validate: {DataFile_AllAccounts_Validate}");
         Trace.WriteLine($"{DateTime.Now.ToString("s")} DataFile_GuestAccountsUPN_Search: {DataFile_GuestAccountsUPN_Search}");
         Trace.WriteLine($"{DateTime.Now.ToString("s")} DataFile_GuestAccountsUPN_Validate: {DataFile_GuestAccountsUPN_Validate}");
         Trace.WriteLine($"{DateTime.Now.ToString("s")} TestSiteCollectionName: {TestContext.Parameters["TestSiteCollectionName"]}");
-
-#if DEBUG
-        TestSiteCollUri = new Uri("http://spsites/sites/" + TestContext.Parameters["TestSiteCollectionName"]);
-        //return; // Uncommented when debugging AzureCP code from unit tests
-#endif
-
-
-        if (SPTrust == null)
-        {
-            Trace.TraceError($"{DateTime.Now.ToString("s")} SPTrust: is null");
-        }
-        else
-        {
-            Trace.WriteLine($"{DateTime.Now.ToString("s")} SPTrust: {SPTrust.Name}");
-        }
 
         AzureADEntityProviderConfiguration config = AzureCPSE.GetConfiguration();
         if (config == null)
@@ -89,8 +69,21 @@ public class UnitTestsHelper
             AzureCPSE.CreateConfiguration();
         }
 
-        var service = SPFarm.Local.Services.GetValue<SPWebService>(String.Empty);
-        SPWebApplication wa = service.WebApplications.FirstOrDefault();
+        ClaimsProvider.ValidateLocalConfiguration(null);
+        if (ClaimsProvider.EntityProvider.Configuration?.SPTrust == null)
+        {
+            Trace.TraceError($"{DateTime.Now.ToString("s")} SPTrust: is null");
+        }
+        else
+        {
+            Trace.WriteLine($"{DateTime.Now.ToString("s")} SPTrust: {ClaimsProvider.EntityProvider.Configuration.SPTrust.Name}");
+        }
+
+#if DEBUG
+        //return; // Uncommented when debugging AzureCP code from unit tests
+#endif
+
+        SPWebApplication wa = SPWebApplication.Lookup(new Uri(TestSiteCollUri.GetLeftPart(UriPartial.Authority)));
         if (wa != null)
         {
             Trace.WriteLine($"{DateTime.Now.ToString("s")} Web application {wa.Name} found.");
@@ -119,7 +112,7 @@ public class UnitTestsHelper
             if (!SPSite.Exists(TestSiteCollUri))
             {
                 Trace.WriteLine($"{DateTime.Now.ToString("s")} Creating site collection {TestSiteCollUri.AbsoluteUri}...");
-                SPSite spSite = wa.Sites.Add(TestSiteCollUri.AbsoluteUri, ClaimsProviderName, ClaimsProviderName, 1033, "STS#1", FarmAdmin, String.Empty, String.Empty);
+                SPSite spSite = wa.Sites.Add(TestSiteCollUri.AbsoluteUri, AzureCPSE.ClaimsProviderName, AzureCPSE.ClaimsProviderName, 1033, "STS#3", FarmAdmin, String.Empty, String.Empty);
                 spSite.RootWeb.CreateDefaultAssociatedGroups(FarmAdmin, FarmAdmin, spSite.RootWeb.Title);
 
                 SPGroup membersGroup = spSite.RootWeb.AssociatedMemberGroup;
@@ -144,7 +137,7 @@ public class UnitTestsHelper
     [OneTimeTearDown]
     public static void Cleanup()
     {
-        Trace.WriteLine($"{DateTime.Now.ToString("s")} Integration tests of {ClaimsProviderName} {FileVersionInfo.GetVersionInfo(Assembly.GetAssembly(typeof(AzureCPSE)).Location).FileVersion} finished.");
+        Trace.WriteLine($"{DateTime.Now.ToString("s")} Integration tests of {AzureCPSE.ClaimsProviderName} {FileVersionInfo.GetVersionInfo(Assembly.GetAssembly(typeof(AzureCPSE)).Location).FileVersion} finished.");
         Trace.Flush();
         if (logFileListener != null)
         {
@@ -154,7 +147,8 @@ public class UnitTestsHelper
 
     public static void InitializeConfiguration(AzureADEntityProviderConfiguration config)
     {
-        config.ResetCurrentConfiguration();
+        //config.ResetCurrentConfiguration();
+        config = AzureCPSE.CreateConfiguration();
 
 #if DEBUG
         config.Timeout = 99999;
@@ -163,6 +157,7 @@ public class UnitTestsHelper
         string json = File.ReadAllText(AzureTenantsJsonFile);
         List<AzureTenant> azureTenants = JsonConvert.DeserializeObject<List<AzureTenant>>(json);
         config.AzureTenants = azureTenants;
+        config.ProxyAddress = "http://localhost:8888";
         config.Update();
         Trace.WriteLine($"{DateTime.Now.ToString("s")} Set {config.AzureTenants.Count} Azure AD tenants to AzureCP configuration");
     }
@@ -258,7 +253,7 @@ public class UnitTestsHelper
         {
             Stopwatch timer = new Stopwatch();
             timer.Start();
-            SPClaim inputClaim = new SPClaim(claimType, claimValue, ClaimValueTypes.String, SPOriginalIssuers.Format(SPOriginalIssuerType.TrustedProvider, UnitTestsHelper.SPTrust.Name));
+            SPClaim inputClaim = new SPClaim(claimType, claimValue, ClaimValueTypes.String, SPOriginalIssuers.Format(SPOriginalIssuerType.TrustedProvider, ClaimsProvider.EntityProvider.Configuration.SPTrust.Name));
             Uri context = new Uri(UnitTestsHelper.TestSiteCollUri.AbsoluteUri);
 
             SPClaim[] groups = ClaimsProvider.GetClaimsForEntity(context, inputClaim);

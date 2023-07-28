@@ -335,7 +335,7 @@ namespace Yvand.ClaimsProviders.Configuration
         protected override void OnPostCreate()
         {
             base.OnPostCreate();
-            this.InitializeRuntimeSettings();
+            //this.InitializeRuntimeSettings();
         }
 
         // This method fires 3 times in a raw just when the configurationis updated, and anyway it bypassws the logic to update only if needed (and safely in regards to thread safety)
@@ -373,10 +373,10 @@ namespace Yvand.ClaimsProviders.Configuration
             return copy;
         }
 
-        public virtual void ResetCurrentConfiguration()
-        {
-
-        }
+        //public virtual void ResetCurrentConfiguration()
+        //{
+        //    throw new NotImplementedException();
+        //}
 
         public virtual ClaimTypeConfigCollection ReturnDefaultClaimTypesConfig()
         {

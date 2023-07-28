@@ -17,9 +17,9 @@ namespace AzureCP.Tests
             ClaimTypeConfig ctConfig = new ClaimTypeConfig();
 
             // Add a ClaimTypeConfig with a claim type already set should throw exception InvalidOperationException
-            ctConfig.ClaimType = UnitTestsHelper.SPTrust.IdentityClaimTypeInformation.MappedClaimType;
+            ctConfig.ClaimType = Config.SPTrust.IdentityClaimTypeInformation.MappedClaimType;
             ctConfig.EntityProperty = UnitTestsHelper.RandomObjectProperty;
-            Assert.Throws<InvalidOperationException>(() => Config.ClaimTypes.Add(ctConfig), $"Add a ClaimTypeConfig with a claim type already set should throw exception InvalidOperationException with this message: \"Claim type '{UnitTestsHelper.SPTrust.IdentityClaimTypeInformation.MappedClaimType}' already exists in the collection\"");
+            Assert.Throws<InvalidOperationException>(() => Config.ClaimTypes.Add(ctConfig), $"Add a ClaimTypeConfig with a claim type already set should throw exception InvalidOperationException with this message: \"Claim type '{Config.SPTrust.IdentityClaimTypeInformation.MappedClaimType}' already exists in the collection\"");
 
             // Add a ClaimTypeConfig with UseMainClaimTypeOfDirectoryObject = false (default value) and DirectoryObjectProperty not set should throw exception InvalidOperationException
             ctConfig.ClaimType = UnitTestsHelper.RandomClaimType;
@@ -57,12 +57,12 @@ namespace AzureCP.Tests
         public void ModifyOrDeleteIdentityClaimTypeConfig()
         {
             // Delete identity claim type from ClaimTypes list based on its claim type should throw exception InvalidOperationException
-            string identityClaimType = UnitTestsHelper.SPTrust.IdentityClaimTypeInformation.MappedClaimType;
-            Assert.Throws<InvalidOperationException>(() => Config.ClaimTypes.Remove(identityClaimType), $"Delete identity claim type from ClaimTypes list should throw exception InvalidOperationException with this message: \"Cannot delete claim type \"{UnitTestsHelper.SPTrust.IdentityClaimTypeInformation.MappedClaimType}\" because it is the identity claim type of \"{UnitTestsHelper.SPTrust.Name}\"\"");
+            string identityClaimType = Config.SPTrust.IdentityClaimTypeInformation.MappedClaimType;
+            Assert.Throws<InvalidOperationException>(() => Config.ClaimTypes.Remove(identityClaimType), $"Delete identity claim type from ClaimTypes list should throw exception InvalidOperationException with this message: \"Cannot delete claim type \"{Config.SPTrust.IdentityClaimTypeInformation.MappedClaimType}\" because it is the identity claim type of \"{Config.SPTrust.Name}\"\"");
 
             // Delete identity claim type from ClaimTypes list based on its ClaimTypeConfig should throw exception InvalidOperationException
-            ClaimTypeConfig identityCTConfig = Config.ClaimTypes.FirstOrDefault(x => String.Equals(UnitTestsHelper.SPTrust.IdentityClaimTypeInformation.MappedClaimType, x.ClaimType, StringComparison.InvariantCultureIgnoreCase));
-            Assert.Throws<InvalidOperationException>(() => Config.ClaimTypes.Remove(identityClaimType), $"Delete identity claim type from ClaimTypes list should throw exception InvalidOperationException with this message: \"Cannot delete claim type \"{UnitTestsHelper.SPTrust.IdentityClaimTypeInformation.MappedClaimType}\" because it is the identity claim type of \"{UnitTestsHelper.SPTrust.Name}\"\"");
+            ClaimTypeConfig identityCTConfig = Config.ClaimTypes.FirstOrDefault(x => String.Equals(Config.SPTrust.IdentityClaimTypeInformation.MappedClaimType, x.ClaimType, StringComparison.InvariantCultureIgnoreCase));
+            Assert.Throws<InvalidOperationException>(() => Config.ClaimTypes.Remove(identityClaimType), $"Delete identity claim type from ClaimTypes list should throw exception InvalidOperationException with this message: \"Cannot delete claim type \"{Config.SPTrust.IdentityClaimTypeInformation.MappedClaimType}\" because it is the identity claim type of \"{Config.SPTrust.Name}\"\"");
 
             // Modify identity ClaimTypeConfig to set its EntityType to Group should throw exception InvalidOperationException
             identityCTConfig.EntityType = DirectoryObjectType.Group;
