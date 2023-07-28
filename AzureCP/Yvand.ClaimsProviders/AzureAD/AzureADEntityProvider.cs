@@ -456,17 +456,29 @@ namespace Yvand.ClaimsProviders.AzureAD
                             userCollectionResult,
                             (user) =>
                             {
-                                lock (lockAddResultToCollection)
+                                bool addUser = false;
+                                if (tenant.ExcludeMemberUsers == true)
                                 {
-                                    if (tenant.ExcludeMemberUsers == true && !String.Equals(user.UserType, ClaimsProviderConstants.MEMBER_USERTYPE, StringComparison.InvariantCultureIgnoreCase))
+                                    if (!String.Equals(user.UserType, ClaimsProviderConstants.MEMBER_USERTYPE, StringComparison.InvariantCultureIgnoreCase))
                                     {
-                                        tenantResults.Add(user);
+                                        addUser = true;
                                     }
-                                    else if (tenant.ExcludeGuestUsers == true && !String.Equals(user.UserType, ClaimsProviderConstants.GUEST_USERTYPE, StringComparison.InvariantCultureIgnoreCase))
+                                }
+                                else if (tenant.ExcludeGuestUsers == true)
+                                {
+                                    if (!String.Equals(user.UserType, ClaimsProviderConstants.GUEST_USERTYPE, StringComparison.InvariantCultureIgnoreCase))
                                     {
-                                        tenantResults.Add(user);
+                                        addUser = true;
                                     }
-                                    else
+                                }
+                                else
+                                {
+                                    addUser = true;
+                                }
+
+                                if (addUser)
+                                {
+                                    lock (lockAddResultToCollection)
                                     {
                                         tenantResults.Add(user);
                                     }
