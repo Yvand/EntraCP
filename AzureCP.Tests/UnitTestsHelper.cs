@@ -1,5 +1,4 @@
-﻿using Yvand.ClaimsProviders;
-using DataAccess;
+﻿using DataAccess;
 using Microsoft.SharePoint;
 using Microsoft.SharePoint.Administration;
 using Microsoft.SharePoint.Administration.Claims;
@@ -7,7 +6,6 @@ using Microsoft.SharePoint.WebControls;
 using Newtonsoft.Json;
 using NUnit.Framework;
 using System;
-using System.Collections;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
@@ -15,6 +13,7 @@ using System.Linq;
 using System.Reflection;
 using System.Security.Claims;
 using System.Text;
+using Yvand.ClaimsProviders;
 using Yvand.ClaimsProviders.Configuration;
 using Yvand.ClaimsProviders.Configuration.AzureAD;
 
@@ -23,7 +22,7 @@ public class UnitTestsHelper
 {
     public static readonly AzureCPSE ClaimsProvider = new AzureCPSE("AzureCPSE");
     public static string TestSiteRelativePath => $"/sites/{TestContext.Parameters["TestSiteCollectionName"]}";
-    private static Uri TestSiteCollUri = new Uri($"http://spsites{TestSiteRelativePath}");
+    private static Uri TestSiteCollUri;
     public const int MaxTime = 50000;
     public static string FarmAdmin => TestContext.Parameters["FarmAdmin"];
 #if DEBUG
@@ -45,10 +44,7 @@ public class UnitTestsHelper
     public static string DataFile_GuestAccountsUPN_Validate => TestContext.Parameters["DataFile_GuestAccountsUPN_Validate"];
     public static string DataFile_AllAccounts_Search => TestContext.Parameters["DataFile_AllAccounts_Search"];
     public static string DataFile_AllAccounts_Validate => TestContext.Parameters["DataFile_AllAccounts_Validate"];
-
-    //public static SPTrustedLoginProvider SPTrust => SPSecurityTokenServiceManager.Local.TrustedLoginProviders.FirstOrDefault(x => String.Equals(x.ClaimProviderName, AzureCPSE.ClaimsProviderName, StringComparison.InvariantCultureIgnoreCase));
-
-    static TextWriterTraceListener logFileListener;
+    static TextWriterTraceListener logFileListener { get; set; }
 
     [OneTimeSetUp]
     public static void InitializeSiteCollection()
@@ -83,54 +79,63 @@ public class UnitTestsHelper
         //return; // Uncommented when debugging AzureCP code from unit tests
 #endif
 
-        SPWebApplication wa = SPWebApplication.Lookup(new Uri(TestSiteCollUri.GetLeftPart(UriPartial.Authority)));
-        if (wa != null)
+        var service = SPFarm.Local.Services.GetValue<SPWebService>(String.Empty);
+        SPWebApplication wa = service.WebApplications.FirstOrDefault(x =>
         {
-            Trace.WriteLine($"{DateTime.Now.ToString("s")} Web application {wa.Name} found.");
-            SPClaimProviderManager claimMgr = SPClaimProviderManager.Local;
-            string encodedClaim = claimMgr.EncodeClaim(TrustedGroup);
-            SPUserInfo userInfo = new SPUserInfo { LoginName = encodedClaim, Name = TrustedGroupToAdd_ClaimValue };
-
-            // The root site may not exist, but it must be present for tests to run
-            Uri rootWebAppUri = wa.GetResponseUri(0);
-            if (!SPSite.Exists(rootWebAppUri))
+            foreach (var iisSetting in x.IisSettings.Values)
             {
-                Trace.WriteLine($"{DateTime.Now.ToString("s")} Creating root site collection {rootWebAppUri.AbsoluteUri}...");
-                SPSite spSite = wa.Sites.Add(rootWebAppUri.AbsoluteUri, "root", "root", 1033, "STS#1", FarmAdmin, String.Empty, String.Empty);
-                spSite.RootWeb.CreateDefaultAssociatedGroups(FarmAdmin, FarmAdmin, spSite.RootWeb.Title);
-
-                SPGroup membersGroup = spSite.RootWeb.AssociatedMemberGroup;
-                membersGroup.AddUser(userInfo.LoginName, userInfo.Email, userInfo.Name, userInfo.Notes);
-                spSite.Dispose();
-            }
-
-            if (!Uri.TryCreate(rootWebAppUri, TestSiteRelativePath, out TestSiteCollUri))
-            {
-                Trace.TraceError($"{DateTime.Now.ToString("s")} Unable to generate Uri of test site collection from Web application Uri {rootWebAppUri.AbsolutePath} and relative path {TestSiteRelativePath}.");
-            }
-
-            if (!SPSite.Exists(TestSiteCollUri))
-            {
-                Trace.WriteLine($"{DateTime.Now.ToString("s")} Creating site collection {TestSiteCollUri.AbsoluteUri}...");
-                SPSite spSite = wa.Sites.Add(TestSiteCollUri.AbsoluteUri, AzureCPSE.ClaimsProviderName, AzureCPSE.ClaimsProviderName, 1033, "STS#3", FarmAdmin, String.Empty, String.Empty);
-                spSite.RootWeb.CreateDefaultAssociatedGroups(FarmAdmin, FarmAdmin, spSite.RootWeb.Title);
-
-                SPGroup membersGroup = spSite.RootWeb.AssociatedMemberGroup;
-                membersGroup.AddUser(userInfo.LoginName, userInfo.Email, userInfo.Name, userInfo.Notes);
-                spSite.Dispose();
-            }
-            else
-            {
-                using (SPSite spSite = new SPSite(TestSiteCollUri.AbsoluteUri))
+                foreach (SPAuthenticationProvider authenticationProviders in iisSetting.ClaimsAuthenticationProviders)
                 {
-                    SPGroup membersGroup = spSite.RootWeb.AssociatedMemberGroup;
-                    membersGroup.AddUser(userInfo.LoginName, userInfo.Email, userInfo.Name, userInfo.Notes);
+                    if (String.Equals(authenticationProviders.ClaimProviderName, AzureCPSE.ClaimsProviderName, StringComparison.OrdinalIgnoreCase))
+                    {
+                        return true;
+                    }
                 }
             }
+            return false;
+        });
+        if (wa == null)
+        {
+            Trace.TraceError($"{DateTime.Now.ToString("s")} Web application was NOT found.");
+            return;
+        }
+
+        Trace.WriteLine($"{DateTime.Now.ToString("s")} Web application {wa.Name} found.");
+        Uri waRootAuthority = wa.AlternateUrls[0].Uri;
+        TestSiteCollUri = new Uri($"{waRootAuthority.GetLeftPart(UriPartial.Authority)}{TestSiteRelativePath}");
+        SPClaimProviderManager claimMgr = SPClaimProviderManager.Local;
+        string encodedClaim = claimMgr.EncodeClaim(TrustedGroup);
+        SPUserInfo userInfo = new SPUserInfo { LoginName = encodedClaim, Name = TrustedGroupToAdd_ClaimValue };
+
+        // The root site may not exist, but it must be present for tests to run
+        if (!SPSite.Exists(waRootAuthority))
+        {
+            Trace.WriteLine($"{DateTime.Now.ToString("s")} Creating root site collection {waRootAuthority.AbsoluteUri}...");
+            SPSite spSite = wa.Sites.Add(waRootAuthority.AbsoluteUri, "root", "root", 1033, "STS#3", FarmAdmin, String.Empty, String.Empty);
+            spSite.RootWeb.CreateDefaultAssociatedGroups(FarmAdmin, FarmAdmin, spSite.RootWeb.Title);
+
+            SPGroup membersGroup = spSite.RootWeb.AssociatedMemberGroup;
+            membersGroup.AddUser(userInfo.LoginName, userInfo.Email, userInfo.Name, userInfo.Notes);
+            spSite.Dispose();
+        }
+
+        if (!SPSite.Exists(TestSiteCollUri))
+        {
+            Trace.WriteLine($"{DateTime.Now.ToString("s")} Creating site collection {TestSiteCollUri.AbsoluteUri}...");
+            SPSite spSite = wa.Sites.Add(TestSiteCollUri.AbsoluteUri, AzureCPSE.ClaimsProviderName, AzureCPSE.ClaimsProviderName, 1033, "STS#3", FarmAdmin, String.Empty, String.Empty);
+            spSite.RootWeb.CreateDefaultAssociatedGroups(FarmAdmin, FarmAdmin, spSite.RootWeb.Title);
+
+            SPGroup membersGroup = spSite.RootWeb.AssociatedMemberGroup;
+            membersGroup.AddUser(userInfo.LoginName, userInfo.Email, userInfo.Name, userInfo.Notes);
+            spSite.Dispose();
         }
         else
         {
-            Trace.TraceError($"{DateTime.Now.ToString("s")} Web application was NOT found.");
+            using (SPSite spSite = new SPSite(TestSiteCollUri.AbsoluteUri))
+            {
+                SPGroup membersGroup = spSite.RootWeb.AssociatedMemberGroup;
+                membersGroup.AddUser(userInfo.LoginName, userInfo.Email, userInfo.Name, userInfo.Notes);
+            }
         }
     }
 
@@ -143,23 +148,6 @@ public class UnitTestsHelper
         {
             logFileListener.Dispose();
         }
-    }
-
-    public static void InitializeConfiguration(AzureADEntityProviderConfiguration config)
-    {
-        //config.ResetCurrentConfiguration();
-        config = AzureCPSE.CreateConfiguration();
-
-#if DEBUG
-        config.Timeout = 99999;
-#endif
-
-        string json = File.ReadAllText(AzureTenantsJsonFile);
-        List<AzureTenant> azureTenants = JsonConvert.DeserializeObject<List<AzureTenant>>(json);
-        config.AzureTenants = azureTenants;
-        config.ProxyAddress = "http://localhost:8888";
-        config.Update();
-        Trace.WriteLine($"{DateTime.Now.ToString("s")} Set {config.AzureTenants.Count} Azure AD tenants to AzureCP configuration");
     }
 
     /// <summary>
@@ -198,7 +186,7 @@ public class UnitTestsHelper
     public static void VerifySearchTest(List<PickerEntity> entities, string input, int expectedCount, string expectedClaimValue)
     {
         bool entityValueFound = false;
-        StringBuilder detailedLog = new StringBuilder($"It returned {entities.Count.ToString()} entities: ");
+        StringBuilder detailedLog = new StringBuilder($"It returned {entities.Count} entities: ");
         string entityLogPattern = "entity \"{0}\", claim type: \"{1}\"; ";
         foreach (PickerEntity entity in entities)
         {

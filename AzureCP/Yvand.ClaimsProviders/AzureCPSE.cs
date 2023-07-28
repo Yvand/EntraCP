@@ -773,6 +773,16 @@ namespace Yvand.ClaimsProviders
             try
             {
                 OperationContext currentContext = new OperationContext(this.EntityProvider.Configuration, OperationType.Search, resolveInput, null, context, entityTypes, null);
+                List<PickerEntity> entities = SearchOrValidate(currentContext);
+                FillEntities(currentContext, ref entities);
+                if (entities == null || entities.Count == 0) { return; }
+                foreach (PickerEntity entity in entities)
+                {
+                    resolved.Add(entity);
+                    ClaimsProviderLogging.Log($"[{Name}] Added entity: display text: '{entity.DisplayText}', claim value: '{entity.Claim.Value}', claim type: '{entity.Claim.ClaimType}'",
+                        TraceSeverity.Verbose, EventSeverity.Information, TraceCategory.Claims_Picking);
+                }
+                ClaimsProviderLogging.Log($"[{Name}] Returned {entities.Count} entities with input '{currentContext.Input}'", TraceSeverity.Medium, EventSeverity.Information, TraceCategory.Claims_Picking);
             }
             catch (Exception ex)
             {
