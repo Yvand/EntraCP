@@ -15,5 +15,6 @@
     <Parameter name="TrustedGroupToAdd_ClaimValue" value="30ef0958-c003-4667-a0ad-ef9783acaf25" />
     <Parameter name="ClaimsProviderConfigName" value="AzureCPSEConfig" />
     <Parameter name="TestLogFileName" value="AzureCPIntegrationTests.log" />
+    <Parameter name="ProxyAddress" value="http://localhost:8888" />
   </TestRunParameters>
 </RunSettings>

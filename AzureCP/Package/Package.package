@@ -1,5 +1,5 @@
 ﻿<?xml version="1.0" encoding="utf-8"?>
-<package xmlns:dm0="http://schemas.microsoft.com/VisualStudio/2008/DslTools/Core" dslVersion="1.0.0.0" Id="1db45b9b-2fff-4f07-992b-344dde907316" solutionId="dd03bdd7-0645-475e-a852-f180b8bc8191" resetWebServer="true" deploymentServerType="ApplicationServer" title="AzureCPSE" sharePointProductVersion="16.0" name="AzureCPSE" xmlns="http://schemas.microsoft.com/VisualStudio/2008/SharePointTools/PackageModel">
+<package xmlns:dm0="http://schemas.microsoft.com/VisualStudio/2008/DslTools/Core" dslVersion="1.0.0.0" Id="1db45b9b-2fff-4f07-992b-344dde907316" solutionId="dd03bdd7-0645-475e-a852-f180b8bc8191" resetWebServer="true" deploymentServerType="ApplicationServer" title="AzureCP Subscription Edition" description="AzureCP Subscription Edition" sharePointProductVersion="16.0" name="AzureCPSE" xmlns="http://schemas.microsoft.com/VisualStudio/2008/SharePointTools/PackageModel">
   <assemblies>
     <customAssembly location="Azure.Core.dll" deploymentTarget="GlobalAssemblyCache" sourcePath="bin\Azure.Core.dll" />
     <customAssembly location="Azure.Identity.dll" deploymentTarget="GlobalAssemblyCache" sourcePath="bin\Azure.Identity.dll" />

@@ -5,7 +5,6 @@ using System.Collections.Generic;
 using System.Reflection;
 using System.Threading.Tasks;
 using Yvand.ClaimsProviders.Configuration;
-using static Yvand.ClaimsProviders.ClaimsProviderLogging;
 
 namespace Yvand.ClaimsProviders
 {
@@ -62,7 +61,7 @@ namespace Yvand.ClaimsProviders
 
             if (globalConfiguration == null)
             {
-                ClaimsProviderLogging.Log($"[{ClaimsProviderName}] Cannot continue because configuration '{configurationName}' was not found in configuration database, visit AzureCP admin pages in central administration to create it.",
+                Logger.Log($"[{ClaimsProviderName}] Cannot continue because configuration '{configurationName}' was not found in configuration database, visit AzureCP admin pages in central administration to create it.",
                     TraceSeverity.Unexpected, EventSeverity.Error, TraceCategory.Core);
                 this.Configuration = null;
                 return false;
@@ -70,12 +69,12 @@ namespace Yvand.ClaimsProviders
 
             if (this.ConfigurationVersion == globalConfiguration.Version)
             {
-                ClaimsProviderLogging.Log($"[{ClaimsProviderName}] Configuration '{configurationName}' is up to date with version {this.ConfigurationVersion}.",
+                Logger.Log($"[{ClaimsProviderName}] Configuration '{configurationName}' is up to date with version {this.ConfigurationVersion}.",
                     TraceSeverity.VerboseEx, EventSeverity.Information, TraceCategory.Core);
                 return true;
             }
 
-            ClaimsProviderLogging.Log($"[{ClaimsProviderName}] Configuration '{globalConfiguration.Name}' has new version {globalConfiguration.Version}, refreshing local copy",
+            Logger.Log($"[{ClaimsProviderName}] Configuration '{globalConfiguration.Name}' has new version {globalConfiguration.Version}, refreshing local copy",
                 TraceSeverity.Medium, EventSeverity.Information, TraceCategory.Core);
 
             this.Configuration = (TConfiguration)globalConfiguration.CopyConfiguration();
@@ -85,7 +84,7 @@ namespace Yvand.ClaimsProviders
 
             if (this.Configuration.ClaimTypes == null || this.Configuration.ClaimTypes.Count == 0)
             {
-                ClaimsProviderLogging.Log($"[{ClaimsProviderName}] Configuration '{this.Configuration.Name}' was found but collection ClaimTypes is empty. Visit AzureCP admin pages in central administration to create it.",
+                Logger.Log($"[{ClaimsProviderName}] Configuration '{this.Configuration.Name}' was found but collection ClaimTypes is empty. Visit AzureCP admin pages in central administration to create it.",
                     TraceSeverity.Unexpected, EventSeverity.Error, TraceCategory.Core);
                 configIsVald = false;
             }
@@ -112,7 +111,7 @@ namespace Yvand.ClaimsProviders
             }
             catch (Exception ex)
             {
-                ClaimsProviderLogging.LogException(String.Empty, $"while retrieving configuration '{configurationName}'", TraceCategory.Configuration, ex);
+                Logger.LogException(String.Empty, $"while retrieving configuration '{configurationName}'", TraceCategory.Configuration, ex);
             }
             return null;
         }
@@ -126,11 +125,11 @@ namespace Yvand.ClaimsProviders
             TConfiguration configuration = GetGlobalConfiguration(configurationName);
             if (configuration == null)
             {
-                ClaimsProviderLogging.Log($"Configuration '{configurationName}' was not found in configuration database", TraceSeverity.Medium, EventSeverity.Error, TraceCategory.Core);
+                Logger.Log($"Configuration '{configurationName}' was not found in configuration database", TraceSeverity.Medium, EventSeverity.Error, TraceCategory.Core);
                 return;
             }
             configuration.Delete();
-            ClaimsProviderLogging.Log($"Configuration '{configurationName}' was successfully deleted from configuration database", TraceSeverity.High, EventSeverity.Information, TraceCategory.Core);
+            Logger.Log($"Configuration '{configurationName}' was successfully deleted from configuration database", TraceSeverity.High, EventSeverity.Information, TraceCategory.Core);
         }
 
         /// <summary>
@@ -155,7 +154,7 @@ namespace Yvand.ClaimsProviders
                 DeleteGlobalConfiguration(configurationName);
             }
 
-            ClaimsProviderLogging.Log($"Creating configuration '{configurationName}' with Id {configurationID}...", TraceSeverity.VerboseEx, EventSeverity.Error, TraceCategory.Core);
+            Logger.Log($"Creating configuration '{configurationName}' with Id {configurationID}...", TraceSeverity.VerboseEx, EventSeverity.Error, TraceCategory.Core);
 
             // Calling constructor as below is not possible and generate Compiler Error CS0304, so use reflection to call the desired constructor instead
             //TConfiguration config = new TConfiguration(persistedObjectName, SPFarm.Local, claimsProviderName);
@@ -165,7 +164,7 @@ namespace Yvand.ClaimsProviders
             config.Id = new Guid(configurationID);
             // If parameter ensure is true, the call will not throw if the object already exists.
             config.Update(true);
-            ClaimsProviderLogging.Log($"Created configuration '{configurationName}' with Id {config.Id}", TraceSeverity.High, EventSeverity.Information, TraceCategory.Core);
+            Logger.Log($"Created configuration '{configurationName}' with Id {config.Id}", TraceSeverity.High, EventSeverity.Information, TraceCategory.Core);
             return config;
         }
 

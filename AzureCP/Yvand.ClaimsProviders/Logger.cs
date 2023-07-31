@@ -8,49 +8,49 @@ using System.Text;
 
 namespace Yvand.ClaimsProviders
 {
+    public enum TraceCategory
+    {
+        [CategoryName("Core"),
+         DefaultTraceSeverity(TraceSeverity.Medium),
+        DefaultEventSeverity(EventSeverity.Error)]
+        Core,
+        [CategoryName("Configuration"),
+         DefaultTraceSeverity(TraceSeverity.Medium),
+        DefaultEventSeverity(EventSeverity.Error)]
+        Configuration,
+        [CategoryName("Lookup"),
+         DefaultTraceSeverity(TraceSeverity.Medium),
+         DefaultEventSeverity(EventSeverity.Error)]
+        Lookup,
+        [CategoryName("Claims Picking"),
+         DefaultTraceSeverity(TraceSeverity.Medium),
+         DefaultEventSeverity(EventSeverity.Error)]
+        Claims_Picking,
+        [CategoryName("Rehydration"),
+         DefaultTraceSeverity(TraceSeverity.Medium),
+         DefaultEventSeverity(EventSeverity.Error)]
+        Rehydration,
+        [CategoryName("Augmentation"),
+         DefaultTraceSeverity(TraceSeverity.Medium),
+         DefaultEventSeverity(EventSeverity.Error)]
+        Augmentation,
+        [CategoryName("Debug"),
+         DefaultTraceSeverity(TraceSeverity.Medium),
+         DefaultEventSeverity(EventSeverity.Error)]
+        Debug,
+        [CategoryName("Custom"),
+         DefaultTraceSeverity(TraceSeverity.Medium),
+         DefaultEventSeverity(EventSeverity.Error)]
+        Custom,
+    }
+
     /// <summary>
     /// Implemented as documented in http://www.sbrickey.com/Tech/Blog/Post/Custom_Logging_in_SharePoint_2010
     /// </summary>
     [System.Runtime.InteropServices.GuidAttribute("3DD2C709-C860-4A20-8AF2-0FDDAA9C406B")]
-    public class ClaimsProviderLogging : SPDiagnosticsServiceBase
+    public class Logger : SPDiagnosticsServiceBase
     {
         public readonly static string DiagnosticsAreaName = "AzureCP";
-
-        public enum TraceCategory
-        {
-            [CategoryName("Core"),
-             DefaultTraceSeverity(TraceSeverity.Medium),
-            DefaultEventSeverity(EventSeverity.Error)]
-            Core,
-            [CategoryName("Configuration"),
-             DefaultTraceSeverity(TraceSeverity.Medium),
-            DefaultEventSeverity(EventSeverity.Error)]
-            Configuration,
-            [CategoryName("Lookup"),
-             DefaultTraceSeverity(TraceSeverity.Medium),
-             DefaultEventSeverity(EventSeverity.Error)]
-            Lookup,
-            [CategoryName("Claims Picking"),
-             DefaultTraceSeverity(TraceSeverity.Medium),
-             DefaultEventSeverity(EventSeverity.Error)]
-            Claims_Picking,
-            [CategoryName("Rehydration"),
-             DefaultTraceSeverity(TraceSeverity.Medium),
-             DefaultEventSeverity(EventSeverity.Error)]
-            Rehydration,
-            [CategoryName("Augmentation"),
-             DefaultTraceSeverity(TraceSeverity.Medium),
-             DefaultEventSeverity(EventSeverity.Error)]
-            Augmentation,
-            [CategoryName("Debug"),
-             DefaultTraceSeverity(TraceSeverity.Medium),
-             DefaultEventSeverity(EventSeverity.Error)]
-            Debug,
-            [CategoryName("Custom"),
-             DefaultTraceSeverity(TraceSeverity.Medium),
-             DefaultEventSeverity(EventSeverity.Error)]
-            Custom,
-        }
 
         public static void Log(string message, TraceSeverity traceSeverity, EventSeverity eventSeverity, TraceCategory category)
         {
@@ -129,30 +129,30 @@ namespace Yvand.ClaimsProviders
             }
         }
 
-        public static ClaimsProviderLogging Local
+        public static Logger Local
         {
             get
             {
-                var LogSvc = SPDiagnosticsServiceBase.GetLocal<ClaimsProviderLogging>();
+                var LogSvc = SPDiagnosticsServiceBase.GetLocal<Logger>();
                 // if the Logging Service is registered, just return it.
                 if (LogSvc != null)
                 {
                     return LogSvc;
                 }
 
-                ClaimsProviderLogging svc = null;
+                Logger svc = null;
                 SPSecurity.RunWithElevatedPrivileges(delegate ()
                 {
                     // otherwise instantiate and register the new instance, which requires farm administrator privileges
-                    svc = new ClaimsProviderLogging();
+                    svc = new Logger();
                     //svc.Update();
                 });
                 return svc;
             }
         }
 
-        public ClaimsProviderLogging() : base(DiagnosticsAreaName, SPFarm.Local) { }
-        public ClaimsProviderLogging(string name, SPFarm farm) : base(name, farm) { }
+        public Logger() : base(DiagnosticsAreaName, SPFarm.Local) { }
+        public Logger(string name, SPFarm farm) : base(name, farm) { }
 
         protected override IEnumerable<SPDiagnosticsArea> ProvideAreas() { yield return Area; }
         public override string DisplayName { get { return DiagnosticsAreaName; } }
@@ -180,7 +180,7 @@ namespace Yvand.ClaimsProviders
         public static void Unregister()
         {
             SPFarm.Local.Services
-                        .OfType<ClaimsProviderLogging>()
+                        .OfType<Logger>()
                         .ToList()
                         .ForEach(s =>
                         {
@@ -263,24 +263,25 @@ namespace Yvand.ClaimsProviders
         }
         #endregion
 
-        #region Attributes
-        private class CategoryNameAttribute : Attribute
-        {
-            public string Name { get; private set; }
-            public CategoryNameAttribute(string Name) { this.Name = Name; }
-        }
-
-        private class DefaultTraceSeverityAttribute : Attribute
-        {
-            public TraceSeverity Severity { get; private set; }
-            public DefaultTraceSeverityAttribute(TraceSeverity severity) { this.Severity = severity; }
-        }
-
-        private class DefaultEventSeverityAttribute : Attribute
-        {
-            public EventSeverity Severity { get; private set; }
-            public DefaultEventSeverityAttribute(EventSeverity severity) { this.Severity = severity; }
-        }
-        #endregion
+        
     }
+    #region Attributes
+    class CategoryNameAttribute : Attribute
+    {
+        public string Name { get; private set; }
+        public CategoryNameAttribute(string Name) { this.Name = Name; }
+    }
+
+    class DefaultTraceSeverityAttribute : Attribute
+    {
+        public TraceSeverity Severity { get; private set; }
+        public DefaultTraceSeverityAttribute(TraceSeverity severity) { this.Severity = severity; }
+    }
+
+    class DefaultEventSeverityAttribute : Attribute
+    {
+        public EventSeverity Severity { get; private set; }
+        public DefaultEventSeverityAttribute(EventSeverity severity) { this.Severity = severity; }
+    }
+    #endregion
 }

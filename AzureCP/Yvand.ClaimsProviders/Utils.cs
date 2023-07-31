@@ -3,7 +3,7 @@ using Microsoft.SharePoint.Administration.Claims;
 using System;
 using System.Linq;
 using Yvand.ClaimsProviders.Configuration;
-using static Yvand.ClaimsProviders.ClaimsProviderLogging;
+using static Yvand.ClaimsProviders.Logger;
 
 namespace Yvand.ClaimsProviders
 {
@@ -26,9 +26,9 @@ namespace Yvand.ClaimsProviders
 
             if (lp != null && lp.Count() > 1)
             {
-                ClaimsProviderLogging.Log($"[{claimProviderName}] Cannot continue because '{claimProviderName}' is set with multiple SPTrustedIdentityTokenIssuer", TraceSeverity.Unexpected, EventSeverity.Error, TraceCategory.Core);
+                Logger.Log($"[{claimProviderName}] Cannot continue because '{claimProviderName}' is set with multiple SPTrustedIdentityTokenIssuer", TraceSeverity.Unexpected, EventSeverity.Error, TraceCategory.Core);
             }
-            ClaimsProviderLogging.Log($"[{claimProviderName}] Cannot continue because '{claimProviderName}' is not set with any SPTrustedIdentityTokenIssuer.\r\nVisit {ClaimsProviderConstants.PUBLICSITEURL} for more information.", TraceSeverity.High, EventSeverity.Warning, TraceCategory.Core);
+            Logger.Log($"[{claimProviderName}] Cannot continue because '{claimProviderName}' is not set with any SPTrustedIdentityTokenIssuer.\r\nVisit {ClaimsProviderConstants.PUBLICSITEURL} for more information.", TraceSeverity.High, EventSeverity.Warning, TraceCategory.Core);
             return null;
         }
 

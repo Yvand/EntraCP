@@ -5,7 +5,7 @@ using System;
 using System.Web.UI;
 using Yvand.ClaimsProviders.Configuration;
 using Yvand.ClaimsProviders.Configuration.AzureAD;
-using static Yvand.ClaimsProviders.ClaimsProviderLogging;
+using static Yvand.ClaimsProviders.Logger;
 
 namespace Yvand.ClaimsProviders.Administration
 {
@@ -164,7 +164,7 @@ namespace Yvand.ClaimsProviders.Administration
             if (String.IsNullOrEmpty(ConfigurationID)) { Status |= ConfigStatus.PersistedObjectIDPropNotSet; }
             if (Status != ConfigStatus.AllGood)
             {
-                ClaimsProviderLogging.Log($"[{ClaimsProviderName}] {MostImportantError}", TraceSeverity.Unexpected, EventSeverity.Error, TraceCategory.Configuration);
+                Logger.Log($"[{ClaimsProviderName}] {MostImportantError}", TraceSeverity.Unexpected, EventSeverity.Error, TraceCategory.Configuration);
                 // Should not go further if those requirements are not met
                 return Status;
             }
@@ -182,7 +182,7 @@ namespace Yvand.ClaimsProviders.Administration
 
             if (Status != ConfigStatus.AllGood)
             {
-                ClaimsProviderLogging.Log($"[{ClaimsProviderName}] {MostImportantError}", TraceSeverity.Unexpected, EventSeverity.Error, TraceCategory.Configuration);
+                Logger.Log($"[{ClaimsProviderName}] {MostImportantError}", TraceSeverity.Unexpected, EventSeverity.Error, TraceCategory.Configuration);
                 // Should not go further if those requirements are not met
                 return Status;
             }
@@ -198,7 +198,7 @@ namespace Yvand.ClaimsProviders.Administration
 
             if (Status != ConfigStatus.AllGood)
             {
-                ClaimsProviderLogging.Log($"[{ClaimsProviderName}] {MostImportantError}", TraceSeverity.Unexpected, EventSeverity.Error, TraceCategory.Configuration);
+                Logger.Log($"[{ClaimsProviderName}] {MostImportantError}", TraceSeverity.Unexpected, EventSeverity.Error, TraceCategory.Configuration);
             }
             return Status;
         }

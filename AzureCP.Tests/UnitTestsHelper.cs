@@ -35,7 +35,7 @@ public class UnitTestsHelper
 
     public static string TrustedGroupToAdd_ClaimType => TestContext.Parameters["TrustedGroupToAdd_ClaimType"];
     public static string TrustedGroupToAdd_ClaimValue => TestContext.Parameters["TrustedGroupToAdd_ClaimValue"];
-    public static SPClaim TrustedGroup => new SPClaim(TrustedGroupToAdd_ClaimType, TrustedGroupToAdd_ClaimValue, ClaimValueTypes.String, SPOriginalIssuers.Format(SPOriginalIssuerType.TrustedProvider, ClaimsProvider.EntityProvider.Configuration.SPTrust.Name));
+    public static SPClaim TrustedGroup => new SPClaim(TrustedGroupToAdd_ClaimType, TrustedGroupToAdd_ClaimValue, ClaimValueTypes.String, SPOriginalIssuers.Format(SPOriginalIssuerType.TrustedProvider, SPTrust.Name));
 
     public static string AzureTenantsJsonFile => TestContext.Parameters["AzureTenantsJsonFile"];
     public static string DataFile_GuestAccountsUPN_Search => TestContext.Parameters["DataFile_GuestAccountsUPN_Search"];
@@ -43,6 +43,7 @@ public class UnitTestsHelper
     public static string DataFile_AllAccounts_Search => TestContext.Parameters["DataFile_AllAccounts_Search"];
     public static string DataFile_AllAccounts_Validate => TestContext.Parameters["DataFile_AllAccounts_Validate"];
     static TextWriterTraceListener logFileListener { get; set; }
+    public static SPTrustedLoginProvider SPTrust => SPSecurityTokenServiceManager.Local.TrustedLoginProviders.FirstOrDefault(x => String.Equals(x.ClaimProviderName, "AzureCPSE", StringComparison.InvariantCultureIgnoreCase));
 
     [OneTimeSetUp]
     public static void InitializeSiteCollection()
@@ -57,20 +58,20 @@ public class UnitTestsHelper
         Trace.WriteLine($"{DateTime.Now.ToString("s")} DataFile_GuestAccountsUPN_Validate: {DataFile_GuestAccountsUPN_Validate}");
         Trace.WriteLine($"{DateTime.Now.ToString("s")} TestSiteCollectionName: {TestContext.Parameters["TestSiteCollectionName"]}");
 
-        AzureADEntityProviderConfiguration config = AzureCPSE.GetConfiguration();
-        if (config == null)
-        {
-            AzureCPSE.CreateConfiguration();
-        }
+        //AzureADEntityProviderConfiguration config = AzureCPSE.GetConfiguration();
+        //if (config == null)
+        //{
+        //    AzureCPSE.CreateConfiguration();
+        //}
 
-        ClaimsProvider.ValidateLocalConfiguration(null);
-        if (ClaimsProvider.EntityProvider.Configuration?.SPTrust == null)
+        //ClaimsProvider.ValidateLocalConfiguration(null);
+        if (SPTrust == null)
         {
             Trace.TraceError($"{DateTime.Now.ToString("s")} SPTrust: is null");
         }
         else
         {
-            Trace.WriteLine($"{DateTime.Now.ToString("s")} SPTrust: {ClaimsProvider.EntityProvider.Configuration.SPTrust.Name}");
+            Trace.WriteLine($"{DateTime.Now.ToString("s")} SPTrust: {SPTrust.Name}");
         }
 
 #if DEBUG
@@ -239,7 +240,7 @@ public class UnitTestsHelper
         {
             Stopwatch timer = new Stopwatch();
             timer.Start();
-            SPClaim inputClaim = new SPClaim(claimType, claimValue, ClaimValueTypes.String, SPOriginalIssuers.Format(SPOriginalIssuerType.TrustedProvider, ClaimsProvider.EntityProvider.Configuration.SPTrust.Name));
+            SPClaim inputClaim = new SPClaim(claimType, claimValue, ClaimValueTypes.String, SPOriginalIssuers.Format(SPOriginalIssuerType.TrustedProvider, SPTrust.Name));
             Uri context = new Uri(UnitTestsHelper.TestSiteCollUri.AbsoluteUri);
 
             SPClaim[] groups = ClaimsProvider.GetClaimsForEntity(context, inputClaim);

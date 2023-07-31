@@ -8,7 +8,6 @@ using System.Diagnostics;
 using System.Linq;
 using System.Reflection;
 using System.Web;
-using static Yvand.ClaimsProviders.ClaimsProviderLogging;
 using WIF4_5 = System.Security.Claims;
 
 namespace Yvand.ClaimsProviders.Configuration
@@ -177,6 +176,7 @@ namespace Yvand.ClaimsProviders.Configuration
         public DirectoryObjectType[] DirectoryObjectTypes { get; private set; }
 
         public string HierarchyNodeID { get; private set; }
+        public int MaxCount { get; }
 
         /// <summary>
         /// If request is a validation: contains the value of the SPClaim. If request is a search: contains the input
@@ -200,14 +200,14 @@ namespace Yvand.ClaimsProviders.Configuration
         /// </summary>
         public List<ClaimTypeConfig> CurrentClaimTypeConfigList { get; private set; }
 
-        public OperationContext(EntityProviderConfiguration currentConfiguration, OperationType currentRequestType, string input, SPClaim incomingEntity, Uri context, string[] entityTypes, string hierarchyNodeID)
+        public OperationContext(EntityProviderConfiguration currentConfiguration, OperationType currentRequestType, string input, SPClaim incomingEntity, Uri context, string[] entityTypes, string hierarchyNodeID, int maxCount)
         {
             this.OperationType = currentRequestType;
             this.Input = input;
             this.IncomingEntity = incomingEntity;
             this.UriContext = context;
             this.HierarchyNodeID = hierarchyNodeID;
-            //this.MaxCount = currentConfiguration.MaxSearchResultsCount;
+            this.MaxCount = maxCount;
 
             if (entityTypes != null)
             {
@@ -268,7 +268,7 @@ namespace Yvand.ClaimsProviders.Configuration
 
             if (this.IncomingEntityClaimTypeConfig == null)
             {
-                ClaimsProviderLogging.Log($"[{AzureCPSE.ClaimsProviderName}] Unable to validate entity \"{this.IncomingEntity.Value}\" because its claim type \"{this.IncomingEntity.ClaimType}\" was not found in the ClaimTypes list of current configuration.", TraceSeverity.Unexpected, EventSeverity.Error, TraceCategory.Configuration);
+                Logger.Log($"[{AzureCPSE.ClaimsProviderName}] Unable to validate entity \"{this.IncomingEntity.Value}\" because its claim type \"{this.IncomingEntity.ClaimType}\" was not found in the ClaimTypes list of current configuration.", TraceSeverity.Unexpected, EventSeverity.Error, TraceCategory.Configuration);
                 throw new InvalidOperationException($"[{AzureCPSE.ClaimsProviderName}] Unable validate entity \"{this.IncomingEntity.Value}\" because its claim type \"{this.IncomingEntity.ClaimType}\" was not found in the ClaimTypes list of current configuration.");
             }
 
@@ -310,7 +310,7 @@ namespace Yvand.ClaimsProviders.Configuration
 
             if (this.IncomingEntityClaimTypeConfig == null)
             {
-                ClaimsProviderLogging.Log($"[{AzureCPSE.ClaimsProviderName}] Unable to augment entity \"{this.IncomingEntity.Value}\" because its claim type \"{this.IncomingEntity.ClaimType}\" was not found in the ClaimTypes list of current configuration.", TraceSeverity.Unexpected, EventSeverity.Error, TraceCategory.Configuration);
+                Logger.Log($"[{AzureCPSE.ClaimsProviderName}] Unable to augment entity \"{this.IncomingEntity.Value}\" because its claim type \"{this.IncomingEntity.ClaimType}\" was not found in the ClaimTypes list of current configuration.", TraceSeverity.Unexpected, EventSeverity.Error, TraceCategory.Configuration);
                 throw new InvalidOperationException($"[{AzureCPSE.ClaimsProviderName}] Unable to augment entity \"{this.IncomingEntity.Value}\" because its claim type \"{this.IncomingEntity.ClaimType}\" was not found in the ClaimTypes list of current configuration.");
             }
         }

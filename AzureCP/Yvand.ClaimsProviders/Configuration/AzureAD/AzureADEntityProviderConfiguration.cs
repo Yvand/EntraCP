@@ -3,7 +3,6 @@ using Microsoft.SharePoint.Administration.Claims;
 using Microsoft.SharePoint.WebControls;
 using System;
 using System.Collections.Generic;
-using static Yvand.ClaimsProviders.ClaimsProviderLogging;
 
 namespace Yvand.ClaimsProviders.Configuration.AzureAD
 {
@@ -84,7 +83,7 @@ namespace Yvand.ClaimsProviders.Configuration.AzureAD
             copy.EntityDisplayTextPrefix = this.EntityDisplayTextPrefix;
             copy.Timeout = this.Timeout;
             copy.CustomData = this.CustomData;
-            copy.MaxSearchResultsCount = this.MaxSearchResultsCount;
+            //copy.MaxSearchResultsCount = this.MaxSearchResultsCount;
 
             // Copy properties specific to type AzureADEntityProviderConfiguration
             copy.AzureTenants = this.AzureTenants;
@@ -127,7 +126,7 @@ namespace Yvand.ClaimsProviders.Configuration.AzureAD
             SPTrustedLoginProvider spTrust = Utils.GetSPTrustAssociatedWithClaimsProvider(claimsProviderName);
             if (spTrust == null)
             {
-                ClaimsProviderLogging.Log($"No SPTrustedLoginProvider associated with claims provider '{claimsProviderName}' was found.", TraceSeverity.Unexpected, EventSeverity.Error, TraceCategory.Core);
+                Logger.Log($"No SPTrustedLoginProvider associated with claims provider '{claimsProviderName}' was found.", TraceSeverity.Unexpected, EventSeverity.Error, TraceCategory.Core);
                 return null;
             }
 
@@ -161,7 +160,7 @@ namespace Yvand.ClaimsProviders.Configuration.AzureAD
         {
             ClaimTypes.Clear();
             ClaimTypes = ReturnDefaultClaimTypesConfig(this.ClaimsProviderName);
-            ClaimsProviderLogging.Log($"Claim types list of configuration '{Name}' was successfully reset to default configuration",
+            Logger.Log($"Claim types list of configuration '{Name}' was successfully reset to default configuration",
                 TraceSeverity.High, EventSeverity.Information, TraceCategory.Core);
         }        
     }

@@ -18,7 +18,7 @@ using System.Text;
 using System.Threading.Tasks;
 using Yvand.ClaimsProviders.Configuration;
 using Yvand.ClaimsProviders.Configuration.AzureAD;
-using static Yvand.ClaimsProviders.ClaimsProviderLogging;
+using static Yvand.ClaimsProviders.Logger;
 
 namespace Yvand.ClaimsProviders.AzureAD
 {
@@ -107,7 +107,7 @@ namespace Yvand.ClaimsProviders.AzureAD
                 }
                 catch (Exception ex)
                 {
-                    ClaimsProviderLogging.LogException(ClaimsProviderName, $"while getting groups for user '{currentContext.IncomingEntity.Value}' in tenant '{tenant.Name}'", TraceCategory.Augmentation, ex);
+                    Logger.LogException(ClaimsProviderName, $"while getting groups for user '{currentContext.IncomingEntity.Value}' in tenant '{tenant.Name}'", TraceCategory.Augmentation, ex);
                 }
                 finally
                 {
@@ -115,11 +115,11 @@ namespace Yvand.ClaimsProviders.AzureAD
                 }
                 if (groupsInTenant != null)
                 {
-                    ClaimsProviderLogging.Log($"[{ClaimsProviderName}] Got {groupsInTenant.Count} users/groups in {timer.ElapsedMilliseconds.ToString()} ms from '{tenant.Name}' with input '{currentContext.Input}'", TraceSeverity.Medium, EventSeverity.Information, TraceCategory.Augmentation);
+                    Logger.Log($"[{ClaimsProviderName}] Got {groupsInTenant.Count} users/groups in {timer.ElapsedMilliseconds.ToString()} ms from '{tenant.Name}' with input '{currentContext.Input}'", TraceSeverity.Medium, EventSeverity.Information, TraceCategory.Augmentation);
                 }
                 else
                 {
-                    ClaimsProviderLogging.Log($"[{ClaimsProviderName}] Got no group for user '{currentContext.IncomingEntity.Value}' in tenant, search took {timer.ElapsedMilliseconds} ms", TraceSeverity.Medium, EventSeverity.Information, TraceCategory.Augmentation);
+                    Logger.Log($"[{ClaimsProviderName}] Got no group for user '{currentContext.IncomingEntity.Value}' in tenant, search took {timer.ElapsedMilliseconds} ms", TraceSeverity.Medium, EventSeverity.Information, TraceCategory.Augmentation);
                 }
                 return groupsInTenant;
             });
@@ -319,7 +319,7 @@ namespace Yvand.ClaimsProviders.AzureAD
                 }
                 catch (Exception ex)
                 {
-                    ClaimsProviderLogging.LogException(ClaimsProviderName, $"in QueryAzureADTenantsAsync while querying tenant '{tenant.Name}'", TraceCategory.Lookup, ex);
+                    Logger.LogException(ClaimsProviderName, $"in QueryAzureADTenantsAsync while querying tenant '{tenant.Name}'", TraceCategory.Lookup, ex);
                 }
                 finally
                 {
@@ -327,11 +327,11 @@ namespace Yvand.ClaimsProviders.AzureAD
                 }
                 if (tenantResults != null)
                 {
-                    ClaimsProviderLogging.Log($"[{ClaimsProviderName}] Got {tenantResults.Count} users/groups in {timer.ElapsedMilliseconds.ToString()} ms from '{tenant.Name}' with input '{currentContext.Input}'", TraceSeverity.Medium, EventSeverity.Information, TraceCategory.Lookup);
+                    Logger.Log($"[{ClaimsProviderName}] Got {tenantResults.Count} users/groups in {timer.ElapsedMilliseconds.ToString()} ms from '{tenant.Name}' with input '{currentContext.Input}'", TraceSeverity.Medium, EventSeverity.Information, TraceCategory.Lookup);
                 }
                 else
                 {
-                    ClaimsProviderLogging.Log($"[{ClaimsProviderName}] Got no result from '{tenant.Name}' with input '{currentContext.Input}', search took {timer.ElapsedMilliseconds.ToString()} ms", TraceSeverity.Medium, EventSeverity.Information, TraceCategory.Lookup);
+                    Logger.Log($"[{ClaimsProviderName}] Got no result from '{tenant.Name}' with input '{currentContext.Input}', search took {timer.ElapsedMilliseconds.ToString()} ms", TraceSeverity.Medium, EventSeverity.Information, TraceCategory.Lookup);
                 }
                 return tenantResults;
             });
@@ -356,14 +356,15 @@ namespace Yvand.ClaimsProviders.AzureAD
 
             if (tenant.GraphService == null)
             {
-                ClaimsProviderLogging.Log($"[{ClaimsProviderName}] Cannot query Azure AD tenant '{tenant.Name}' because it was not initialized", TraceSeverity.Unexpected, EventSeverity.Error, TraceCategory.Lookup);
+                Logger.Log($"[{ClaimsProviderName}] Cannot query Azure AD tenant '{tenant.Name}' because it was not initialized", TraceSeverity.Unexpected, EventSeverity.Error, TraceCategory.Lookup);
                 return tenantResults;
             }
 
-            ClaimsProviderLogging.Log($"[{ClaimsProviderName}] Querying Azure AD tenant '{tenant.Name}' for users and groups, with input '{currentContext.Input}'", TraceSeverity.VerboseEx, EventSeverity.Information, TraceCategory.Lookup);
+            Logger.Log($"[{ClaimsProviderName}] Querying Azure AD tenant '{tenant.Name}' for users and groups, with input '{currentContext.Input}'", TraceSeverity.VerboseEx, EventSeverity.Information, TraceCategory.Lookup);
             object lockAddResultToCollection = new object();
             int timeout = this.Configuration.Timeout;
             int maxRetry = currentContext.OperationType == OperationType.Validation ? 3 : 2;
+            int tenantResultCount = 0;
 
             try
             {
@@ -398,7 +399,7 @@ namespace Yvand.ClaimsProviders.AzureAD
                                 Count = true,
                                 Filter = tenant.UserFilter,
                                 Select = tenant.UserSelect,
-                                Top = this.Configuration.MaxSearchResultsCount,
+                                Top = currentContext.MaxCount,
                             };
                             conf.Headers = new RequestHeaders
                             {
@@ -426,7 +427,7 @@ namespace Yvand.ClaimsProviders.AzureAD
                                 Count = true,
                                 Filter = tenant.GroupFilter,
                                 Select = tenant.GroupSelect,
-                                Top = this.Configuration.MaxSearchResultsCount,
+                                Top = currentContext.MaxCount,
                             };
                             conf.Headers = new RequestHeaders
                             {
@@ -447,7 +448,7 @@ namespace Yvand.ClaimsProviders.AzureAD
                     UserCollectionResponse userCollectionResult = await returnedResponse.GetResponseByIdAsync<UserCollectionResponse>(usersRequestId).ConfigureAwait(false);
                     GroupCollectionResponse groupCollectionResult = await returnedResponse.GetResponseByIdAsync<GroupCollectionResponse>(groupsRequestId).ConfigureAwait(false);
 
-                    ClaimsProviderLogging.Log($"[{ClaimsProviderName}] Query to tenant '{tenant.Name}' returned {(userCollectionResult?.Value == null ? 0 : userCollectionResult.Value.Count)} user(s) with filter \"{tenant.UserFilter}\"", TraceSeverity.VerboseEx, EventSeverity.Information, TraceCategory.Lookup);
+                    Logger.Log($"[{ClaimsProviderName}] Query to tenant '{tenant.Name}' returned {(userCollectionResult?.Value == null ? 0 : userCollectionResult.Value.Count)} user(s) with filter \"{tenant.UserFilter}\"", TraceSeverity.VerboseEx, EventSeverity.Information, TraceCategory.Lookup);
                     // Process users result
                     if (userCollectionResult?.Value != null)
                     {
@@ -478,12 +479,14 @@ namespace Yvand.ClaimsProviders.AzureAD
 
                                 if (addUser)
                                 {
+                                    tenantResultCount++;
                                     lock (lockAddResultToCollection)
                                     {
                                         tenantResults.Add(user);
                                     }
                                 }
-                                return true; // return true to continue the iteration
+                                return tenantResultCount < currentContext.MaxCount - 1 ? true : false;
+                                //return true; // return true to continue the iteration
                             });
                         await usersPageIterator.IterateAsync().ConfigureAwait(false);
                     }
@@ -496,11 +499,13 @@ namespace Yvand.ClaimsProviders.AzureAD
                             groupCollectionResult,
                             (group) =>
                             {
+                                tenantResultCount++;
                                 lock (lockAddResultToCollection)
                                 {
                                     tenantResults.Add(group);
                                 }
-                                return true; // return true to continue the iteration
+                                return tenantResultCount < currentContext.MaxCount - 1 ? true : false;
+                                //return true; // return true to continue the iteration
                             });
                         await groupsPageIterator.IterateAsync().ConfigureAwait(false);
                     }
@@ -514,24 +519,24 @@ namespace Yvand.ClaimsProviders.AzureAD
             }
             catch (OperationCanceledException)
             {
-                ClaimsProviderLogging.Log($"[{ClaimsProviderName}] Queries on Azure AD tenant '{tenant.Name}' exceeded timeout of {timeout} ms and were cancelled.", TraceSeverity.Unexpected, EventSeverity.Error, TraceCategory.Lookup);
+                Logger.Log($"[{ClaimsProviderName}] Queries on Azure AD tenant '{tenant.Name}' exceeded timeout of {timeout} ms and were cancelled.", TraceSeverity.Unexpected, EventSeverity.Error, TraceCategory.Lookup);
             }
             catch (AuthenticationFailedException ex)
             {
-                ClaimsProviderLogging.LogException(ClaimsProviderName, $": Could not authenticate for tenant '{tenant.Name}'", TraceCategory.Lookup, ex);
+                Logger.LogException(ClaimsProviderName, $": Could not authenticate for tenant '{tenant.Name}'", TraceCategory.Lookup, ex);
             }
             catch (MsalServiceException ex)
             {
-                ClaimsProviderLogging.LogException(ClaimsProviderName, $": Msal could not query tenant '{tenant.Name}'", TraceCategory.Lookup, ex);
+                Logger.LogException(ClaimsProviderName, $": Msal could not query tenant '{tenant.Name}'", TraceCategory.Lookup, ex);
             }
             catch (ServiceException ex)
             {
-                ClaimsProviderLogging.LogException(ClaimsProviderName, $": Microsoft.Graph could not query tenant '{tenant.Name}'", TraceCategory.Lookup, ex);
+                Logger.LogException(ClaimsProviderName, $": Microsoft.Graph could not query tenant '{tenant.Name}'", TraceCategory.Lookup, ex);
             }
             catch (AggregateException ex)
             {
                 // Task.WaitAll throws an AggregateException, which contains all exceptions thrown by tasks it waited on
-                ClaimsProviderLogging.LogException(ClaimsProviderName, $"while querying Azure AD tenant '{tenant.Name}'", TraceCategory.Lookup, ex);
+                Logger.LogException(ClaimsProviderName, $"while querying Azure AD tenant '{tenant.Name}'", TraceCategory.Lookup, ex);
             }
             finally
             {

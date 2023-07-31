@@ -19,7 +19,7 @@ using System.Web.UI.WebControls;
 using Yvand.ClaimsProviders;
 using Yvand.ClaimsProviders.Configuration;
 using Yvand.ClaimsProviders.Configuration.AzureAD;
-using static Yvand.ClaimsProviders.ClaimsProviderLogging;
+using static Yvand.ClaimsProviders.Logger;
 
 namespace Yvand.ClaimsProviders.Administration
 {
@@ -130,7 +130,7 @@ namespace Yvand.ClaimsProviders.Administration
             {
                 Configuration.AzureTenants.Remove(tenantToRemove);
                 CommitChanges();
-                ClaimsProviderLogging.Log($"Azure AD tenant '{tenantToRemove.Name}' was successfully removed from configuration '{ConfigurationName}'", TraceSeverity.Medium, EventSeverity.Information, TraceCategory.Configuration);
+                Logger.Log($"Azure AD tenant '{tenantToRemove.Name}' was successfully removed from configuration '{ConfigurationName}'", TraceSeverity.Medium, EventSeverity.Information, TraceCategory.Configuration);
                 PopulateConnectionsGrid();
             }
         }
@@ -319,7 +319,7 @@ namespace Yvand.ClaimsProviders.Administration
                 });
 
             CommitChanges();
-            ClaimsProviderLogging.Log($"Azure AD tenant '{this.TxtTenantName.Text}' was successfully added to configuration '{ConfigurationName}'", TraceSeverity.Medium, EventSeverity.Information, TraceCategory.Configuration);
+            Logger.Log($"Azure AD tenant '{this.TxtTenantName.Text}' was successfully added to configuration '{ConfigurationName}'", TraceSeverity.Medium, EventSeverity.Information, TraceCategory.Configuration);
 
             PopulateConnectionsGrid();
             this.TxtTenantName.Text = "TENANTNAME.onMicrosoft.com";

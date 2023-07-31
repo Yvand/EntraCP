@@ -4,7 +4,7 @@
     Id = "AzureCPSE"
     Location = "Microsoft.SharePoint.Administration.Security"
     Sequence = "600"
-    Title = "AzureCPSE Configuration"
+    Title = "AzureCP Subscription Edition"
     ImageUrl="/_layouts/15/AzureCPSE/AzureCP_logo_small.png">
   </CustomActionGroup>
 

@@ -4,7 +4,6 @@ using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Linq;
-using static Yvand.ClaimsProviders.ClaimsProviderLogging;
 
 namespace Yvand.ClaimsProviders.Configuration
 {
@@ -21,7 +20,7 @@ namespace Yvand.ClaimsProviders.Configuration
         public string EntityDisplayTextPrefix { get; set; }
         public int Timeout { get; set; }
         public string CustomData { get; set; }
-        public int MaxSearchResultsCount { get; set; }
+        //public int MaxSearchResultsCount { get; set; }
 
         public IPersistedEntityProviderSettings() { }
         public IPersistedEntityProviderSettings(string persistedObjectName, SPPersistedObject parent) : base(persistedObjectName, parent) { }
@@ -158,16 +157,16 @@ namespace Yvand.ClaimsProviders.Configuration
         [Persisted]
         private string _CustomData;
 
-        /// <summary>
-        /// Limit number of results returned to SharePoint during a search
-        /// </summary>
-        public int MaxSearchResultsCount
-        {
-            get => _MaxSearchResultsCount;
-            set => _MaxSearchResultsCount = value;
-        }
-        [Persisted]
-        private int _MaxSearchResultsCount = 30; // SharePoint sets maxCount to 30 in method FillSearch
+        ///// <summary>
+        ///// Limit number of results returned to SharePoint during a search
+        ///// </summary>
+        //public int MaxSearchResultsCount
+        //{
+        //    get => _MaxSearchResultsCount;
+        //    set => _MaxSearchResultsCount = value;
+        //}
+        //[Persisted]
+        //private int _MaxSearchResultsCount = 30; // SharePoint sets maxCount to 30 in method FillSearch
 
         public bool RuntimeSettingsInitialized { get; private set; }
 
@@ -222,7 +221,7 @@ namespace Yvand.ClaimsProviders.Configuration
 
             if (this.ClaimTypes?.Count <= 0)
             {
-                ClaimsProviderLogging.Log($"[{this.ClaimsProviderName}] Cannot continue because configuration '{this.Name}' has 0 claim configured.",
+                Logger.Log($"[{this.ClaimsProviderName}] Cannot continue because configuration '{this.Name}' has 0 claim configured.",
                     TraceSeverity.Unexpected, EventSeverity.Error, TraceCategory.Core);
                 return false;
             }
@@ -261,7 +260,7 @@ namespace Yvand.ClaimsProviders.Configuration
 
             if (!identityClaimTypeFound)
             {
-                ClaimsProviderLogging.Log($"[{this.ClaimsProviderName}] Cannot continue because identity claim type '{this.SPTrust.IdentityClaimTypeInformation.MappedClaimType}' set in the SPTrustedIdentityTokenIssuer '{SPTrust.Name}' is missing in the ClaimTypeConfig list.", TraceSeverity.Unexpected, EventSeverity.ErrorCritical, TraceCategory.Core);
+                Logger.Log($"[{this.ClaimsProviderName}] Cannot continue because identity claim type '{this.SPTrust.IdentityClaimTypeInformation.MappedClaimType}' set in the SPTrustedIdentityTokenIssuer '{SPTrust.Name}' is missing in the ClaimTypeConfig list.", TraceSeverity.Unexpected, EventSeverity.ErrorCritical, TraceCategory.Core);
                 return false;
             }
 
@@ -307,7 +306,7 @@ namespace Yvand.ClaimsProviders.Configuration
             this.ValidateConfiguration();
             base.Update();
             this.RuntimeSettingsInitialized = false;
-            ClaimsProviderLogging.Log($"Successfully updated configuration '{this.Name}' with Id {this.Id}", TraceSeverity.High, EventSeverity.Information, TraceCategory.Core);
+            Logger.Log($"Successfully updated configuration '{this.Name}' with Id {this.Id}", TraceSeverity.High, EventSeverity.Information, TraceCategory.Core);
         }
 
         public override void Update(bool ensure)
@@ -316,7 +315,7 @@ namespace Yvand.ClaimsProviders.Configuration
             // If parameter ensure is true, the call will not throw if the object already exists.
             base.Update(ensure);
             this.RuntimeSettingsInitialized = false;
-            ClaimsProviderLogging.Log($"Successfully updated configuration '{this.Name}' with Id {this.Id}", TraceSeverity.High, EventSeverity.Information, TraceCategory.Core);
+            Logger.Log($"Successfully updated configuration '{this.Name}' with Id {this.Id}", TraceSeverity.High, EventSeverity.Information, TraceCategory.Core);
         }
 
         /// <summary>
@@ -343,7 +342,7 @@ namespace Yvand.ClaimsProviders.Configuration
         public override void Delete()
         {
             base.Delete();
-            ClaimsProviderLogging.Log($"Successfully deleted configuration '{this.Name}' with Id {this.Id}", TraceSeverity.High, EventSeverity.Information, TraceCategory.Core);
+            Logger.Log($"Successfully deleted configuration '{this.Name}' with Id {this.Id}", TraceSeverity.High, EventSeverity.Information, TraceCategory.Core);
         }
 
         /// <summary>
@@ -390,7 +389,7 @@ namespace Yvand.ClaimsProviders.Configuration
             copy.EntityDisplayTextPrefix = this.EntityDisplayTextPrefix;
             copy.Timeout = this.Timeout;
             copy.CustomData = this.CustomData;
-            copy.MaxSearchResultsCount = this.MaxSearchResultsCount;
+            //copy.MaxSearchResultsCount = this.MaxSearchResultsCount;
             
             copy.InitializeRuntimeSettings();
             return copy;

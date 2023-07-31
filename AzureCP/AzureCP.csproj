@@ -79,7 +79,7 @@
     <Compile Include="Yvand.ClaimsProviders\Administration\AzureCPUserControl.cs">
       <SubType>ASPXCodeBehind</SubType>
     </Compile>
-    <Compile Include="Yvand.ClaimsProviders\ClaimsProviderLogging.cs" />
+    <Compile Include="Yvand.ClaimsProviders\Logger.cs" />
     <Compile Include="Yvand.ClaimsProviders\Configuration\AzureAD\AzureADEntityProviderConfiguration.cs" />
     <Compile Include="Yvand.ClaimsProviders\Configuration\AzureAD\AzureTenant.cs" />
     <Compile Include="Yvand.ClaimsProviders\Configuration\ClaimsProviderConstants.cs" />

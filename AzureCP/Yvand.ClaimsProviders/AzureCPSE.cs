@@ -13,7 +13,6 @@ using System.Threading.Tasks;
 using Yvand.ClaimsProviders.AzureAD;
 using Yvand.ClaimsProviders.Configuration;
 using Yvand.ClaimsProviders.Configuration.AzureAD;
-using static Yvand.ClaimsProviders.ClaimsProviderLogging;
 using WIF4_5 = System.Security.Claims;
 
 namespace Yvand.ClaimsProviders
@@ -79,7 +78,7 @@ namespace Yvand.ClaimsProviders
             catch (Exception ex)
             {
                 success = false;
-                ClaimsProviderLogging.LogException(Name, "while refreshing configuration", TraceCategory.Core, ex);
+                Logger.LogException(Name, "while refreshing configuration", TraceCategory.Core, ex);
             }
             finally
             {
@@ -106,7 +105,7 @@ namespace Yvand.ClaimsProviders
                         currentContext.Input,
                         currentContext.CurrentClaimTypeConfigList.FindAll(x => !x.UseMainClaimTypeOfDirectoryObject),
                         false);
-                    ClaimsProviderLogging.Log($"[{Name}] Created {entities.Count} entity(ies) without contacting Azure AD tenant(s) because AzureCP property AlwaysResolveUserInput is set to true.",
+                    Logger.Log($"[{Name}] Created {entities.Count} entity(ies) without contacting Azure AD tenant(s) because AzureCP property AlwaysResolveUserInput is set to true.",
                         TraceSeverity.Medium, EventSeverity.Information, TraceCategory.Claims_Picking);
                     return entities;
                 }
@@ -143,7 +142,7 @@ namespace Yvand.ClaimsProviders
                         {
                             if (entities == null) { entities = new List<PickerEntity>(); }
                             entities.Add(entity);
-                            ClaimsProviderLogging.Log($"[{Name}] Created entity without contacting Azure AD tenant(s) because input started with prefix '{ctConfigWithInputPrefixMatch.PrefixToBypassLookup}', which is configured for claim type '{ctConfigWithInputPrefixMatch.ClaimType}'. Claim value: '{entity.Claim.Value}', claim type: '{entity.Claim.ClaimType}'",
+                            Logger.Log($"[{Name}] Created entity without contacting Azure AD tenant(s) because input started with prefix '{ctConfigWithInputPrefixMatch.PrefixToBypassLookup}', which is configured for claim type '{ctConfigWithInputPrefixMatch.ClaimType}'. Claim value: '{entity.Claim.Value}', claim type: '{entity.Claim.ClaimType}'",
                                 TraceSeverity.VerboseEx, EventSeverity.Information, TraceCategory.Claims_Picking);
                             //return entities;
                         }
@@ -176,7 +175,7 @@ namespace Yvand.ClaimsProviders
                         if (entity != null)
                         {
                             entities = new List<PickerEntity>(1) { entity };
-                            ClaimsProviderLogging.Log($"[{Name}] Validated entity without contacting Azure AD tenant(s) because its claim type ('{currentContext.IncomingEntityClaimTypeConfig.ClaimType}') has property 'PrefixToBypassLookup' set in AzureCPConfig.ClaimTypes. Claim value: '{entity.Claim.Value}', claim type: '{entity.Claim.ClaimType}'",
+                            Logger.Log($"[{Name}] Validated entity without contacting Azure AD tenant(s) because its claim type ('{currentContext.IncomingEntityClaimTypeConfig.ClaimType}') has property 'PrefixToBypassLookup' set in AzureCPConfig.ClaimTypes. Claim value: '{entity.Claim.Value}', claim type: '{entity.Claim.ClaimType}'",
                                 TraceSeverity.VerboseEx, EventSeverity.Information, TraceCategory.Claims_Picking);
                         }
                     }
@@ -184,7 +183,7 @@ namespace Yvand.ClaimsProviders
             }
             catch (Exception ex)
             {
-                ClaimsProviderLogging.LogException(Name, "in SearchOrValidate", TraceCategory.Claims_Picking, ex);
+                Logger.LogException(Name, "in SearchOrValidate", TraceCategory.Claims_Picking, ex);
             }
             entities = this.ValidateEntities(currentContext, entities);
             return entities;
@@ -322,7 +321,7 @@ namespace Yvand.ClaimsProviders
             }
 
             List<PickerEntity> entities = new List<PickerEntity>();
-            ClaimsProviderLogging.Log($"[{Name}] {processedResults.Count} entity(ies) to create after filtering", TraceSeverity.Verbose, EventSeverity.Information, TraceCategory.Lookup);
+            Logger.Log($"[{Name}] {processedResults.Count} entity(ies) to create after filtering", TraceSeverity.Verbose, EventSeverity.Information, TraceCategory.Lookup);
             foreach (ClaimsProviderEntityResult result in processedResults)
             {
                 entities.Add(CreatePickerEntityHelper(result));
@@ -407,12 +406,12 @@ namespace Yvand.ClaimsProviders
                     {
                         entity.EntityData[ctConfig.EntityDataKey] = entityAttribValue;
                         nbMetadata++;
-                        ClaimsProviderLogging.Log($"[{Name}] Set metadata '{ctConfig.EntityDataKey}' of new entity to '{entityAttribValue}'", TraceSeverity.VerboseEx, EventSeverity.Information, TraceCategory.Claims_Picking);
+                        Logger.Log($"[{Name}] Set metadata '{ctConfig.EntityDataKey}' of new entity to '{entityAttribValue}'", TraceSeverity.VerboseEx, EventSeverity.Information, TraceCategory.Claims_Picking);
                     }
                 }
             }
             entity.DisplayText = FormatPermissionDisplayText(entity, isMappedClaimTypeConfig, result);
-            ClaimsProviderLogging.Log($"[{Name}] Created entity: display text: '{entity.DisplayText}', value: '{entity.Claim.Value}', claim type: '{entity.Claim.ClaimType}', and filled with {nbMetadata.ToString()} metadata.", TraceSeverity.VerboseEx, EventSeverity.Information, TraceCategory.Claims_Picking);
+            Logger.Log($"[{Name}] Created entity: display text: '{entity.DisplayText}', value: '{entity.Claim.Value}', claim type: '{entity.Claim.ClaimType}', and filled with {nbMetadata.ToString()} metadata.", TraceSeverity.VerboseEx, EventSeverity.Information, TraceCategory.Claims_Picking);
             return entity;
         }
 
@@ -448,7 +447,7 @@ namespace Yvand.ClaimsProviders
                 if (!String.IsNullOrEmpty(ctConfig.EntityDataKey))
                 {
                     entity.EntityData[ctConfig.EntityDataKey] = entity.Claim.Value;
-                    ClaimsProviderLogging.Log($"[{Name}] Added metadata '{ctConfig.EntityDataKey}' with value '{entity.EntityData[ctConfig.EntityDataKey]}' to new entity", TraceSeverity.VerboseEx, EventSeverity.Information, TraceCategory.Claims_Picking);
+                    Logger.Log($"[{Name}] Added metadata '{ctConfig.EntityDataKey}' with value '{entity.EntityData[ctConfig.EntityDataKey]}' to new entity", TraceSeverity.VerboseEx, EventSeverity.Information, TraceCategory.Claims_Picking);
                 }
 
                 ClaimsProviderEntityResult result = new ClaimsProviderEntityResult(null, ctConfig, input, input);
@@ -456,7 +455,7 @@ namespace Yvand.ClaimsProviders
                 entity.DisplayText = FormatPermissionDisplayText(entity, isIdentityClaimType, result);
 
                 entities.Add(entity);
-                ClaimsProviderLogging.Log($"[{Name}] Created entity: display text: '{entity.DisplayText}', value: '{entity.Claim.Value}', claim type: '{entity.Claim.ClaimType}'.", TraceSeverity.VerboseEx, EventSeverity.Information, TraceCategory.Claims_Picking);
+                Logger.Log($"[{Name}] Created entity: display text: '{entity.DisplayText}', value: '{entity.Claim.Value}', claim type: '{entity.Claim.ClaimType}'.", TraceSeverity.VerboseEx, EventSeverity.Information, TraceCategory.Claims_Picking);
             }
             return entities.Count > 0 ? entities : null;
         }
@@ -607,7 +606,7 @@ namespace Yvand.ClaimsProviders
                 }
                 catch (Exception ex)
                 {
-                    ClaimsProviderLogging.LogException(Name, "in FillClaimTypes", TraceCategory.Core, ex);
+                    Logger.LogException(Name, "in FillClaimTypes", TraceCategory.Core, ex);
                 }
                 finally
                 {
@@ -665,7 +664,7 @@ namespace Yvand.ClaimsProviders
             SPOriginalIssuerType loginType = SPOriginalIssuers.GetIssuerType(decodedEntity.OriginalIssuer);
             if (loginType != SPOriginalIssuerType.TrustedProvider && loginType != SPOriginalIssuerType.ClaimProvider)
             {
-                ClaimsProviderLogging.Log($"[{Name}] Not trying to augment '{decodedEntity.Value}' because his OriginalIssuer is '{decodedEntity.OriginalIssuer}'.",
+                Logger.Log($"[{Name}] Not trying to augment '{decodedEntity.Value}' because his OriginalIssuer is '{decodedEntity.OriginalIssuer}'.",
                     TraceSeverity.VerboseEx, EventSeverity.Information, TraceCategory.Augmentation);
                 return;
             }
@@ -680,16 +679,16 @@ namespace Yvand.ClaimsProviders
 
                 if (!this.EntityProvider.Configuration.EnableAugmentation) { return; }
 
-                ClaimsProviderLogging.Log($"[{Name}] Starting augmentation for user '{decodedEntity.Value}'.", TraceSeverity.Verbose, EventSeverity.Information, TraceCategory.Augmentation);
+                Logger.Log($"[{Name}] Starting augmentation for user '{decodedEntity.Value}'.", TraceSeverity.Verbose, EventSeverity.Information, TraceCategory.Augmentation);
                 ClaimTypeConfig groupClaimTypeSettings = this.EntityProvider.Configuration.RuntimeClaimTypesList.FirstOrDefault(x => x.EntityType == DirectoryObjectType.Group);
                 if (groupClaimTypeSettings == null)
                 {
-                    ClaimsProviderLogging.Log($"[{Name}] No claim type with EntityType 'Group' was found, please check claims mapping table.",
+                    Logger.Log($"[{Name}] No claim type with EntityType 'Group' was found, please check claims mapping table.",
                         TraceSeverity.High, EventSeverity.Error, TraceCategory.Augmentation);
                     return;
                 }
 
-                OperationContext currentContext = new OperationContext(this.EntityProvider.Configuration, OperationType.Augmentation, null, decodedEntity, context, null, null);
+                OperationContext currentContext = new OperationContext(this.EntityProvider.Configuration, OperationType.Augmentation, null, decodedEntity, context, null, null, Int32.MaxValue);
                 Stopwatch timer = new Stopwatch();
                 timer.Start();
                 Task<List<string>> groupsTask = this.EntityProvider.GetEntityGroupsAsync(currentContext, groupClaimTypeSettings.EntityProperty);
@@ -701,21 +700,21 @@ namespace Yvand.ClaimsProviders
                     foreach (string group in groups)
                     {
                         claims.Add(CreateClaim(groupClaimTypeSettings.ClaimType, group, groupClaimTypeSettings.ClaimValueType));
-                        ClaimsProviderLogging.Log($"[{Name}] Added group '{group}' to user '{currentContext.IncomingEntity.Value}'",
+                        Logger.Log($"[{Name}] Added group '{group}' to user '{currentContext.IncomingEntity.Value}'",
                             TraceSeverity.Verbose, EventSeverity.Information, TraceCategory.Augmentation);
                     }
-                    ClaimsProviderLogging.Log($"[{Name}] User '{currentContext.IncomingEntity.Value}' was augmented with {groups.Count} groups in {timer.ElapsedMilliseconds} ms",
+                    Logger.Log($"[{Name}] User '{currentContext.IncomingEntity.Value}' was augmented with {groups.Count} groups in {timer.ElapsedMilliseconds} ms",
                         TraceSeverity.Medium, EventSeverity.Information, TraceCategory.Augmentation);
                 }
                 else
                 {
-                    ClaimsProviderLogging.Log($"[{Name}] No group found for user '{currentContext.IncomingEntity.Value}', search took {timer.ElapsedMilliseconds.ToString()} ms",
+                    Logger.Log($"[{Name}] No group found for user '{currentContext.IncomingEntity.Value}', search took {timer.ElapsedMilliseconds.ToString()} ms",
                         TraceSeverity.Medium, EventSeverity.Information, TraceCategory.Augmentation);
                 }
             }
             catch (Exception ex)
             {
-                ClaimsProviderLogging.LogException(Name, "in AugmentEntity", TraceCategory.Augmentation, ex);
+                Logger.LogException(Name, "in AugmentEntity", TraceCategory.Augmentation, ex);
             }
             finally
             {
@@ -757,7 +756,7 @@ namespace Yvand.ClaimsProviders
             }
             catch (Exception ex)
             {
-                ClaimsProviderLogging.LogException(Name, "in FillHierarchy", TraceCategory.Claims_Picking, ex);
+                Logger.LogException(Name, "in FillHierarchy", TraceCategory.Claims_Picking, ex);
             }
             finally
             {
@@ -772,21 +771,21 @@ namespace Yvand.ClaimsProviders
             this.Lock_LocalConfigurationRefresh.EnterReadLock();
             try
             {
-                OperationContext currentContext = new OperationContext(this.EntityProvider.Configuration, OperationType.Search, resolveInput, null, context, entityTypes, null);
+                OperationContext currentContext = new OperationContext(this.EntityProvider.Configuration, OperationType.Search, resolveInput, null, context, entityTypes, null, 30);
                 List<PickerEntity> entities = SearchOrValidate(currentContext);
                 FillEntities(currentContext, ref entities);
                 if (entities == null || entities.Count == 0) { return; }
                 foreach (PickerEntity entity in entities)
                 {
                     resolved.Add(entity);
-                    ClaimsProviderLogging.Log($"[{Name}] Added entity: display text: '{entity.DisplayText}', claim value: '{entity.Claim.Value}', claim type: '{entity.Claim.ClaimType}'",
+                    Logger.Log($"[{Name}] Added entity: display text: '{entity.DisplayText}', claim value: '{entity.Claim.Value}', claim type: '{entity.Claim.ClaimType}'",
                         TraceSeverity.Verbose, EventSeverity.Information, TraceCategory.Claims_Picking);
                 }
-                ClaimsProviderLogging.Log($"[{Name}] Returned {entities.Count} entities with input '{currentContext.Input}'", TraceSeverity.Medium, EventSeverity.Information, TraceCategory.Claims_Picking);
+                Logger.Log($"[{Name}] Returned {entities.Count} entities with input '{currentContext.Input}'", TraceSeverity.Medium, EventSeverity.Information, TraceCategory.Claims_Picking);
             }
             catch (Exception ex)
             {
-                ClaimsProviderLogging.LogException(Name, "in FillResolve(string)", TraceCategory.Claims_Picking, ex);
+                Logger.LogException(Name, "in FillResolve(string)", TraceCategory.Claims_Picking, ex);
             }
             finally
             {
@@ -805,23 +804,23 @@ namespace Yvand.ClaimsProviders
                 // Must be made after call to Initialize because SPTrustedLoginProvider name must be known
                 if (!String.Equals(resolveInput.OriginalIssuer, this.EntityProvider.Configuration.OriginalIssuerName, StringComparison.InvariantCultureIgnoreCase)) { return; }
 
-                OperationContext currentContext = new OperationContext(this.EntityProvider.Configuration, OperationType.Validation, resolveInput.Value, resolveInput, context, entityTypes, null);
+                OperationContext currentContext = new OperationContext(this.EntityProvider.Configuration, OperationType.Validation, resolveInput.Value, resolveInput, context, entityTypes, null, 1);
                 List<PickerEntity> entities = this.SearchOrValidate(currentContext);
                 if (entities?.Count == 1)
                 {
                     resolved.Add(entities[0]);
-                    ClaimsProviderLogging.Log($"[{Name}] Validated entity: display text: '{entities[0].DisplayText}', claim value: '{entities[0].Claim.Value}', claim type: '{entities[0].Claim.ClaimType}'",
+                    Logger.Log($"[{Name}] Validated entity: display text: '{entities[0].DisplayText}', claim value: '{entities[0].Claim.Value}', claim type: '{entities[0].Claim.ClaimType}'",
                         TraceSeverity.High, EventSeverity.Information, TraceCategory.Claims_Picking);
                 }
                 else
                 {
                     int entityCount = entities == null ? 0 : entities.Count;
-                    ClaimsProviderLogging.Log($"[{Name}] Validation failed: found {entityCount.ToString()} entities instead of 1 for incoming claim with value '{currentContext.IncomingEntity.Value}' and type '{currentContext.IncomingEntity.ClaimType}'", TraceSeverity.Unexpected, EventSeverity.Error, TraceCategory.Claims_Picking);
+                    Logger.Log($"[{Name}] Validation failed: found {entityCount.ToString()} entities instead of 1 for incoming claim with value '{currentContext.IncomingEntity.Value}' and type '{currentContext.IncomingEntity.ClaimType}'", TraceSeverity.Unexpected, EventSeverity.Error, TraceCategory.Claims_Picking);
                 }
             }
             catch (Exception ex)
             {
-                ClaimsProviderLogging.LogException(Name, "in FillResolve(SPClaim)", TraceCategory.Claims_Picking, ex);
+                Logger.LogException(Name, "in FillResolve(SPClaim)", TraceCategory.Claims_Picking, ex);
             }
             finally
             {
@@ -836,7 +835,7 @@ namespace Yvand.ClaimsProviders
             this.Lock_LocalConfigurationRefresh.EnterReadLock();
             try
             {
-                OperationContext currentContext = new OperationContext(this.EntityProvider.Configuration, OperationType.Search, searchPattern, null, context, entityTypes, hierarchyNodeID);
+                OperationContext currentContext = new OperationContext(this.EntityProvider.Configuration, OperationType.Search, searchPattern, null, context, entityTypes, hierarchyNodeID, maxCount);
                 List<PickerEntity> entities = this.SearchOrValidate(currentContext);
                 FillEntities(currentContext, ref entities);
                 if (entities == null || entities.Count == 0) { return; }
@@ -859,10 +858,10 @@ namespace Yvand.ClaimsProviders
                         searchTree.AddChild(matchNode);
                     }
                     matchNode.AddEntity(entity);
-                    ClaimsProviderLogging.Log($"[{Name}] Added entity: display text: '{entity.DisplayText}', claim value: '{entity.Claim.Value}', claim type: '{entity.Claim.ClaimType}'",
+                    Logger.Log($"[{Name}] Added entity: display text: '{entity.DisplayText}', claim value: '{entity.Claim.Value}', claim type: '{entity.Claim.ClaimType}'",
                         TraceSeverity.Verbose, EventSeverity.Information, TraceCategory.Claims_Picking);
                 }
-                ClaimsProviderLogging.Log($"[{Name}] Returned {entities.Count} entities from input '{currentContext.Input}'",
+                Logger.Log($"[{Name}] Returned {entities.Count} entities from input '{currentContext.Input}'",
                     TraceSeverity.Medium, EventSeverity.Information, TraceCategory.Claims_Picking);
             }
             catch (Exception ex)
@@ -901,7 +900,7 @@ namespace Yvand.ClaimsProviders
                 }
                 catch (Exception ex)
                 {
-                    ClaimsProviderLogging.LogException(Name, "in GetClaimTypeForUserKey", TraceCategory.Rehydration, ex);
+                    Logger.LogException(Name, "in GetClaimTypeForUserKey", TraceCategory.Rehydration, ex);
                 }
                 finally
                 {
@@ -943,13 +942,13 @@ namespace Yvand.ClaimsProviders
                 SPClaimProviderManager cpm = SPClaimProviderManager.Local;
                 SPClaim curUser = SPClaimProviderManager.DecodeUserIdentifierClaim(entity);
 
-                ClaimsProviderLogging.Log($"[{Name}] Returning user key for '{entity.Value}'",
+                Logger.Log($"[{Name}] Returning user key for '{entity.Value}'",
                     TraceSeverity.VerboseEx, EventSeverity.Information, TraceCategory.Rehydration);
                 return CreateClaim(this.EntityProvider.Configuration.SPTrust.IdentityClaimTypeInformation.MappedClaimType, curUser.Value, curUser.ValueType);
             }
             catch (Exception ex)
             {
-                ClaimsProviderLogging.LogException(Name, "in GetUserKeyForEntity", TraceCategory.Rehydration, ex);
+                Logger.LogException(Name, "in GetUserKeyForEntity", TraceCategory.Rehydration, ex);
             }
             finally
             {

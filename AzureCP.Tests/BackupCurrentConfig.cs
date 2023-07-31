@@ -37,9 +37,9 @@ namespace AzureCP.Tests
         public virtual void InitializeConfiguration()
         {
             Config = AzureCPSE.CreateConfiguration();
+            Config.ProxyAddress = TestContext.Parameters["ProxyAddress"];
 
 #if DEBUG
-            Config.ProxyAddress = "http://localhost:8888";
             Config.Timeout = 99999;
 #endif
 

@@ -1,13 +1,11 @@
-﻿using Microsoft.SharePoint.Administration.Claims;
-using Microsoft.SharePoint.Administration;
+﻿using Microsoft.SharePoint.Administration;
+using Microsoft.SharePoint.Administration.Claims;
 using System;
 using System.Collections;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Linq;
 using System.Reflection;
-using System.Text;
-using System.Threading.Tasks;
 using WIF4_5 = System.Security.Claims;
 
 namespace Yvand.ClaimsProviders.Configuration
