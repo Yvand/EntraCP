@@ -80,7 +80,7 @@ namespace Yvand.ClaimsProviders.Configuration
         private string _EntityType;
 
         /// <summary>
-        /// Set if this will create a User or a Group permission. Values allowed are "User" or "FormsRole"
+        /// Gets or sets this property to define if the entity created is a User (SPClaimEntityTypes.User) or a Group (SPClaimEntityTypes.FormsRole). Accepted values are "User" or "FormsRole"
         /// </summary>
         public string SharePointEntityType
         {

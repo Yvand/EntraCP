@@ -1,8 +1,5 @@
-﻿using Yvand.ClaimsProviders;
-using Microsoft.SharePoint.Administration.Claims;
+﻿using Microsoft.SharePoint.Administration.Claims;
 using NUnit.Framework;
-using System;
-using System.Linq;
 using System.Security.Claims;
 using Yvand.ClaimsProviders.Configuration;
 
@@ -21,6 +18,14 @@ namespace AzureCP.Tests
             Config.EnableAugmentation = true;
             Config.ClaimTypes.GetByClaimType(Config.SPTrust.IdentityClaimTypeInformation.MappedClaimType).PrefixToBypassLookup = "bypass-user:";
             Config.ClaimTypes.GetByClaimType(UnitTestsHelper.TrustedGroupToAdd_ClaimType).PrefixToBypassLookup = "bypass-group:";
+            ClaimTypeConfig ctConfigExtensionAttribute = new ClaimTypeConfig
+            {
+                ClaimType = TestContext.Parameters["MultiPurposeCustomClaimType"],
+                ClaimTypeDisplayName = "homephone",
+                EntityProperty = DirectoryObjectProperty.extensionAttribute1,
+                SharePointEntityType = "FormsRole",
+            };
+            Config.ClaimTypes.Add(ctConfigExtensionAttribute);
             Config.Update();
         }
 
@@ -70,6 +75,18 @@ namespace AzureCP.Tests
             {
                 Config.AlwaysResolveUserInput = false;
                 Config.Update();
+            }
+        }
+
+        [TestCase("val", 1, "value1")]
+        public void SearchAndValidateExtensionAttributeTest(string inputValue, int expectedCount, string expectedClaimValue)
+        {
+            UnitTestsHelper.TestSearchOperation(inputValue, expectedCount, expectedClaimValue);
+
+            if (expectedCount > 0)
+            {
+                SPClaim inputClaim = new SPClaim(TestContext.Parameters["MultiPurposeCustomClaimType"], expectedClaimValue, ClaimValueTypes.String, SPOriginalIssuers.Format(SPOriginalIssuerType.TrustedProvider, Config.SPTrust.Name));
+                UnitTestsHelper.TestValidationOperation(inputClaim, true, expectedClaimValue);
             }
         }
 

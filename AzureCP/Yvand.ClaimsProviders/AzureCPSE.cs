@@ -522,7 +522,7 @@ namespace Yvand.ClaimsProviders
         /// </summary>
         /// <param name="directoryObject"></param>
         /// <param name="propertyName"></param>
-        /// <returns>Null if property doesn't exist, String.Empty if property exists but has no value, actual value otherwise</returns>
+        /// <returns>Null if property does not exist, String.Empty if property exists but it has no value, actual value otherwise</returns>
         public static string GetPropertyValue(object directoryObject, string propertyName)
         {
             if (directoryObject == null)
@@ -545,10 +545,6 @@ namespace Yvand.ClaimsProviders
                             {
                                 returnString = obj.Value.ToString();
                             }
-                            else
-                            {
-                                return null;
-                            }
                         }
                     }
                     else if (directoryObject is Group)
@@ -561,25 +557,22 @@ namespace Yvand.ClaimsProviders
                             {
                                 returnString = obj.Value.ToString();
                             }
-                            else
-                            {
-                                return null;
-                            }
                         }
                     }
-                    return returnString == null ? propertyName : returnString;
+                    // Never return null for an extensionAttribute since we know it exists for both User and Group
+                    return returnString == null ? String.Empty : returnString;
                 }
                 catch
                 {
-                    return null;
+                    return String.Empty;
                 }
             }
 
             PropertyInfo pi = directoryObject.GetType().GetProperty(propertyName);
             if (pi == null)
             {
-                return null;
-            }   // Property doesn't exist
+                return null; // Property does not exist, return null
+            }
             object propertyValue = pi.GetValue(directoryObject, null);
             return propertyValue == null ? String.Empty : propertyValue.ToString();
         }

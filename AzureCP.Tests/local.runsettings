@@ -16,5 +16,6 @@
     <Parameter name="ClaimsProviderConfigName" value="AzureCPSEConfig" />
     <Parameter name="TestLogFileName" value="AzureCPIntegrationTests.log" />
     <Parameter name="ProxyAddress" value="http://localhost:8888" />
+    <Parameter name="MultiPurposeCustomClaimType" value="http://schemas.yvand.org/claims/type1" />
   </TestRunParameters>
 </RunSettings>
