@@ -50,14 +50,14 @@ namespace Yvand.ClaimsProviders.Tests
         public static string TrustedGroupToAdd_ClaimValue => TestContext.Parameters["TrustedGroupToAdd_ClaimValue"];
         public static SPClaim TrustedGroup => new SPClaim(TrustedGroupToAdd_ClaimType, TrustedGroupToAdd_ClaimValue, ClaimValueTypes.String, SPOriginalIssuers.Format(SPOriginalIssuerType.TrustedProvider, SPTrust.Name));
         protected AzureADEntityProviderConfiguration Config;
-        private AzureADEntityProviderConfiguration BackupConfig;
+        private static AzureADEntityProviderConfiguration BackupConfig;
 
         [OneTimeSetUp]
         public void Init()
         {
             Trace.TraceInformation($"{DateTime.Now.ToString("s")} Start backup of current AzureCP configuration");
             Config = AzureCPSE.GetConfiguration();
-            if (Config != null)
+            if (Config != null && BackupConfig != null)
             {
                 BackupConfig = Config.CopyConfiguration() as AzureADEntityProviderConfiguration;
             }
@@ -79,6 +79,11 @@ namespace Yvand.ClaimsProviders.Tests
             string json = File.ReadAllText(UnitTestsHelper.AzureTenantsJsonFile);
             List<AzureTenant> azureTenants = JsonConvert.DeserializeObject<List<AzureTenant>>(json);
             Config.AzureTenants = azureTenants;
+            foreach(AzureTenant tenant in azureTenants)
+            {
+                tenant.ExcludeMemberUsers = ExcludeMemberUsers;
+                tenant.ExcludeGuestUsers = ExcludeGuestUsers;
+            }
             Config.Update();
             Trace.TraceInformation($"{DateTime.Now.ToString("s")} Set {Config.AzureTenants.Count} Azure AD tenants to AzureCP configuration");
         }
@@ -322,13 +327,13 @@ namespace Yvand.ClaimsProviders.Tests
         }
 
 #if DEBUG
-        //[TestCaseSource(typeof(SearchEntityDataSourceCollection))]
-        public void DEBUG_SearchEntitiesFromCollection(string inputValue, string expectedCount, string expectedClaimValue)
-        {
-            if (!TestSearch) { return; }
+        ////[TestCaseSource(typeof(SearchEntityDataSourceCollection))]
+        //public void DEBUG_SearchEntitiesFromCollection(string inputValue, string expectedCount, string expectedClaimValue)
+        //{
+        //    if (!TestSearch) { return; }
 
-            TestSearchOperation(inputValue, Convert.ToInt32(expectedCount), expectedClaimValue);
-        }
+        //    TestSearchOperation(inputValue, Convert.ToInt32(expectedCount), expectedClaimValue);
+        //}
 
         [TestCase(@"AADGroup1130", 1, "e86ace87-37ba-4ee1-8087-ecd783728233")]
         [TestCase(@"xyzguest", 0, "xyzGUEST@contoso.com")]

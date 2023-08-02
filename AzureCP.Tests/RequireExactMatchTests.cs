@@ -3,10 +3,10 @@ using NUnit.Framework;
 using System.Security.Claims;
 using Yvand.ClaimsProviders.Tests;
 
-namespace AzureCP.Tests
+namespace Yvand.ClaimsProviders.Tests
 {
     [TestFixture]
-    public class RequireExactMatchOnBaseConfigTests : BackupCurrentConfig
+    public class RequireExactMatchOnBaseConfigTests : NewEntityTestsBase
     {
         public override void InitializeConfiguration()
         {
