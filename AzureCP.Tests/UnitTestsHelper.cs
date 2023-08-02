@@ -23,7 +23,7 @@ public class UnitTestsHelper
     public const int MaxTime = 50000;
     public static string FarmAdmin => TestContext.Parameters["FarmAdmin"];
 #if DEBUG
-    public const int TestRepeatCount = 1;
+    public const int TestRepeatCount = 4;//1;
 #else
     public const int TestRepeatCount = 20;
 #endif
@@ -67,7 +67,8 @@ public class UnitTestsHelper
         }
 
 #if DEBUG
-        //return; // Uncommented when debugging AzureCP code from unit tests
+        TestSiteCollUri = new Uri($"http://spsites{TestSiteRelativePath}");
+        return; // Uncommented when debugging AzureCP code from unit tests
 #endif
 
         var service = SPFarm.Local.Services.GetValue<SPWebService>(String.Empty);
@@ -188,7 +189,7 @@ public class UnitTestsHelper
             }
         }
 
-        if (!entityValueFound && expectedCount > 0)
+        if (!String.IsNullOrWhiteSpace(expectedClaimValue) && !entityValueFound && expectedCount > 0)
         {
             Assert.Fail($"Input \"{input}\" returned no entity with claim value \"{expectedClaimValue}\". {detailedLog.ToString()}");
         }

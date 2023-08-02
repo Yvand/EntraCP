@@ -477,16 +477,23 @@ namespace Yvand.ClaimsProviders.AzureAD
                                     addUser = true;
                                 }
 
+                                bool continueIteration = true;
                                 if (addUser)
                                 {
-                                    tenantResultCount++;
                                     lock (lockAddResultToCollection)
                                     {
-                                        tenantResults.Add(user);
+                                        if (tenantResultCount < currentContext.MaxCount)
+                                        {
+                                            tenantResults.Add(user);
+                                            tenantResultCount++;
+                                        }
+                                        else
+                                        {
+                                            continueIteration = false;
+                                        }
                                     }
                                 }
-                                return tenantResultCount < currentContext.MaxCount - 1 ? true : false;
-                                //return true; // return true to continue the iteration
+                                return continueIteration; // return true to continue the iteration
                             });
                         await usersPageIterator.IterateAsync().ConfigureAwait(false);
                     }
@@ -499,13 +506,20 @@ namespace Yvand.ClaimsProviders.AzureAD
                             groupCollectionResult,
                             (group) =>
                             {
-                                tenantResultCount++;
+                                bool continueIteration = true;
                                 lock (lockAddResultToCollection)
                                 {
-                                    tenantResults.Add(group);
+                                    if (tenantResultCount < currentContext.MaxCount)
+                                    {
+                                        tenantResults.Add(group);
+                                        tenantResultCount++;
+                                    }
+                                    else
+                                    {
+                                        continueIteration = false;
+                                    }
                                 }
-                                return tenantResultCount < currentContext.MaxCount - 1 ? true : false;
-                                //return true; // return true to continue the iteration
+                                return continueIteration; // return true to continue the iteration
                             });
                         await groupsPageIterator.IterateAsync().ConfigureAwait(false);
                     }

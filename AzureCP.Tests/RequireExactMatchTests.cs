@@ -1,4 +1,6 @@
-﻿using NUnit.Framework;
+﻿using Microsoft.SharePoint.Administration.Claims;
+using NUnit.Framework;
+using System.Security.Claims;
 
 namespace AzureCP.Tests
 {
@@ -41,6 +43,12 @@ namespace AzureCP.Tests
         {
             int expectedCount = registrationData.ShouldValidate ? 1 : 0;
             UnitTestsHelper.TestSearchOperation(registrationData.ClaimValue, expectedCount, registrationData.ClaimValue);
+        }
+
+        [TestCase("value1", 1, "value1")]
+        public override void SearchAndValidateExtensionAttributeTest(string inputValue, int expectedCount, string expectedClaimValue)
+        {
+            base.SearchAndValidateExtensionAttributeTest(inputValue, expectedCount, expectedClaimValue);
         }
     }
 }

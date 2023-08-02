@@ -7,7 +7,7 @@ using Yvand.ClaimsProviders.Configuration;
 namespace AzureCP.Tests
 {
     [TestFixture]
-    //[Parallelizable(ParallelScope.Children)]
+    [Parallelizable(ParallelScope.All)]
     public class EntityTestsBase : BackupCurrentConfig
     {
         /// <summary>
@@ -115,10 +115,11 @@ namespace AzureCP.Tests
             UnitTestsHelper.TestSearchOperation(inputValue, Convert.ToInt32(expectedCount), expectedClaimValue);
         }
 
-        [TestCase(@"AADGroup1", 1, "30ef0958-c003-4667-a0ad-ef9783acaf25")]
+        [TestCase(@"AADGroup1130", 1, "e86ace87-37ba-4ee1-8087-ecd783728233")]
         [TestCase(@"xyzguest", 0, "xyzGUEST@contoso.com")]
         [TestCase(@"AzureGr}", 1, "ef7d18e6-5c4d-451a-9663-a976be81c91e")]
-        [TestCase(@"aad", 30, "aadUser1@Yvand.onmicrosoft.com")]
+        [TestCase(@"aad", 30, "")]
+        [TestCase(@"AADGroup", 30, "")]
         public void DEBUG_SearchEntities(string inputValue, int expectedResultCount, string expectedEntityClaimValue)
         {
             if (!TestSearch) { return; }
@@ -126,7 +127,7 @@ namespace AzureCP.Tests
             UnitTestsHelper.TestSearchOperation(inputValue, expectedResultCount, expectedEntityClaimValue);
         }
 
-        //[TestCase("http://schemas.microsoft.com/ws/2008/06/identity/claims/role", "5b0f6c56-c87f-44c3-9354-56cba03da433", true)]
+        [TestCase("http://schemas.microsoft.com/ws/2008/06/identity/claims/role", "ef7d18e6-5c4d-451a-9663-a976be81c91e", true)]
         [TestCase("http://schemas.xmlsoap.org/ws/2005/05/identity/claims/upn", "FakeGuest@contoso.com", false)]
         [TestCase("http://schemas.xmlsoap.org/ws/2005/05/identity/claims/emailaddress", "FakeGuest.com#EXT#@XXX.onmicrosoft.com", false)]
         [TestCase("http://schemas.xmlsoap.org/ws/2005/05/identity/claims/upn", "FakeGuest.com#EXT#@XXX.onmicrosoft.com", false)]

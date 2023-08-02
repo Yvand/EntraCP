@@ -6,6 +6,7 @@ using Yvand.ClaimsProviders.Configuration;
 namespace AzureCP.Tests
 {
     [TestFixture]
+    [Parallelizable(ParallelScope.All)]
     public class CustomConfigTests : BackupCurrentConfig
     {
         public static string GroupsClaimType = ClaimsProviderConstants.DefaultMainGroupClaimType;
@@ -21,7 +22,7 @@ namespace AzureCP.Tests
             ClaimTypeConfig ctConfigExtensionAttribute = new ClaimTypeConfig
             {
                 ClaimType = TestContext.Parameters["MultiPurposeCustomClaimType"],
-                ClaimTypeDisplayName = "homephone",
+                ClaimTypeDisplayName = "extattr1",
                 EntityProperty = DirectoryObjectProperty.extensionAttribute1,
                 SharePointEntityType = "FormsRole",
             };
@@ -66,7 +67,7 @@ namespace AzureCP.Tests
 
             try
             {
-                UnitTestsHelper.TestSearchOperation(UnitTestsHelper.RandomClaimValue, 2, UnitTestsHelper.RandomClaimValue);
+                UnitTestsHelper.TestSearchOperation(UnitTestsHelper.RandomClaimValue, 3, UnitTestsHelper.RandomClaimValue);
 
                 SPClaim inputClaim = new SPClaim(Config.SPTrust.IdentityClaimTypeInformation.MappedClaimType, UnitTestsHelper.RandomClaimValue, ClaimValueTypes.String, SPOriginalIssuers.Format(SPOriginalIssuerType.TrustedProvider, Config.SPTrust.Name));
                 UnitTestsHelper.TestValidationOperation(inputClaim, true, UnitTestsHelper.RandomClaimValue);
@@ -79,7 +80,7 @@ namespace AzureCP.Tests
         }
 
         [TestCase("val", 1, "value1")]
-        public void SearchAndValidateExtensionAttributeTest(string inputValue, int expectedCount, string expectedClaimValue)
+        public virtual void SearchAndValidateExtensionAttributeTest(string inputValue, int expectedCount, string expectedClaimValue)
         {
             UnitTestsHelper.TestSearchOperation(inputValue, expectedCount, expectedClaimValue);
 
