@@ -20,7 +20,7 @@ namespace AzureCP.Tests
         [OneTimeSetUp]
         public void Init()
         {
-            Trace.WriteLine($"{DateTime.Now.ToString("s")} Start backup of current AzureCP configuration");
+            Trace.TraceInformation($"{DateTime.Now.ToString("s")} Start backup of current AzureCP configuration");
             Config = AzureCPSE.GetConfiguration();
             if (Config == null)
             {
@@ -47,16 +47,25 @@ namespace AzureCP.Tests
             List<AzureTenant> azureTenants = JsonConvert.DeserializeObject<List<AzureTenant>>(json);
             Config.AzureTenants = azureTenants;
             Config.Update();
-            Trace.WriteLine($"{DateTime.Now.ToString("s")} Set {Config.AzureTenants.Count} Azure AD tenants to AzureCP configuration");
+            Trace.TraceInformation($"{DateTime.Now.ToString("s")} Set {Config.AzureTenants.Count} Azure AD tenants to AzureCP configuration");
         }
 
         [OneTimeTearDown]
         public void Cleanup()
         {
+            try
+            { 
             //Config.ApplyConfiguration(BackupConfig);
             //Config.Update();
-            AzureCPSE.SaveConfiguration(BackupConfig);
-            Trace.WriteLine($"{DateTime.Now.ToString("s")} Restored original settings of AzureCP configuration");
+            Config = BackupConfig.CopyConfiguration() as AzureADEntityProviderConfiguration;
+            Config.Update();
+            //AzureCPSE.SaveConfiguration(Config);
+            Trace.TraceInformation($"{DateTime.Now.ToString("s")} Restored original settings of AzureCP configuration");
+            }
+            catch(Exception ex)
+            {
+                Trace.TraceError($"{DateTime.Now.ToString("s")} Unexpected error while restoring the original settings of AzureCP configuration: {ex.Message}");
+            }
         }
     }
 }

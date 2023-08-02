@@ -10,7 +10,7 @@
     <Parameter name="DataFile_GuestAccountsUPN_Search" value="C:\YvanData\Dev\AzureCP_Tests_GuestAccountsUPN_Search.csv" />
     <Parameter name="DataFile_GuestAccountsUPN_Validate" value="C:\YvanData\Dev\AzureCP_Tests_GuestAccountsUPN_Validate.csv" />
     <Parameter name="FarmAdmin" value="i:0#.w|contoso\yvand" />
-    <Parameter name="TestSiteCollectionName" value="AzureCP.UnitTests" />
+    <Parameter name="TestSiteCollectionName" value="AzureCPSE.UnitTests" />
     <Parameter name="TrustedGroupToAdd_ClaimType" value="http://schemas.microsoft.com/ws/2008/06/identity/claims/role" />
     <Parameter name="TrustedGroupToAdd_ClaimValue" value="30ef0958-c003-4667-a0ad-ef9783acaf25" />
     <Parameter name="ClaimsProviderConfigName" value="AzureCPSEConfig" />

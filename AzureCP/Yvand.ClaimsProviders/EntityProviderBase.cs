@@ -170,8 +170,15 @@ namespace Yvand.ClaimsProviders
 
         public static void SaveGlobalConfiguration(TConfiguration globalConfiguration)
         {
+            try
+            { 
             // If parameter ensure is true, the call will not throw if the object already exists.
             globalConfiguration.Update(true);
+            }
+            catch (Exception ex)
+            {
+                Logger.LogException("", "in SaveGlobalConfiguration", TraceCategory.Configuration, ex);
+            }
         }
     }
 }

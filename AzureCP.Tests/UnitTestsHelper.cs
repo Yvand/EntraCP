@@ -13,7 +13,6 @@ using System.Security.Claims;
 using System.Text;
 using Yvand.ClaimsProviders;
 using Yvand.ClaimsProviders.Configuration;
-using Yvand.ClaimsProviders.Configuration.AzureAD;
 
 [SetUpFixture]
 public class UnitTestsHelper
@@ -42,36 +41,29 @@ public class UnitTestsHelper
     public static string DataFile_GuestAccountsUPN_Validate => TestContext.Parameters["DataFile_GuestAccountsUPN_Validate"];
     public static string DataFile_AllAccounts_Search => TestContext.Parameters["DataFile_AllAccounts_Search"];
     public static string DataFile_AllAccounts_Validate => TestContext.Parameters["DataFile_AllAccounts_Validate"];
-    static TextWriterTraceListener logFileListener { get; set; }
+    static TextWriterTraceListener Logger { get; set; }
     public static SPTrustedLoginProvider SPTrust => SPSecurityTokenServiceManager.Local.TrustedLoginProviders.FirstOrDefault(x => String.Equals(x.ClaimProviderName, "AzureCPSE", StringComparison.InvariantCultureIgnoreCase));
 
     [OneTimeSetUp]
     public static void InitializeSiteCollection()
     {
-        logFileListener = new TextWriterTraceListener(TestContext.Parameters["TestLogFileName"]);
-        Trace.Listeners.Add(logFileListener);
+        Logger = new TextWriterTraceListener(TestContext.Parameters["TestLogFileName"]);
+        Trace.Listeners.Add(Logger);
         Trace.AutoFlush = true;
         Trace.TraceInformation($"{DateTime.Now.ToString("s")} Start integration tests of {AzureCPSE.ClaimsProviderName} {FileVersionInfo.GetVersionInfo(Assembly.GetAssembly(typeof(AzureCPSE)).Location).FileVersion}.");
-        Trace.WriteLine($"{DateTime.Now.ToString("s")} DataFile_AllAccounts_Search: {DataFile_AllAccounts_Search}");
-        Trace.WriteLine($"{DateTime.Now.ToString("s")} DataFile_AllAccounts_Validate: {DataFile_AllAccounts_Validate}");
-        Trace.WriteLine($"{DateTime.Now.ToString("s")} DataFile_GuestAccountsUPN_Search: {DataFile_GuestAccountsUPN_Search}");
-        Trace.WriteLine($"{DateTime.Now.ToString("s")} DataFile_GuestAccountsUPN_Validate: {DataFile_GuestAccountsUPN_Validate}");
-        Trace.WriteLine($"{DateTime.Now.ToString("s")} TestSiteCollectionName: {TestContext.Parameters["TestSiteCollectionName"]}");
+        Trace.TraceInformation($"{DateTime.Now.ToString("s")} DataFile_AllAccounts_Search: {DataFile_AllAccounts_Search}");
+        Trace.TraceInformation($"{DateTime.Now.ToString("s")} DataFile_AllAccounts_Validate: {DataFile_AllAccounts_Validate}");
+        Trace.TraceInformation($"{DateTime.Now.ToString("s")} DataFile_GuestAccountsUPN_Search: {DataFile_GuestAccountsUPN_Search}");
+        Trace.TraceInformation($"{DateTime.Now.ToString("s")} DataFile_GuestAccountsUPN_Validate: {DataFile_GuestAccountsUPN_Validate}");
+        Trace.TraceInformation($"{DateTime.Now.ToString("s")} TestSiteCollectionName: {TestContext.Parameters["TestSiteCollectionName"]}");
 
-        //AzureADEntityProviderConfiguration config = AzureCPSE.GetConfiguration();
-        //if (config == null)
-        //{
-        //    AzureCPSE.CreateConfiguration();
-        //}
-
-        //ClaimsProvider.ValidateLocalConfiguration(null);
         if (SPTrust == null)
         {
             Trace.TraceError($"{DateTime.Now.ToString("s")} SPTrust: is null");
         }
         else
         {
-            Trace.WriteLine($"{DateTime.Now.ToString("s")} SPTrust: {SPTrust.Name}");
+            Trace.TraceInformation($"{DateTime.Now.ToString("s")} SPTrust: {SPTrust.Name}");
         }
 
 #if DEBUG
@@ -99,7 +91,7 @@ public class UnitTestsHelper
             return;
         }
 
-        Trace.WriteLine($"{DateTime.Now.ToString("s")} Web application {wa.Name} found.");
+        Trace.TraceInformation($"{DateTime.Now.ToString("s")} Web application {wa.Name} found.");
         Uri waRootAuthority = wa.AlternateUrls[0].Uri;
         TestSiteCollUri = new Uri($"{waRootAuthority.GetLeftPart(UriPartial.Authority)}{TestSiteRelativePath}");
         SPClaimProviderManager claimMgr = SPClaimProviderManager.Local;
@@ -109,7 +101,7 @@ public class UnitTestsHelper
         // The root site may not exist, but it must be present for tests to run
         if (!SPSite.Exists(waRootAuthority))
         {
-            Trace.WriteLine($"{DateTime.Now.ToString("s")} Creating root site collection {waRootAuthority.AbsoluteUri}...");
+            Trace.TraceInformation($"{DateTime.Now.ToString("s")} Creating root site collection {waRootAuthority.AbsoluteUri}...");
             SPSite spSite = wa.Sites.Add(waRootAuthority.AbsoluteUri, "root", "root", 1033, "STS#3", FarmAdmin, String.Empty, String.Empty);
             spSite.RootWeb.CreateDefaultAssociatedGroups(FarmAdmin, FarmAdmin, spSite.RootWeb.Title);
 
@@ -120,7 +112,7 @@ public class UnitTestsHelper
 
         if (!SPSite.Exists(TestSiteCollUri))
         {
-            Trace.WriteLine($"{DateTime.Now.ToString("s")} Creating site collection {TestSiteCollUri.AbsoluteUri}...");
+            Trace.TraceInformation($"{DateTime.Now.ToString("s")} Creating site collection {TestSiteCollUri.AbsoluteUri}...");
             SPSite spSite = wa.Sites.Add(TestSiteCollUri.AbsoluteUri, AzureCPSE.ClaimsProviderName, AzureCPSE.ClaimsProviderName, 1033, "STS#3", FarmAdmin, String.Empty, String.Empty);
             spSite.RootWeb.CreateDefaultAssociatedGroups(FarmAdmin, FarmAdmin, spSite.RootWeb.Title);
 
@@ -141,11 +133,11 @@ public class UnitTestsHelper
     [OneTimeTearDown]
     public static void Cleanup()
     {
-        Trace.WriteLine($"{DateTime.Now.ToString("s")} Integration tests of {AzureCPSE.ClaimsProviderName} {FileVersionInfo.GetVersionInfo(Assembly.GetAssembly(typeof(AzureCPSE)).Location).FileVersion} finished.");
+        Trace.TraceInformation($"{DateTime.Now.ToString("s")} Integration tests of {AzureCPSE.ClaimsProviderName} {FileVersionInfo.GetVersionInfo(Assembly.GetAssembly(typeof(AzureCPSE)).Location).FileVersion} finished.");
         Trace.Flush();
-        if (logFileListener != null)
+        if (Logger != null)
         {
-            logFileListener.Dispose();
+            Logger.Dispose();
         }
     }
 
@@ -174,7 +166,7 @@ public class UnitTestsHelper
             entities = ClaimsProvider.Resolve(TestSiteCollUri, entityTypes, inputValue).ToList();
             VerifySearchTest(entities, inputValue, expectedCount, expectedClaimValue);
             timer.Stop();
-            Trace.WriteLine($"{DateTime.Now.ToString("s")} TestSearchOperation finished in {timer.ElapsedMilliseconds} ms. Parameters: inputValue: '{inputValue}', expectedCount: '{expectedCount}', expectedClaimValue: '{expectedClaimValue}'.");
+            Trace.TraceInformation($"{DateTime.Now.ToString("s")} TestSearchOperation finished in {timer.ElapsedMilliseconds} ms. Parameters: inputValue: '{inputValue}', expectedCount: '{expectedCount}', expectedClaimValue: '{expectedClaimValue}'.");
         }
         catch (Exception ex)
         {
@@ -226,7 +218,7 @@ public class UnitTestsHelper
                 StringAssert.AreEqualIgnoringCase(expectedClaimValue, entities[0].Claim.Value, $"Validation of entity \"{inputClaim.Value}\" should have returned value \"{expectedClaimValue}\", but it returned \"{entities[0].Claim.Value}\" instead.");
             }
             timer.Stop();
-            Trace.WriteLine($"{DateTime.Now.ToString("s")} TestValidationOperation finished in {timer.ElapsedMilliseconds} ms. Parameters: inputClaim.Value: '{inputClaim.Value}', shouldValidate: '{shouldValidate}', expectedClaimValue: '{expectedClaimValue}'.");
+            Trace.TraceInformation($"{DateTime.Now.ToString("s")} TestValidationOperation finished in {timer.ElapsedMilliseconds} ms. Parameters: inputClaim.Value: '{inputClaim.Value}', shouldValidate: '{shouldValidate}', expectedClaimValue: '{expectedClaimValue}'.");
         }
         catch (Exception ex)
         {
@@ -260,7 +252,7 @@ public class UnitTestsHelper
                 Assert.IsFalse(groupFound, $"Entity \"{claimValue}\" should NOT be member of group \"{TrustedGroupToAdd_ClaimValue}\", but this group was found in the claims returned by the claims provider.");
             }
             timer.Stop();
-            Trace.WriteLine($"{DateTime.Now.ToString("s")} TestAugmentationOperation finished in {timer.ElapsedMilliseconds} ms. Parameters: claimType: '{claimType}', claimValue: '{claimValue}', isMemberOfTrustedGroup: '{isMemberOfTrustedGroup}'.");
+            Trace.TraceInformation($"{DateTime.Now.ToString("s")} TestAugmentationOperation finished in {timer.ElapsedMilliseconds} ms. Parameters: claimType: '{claimType}', claimValue: '{claimValue}', isMemberOfTrustedGroup: '{isMemberOfTrustedGroup}'.");
         }
         catch (Exception ex)
         {
