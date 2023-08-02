@@ -13,13 +13,14 @@ using System.Security.Claims;
 using System.Text;
 using Yvand.ClaimsProviders;
 using Yvand.ClaimsProviders.Configuration;
+using Yvand.ClaimsProviders.Tests;
 
 [SetUpFixture]
 public class UnitTestsHelper
 {
     public static readonly AzureCPSE ClaimsProvider = new AzureCPSE("AzureCPSE");
     public static string TestSiteRelativePath => $"/sites/{TestContext.Parameters["TestSiteCollectionName"]}";
-    private static Uri TestSiteCollUri;
+    public static Uri TestSiteCollUri;
     public const int MaxTime = 50000;
     public static string FarmAdmin => TestContext.Parameters["FarmAdmin"];
 #if DEBUG
@@ -68,6 +69,7 @@ public class UnitTestsHelper
 
 #if DEBUG
         TestSiteCollUri = new Uri($"http://spsites{TestSiteRelativePath}");
+        NewEntityTestsBase.TestSiteCollUri = new Uri($"http://spsites{TestSiteRelativePath}");
         return; // Uncommented when debugging AzureCP code from unit tests
 #endif
 

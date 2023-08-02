@@ -2,12 +2,11 @@
 using NUnit.Framework;
 using System.Security.Claims;
 using Yvand.ClaimsProviders.Configuration;
+using Yvand.ClaimsProviders.Tests;
 
-namespace AzureCP.Tests
+namespace Yvand.ClaimsProviders.Tests
 {
-    [TestFixture]
-    [Parallelizable(ParallelScope.All)]
-    public class CustomConfigTests : BackupCurrentConfig
+    public class CustomConfigTestsBase : NewEntityTestsBase
     {
         public static string GroupsClaimType = ClaimsProviderConstants.DefaultMainGroupClaimType;
 
@@ -29,18 +28,23 @@ namespace AzureCP.Tests
             Config.ClaimTypes.Add(ctConfigExtensionAttribute);
             Config.Update();
         }
+    }
 
+    [TestFixture]
+    [Parallelizable(ParallelScope.Children)]
+    public class CustomConfigTests : CustomConfigTestsBase
+    {
         [TestCase("bypass-user:externalUser@contoso.com", 1, "externalUser@contoso.com")]
         [TestCase("externalUser@contoso.com", 0, "")]
         [TestCase("bypass-user:", 0, "")]
         public void BypassLookupOnIdentityClaimTest(string inputValue, int expectedCount, string expectedClaimValue)
         {
-            UnitTestsHelper.TestSearchOperation(inputValue, expectedCount, expectedClaimValue);
+            TestSearchOperation(inputValue, expectedCount, expectedClaimValue);
 
             if (expectedCount > 0)
             {
                 SPClaim inputClaim = new SPClaim(Config.SPTrust.IdentityClaimTypeInformation.MappedClaimType, expectedClaimValue, ClaimValueTypes.String, SPOriginalIssuers.Format(SPOriginalIssuerType.TrustedProvider, Config.SPTrust.Name));
-                UnitTestsHelper.TestValidationOperation(inputClaim, true, expectedClaimValue);
+                TestValidationOperation(inputClaim, true, expectedClaimValue);
             }
         }
 
@@ -49,12 +53,12 @@ namespace AzureCP.Tests
         [TestCase("bypass-group:", 0, "")]
         public void BypassLookupOnGroupClaimTest(string inputValue, int expectedCount, string expectedClaimValue)
         {
-            UnitTestsHelper.TestSearchOperation(inputValue, expectedCount, expectedClaimValue);
+            TestSearchOperation(inputValue, expectedCount, expectedClaimValue);
 
             if (expectedCount > 0)
             {
                 SPClaim inputClaim = new SPClaim(UnitTestsHelper.TrustedGroupToAdd_ClaimType, expectedClaimValue, ClaimValueTypes.String, SPOriginalIssuers.Format(SPOriginalIssuerType.TrustedProvider, Config.SPTrust.Name));
-                UnitTestsHelper.TestValidationOperation(inputClaim, true, expectedClaimValue);
+                TestValidationOperation(inputClaim, true, expectedClaimValue);
             }
         }
 
@@ -67,10 +71,10 @@ namespace AzureCP.Tests
 
             try
             {
-                UnitTestsHelper.TestSearchOperation(UnitTestsHelper.RandomClaimValue, 3, UnitTestsHelper.RandomClaimValue);
+                TestSearchOperation(UnitTestsHelper.RandomClaimValue, 3, UnitTestsHelper.RandomClaimValue);
 
                 SPClaim inputClaim = new SPClaim(Config.SPTrust.IdentityClaimTypeInformation.MappedClaimType, UnitTestsHelper.RandomClaimValue, ClaimValueTypes.String, SPOriginalIssuers.Format(SPOriginalIssuerType.TrustedProvider, Config.SPTrust.Name));
-                UnitTestsHelper.TestValidationOperation(inputClaim, true, UnitTestsHelper.RandomClaimValue);
+                TestValidationOperation(inputClaim, true, UnitTestsHelper.RandomClaimValue);
             }
             finally
             {
@@ -79,16 +83,10 @@ namespace AzureCP.Tests
             }
         }
 
-        [TestCase("val", 1, "value1")]
-        public virtual void SearchAndValidateExtensionAttributeTest(string inputValue, int expectedCount, string expectedClaimValue)
+        [TestCase("val", 1, "value1")]  // Extension attribute configuration
+        public override void SearchEntities(string inputValue, int expectedResultCount, string expectedEntityClaimValue)
         {
-            UnitTestsHelper.TestSearchOperation(inputValue, expectedCount, expectedClaimValue);
-
-            if (expectedCount > 0)
-            {
-                SPClaim inputClaim = new SPClaim(TestContext.Parameters["MultiPurposeCustomClaimType"], expectedClaimValue, ClaimValueTypes.String, SPOriginalIssuers.Format(SPOriginalIssuerType.TrustedProvider, Config.SPTrust.Name));
-                UnitTestsHelper.TestValidationOperation(inputClaim, true, expectedClaimValue);
-            }
+            base.SearchEntities(inputValue, expectedResultCount, expectedEntityClaimValue);
         }
 
         //[Test, TestCaseSource(typeof(ValidateEntityDataSource), "GetTestData", new object[] { EntityDataSourceType.AllAccounts })]

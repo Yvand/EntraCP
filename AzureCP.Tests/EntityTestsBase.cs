@@ -6,8 +6,6 @@ using Yvand.ClaimsProviders.Configuration;
 
 namespace AzureCP.Tests
 {
-    [TestFixture]
-    [Parallelizable(ParallelScope.All)]
     public class EntityTestsBase : BackupCurrentConfig
     {
         /// <summary>

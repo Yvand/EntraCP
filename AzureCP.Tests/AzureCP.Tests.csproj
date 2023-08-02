@@ -47,6 +47,7 @@
     <Reference Include="System.Core" />
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="NewEntityTestsBase.cs" />
     <Compile Include="ExcludeAllUserAccountsTests.cs" />
     <Compile Include="EntityTestsBase.cs" />
     <Compile Include="ExcludeMemberUserAccountsTests.cs" />
