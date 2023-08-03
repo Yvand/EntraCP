@@ -458,16 +458,12 @@ namespace Yvand.ClaimsProviders.AzureAD
                             (user) =>
                             {
                                 bool addUser = false;
-                                if (tenant.ExcludeMemberUsers == true)
+                                if (tenant.ExcludeMemberUsers == true || tenant.ExcludeGuestUsers == true)
                                 {
-                                    if (!String.Equals(user.UserType, ClaimsProviderConstants.MEMBER_USERTYPE, StringComparison.InvariantCultureIgnoreCase))
-                                    {
-                                        addUser = true;
-                                    }
-                                }
-                                else if (tenant.ExcludeGuestUsers == true)
-                                {
-                                    if (!String.Equals(user.UserType, ClaimsProviderConstants.GUEST_USERTYPE, StringComparison.InvariantCultureIgnoreCase))
+                                    bool userIsAMember = String.Equals(user.UserType, ClaimsProviderConstants.MEMBER_USERTYPE, StringComparison.InvariantCultureIgnoreCase);
+                                    bool userIsAGuest = !userIsAMember;
+                                    if (tenant.ExcludeMemberUsers == true && userIsAMember == false
+                                     && tenant.ExcludeGuestUsers == true && userIsAGuest == false)
                                     {
                                         addUser = true;
                                     }
