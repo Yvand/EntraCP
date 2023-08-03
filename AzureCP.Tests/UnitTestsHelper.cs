@@ -21,7 +21,7 @@ namespace Yvand.ClaimsProviders.Tests
         public const int MaxTime = 50000;
         public static string FarmAdmin => TestContext.Parameters["FarmAdmin"];
 #if DEBUG
-        public const int TestRepeatCount = 4;//1;
+        public const int TestRepeatCount = 1;
 #else
     public const int TestRepeatCount = 20;
 #endif
@@ -188,10 +188,10 @@ namespace Yvand.ClaimsProviders.Tests
             {
                 var registrationData = new SearchEntityData();
                 registrationData.Input = row["Input"];
-                registrationData.ExpectedResultCount = Convert.ToInt32(row["ExpectedResultCount"]);
-                registrationData.ExpectedEntityClaimValue = row["ExpectedEntityClaimValue"];
-                registrationData.ExpectedEntityType = (ResultEntityType) Enum.Parse(typeof(ResultEntityType), row["ExpectedEntityType"]);
-                registrationData.ExpectedUserType = (ResultUserType)Enum.Parse(typeof(ResultUserType), row["ExpectedUserType"]);
+                registrationData.SearchResultCount = Convert.ToInt32(row["SearchResultCount"]);
+                registrationData.SearchResultSingleEntityClaimValue = row["SearchResultSingleEntityClaimValue"];
+                registrationData.SearchResultEntityTypes = (ResultEntityType) Enum.Parse(typeof(ResultEntityType), row["SearchResultEntityTypes"]);
+                registrationData.SearchResultUserTypes = (ResultUserType)Enum.Parse(typeof(ResultUserType), row["SearchResultUserTypes"]);
                 yield return new TestCaseData(new object[] { registrationData });
             }
         }
@@ -215,10 +215,10 @@ namespace Yvand.ClaimsProviders.Tests
     public class SearchEntityData
     {
         public string Input;
-        public int ExpectedResultCount;
-        public string ExpectedEntityClaimValue;
-        public ResultEntityType ExpectedEntityType;
-        public ResultUserType ExpectedUserType;
+        public int SearchResultCount;
+        public string SearchResultSingleEntityClaimValue;
+        public ResultEntityType SearchResultEntityTypes;
+        public ResultUserType SearchResultUserTypes;
     }
 
     public class ValidateEntityDataSource

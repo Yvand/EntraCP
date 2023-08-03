@@ -115,27 +115,24 @@ namespace Yvand.ClaimsProviders.Tests
                 return;
             }
 
-            // If current entry does not return only users, cannot reliably test number of results returned if guest and/or members should be excluded
-            // !String.Equals(registrationData.ExpectedEntityType, "User", StringComparison.InvariantCultureIgnoreCase)
-            if (registrationData.ExpectedEntityType != ResultEntityType.User &&
+            // If current entry does not return only users AND either guests or members are excluded, ExpectedResultCount cannot be determined so test cannot run
+            if (registrationData.SearchResultEntityTypes != ResultEntityType.User &&
                 (ExcludeGuestUsers || ExcludeMemberUsers))
             {
                 return;
             }
 
-            int expectedResultCount = registrationData.ExpectedResultCount;
-            //if (ExcludeGuestUsers && String.Equals(registrationData.ExpectedUserType, ClaimsProviderConstants.GUEST_USERTYPE, StringComparison.InvariantCultureIgnoreCase))
-            if (ExcludeGuestUsers && registrationData.ExpectedUserType == ResultUserType.Guest)
+            int expectedResultCount = registrationData.SearchResultCount;
+            if (ExcludeGuestUsers && registrationData.SearchResultUserTypes == ResultUserType.Guest)
             {
                 expectedResultCount = 0;
             }
-            //if (ExcludeMemberUsers && String.Equals(registrationData.ExpectedUserType, ClaimsProviderConstants.MEMBER_USERTYPE, StringComparison.InvariantCultureIgnoreCase))
-            if (ExcludeMemberUsers && registrationData.ExpectedUserType == ResultUserType.Member)
+            if (ExcludeMemberUsers && registrationData.SearchResultUserTypes == ResultUserType.Member)
             {
                 expectedResultCount = 0;
             }
 
-            TestSearchOperation(registrationData.Input, expectedResultCount, registrationData.ExpectedEntityClaimValue);
+            TestSearchOperation(registrationData.Input, expectedResultCount, registrationData.SearchResultSingleEntityClaimValue);
         }
 
         public virtual void SearchEntities(string inputValue, int expectedResultCount, string expectedEntityClaimValue)

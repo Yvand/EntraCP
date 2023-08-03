@@ -21,23 +21,6 @@ namespace Yvand.ClaimsProviders.Tests
         [Repeat(UnitTestsHelper.TestRepeatCount)]
         public override void SearchEntities(SearchEntityData registrationData)
         {
-            if (registrationData.ExpectedEntityType != ResultEntityType.User)
-            {
-                return; // Cannot run this test if Mixed results since ExpectedResultCount cannot be determined
-            }
-
-            switch (registrationData.ExpectedUserType)
-            {
-                case ResultUserType.Mixed:
-                    registrationData.ExpectedResultCount = 0;
-                    break;
-                case ResultUserType.Member:
-                    registrationData.ExpectedResultCount = 0;
-                    break;
-                case ResultUserType.Guest:
-                    registrationData.ExpectedResultCount = 0;
-                    break;
-            }
             base.SearchEntities(registrationData);
         }
 
@@ -56,6 +39,28 @@ namespace Yvand.ClaimsProviders.Tests
     {
         public override bool ExcludeGuestUsers => true;
         public override bool ExcludeMemberUsers => false;
+
+        [Test, TestCaseSource(typeof(ValidateEntityDataSource), "GetTestData", new object[] { EntityDataSourceType.AllAccounts })]
+        [Repeat(UnitTestsHelper.TestRepeatCount)]
+        public override void AugmentEntity(ValidateEntityData registrationData)
+        {
+            base.AugmentEntity(registrationData);
+        }
+
+        [Test, TestCaseSource(typeof(SearchEntityDataSource), "GetTestData", new object[] { EntityDataSourceType.AllAccounts })]
+        [Repeat(UnitTestsHelper.TestRepeatCount)]
+        public override void SearchEntities(SearchEntityData registrationData)
+        {
+            base.SearchEntities(registrationData);
+        }
+
+        [Test, TestCaseSource(typeof(ValidateEntityDataSource), "GetTestData", new object[] { EntityDataSourceType.AllAccounts })]
+        [MaxTime(UnitTestsHelper.MaxTime)]
+        [Repeat(UnitTestsHelper.TestRepeatCount)]
+        public override void ValidateClaim(ValidateEntityData registrationData)
+        {
+            base.ValidateClaim(registrationData);
+        }
     }
 
     [TestFixture]
@@ -65,24 +70,26 @@ namespace Yvand.ClaimsProviders.Tests
         public override bool ExcludeGuestUsers => false;
         public override bool ExcludeMemberUsers => true;
 
+        [Test, TestCaseSource(typeof(ValidateEntityDataSource), "GetTestData", new object[] { EntityDataSourceType.AllAccounts })]
+        [Repeat(UnitTestsHelper.TestRepeatCount)]
+        public override void AugmentEntity(ValidateEntityData registrationData)
+        {
+            base.AugmentEntity(registrationData);
+        }
+
         [Test, TestCaseSource(typeof(SearchEntityDataSource), "GetTestData", new object[] { EntityDataSourceType.AllAccounts })]
         [Repeat(UnitTestsHelper.TestRepeatCount)]
         public override void SearchEntities(SearchEntityData registrationData)
         {
-            if (registrationData.ExpectedEntityType != ResultEntityType.User)
-            {
-                return; // Cannot run this test if Mixed results since ExpectedResultCount cannot be determined
-            }
-
-            switch (registrationData.ExpectedUserType)
-            {
-                case ResultUserType.Mixed:
-                    return; // Cannot run this test if Mixed results since ExpectedResultCount cannot be determined
-                case ResultUserType.Member:
-                    registrationData.ExpectedResultCount = 0;
-                    break;
-            }
             base.SearchEntities(registrationData);
+        }
+
+        [Test, TestCaseSource(typeof(ValidateEntityDataSource), "GetTestData", new object[] { EntityDataSourceType.AllAccounts })]
+        [MaxTime(UnitTestsHelper.MaxTime)]
+        [Repeat(UnitTestsHelper.TestRepeatCount)]
+        public override void ValidateClaim(ValidateEntityData registrationData)
+        {
+            base.ValidateClaim(registrationData);
         }
     }
 }
