@@ -1,14 +1,14 @@
-﻿using Yvand.ClaimsProviders;
-using NUnit.Framework;
+﻿using NUnit.Framework;
 using Yvand.ClaimsProviders.Configuration;
 
-namespace AzureCP.Tests
+namespace Yvand.ClaimsProviders.Tests
 {
     /// <summary>
     /// Test guest accounts when their identity claim is the UserPrincipalName
     /// </summary>
     [TestFixture]
-    public class GuestAccountsUPNTests : EntityTestsBase
+    [Parallelizable(ParallelScope.Children)]
+    public class GuestAccountsUPNTests : NewEntityTestsBase
     {
         public override void InitializeConfiguration()
         {

@@ -1,13 +1,13 @@
-﻿using Yvand.ClaimsProviders;
-using NUnit.Framework;
+﻿using NUnit.Framework;
 using System;
 using System.Linq;
 using Yvand.ClaimsProviders.Configuration;
 
-namespace AzureCP.Tests
+namespace Yvand.ClaimsProviders.Tests
 {
     [TestFixture]
-    public class ModifyConfigTests : BackupCurrentConfig
+    [NonParallelizable]
+    public class CustomizeConfigTests : NewEntityTestsBase
     {
         const string ConfigUpdateErrorMessage = "Some changes made to list ClaimTypes are invalid and cannot be committed to configuration database. Inspect inner exception for more details about the error.";
 
@@ -31,7 +31,7 @@ namespace AzureCP.Tests
             ctConfig.EntityProperty = UnitTestsHelper.RandomObjectProperty;
             ctConfig.UseMainClaimTypeOfDirectoryObject = true;
             Assert.Throws<InvalidOperationException>(() => Config.ClaimTypes.Add(ctConfig), $"Add a ClaimTypeConfig with UseMainClaimTypeOfDirectoryObject = true and ClaimType set should throw exception InvalidOperationException with this message: \"No claim type should be set if UseMainClaimTypeOfDirectoryObject is set to true\"");
-            
+
             // Add a ClaimTypeConfig with EntityType 'Group' should throw exception InvalidOperationException since 1 already exists by default and AzureCP allows only 1 claim type for EntityType 'Group'
             ctConfig.ClaimType = UnitTestsHelper.RandomClaimType;
             ctConfig.EntityProperty = UnitTestsHelper.RandomObjectProperty;

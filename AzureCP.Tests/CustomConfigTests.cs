@@ -2,7 +2,6 @@
 using NUnit.Framework;
 using System.Security.Claims;
 using Yvand.ClaimsProviders.Configuration;
-using Yvand.ClaimsProviders.Tests;
 
 namespace Yvand.ClaimsProviders.Tests
 {

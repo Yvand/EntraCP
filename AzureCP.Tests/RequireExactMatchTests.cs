@@ -1,7 +1,4 @@
-﻿using Microsoft.SharePoint.Administration.Claims;
-using NUnit.Framework;
-using System.Security.Claims;
-using Yvand.ClaimsProviders.Tests;
+﻿using NUnit.Framework;
 
 namespace Yvand.ClaimsProviders.Tests
 {
@@ -22,7 +19,7 @@ namespace Yvand.ClaimsProviders.Tests
         public void RequireExactMatchDuringSearch(ValidateEntityData registrationData)
         {
             int expectedCount = registrationData.ShouldValidate ? 1 : 0;
-            UnitTestsHelper.TestSearchOperation(registrationData.ClaimValue, expectedCount, registrationData.ClaimValue);
+            TestSearchOperation(registrationData.ClaimValue, expectedCount, registrationData.ClaimValue);
         }
     }
 
@@ -43,7 +40,7 @@ namespace Yvand.ClaimsProviders.Tests
         public void RequireExactMatchDuringSearch(ValidateEntityData registrationData)
         {
             int expectedCount = registrationData.ShouldValidate ? 1 : 0;
-            UnitTestsHelper.TestSearchOperation(registrationData.ClaimValue, expectedCount, registrationData.ClaimValue);
+            TestSearchOperation(registrationData.ClaimValue, expectedCount, registrationData.ClaimValue);
         }
     }
 }

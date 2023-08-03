@@ -3,6 +3,7 @@
 namespace Yvand.ClaimsProviders.Tests
 {
     [TestFixture]
+    [Parallelizable(ParallelScope.Children)]
     public class ExcludeAllUserAccountsTests : NewEntityTestsBase
     {
         public override bool ExcludeGuestUsers => true;
@@ -30,5 +31,21 @@ namespace Yvand.ClaimsProviders.Tests
         {
             base.ValidateClaim(claimType, claimValue, shouldValidate);
         }
+    }
+
+    [TestFixture]
+    [Parallelizable(ParallelScope.Children)]
+    public class ExcludeGuestUserAccountsTests : NewEntityTestsBase
+    {
+        public override bool ExcludeGuestUsers => true;
+        public override bool ExcludeMemberUsers => false;
+    }
+
+    [TestFixture]
+    [Parallelizable(ParallelScope.Children)]
+    public class ExcludeMemberUserAccountsTests : NewEntityTestsBase
+    {
+        public override bool ExcludeGuestUsers => false;
+        public override bool ExcludeMemberUsers => true;
     }
 }
