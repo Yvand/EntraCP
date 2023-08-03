@@ -1,4 +1,5 @@
 ﻿using NUnit.Framework;
+using System.Runtime.CompilerServices;
 
 namespace Yvand.ClaimsProviders.Tests
 {
@@ -16,20 +17,36 @@ namespace Yvand.ClaimsProviders.Tests
             base.AugmentEntity(registrationData);
         }
 
-        [TestCase(@"AADGroup1130", 1, "e86ace87-37ba-4ee1-8087-ecd783728233")]
-        [TestCase(@"aaduser1", 0, "")]
-        public override void SearchEntities(string inputValue, int expectedResultCount, string expectedEntityClaimValue)
+        [Test, TestCaseSource(typeof(SearchEntityDataSource), "GetTestData", new object[] { EntityDataSourceType.AllAccounts })]
+        [Repeat(UnitTestsHelper.TestRepeatCount)]
+        public override void SearchEntities(SearchEntityData registrationData)
         {
-            base.SearchEntities(inputValue, expectedResultCount, expectedEntityClaimValue);
+            if (registrationData.ExpectedEntityType != ResultEntityType.User)
+            {
+                return; // Cannot run this test if Mixed results since ExpectedResultCount cannot be determined
+            }
+
+            switch (registrationData.ExpectedUserType)
+            {
+                case ResultUserType.Mixed:
+                    registrationData.ExpectedResultCount = 0;
+                    break;
+                case ResultUserType.Member:
+                    registrationData.ExpectedResultCount = 0;
+                    break;
+                case ResultUserType.Guest:
+                    registrationData.ExpectedResultCount = 0;
+                    break;
+            }
+            base.SearchEntities(registrationData);
         }
 
-        [TestCase("http://schemas.microsoft.com/ws/2008/06/identity/claims/role", "ef7d18e6-5c4d-451a-9663-a976be81c91e", true)]
-        [TestCase("http://schemas.xmlsoap.org/ws/2005/05/identity/claims/upn", "FakeGuest@contoso.com", false)]
-        [TestCase("http://schemas.xmlsoap.org/ws/2005/05/identity/claims/emailaddress", "FakeGuest.com#EXT#@XXX.onmicrosoft.com", false)]
-        [TestCase("http://schemas.xmlsoap.org/ws/2005/05/identity/claims/upn", "FakeGuest.com#EXT#@XXX.onmicrosoft.com", false)]
-        public override void ValidateClaim(string claimType, string claimValue, bool shouldValidate)
+        [Test, TestCaseSource(typeof(ValidateEntityDataSource), "GetTestData", new object[] { EntityDataSourceType.AllAccounts })]
+        [MaxTime(UnitTestsHelper.MaxTime)]
+        [Repeat(UnitTestsHelper.TestRepeatCount)]
+        public override void ValidateClaim(ValidateEntityData registrationData)
         {
-            base.ValidateClaim(claimType, claimValue, shouldValidate);
+            base.ValidateClaim(registrationData);
         }
     }
 
@@ -47,5 +64,25 @@ namespace Yvand.ClaimsProviders.Tests
     {
         public override bool ExcludeGuestUsers => false;
         public override bool ExcludeMemberUsers => true;
+
+        [Test, TestCaseSource(typeof(SearchEntityDataSource), "GetTestData", new object[] { EntityDataSourceType.AllAccounts })]
+        [Repeat(UnitTestsHelper.TestRepeatCount)]
+        public override void SearchEntities(SearchEntityData registrationData)
+        {
+            if (registrationData.ExpectedEntityType != ResultEntityType.User)
+            {
+                return; // Cannot run this test if Mixed results since ExpectedResultCount cannot be determined
+            }
+
+            switch (registrationData.ExpectedUserType)
+            {
+                case ResultUserType.Mixed:
+                    return; // Cannot run this test if Mixed results since ExpectedResultCount cannot be determined
+                case ResultUserType.Member:
+                    registrationData.ExpectedResultCount = 0;
+                    break;
+            }
+            base.SearchEntities(registrationData);
+        }
     }
 }

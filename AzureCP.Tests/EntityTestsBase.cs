@@ -94,10 +94,13 @@ namespace Yvand.ClaimsProviders.Tests
             {
                 //Config.ApplyConfiguration(BackupConfig);
                 //Config.Update();
-                Config = BackupConfig.CopyConfiguration() as AzureADEntityProviderConfiguration;
-                Config.Update();
-                //AzureCPSE.SaveConfiguration(Config);
-                Trace.TraceInformation($"{DateTime.Now.ToString("s")} Restored original settings of AzureCP configuration");
+                if (BackupConfig != null)
+                {
+                    Config = BackupConfig.CopyConfiguration() as AzureADEntityProviderConfiguration;
+                    Config.Update();
+                    //AzureCPSE.SaveConfiguration(Config);
+                    Trace.TraceInformation($"{DateTime.Now.ToString("s")} Restored original settings of AzureCP configuration");
+                }
             }
             catch (Exception ex)
             {
@@ -113,18 +116,21 @@ namespace Yvand.ClaimsProviders.Tests
             }
 
             // If current entry does not return only users, cannot reliably test number of results returned if guest and/or members should be excluded
-            if (!String.Equals(registrationData.ResultType, "User", StringComparison.InvariantCultureIgnoreCase) &&
+            // !String.Equals(registrationData.ExpectedEntityType, "User", StringComparison.InvariantCultureIgnoreCase)
+            if (registrationData.ExpectedEntityType != ResultEntityType.User &&
                 (ExcludeGuestUsers || ExcludeMemberUsers))
             {
                 return;
             }
 
             int expectedResultCount = registrationData.ExpectedResultCount;
-            if (ExcludeGuestUsers && String.Equals(registrationData.UserType, ClaimsProviderConstants.GUEST_USERTYPE, StringComparison.InvariantCultureIgnoreCase))
+            //if (ExcludeGuestUsers && String.Equals(registrationData.ExpectedUserType, ClaimsProviderConstants.GUEST_USERTYPE, StringComparison.InvariantCultureIgnoreCase))
+            if (ExcludeGuestUsers && registrationData.ExpectedUserType == ResultUserType.Guest)
             {
                 expectedResultCount = 0;
             }
-            if (ExcludeMemberUsers && String.Equals(registrationData.UserType, ClaimsProviderConstants.MEMBER_USERTYPE, StringComparison.InvariantCultureIgnoreCase))
+            //if (ExcludeMemberUsers && String.Equals(registrationData.ExpectedUserType, ClaimsProviderConstants.MEMBER_USERTYPE, StringComparison.InvariantCultureIgnoreCase))
+            if (ExcludeMemberUsers && registrationData.ExpectedUserType == ResultUserType.Member)
             {
                 expectedResultCount = 0;
             }
@@ -271,7 +277,7 @@ namespace Yvand.ClaimsProviders.Tests
                 Stopwatch timer = new Stopwatch();
                 timer.Start();
                 SPClaim inputClaim = new SPClaim(claimType, claimValue, ClaimValueTypes.String, SPOriginalIssuers.Format(SPOriginalIssuerType.TrustedProvider, SPTrust.Name));
-                Uri context = new Uri(UnitTestsHelper.TestSiteCollUri.AbsoluteUri);
+                Uri context = new Uri(TestSiteCollUri.AbsoluteUri);
 
                 SPClaim[] groups = ClaimsProvider.GetClaimsForEntity(context, inputClaim);
 

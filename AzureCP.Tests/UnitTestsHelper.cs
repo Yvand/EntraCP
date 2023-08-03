@@ -2,7 +2,6 @@
 using Microsoft.SharePoint;
 using Microsoft.SharePoint.Administration;
 using Microsoft.SharePoint.Administration.Claims;
-using Microsoft.SharePoint.WebControls;
 using NUnit.Framework;
 using System;
 using System.Collections.Generic;
@@ -10,10 +9,7 @@ using System.Diagnostics;
 using System.Linq;
 using System.Reflection;
 using System.Security.Claims;
-using System.Text;
-using Yvand.ClaimsProviders;
 using Yvand.ClaimsProviders.Configuration;
-using Yvand.ClaimsProviders.Tests;
 
 namespace Yvand.ClaimsProviders.Tests
 {
@@ -22,7 +18,6 @@ namespace Yvand.ClaimsProviders.Tests
     {
         public static readonly AzureCPSE ClaimsProvider = new AzureCPSE("AzureCPSE");
         public static string TestSiteRelativePath => $"/sites/{TestContext.Parameters["TestSiteCollectionName"]}";
-        public static Uri TestSiteCollUri;
         public const int MaxTime = 50000;
         public static string FarmAdmin => TestContext.Parameters["FarmAdmin"];
 #if DEBUG
@@ -70,7 +65,6 @@ namespace Yvand.ClaimsProviders.Tests
             }
 
 #if DEBUG
-            TestSiteCollUri = new Uri($"http://spsites{TestSiteRelativePath}");
             NewEntityTestsBase.TestSiteCollUri = new Uri($"http://spsites{TestSiteRelativePath}");
             return; // Uncommented when debugging AzureCP code from unit tests
 #endif
@@ -98,7 +92,7 @@ namespace Yvand.ClaimsProviders.Tests
 
             Trace.TraceInformation($"{DateTime.Now.ToString("s")} Web application {wa.Name} found.");
             Uri waRootAuthority = wa.AlternateUrls[0].Uri;
-            TestSiteCollUri = new Uri($"{waRootAuthority.GetLeftPart(UriPartial.Authority)}{TestSiteRelativePath}");
+            NewEntityTestsBase.TestSiteCollUri = new Uri($"{waRootAuthority.GetLeftPart(UriPartial.Authority)}{TestSiteRelativePath}");
             SPClaimProviderManager claimMgr = SPClaimProviderManager.Local;
             string encodedClaim = claimMgr.EncodeClaim(TrustedGroup);
             SPUserInfo userInfo = new SPUserInfo { LoginName = encodedClaim, Name = TrustedGroupToAdd_ClaimValue };
@@ -115,10 +109,10 @@ namespace Yvand.ClaimsProviders.Tests
                 spSite.Dispose();
             }
 
-            if (!SPSite.Exists(TestSiteCollUri))
+            if (!SPSite.Exists(NewEntityTestsBase.TestSiteCollUri))
             {
-                Trace.TraceInformation($"{DateTime.Now.ToString("s")} Creating site collection {TestSiteCollUri.AbsoluteUri}...");
-                SPSite spSite = wa.Sites.Add(TestSiteCollUri.AbsoluteUri, AzureCPSE.ClaimsProviderName, AzureCPSE.ClaimsProviderName, 1033, "STS#3", FarmAdmin, String.Empty, String.Empty);
+                Trace.TraceInformation($"{DateTime.Now.ToString("s")} Creating site collection {NewEntityTestsBase.TestSiteCollUri.AbsoluteUri}...");
+                SPSite spSite = wa.Sites.Add(NewEntityTestsBase.TestSiteCollUri.AbsoluteUri, AzureCPSE.ClaimsProviderName, AzureCPSE.ClaimsProviderName, 1033, "STS#3", FarmAdmin, String.Empty, String.Empty);
                 spSite.RootWeb.CreateDefaultAssociatedGroups(FarmAdmin, FarmAdmin, spSite.RootWeb.Title);
 
                 SPGroup membersGroup = spSite.RootWeb.AssociatedMemberGroup;
@@ -127,7 +121,7 @@ namespace Yvand.ClaimsProviders.Tests
             }
             else
             {
-                using (SPSite spSite = new SPSite(TestSiteCollUri.AbsoluteUri))
+                using (SPSite spSite = new SPSite(NewEntityTestsBase.TestSiteCollUri.AbsoluteUri))
                 {
                     SPGroup membersGroup = spSite.RootWeb.AssociatedMemberGroup;
                     membersGroup.AddUser(userInfo.LoginName, userInfo.Email, userInfo.Name, userInfo.Notes);
@@ -156,6 +150,22 @@ namespace Yvand.ClaimsProviders.Tests
     //    }
     //}
 
+    public enum ResultUserType
+    {
+        None,
+        Mixed,
+        Member,
+        Guest,
+    }
+
+    public enum ResultEntityType
+    {
+        None,
+        Mixed,
+        User,
+        Group,
+    }
+
     public enum EntityDataSourceType
     {
         AllAccounts,
@@ -180,8 +190,8 @@ namespace Yvand.ClaimsProviders.Tests
                 registrationData.Input = row["Input"];
                 registrationData.ExpectedResultCount = Convert.ToInt32(row["ExpectedResultCount"]);
                 registrationData.ExpectedEntityClaimValue = row["ExpectedEntityClaimValue"];
-                registrationData.ResultType = row["ResultType"];
-                registrationData.UserType = row["UserType"];
+                registrationData.ExpectedEntityType = (ResultEntityType) Enum.Parse(typeof(ResultEntityType), row["ExpectedEntityType"]);
+                registrationData.ExpectedUserType = (ResultUserType)Enum.Parse(typeof(ResultUserType), row["ExpectedUserType"]);
                 yield return new TestCaseData(new object[] { registrationData });
             }
         }
@@ -207,8 +217,8 @@ namespace Yvand.ClaimsProviders.Tests
         public string Input;
         public int ExpectedResultCount;
         public string ExpectedEntityClaimValue;
-        public string ResultType;
-        public string UserType;
+        public ResultEntityType ExpectedEntityType;
+        public ResultUserType ExpectedUserType;
     }
 
     public class ValidateEntityDataSource
