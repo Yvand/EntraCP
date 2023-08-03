@@ -172,6 +172,16 @@ namespace Yvand.ClaimsProviders.Tests
         UPNB2BGuestAccounts
     }
 
+    public class SearchEntityData
+    {
+        public string Input;
+        public int SearchResultCount;
+        public string SearchResultSingleEntityClaimValue;
+        public ResultEntityType SearchResultEntityTypes;
+        public ResultUserType SearchResultUserTypes;
+        public bool ExactMatch;
+    }
+
     public class SearchEntityDataSource
     {
         public static IEnumerable<TestCaseData> GetTestData(EntityDataSourceType entityDataSourceType)
@@ -183,7 +193,6 @@ namespace Yvand.ClaimsProviders.Tests
             }
 
             DataTable dt = DataTable.New.ReadCsv(csvPath);
-
             foreach (Row row in dt.Rows)
             {
                 var registrationData = new SearchEntityData();
@@ -192,6 +201,7 @@ namespace Yvand.ClaimsProviders.Tests
                 registrationData.SearchResultSingleEntityClaimValue = row["SearchResultSingleEntityClaimValue"];
                 registrationData.SearchResultEntityTypes = (ResultEntityType) Enum.Parse(typeof(ResultEntityType), row["SearchResultEntityTypes"]);
                 registrationData.SearchResultUserTypes = (ResultUserType)Enum.Parse(typeof(ResultUserType), row["SearchResultUserTypes"]);
+                registrationData.ExactMatch = Convert.ToBoolean(row["ExactMatch"]);
                 yield return new TestCaseData(new object[] { registrationData });
             }
         }
@@ -210,15 +220,6 @@ namespace Yvand.ClaimsProviders.Tests
         //        .Select(l => new { Field1 = l[0], Field2 = l[1], Field3 = l[2] });
         //    }
         //}
-    }
-
-    public class SearchEntityData
-    {
-        public string Input;
-        public int SearchResultCount;
-        public string SearchResultSingleEntityClaimValue;
-        public ResultEntityType SearchResultEntityTypes;
-        public ResultUserType SearchResultUserTypes;
     }
 
     public class ValidateEntityDataSource

@@ -132,6 +132,11 @@ namespace Yvand.ClaimsProviders.Tests
                 expectedResultCount = 0;
             }
 
+            if (Config.FilterExactMatchOnly == true)
+            {
+                expectedResultCount = registrationData.ExactMatch ? 1 : 0;
+            }
+
             TestSearchOperation(registrationData.Input, expectedResultCount, registrationData.SearchResultSingleEntityClaimValue);
         }
 
