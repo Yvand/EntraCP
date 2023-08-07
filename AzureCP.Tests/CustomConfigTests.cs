@@ -5,7 +5,7 @@ using Yvand.ClaimsProviders.Configuration;
 
 namespace Yvand.ClaimsProviders.Tests
 {
-    public class CustomConfigTestsBase : NewEntityTestsBase
+    public class CustomConfigTestsBase : EntityTestsBase
     {
         public static string GroupsClaimType = ClaimsProviderConstants.DefaultMainGroupClaimType;
 

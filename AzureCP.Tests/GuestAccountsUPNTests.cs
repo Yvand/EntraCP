@@ -8,7 +8,7 @@ namespace Yvand.ClaimsProviders.Tests
     /// </summary>
     [TestFixture]
     [Parallelizable(ParallelScope.Children)]
-    public class GuestAccountsUPNTests : NewEntityTestsBase
+    public class GuestAccountsUPNTests : EntityTestsBase
     {
         public override void InitializeConfiguration()
         {

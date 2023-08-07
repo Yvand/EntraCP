@@ -65,7 +65,7 @@ namespace Yvand.ClaimsProviders.Tests
             }
 
 #if DEBUG
-            NewEntityTestsBase.TestSiteCollUri = new Uri($"http://spsites{TestSiteRelativePath}");
+            EntityTestsBase.TestSiteCollUri = new Uri($"http://spsites{TestSiteRelativePath}");
             return; // Uncommented when debugging AzureCP code from unit tests
 #endif
 
@@ -92,7 +92,7 @@ namespace Yvand.ClaimsProviders.Tests
 
             Trace.TraceInformation($"{DateTime.Now.ToString("s")} Web application {wa.Name} found.");
             Uri waRootAuthority = wa.AlternateUrls[0].Uri;
-            NewEntityTestsBase.TestSiteCollUri = new Uri($"{waRootAuthority.GetLeftPart(UriPartial.Authority)}{TestSiteRelativePath}");
+            EntityTestsBase.TestSiteCollUri = new Uri($"{waRootAuthority.GetLeftPart(UriPartial.Authority)}{TestSiteRelativePath}");
             SPClaimProviderManager claimMgr = SPClaimProviderManager.Local;
             string encodedClaim = claimMgr.EncodeClaim(TrustedGroup);
             SPUserInfo userInfo = new SPUserInfo { LoginName = encodedClaim, Name = TrustedGroupToAdd_ClaimValue };
@@ -109,10 +109,10 @@ namespace Yvand.ClaimsProviders.Tests
                 spSite.Dispose();
             }
 
-            if (!SPSite.Exists(NewEntityTestsBase.TestSiteCollUri))
+            if (!SPSite.Exists(EntityTestsBase.TestSiteCollUri))
             {
-                Trace.TraceInformation($"{DateTime.Now.ToString("s")} Creating site collection {NewEntityTestsBase.TestSiteCollUri.AbsoluteUri}...");
-                SPSite spSite = wa.Sites.Add(NewEntityTestsBase.TestSiteCollUri.AbsoluteUri, AzureCPSE.ClaimsProviderName, AzureCPSE.ClaimsProviderName, 1033, "STS#3", FarmAdmin, String.Empty, String.Empty);
+                Trace.TraceInformation($"{DateTime.Now.ToString("s")} Creating site collection {EntityTestsBase.TestSiteCollUri.AbsoluteUri}...");
+                SPSite spSite = wa.Sites.Add(EntityTestsBase.TestSiteCollUri.AbsoluteUri, AzureCPSE.ClaimsProviderName, AzureCPSE.ClaimsProviderName, 1033, "STS#3", FarmAdmin, String.Empty, String.Empty);
                 spSite.RootWeb.CreateDefaultAssociatedGroups(FarmAdmin, FarmAdmin, spSite.RootWeb.Title);
 
                 SPGroup membersGroup = spSite.RootWeb.AssociatedMemberGroup;
@@ -121,7 +121,7 @@ namespace Yvand.ClaimsProviders.Tests
             }
             else
             {
-                using (SPSite spSite = new SPSite(NewEntityTestsBase.TestSiteCollUri.AbsoluteUri))
+                using (SPSite spSite = new SPSite(EntityTestsBase.TestSiteCollUri.AbsoluteUri))
                 {
                     SPGroup membersGroup = spSite.RootWeb.AssociatedMemberGroup;
                     membersGroup.AddUser(userInfo.LoginName, userInfo.Email, userInfo.Name, userInfo.Notes);
@@ -240,7 +240,8 @@ namespace Yvand.ClaimsProviders.Tests
                 registrationData.ClaimValue = row["ClaimValue"];
                 registrationData.ShouldValidate = Convert.ToBoolean(row["ShouldValidate"]);
                 registrationData.IsMemberOfTrustedGroup = Convert.ToBoolean(row["IsMemberOfTrustedGroup"]);
-                registrationData.UserType = row["UserType"];
+                registrationData.EntityType = (ResultEntityType)Enum.Parse(typeof(ResultEntityType), row["EntityType"]);
+                registrationData.UserType = (ResultUserType)Enum.Parse(typeof(ResultUserType), row["UserType"]);
                 yield return new TestCaseData(new object[] { registrationData });
             }
         }
@@ -251,6 +252,7 @@ namespace Yvand.ClaimsProviders.Tests
         public string ClaimValue;
         public bool ShouldValidate;
         public bool IsMemberOfTrustedGroup;
-        public string UserType;
+        public ResultEntityType EntityType;
+        public ResultUserType UserType;
     }
 }

@@ -1,4 +1,5 @@
-﻿using Microsoft.SharePoint.Administration.Claims;
+﻿using Microsoft.Graph.Drives.Item.Items.Item.GetActivitiesByIntervalWithStartDateTimeWithEndDateTimeWithInterval;
+using Microsoft.SharePoint.Administration.Claims;
 using Microsoft.SharePoint.WebControls;
 using Newtonsoft.Json;
 using NUnit.Framework;
@@ -15,7 +16,7 @@ using Yvand.ClaimsProviders.Configuration.AzureAD;
 
 namespace Yvand.ClaimsProviders.Tests
 {
-    public class NewEntityTestsBase
+    public class EntityTestsBase
     {
         /// <summary>
         /// Configure whether to run entity search tests.
@@ -152,16 +153,20 @@ namespace Yvand.ClaimsProviders.Tests
             if (!TestValidation) { return; }
 
             bool shouldValidate = registrationData.ShouldValidate;
-            if (ExcludeGuestUsers && String.Equals(registrationData.UserType, ClaimsProviderConstants.GUEST_USERTYPE, StringComparison.InvariantCultureIgnoreCase))
+            if (ExcludeGuestUsers && registrationData.UserType == ResultUserType.Guest)
             {
                 shouldValidate = false;
             }
-            if (ExcludeMemberUsers && String.Equals(registrationData.UserType, ClaimsProviderConstants.MEMBER_USERTYPE, StringComparison.InvariantCultureIgnoreCase))
+            if (ExcludeMemberUsers && registrationData.UserType == ResultUserType.Member)
             {
                 shouldValidate = false;
             }
 
-            SPClaim inputClaim = new SPClaim(Config.SPTrust.IdentityClaimTypeInformation.MappedClaimType, registrationData.ClaimValue, ClaimValueTypes.String, SPOriginalIssuers.Format(SPOriginalIssuerType.TrustedProvider, Config.SPTrust.Name));
+            string claimType = registrationData.EntityType == ResultEntityType.User ?
+                Config.SPTrust.IdentityClaimTypeInformation.MappedClaimType :
+                UnitTestsHelper.TrustedGroupToAdd_ClaimType;
+
+            SPClaim inputClaim = new SPClaim(claimType, registrationData.ClaimValue, ClaimValueTypes.String, SPOriginalIssuers.Format(SPOriginalIssuerType.TrustedProvider, Config.SPTrust.Name));
             TestValidationOperation(inputClaim, shouldValidate, registrationData.ClaimValue);
         }
 

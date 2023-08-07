@@ -4,7 +4,7 @@ namespace Yvand.ClaimsProviders.Tests
 {
     [TestFixture]
     [Parallelizable(ParallelScope.Children)]
-    internal class BasicTests : NewEntityTestsBase
+    internal class BasicTests : EntityTestsBase
     {
         [Test, TestCaseSource(typeof(SearchEntityDataSource), "GetTestData", new object[] { EntityDataSourceType.AllAccounts })]
         [Repeat(UnitTestsHelper.TestRepeatCount)]

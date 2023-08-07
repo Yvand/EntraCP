@@ -5,7 +5,7 @@ namespace Yvand.ClaimsProviders.Tests
 {
     [TestFixture]
     [Parallelizable(ParallelScope.Children)]
-    public class ExcludeAllUserAccountsTests : NewEntityTestsBase
+    public class ExcludeAllUserAccountsTests : EntityTestsBase
     {
         public override bool ExcludeGuestUsers => true;
         public override bool ExcludeMemberUsers => true;
@@ -35,7 +35,7 @@ namespace Yvand.ClaimsProviders.Tests
 
     [TestFixture]
     [Parallelizable(ParallelScope.Children)]
-    public class ExcludeGuestUserAccountsTests : NewEntityTestsBase
+    public class ExcludeGuestUserAccountsTests : EntityTestsBase
     {
         public override bool ExcludeGuestUsers => true;
         public override bool ExcludeMemberUsers => false;
@@ -65,7 +65,7 @@ namespace Yvand.ClaimsProviders.Tests
 
     [TestFixture]
     [Parallelizable(ParallelScope.Children)]
-    public class ExcludeMemberUserAccountsTests : NewEntityTestsBase
+    public class ExcludeMemberUserAccountsTests : EntityTestsBase
     {
         public override bool ExcludeGuestUsers => false;
         public override bool ExcludeMemberUsers => true;

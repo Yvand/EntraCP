@@ -3,7 +3,7 @@
 namespace Yvand.ClaimsProviders.Tests
 {
     [TestFixture]
-    public class RequireExactMatchOnBaseConfigTests : NewEntityTestsBase
+    public class RequireExactMatchOnBaseConfigTests : EntityTestsBase
     {
         public override void InitializeConfiguration()
         {
@@ -26,14 +26,6 @@ namespace Yvand.ClaimsProviders.Tests
         {
             base.SearchEntities(inputValue, expectedResultCount, expectedEntityClaimValue);
         }
-
-        [Test, TestCaseSource(typeof(ValidateEntityDataSource), "GetTestData", new object[] { EntityDataSourceType.AllAccounts })]
-        [Repeat(UnitTestsHelper.TestRepeatCount)]
-        public void RequireExactMatchDuringSearch(ValidateEntityData registrationData)
-        {
-            int expectedCount = registrationData.ShouldValidate ? 1 : 0;
-            TestSearchOperation(registrationData.ClaimValue, expectedCount, registrationData.ClaimValue);
-        }
     }
 
     [TestFixture]
@@ -48,12 +40,11 @@ namespace Yvand.ClaimsProviders.Tests
             Config.Update();
         }
 
-        [Test, TestCaseSource(typeof(ValidateEntityDataSource), "GetTestData", new object[] { EntityDataSourceType.AllAccounts })]
+        [Test, TestCaseSource(typeof(SearchEntityDataSource), "GetTestData", new object[] { EntityDataSourceType.AllAccounts })]
         [Repeat(UnitTestsHelper.TestRepeatCount)]
-        public void RequireExactMatchDuringSearch(ValidateEntityData registrationData)
+        public override void SearchEntities(SearchEntityData registrationData)
         {
-            int expectedCount = registrationData.ShouldValidate ? 1 : 0;
-            TestSearchOperation(registrationData.ClaimValue, expectedCount, registrationData.ClaimValue);
+            base.SearchEntities(registrationData);
         }
     }
 }
