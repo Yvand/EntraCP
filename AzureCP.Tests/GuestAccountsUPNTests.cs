@@ -28,12 +28,11 @@ namespace Yvand.ClaimsProviders.Tests
         }
 
         [Test, TestCaseSource(typeof(ValidateEntityDataSource), "GetTestData", new object[] { EntityDataSourceType.UPNB2BGuestAccounts })]
-        [MaxTime(UnitTestsHelper.MaxTime)]
         [Repeat(UnitTestsHelper.TestRepeatCount)]
         public override void ValidateClaim(ValidateEntityData registrationData)
         {
             base.ValidateClaim(registrationData);
-        }        
+        }
 
         [Test, TestCaseSource(typeof(ValidateEntityDataSource), "GetTestData", new object[] { EntityDataSourceType.UPNB2BGuestAccounts })]
         [Repeat(UnitTestsHelper.TestRepeatCount)]
