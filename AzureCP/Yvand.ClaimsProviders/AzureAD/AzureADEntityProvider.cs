@@ -160,12 +160,7 @@ namespace Yvand.ClaimsProviders.AzureAD
             List<string> userSelectBuilder = new List<string> { "UserType", "Mail" };    // UserType and Mail are always needed to deal with Guest users
             List<string> groupSelectBuilder = new List<string> { "Id", "securityEnabled" };               // Id is always required for groups
 
-            //StringBuilder userFilterForExtensionAttributeBuilder = new StringBuilder();
-            //StringBuilder groupFilterForExtensionAttributeBuilder = new StringBuilder();
-            //List<string> userSelectForExtensionAttributeBuilder = new List<string>();
-            //List<string> groupSelectForExtensionAttributeBuilder = new List<string> { "Id", "securityEnabled" };
-
-            string preferredFilterPattern;
+            string filterPattern;
             string input = currentContext.Input;
 
             // https://github.com/Yvand/AzureCP/issues/88: Escape single quotes as documented in https://docs.microsoft.com/en-us/graph/query-parameters#escaping-single-quotes
@@ -173,22 +168,18 @@ namespace Yvand.ClaimsProviders.AzureAD
 
             if (currentContext.ExactSearch)
             {
-                preferredFilterPattern = String.Format(searchPatternEquals, "{0}", input);
+                filterPattern = String.Format(searchPatternEquals, "{0}", input);
             }
             else
             {
-                preferredFilterPattern = String.Format(searchPatternStartsWith, "{0}", input);
+                filterPattern = String.Format(searchPatternStartsWith, "{0}", input);
             }
 
-            //bool firstUserObjectProcessed = false;
-            //bool firstGroupObjectProcessed = false;
             foreach (ClaimTypeConfig ctConfig in currentContext.CurrentClaimTypeConfigList)
             {
-                bool isExtensionAttribute = false;
                 string currentPropertyString = ctConfig.EntityProperty.ToString();
                 if (currentPropertyString.StartsWith("extensionAttribute"))
                 {
-                    isExtensionAttribute = true;
                     currentPropertyString = String.Format("{0}_{1}_{2}", "extension", "EXTENSIONATTRIBUTESAPPLICATIONID", currentPropertyString);
                 }
 
@@ -200,7 +191,7 @@ namespace Yvand.ClaimsProviders.AzureAD
                 else
                 {
                     // Use String.Replace instead of String.Format because String.Format trows an exception if input contains a '{'
-                    currentFilter = preferredFilterPattern.Replace("{0}", currentPropertyString);
+                    currentFilter = filterPattern.Replace("{0}", currentPropertyString);
                 }
 
                 // Id needs a specific check: input must be a valid GUID AND equals filter must be used, otherwise Azure AD will throw an error
@@ -239,53 +230,18 @@ namespace Yvand.ClaimsProviders.AzureAD
                         }
                     }
 
-                    //if (!firstUserObjectProcessed)
-                    //{
-                    //    firstUserObjectProcessed = true;
-                    //}
-                    //else
-                    //{
-                    //    currentFilter = " or " + currentFilter;
-                    //}
-
-                    if (!isExtensionAttribute)
-                    {
-                        userFilterBuilder.Add(currentFilter);
-                        userSelectBuilder.Add(currentPropertyString);
-                    }
-                    else
-                    {
-                        //userFilterForExtensionAttributeBuilder.Append(currentFilter);
-                        //userSelectForExtensionAttributeBuilder.Add(currentPropertyString);
-                    }
+                    userFilterBuilder.Add(currentFilter);
+                    userSelectBuilder.Add(currentPropertyString);
                 }
                 else
                 {
                     // else assume it's a Group
-                    //if (!firstGroupObjectProcessed)
-                    //{
-                    //    firstGroupObjectProcessed = true;
-                    //}
-                    //else
-                    //{
-                    //    currentFilter = " or " + currentFilter;
-                    //}
-
-                    if (!isExtensionAttribute)
-                    {
-                        groupFilterBuilder.Add(currentFilter);
-                        groupSelectBuilder.Add(currentPropertyString);
-                    }
-                    else
-                    {
-                        //groupFilterForExtensionAttributeBuilder.Append(currentFilter);
-                        //groupSelectForExtensionAttributeBuilder.Add(currentPropertyString);
-                    }
+                    groupFilterBuilder.Add(currentFilter);
+                    groupSelectBuilder.Add(currentPropertyString);
                 }
             }
 
             // Also add metadata properties to $select of corresponding object type
-            //if (firstUserObjectProcessed)
             if (userFilterBuilder.Count > 0)
             {
                 foreach (ClaimTypeConfig ctConfig in Configuration.RuntimeMetadataConfig.Where(x => x.EntityType == DirectoryObjectType.User))
@@ -303,20 +259,30 @@ namespace Yvand.ClaimsProviders.AzureAD
 
             foreach (AzureTenant tenant in azureTenants)
             {
-                string userFilterForTenant = String.Join(" or ", userFilterBuilder);  //userFilterBuilder.ToString();
-                List<string> userSelectBuilderForTenant = userSelectBuilder.ToList();
-                string groupFilterForTenant = String.Join(" or ", groupFilterBuilder);  //groupFilterBuilder.ToString();
-                List<string> groupSelectBuilderForTenant = groupSelectBuilder.ToList();
+                List<string> userFilterBuilderForTenantList;
+                List<string> groupFilterBuilderForTenantList;
+                List<string> userSelectBuilderForTenantList;
+                List<string> groupSelectBuilderForTenantList;
 
-                if (tenant.ExtensionAttributesApplicationId != Guid.Empty)
+                // Add extension attribute on current tenant only if it is configured for it, otherwise request fails with this error:
+                // message=Property 'extension_00000000000000000000000000000000_extensionAttribute1' does not exist as a declared property or extension property.
+                if (tenant.ExtensionAttributesApplicationId == Guid.Empty)
                 {
-                    // Add extension attribute on current tenant only if it is configured for it, otherwise request fails with this error:
-                    // message=Property 'extension_00000000000000000000000000000000_extensionAttribute1' does not exist as a declared property or extension property.
-                    //userFilterForTenant += userFilterForExtensionAttributeBuilder.ToString().Replace("EXTENSIONATTRIBUTESAPPLICATIONID", tenant.ExtensionAttributesApplicationId.ToString("N"));
-                    //userSelectBuilderForTenant.AddRange(userSelectForExtensionAttributeBuilder.Select(elem => elem.Replace("EXTENSIONATTRIBUTESAPPLICATIONID", tenant.ExtensionAttributesApplicationId.ToString("N"))).ToList<string>());
-                    //groupFilterForTenant += groupFilterForExtensionAttributeBuilder.ToString().Replace("EXTENSIONATTRIBUTESAPPLICATIONID", tenant.ExtensionAttributesApplicationId.ToString("N"));
-                    //groupSelectBuilderForTenant.AddRange(groupSelectForExtensionAttributeBuilder.Select(elem => elem.Replace("EXTENSIONATTRIBUTESAPPLICATIONID", tenant.ExtensionAttributesApplicationId.ToString("N"))).ToList<string>());
+                    userFilterBuilderForTenantList = userFilterBuilder.FindAll(elem => !elem.Contains("EXTENSIONATTRIBUTESAPPLICATIONID"));
+                    groupFilterBuilderForTenantList = groupFilterBuilder.FindAll(elem => !elem.Contains("EXTENSIONATTRIBUTESAPPLICATIONID"));
+                    userSelectBuilderForTenantList = userSelectBuilder.FindAll(elem => !elem.Contains("EXTENSIONATTRIBUTESAPPLICATIONID"));
+                    groupSelectBuilderForTenantList = groupSelectBuilder.FindAll(elem => !elem.Contains("EXTENSIONATTRIBUTESAPPLICATIONID"));
                 }
+                else
+                {
+                    userFilterBuilderForTenantList = userFilterBuilder.Select(elem => elem.Replace("EXTENSIONATTRIBUTESAPPLICATIONID", tenant.ExtensionAttributesApplicationId.ToString("N"))).ToList<string>();
+                    groupFilterBuilderForTenantList = groupFilterBuilder.Select(elem => elem.Replace("EXTENSIONATTRIBUTESAPPLICATIONID", tenant.ExtensionAttributesApplicationId.ToString("N"))).ToList<string>();
+                    userSelectBuilderForTenantList = userSelectBuilder.Select(elem => elem.Replace("EXTENSIONATTRIBUTESAPPLICATIONID", tenant.ExtensionAttributesApplicationId.ToString("N"))).ToList<string>();
+                    groupSelectBuilderForTenantList = groupSelectBuilder.Select(elem => elem.Replace("EXTENSIONATTRIBUTESAPPLICATIONID", tenant.ExtensionAttributesApplicationId.ToString("N"))).ToList<string>();
+                }
+
+                string userFilterForTenant = String.Join(" or ", userFilterBuilderForTenantList);
+                string groupFilterForTenant = String.Join(" or ", groupFilterBuilderForTenantList);
 
                 if (userFilterBuilder.Count > 0)
                 {
@@ -337,8 +303,8 @@ namespace Yvand.ClaimsProviders.AzureAD
                     tenant.GroupFilter = String.Empty;
                 }
 
-                tenant.UserSelect = userSelectBuilderForTenant.ToArray();
-                tenant.GroupSelect = groupSelectBuilderForTenant.ToArray();
+                tenant.UserSelect = userSelectBuilderForTenantList.ToArray();
+                tenant.GroupSelect = groupSelectBuilderForTenantList.ToArray();
             }
         }
 
