@@ -105,7 +105,7 @@ namespace Yvand.ClaimsProviders.Administration
             foreach (DirectoryObjectProperty prop in aadPropValuesSorted)
             {
                 // Ensure property exists for the User object type
-                if (AzureCPSE.GetPropertyValue(new User(), prop.ToString()) == null) { continue; }
+                if (AzureCP.GetPropertyValue(new User(), prop.ToString()) == null) { continue; }
 
                 // Ensure property is of type System.String
                 PropertyInfo pi = typeof(User).GetProperty(prop.ToString());

@@ -76,7 +76,7 @@ namespace Yvand.ClaimsProviders.Administration
                 foreach (object field in typeof(DirectoryObjectProperty).GetFields())
                 {
                     string prop = ((System.Reflection.FieldInfo)field).Name;
-                    if (AzureCPSE.GetPropertyValue(new User(), prop) == null) { continue; }
+                    if (AzureCP.GetPropertyValue(new User(), prop) == null) { continue; }
                     //if (AzureCP.GetGraphPropertyValue(new Group(), prop) == null) continue;
                     //if (AzureCP.GetGraphPropertyValue(new Role(), prop) == null) continue;
 
@@ -311,14 +311,14 @@ namespace Yvand.ClaimsProviders.Administration
                 // Ensure property exists for the current object type
                 if (azureObject.Value.EntityType == DirectoryObjectType.User)
                 {
-                    if (AzureCPSE.GetPropertyValue(new User(), prop.ToString()) == null)
+                    if (AzureCP.GetPropertyValue(new User(), prop.ToString()) == null)
                     {
                         continue;
                     }
                 }
                 else
                 {
-                    if (AzureCPSE.GetPropertyValue(new Group(), prop.ToString()) == null) 
+                    if (AzureCP.GetPropertyValue(new Group(), prop.ToString()) == null) 
                     { 
                         continue; 
                     }

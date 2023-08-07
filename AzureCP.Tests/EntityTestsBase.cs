@@ -43,7 +43,7 @@ namespace Yvand.ClaimsProviders.Tests
         /// </summary>
         public virtual bool ExcludeMemberUsers => false;
 
-        private static readonly AzureCPSE ClaimsProvider = new AzureCPSE("AzureCPSE");
+        private static readonly AzureCP ClaimsProvider = new AzureCP("AzureCPSE");
         public static SPTrustedLoginProvider SPTrust => SPSecurityTokenServiceManager.Local.TrustedLoginProviders.FirstOrDefault(x => String.Equals(x.ClaimProviderName, "AzureCPSE", StringComparison.InvariantCultureIgnoreCase));
         public static Uri TestSiteCollUri;
         public static string TrustedGroupToAdd_ClaimType => TestContext.Parameters["TrustedGroupToAdd_ClaimType"];
@@ -56,7 +56,7 @@ namespace Yvand.ClaimsProviders.Tests
         public void Init()
         {
             Trace.TraceInformation($"{DateTime.Now.ToString("s")} Start backup of current AzureCP configuration");
-            Config = AzureCPSE.GetConfiguration();
+            Config = AzureCP.GetConfiguration();
             if (Config != null && BackupConfig != null)
             {
                 BackupConfig = Config.CopyConfiguration() as AzureADEntityProviderConfiguration;
@@ -69,7 +69,7 @@ namespace Yvand.ClaimsProviders.Tests
         /// </summary>
         public virtual void InitializeConfiguration()
         {
-            Config = AzureCPSE.CreateConfiguration();
+            Config = AzureCP.CreateConfiguration();
             Config.ProxyAddress = TestContext.Parameters["ProxyAddress"];
 
 #if DEBUG

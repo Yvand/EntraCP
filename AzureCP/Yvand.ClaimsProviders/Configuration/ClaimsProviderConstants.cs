@@ -54,7 +54,7 @@ namespace Yvand.ClaimsProviders.Configuration
 
                     try
                     {
-                        _ClaimsProviderVersion = FileVersionInfo.GetVersionInfo(Assembly.GetAssembly(typeof(AzureCPSE)).Location).FileVersion;
+                        _ClaimsProviderVersion = FileVersionInfo.GetVersionInfo(Assembly.GetAssembly(typeof(AzureCP)).Location).FileVersion;
                     }
                     // If assembly was removed from the GAC, CLR throws a FileNotFoundException
                     catch (System.IO.FileNotFoundException)
@@ -268,8 +268,8 @@ namespace Yvand.ClaimsProviders.Configuration
 
             if (this.IncomingEntityClaimTypeConfig == null)
             {
-                Logger.Log($"[{AzureCPSE.ClaimsProviderName}] Unable to validate entity \"{this.IncomingEntity.Value}\" because its claim type \"{this.IncomingEntity.ClaimType}\" was not found in the ClaimTypes list of current configuration.", TraceSeverity.Unexpected, EventSeverity.Error, TraceCategory.Configuration);
-                throw new InvalidOperationException($"[{AzureCPSE.ClaimsProviderName}] Unable validate entity \"{this.IncomingEntity.Value}\" because its claim type \"{this.IncomingEntity.ClaimType}\" was not found in the ClaimTypes list of current configuration.");
+                Logger.Log($"[{AzureCP.ClaimsProviderName}] Unable to validate entity \"{this.IncomingEntity.Value}\" because its claim type \"{this.IncomingEntity.ClaimType}\" was not found in the ClaimTypes list of current configuration.", TraceSeverity.Unexpected, EventSeverity.Error, TraceCategory.Configuration);
+                throw new InvalidOperationException($"[{AzureCP.ClaimsProviderName}] Unable validate entity \"{this.IncomingEntity.Value}\" because its claim type \"{this.IncomingEntity.ClaimType}\" was not found in the ClaimTypes list of current configuration.");
             }
 
             this.CurrentClaimTypeConfigList = new List<ClaimTypeConfig>(1)
@@ -310,8 +310,8 @@ namespace Yvand.ClaimsProviders.Configuration
 
             if (this.IncomingEntityClaimTypeConfig == null)
             {
-                Logger.Log($"[{AzureCPSE.ClaimsProviderName}] Unable to augment entity \"{this.IncomingEntity.Value}\" because its claim type \"{this.IncomingEntity.ClaimType}\" was not found in the ClaimTypes list of current configuration.", TraceSeverity.Unexpected, EventSeverity.Error, TraceCategory.Configuration);
-                throw new InvalidOperationException($"[{AzureCPSE.ClaimsProviderName}] Unable to augment entity \"{this.IncomingEntity.Value}\" because its claim type \"{this.IncomingEntity.ClaimType}\" was not found in the ClaimTypes list of current configuration.");
+                Logger.Log($"[{AzureCP.ClaimsProviderName}] Unable to augment entity \"{this.IncomingEntity.Value}\" because its claim type \"{this.IncomingEntity.ClaimType}\" was not found in the ClaimTypes list of current configuration.", TraceSeverity.Unexpected, EventSeverity.Error, TraceCategory.Configuration);
+                throw new InvalidOperationException($"[{AzureCP.ClaimsProviderName}] Unable to augment entity \"{this.IncomingEntity.Value}\" because its claim type \"{this.IncomingEntity.ClaimType}\" was not found in the ClaimTypes list of current configuration.");
             }
         }
     }

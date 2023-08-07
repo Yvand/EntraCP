@@ -17,7 +17,7 @@ using WIF4_5 = System.Security.Claims;
 
 namespace Yvand.ClaimsProviders
 {
-    public class AzureCPSE : SPClaimProvider
+    public class AzureCP : SPClaimProvider
     {
         public static string ClaimsProviderName => "AzureCPSE";
         public override string Name => ClaimsProviderName;
@@ -31,7 +31,7 @@ namespace Yvand.ClaimsProviders
         protected virtual string PickerEntityDisplayText => "({0}) {1}";
         protected virtual string PickerEntityOnMouseOver => "{0}={1}";
 
-        public AzureCPSE(string displayName) : base(displayName) 
+        public AzureCP(string displayName) : base(displayName) 
         {
             this.EntityProvider = new AzureADEntityProvider(Name);
         }
@@ -49,7 +49,7 @@ namespace Yvand.ClaimsProviders
 
         public static AzureADEntityProviderConfiguration CreateConfiguration()
         {
-            AzureADEntityProviderConfiguration configuration = EntityProviderBase<AzureADEntityProviderConfiguration>.CreateGlobalConfiguration(ClaimsProviderConstants.CONFIGURATION_ID, ClaimsProviderConstants.CONFIGURATION_NAME, AzureCPSE.ClaimsProviderName);
+            AzureADEntityProviderConfiguration configuration = EntityProviderBase<AzureADEntityProviderConfiguration>.CreateGlobalConfiguration(ClaimsProviderConstants.CONFIGURATION_ID, ClaimsProviderConstants.CONFIGURATION_NAME, AzureCP.ClaimsProviderName);
             return configuration;
         }
 

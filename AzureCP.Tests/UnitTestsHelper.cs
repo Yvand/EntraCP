@@ -16,7 +16,7 @@ namespace Yvand.ClaimsProviders.Tests
     [SetUpFixture]
     public class UnitTestsHelper
     {
-        public static readonly AzureCPSE ClaimsProvider = new AzureCPSE("AzureCPSE");
+        public static readonly AzureCP ClaimsProvider = new AzureCP("AzureCPSE");
         public static string TestSiteRelativePath => $"/sites/{TestContext.Parameters["TestSiteCollectionName"]}";
         public const int MaxTime = 50000;
         public static string FarmAdmin => TestContext.Parameters["FarmAdmin"];
@@ -48,7 +48,7 @@ namespace Yvand.ClaimsProviders.Tests
             Logger = new TextWriterTraceListener(TestContext.Parameters["TestLogFileName"]);
             Trace.Listeners.Add(Logger);
             Trace.AutoFlush = true;
-            Trace.TraceInformation($"{DateTime.Now.ToString("s")} Start integration tests of {AzureCPSE.ClaimsProviderName} {FileVersionInfo.GetVersionInfo(Assembly.GetAssembly(typeof(AzureCPSE)).Location).FileVersion}.");
+            Trace.TraceInformation($"{DateTime.Now.ToString("s")} Start integration tests of {AzureCP.ClaimsProviderName} {FileVersionInfo.GetVersionInfo(Assembly.GetAssembly(typeof(AzureCP)).Location).FileVersion}.");
             Trace.TraceInformation($"{DateTime.Now.ToString("s")} DataFile_AllAccounts_Search: {DataFile_AllAccounts_Search}");
             Trace.TraceInformation($"{DateTime.Now.ToString("s")} DataFile_AllAccounts_Validate: {DataFile_AllAccounts_Validate}");
             Trace.TraceInformation($"{DateTime.Now.ToString("s")} DataFile_GuestAccountsUPN_Search: {DataFile_GuestAccountsUPN_Search}");
@@ -76,7 +76,7 @@ namespace Yvand.ClaimsProviders.Tests
                 {
                     foreach (SPAuthenticationProvider authenticationProviders in iisSetting.ClaimsAuthenticationProviders)
                     {
-                        if (String.Equals(authenticationProviders.ClaimProviderName, AzureCPSE.ClaimsProviderName, StringComparison.OrdinalIgnoreCase))
+                        if (String.Equals(authenticationProviders.ClaimProviderName, AzureCP.ClaimsProviderName, StringComparison.OrdinalIgnoreCase))
                         {
                             return true;
                         }
@@ -112,7 +112,7 @@ namespace Yvand.ClaimsProviders.Tests
             if (!SPSite.Exists(EntityTestsBase.TestSiteCollUri))
             {
                 Trace.TraceInformation($"{DateTime.Now.ToString("s")} Creating site collection {EntityTestsBase.TestSiteCollUri.AbsoluteUri}...");
-                SPSite spSite = wa.Sites.Add(EntityTestsBase.TestSiteCollUri.AbsoluteUri, AzureCPSE.ClaimsProviderName, AzureCPSE.ClaimsProviderName, 1033, "STS#3", FarmAdmin, String.Empty, String.Empty);
+                SPSite spSite = wa.Sites.Add(EntityTestsBase.TestSiteCollUri.AbsoluteUri, AzureCP.ClaimsProviderName, AzureCP.ClaimsProviderName, 1033, "STS#3", FarmAdmin, String.Empty, String.Empty);
                 spSite.RootWeb.CreateDefaultAssociatedGroups(FarmAdmin, FarmAdmin, spSite.RootWeb.Title);
 
                 SPGroup membersGroup = spSite.RootWeb.AssociatedMemberGroup;
@@ -132,7 +132,7 @@ namespace Yvand.ClaimsProviders.Tests
         [OneTimeTearDown]
         public static void Cleanup()
         {
-            Trace.TraceInformation($"{DateTime.Now.ToString("s")} Integration tests of {AzureCPSE.ClaimsProviderName} {FileVersionInfo.GetVersionInfo(Assembly.GetAssembly(typeof(AzureCPSE)).Location).FileVersion} finished.");
+            Trace.TraceInformation($"{DateTime.Now.ToString("s")} Integration tests of {AzureCP.ClaimsProviderName} {FileVersionInfo.GetVersionInfo(Assembly.GetAssembly(typeof(AzureCP)).Location).FileVersion} finished.");
             Trace.Flush();
             if (Logger != null)
             {

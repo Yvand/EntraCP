@@ -155,7 +155,7 @@ namespace Yvand.ClaimsProviders.Configuration.AzureAD
                 catch (CryptographicException ex)
                 {
                     // It may fail with CryptographicException: The system cannot find the file specified, but it does not have any impact
-                    Logger.LogException(AzureCPSE.ClaimsProviderName, $"while deserializating the certificate for tenant '{this.Name}'.", TraceCategory.Core, ex);
+                    Logger.LogException(AzureCP.ClaimsProviderName, $"while deserializating the certificate for tenant '{this.Name}'.", TraceCategory.Core, ex);
                 }
             }
         }
@@ -167,17 +167,17 @@ namespace Yvand.ClaimsProviders.Configuration.AzureAD
         {
             if (String.IsNullOrWhiteSpace(this.ClientSecret) && this.ClientCertificateWithPrivateKey == null)
             {
-                Logger.Log($"[{AzureCPSE.ClaimsProviderName}] Cannot initialize authentication for tenant {this.Name} because both properties {nameof(ClientSecret)} and {nameof(ClientCertificateWithPrivateKey)} are not set.", TraceSeverity.Unexpected, EventSeverity.Error, TraceCategory.Configuration);
+                Logger.Log($"[{AzureCP.ClaimsProviderName}] Cannot initialize authentication for tenant {this.Name} because both properties {nameof(ClientSecret)} and {nameof(ClientCertificateWithPrivateKey)} are not set.", TraceSeverity.Unexpected, EventSeverity.Error, TraceCategory.Configuration);
                 return;
             }
             if (String.IsNullOrWhiteSpace(this.ClientId))
             {
-                Logger.Log($"[{AzureCPSE.ClaimsProviderName}] Cannot initialize authentication for tenant {this.Name} because the property {nameof(ClientId)} is not set.", TraceSeverity.Unexpected, EventSeverity.Error, TraceCategory.Configuration);
+                Logger.Log($"[{AzureCP.ClaimsProviderName}] Cannot initialize authentication for tenant {this.Name} because the property {nameof(ClientId)} is not set.", TraceSeverity.Unexpected, EventSeverity.Error, TraceCategory.Configuration);
                 return;
             }
             if (String.IsNullOrWhiteSpace(this.Name))
             {
-                Logger.Log($"[{AzureCPSE.ClaimsProviderName}] Cannot initialize authentication because the property {nameof(Name)} of current tenant is not set.", TraceSeverity.Unexpected, EventSeverity.Error, TraceCategory.Configuration);
+                Logger.Log($"[{AzureCP.ClaimsProviderName}] Cannot initialize authentication because the property {nameof(Name)} of current tenant is not set.", TraceSeverity.Unexpected, EventSeverity.Error, TraceCategory.Configuration);
                 return;
             }
             
