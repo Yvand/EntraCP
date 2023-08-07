@@ -5,7 +5,6 @@ using Microsoft.Graph.Models;
 using Microsoft.Graph.Users;
 using Microsoft.Graph.Users.Item.GetMemberGroups;
 using Microsoft.Identity.Client;
-using Microsoft.IdentityModel.Tokens;
 using Microsoft.Kiota.Abstractions;
 using Microsoft.Kiota.Http.HttpClientLibrary.Middleware.Options;
 using Microsoft.SharePoint.Administration;
@@ -15,11 +14,9 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
 using System.Reflection;
-using System.Text;
 using System.Threading.Tasks;
 using Yvand.ClaimsProviders.Configuration;
 using Yvand.ClaimsProviders.Configuration.AzureAD;
-using static Yvand.ClaimsProviders.Logger;
 
 namespace Yvand.ClaimsProviders.AzureAD
 {
@@ -281,12 +278,9 @@ namespace Yvand.ClaimsProviders.AzureAD
                     groupSelectBuilderForTenantList = groupSelectBuilder.Select(elem => elem.Replace("EXTENSIONATTRIBUTESAPPLICATIONID", tenant.ExtensionAttributesApplicationId.ToString("N"))).ToList<string>();
                 }
 
-                string userFilterForTenant = String.Join(" or ", userFilterBuilderForTenantList);
-                string groupFilterForTenant = String.Join(" or ", groupFilterBuilderForTenantList);
-
                 if (userFilterBuilder.Count > 0)
                 {
-                    tenant.UserFilter = userFilterForTenant;
+                    tenant.UserFilter = String.Join(" or ", userFilterBuilderForTenantList);
                 }
                 else
                 {
@@ -296,7 +290,7 @@ namespace Yvand.ClaimsProviders.AzureAD
 
                 if (groupFilterBuilder.Count > 0)
                 {
-                    tenant.GroupFilter = groupFilterForTenant;
+                    tenant.GroupFilter = String.Join(" or ", groupFilterBuilderForTenantList);
                 }
                 else
                 {
