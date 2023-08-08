@@ -93,7 +93,7 @@ namespace Yvand.ClaimsProviders.Configuration.AzureAD
             // Redo here the ApplyConfiguration done in base class
             this.ClaimsProviderName = configuration.ClaimsProviderName;
             this.ClaimTypes = new ClaimTypeConfigCollection(configuration.ClaimTypes.SPTrust);
-            foreach (ClaimTypeConfig claimTypeConfig in this.ClaimTypes)
+            foreach (ClaimTypeConfig claimTypeConfig in configuration.ClaimTypes)
             {
                 this.ClaimTypes.Add(claimTypeConfig.CopyConfiguration(), false);
             }

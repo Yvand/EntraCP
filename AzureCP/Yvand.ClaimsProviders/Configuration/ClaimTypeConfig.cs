@@ -308,6 +308,20 @@ namespace Yvand.ClaimsProviders.Configuration
 
         public bool IsReadOnly => false;
 
+        public IdentityClaimTypeConfig IdentityClaim
+        {
+            get
+            {
+                IdentityClaimTypeConfig ctConfig = (IdentityClaimTypeConfig)innerCol.FirstOrDefault(x => x is IdentityClaimTypeConfig);
+                return ctConfig;
+            }
+            set
+            {
+                IdentityClaimTypeConfig ctConfig = (IdentityClaimTypeConfig)innerCol.FirstOrDefault(x => x is IdentityClaimTypeConfig);
+                ctConfig = value;
+            }
+        }
+
         /// <summary>
         /// If set, more checks can be done when collection is changed
         /// </summary>

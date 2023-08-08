@@ -95,9 +95,9 @@ namespace Yvand.ClaimsProviders.Tests
             {
                 if (BackupConfig != null)
                 {
-                    //Config.ApplyConfiguration(BackupConfig);
-                    ////Config = BackupConfig.CopyConfiguration() as AzureADEntityProviderConfiguration;
-                    //Config.Update();
+                    Config.ApplyConfiguration(BackupConfig);
+                    //Config = BackupConfig.CopyConfiguration() as AzureADEntityProviderConfiguration;
+                    Config.Update();
                     //AzureCPSE.SaveConfiguration(Config);
                     //Trace.TraceInformation($"{DateTime.Now.ToString("s")} Restored original settings of AzureCP configuration");
                 }
