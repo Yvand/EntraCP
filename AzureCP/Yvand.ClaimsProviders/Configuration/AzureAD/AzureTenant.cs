@@ -213,7 +213,10 @@ namespace Yvand.ClaimsProviders.Configuration.AzureAD
 
             var scopes = new[] { "https://graph.microsoft.com/.default" };
             HttpClient httpClient = GraphClientFactory.Create(handlers: handlers, proxy: webProxy);
-            httpClient.Timeout = TimeSpan.FromMilliseconds(timeout);
+            if (timeout > 0 && timeout < Int32.MaxValue)
+            {
+                httpClient.Timeout = TimeSpan.FromMilliseconds(timeout);
+            }            
 
             // https://learn.microsoft.com/en-us/graph/sdks/customize-client?tabs=csharp
             var authProvider = new Microsoft.Graph.Authentication.AzureIdentityAuthenticationProvider(
@@ -233,6 +236,13 @@ namespace Yvand.ClaimsProviders.Configuration.AzureAD
         /// </summary>
         /// <returns></returns>
         public AzureTenant CopyConfiguration()
+        {
+            AzureTenant copy = new AzureTenant();
+            copy = (AzureTenant)Utils.CopyPersistedFields(typeof(AzureTenant), this, copy);
+            return copy;
+        }
+
+        public AzureTenant CopyPublicProperties()
         {
             AzureTenant copy = new AzureTenant();
             // Copy non-inherited public properties

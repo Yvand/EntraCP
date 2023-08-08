@@ -1,7 +1,10 @@
 ﻿using Microsoft.SharePoint.Administration;
 using Microsoft.SharePoint.Administration.Claims;
 using System;
+using System.CodeDom;
+using System.Collections.Generic;
 using System.Linq;
+using System.Reflection;
 using Yvand.ClaimsProviders.Configuration;
 using static Yvand.ClaimsProviders.Logger;
 
@@ -59,7 +62,7 @@ namespace Yvand.ClaimsProviders
                 // Get the list of authentication providers associated with the zone
                 foreach (SPAuthenticationProvider prov in iisSettings.ClaimsAuthenticationProviders)
                 {
-                    if (prov.GetType() == typeof(Microsoft.SharePoint.Administration.SPTrustedAuthenticationProvider))
+                    if (prov.GetType() == typeof(SPTrustedAuthenticationProvider))
                     {
                         // Check if the current SPTrustedAuthenticationProvider is associated with the claim provider
                         if (String.Equals(prov.ClaimProviderName, claimProviderName, StringComparison.OrdinalIgnoreCase))
@@ -70,6 +73,27 @@ namespace Yvand.ClaimsProviders
                 }
             }
             return false;
+        }
+
+        /// <summary>
+        /// Copy in target all the fields of source which have the decoration [Persisted] set on the specified type (fields inherited from parent types are ignored)
+        /// </summary>
+        /// <param name="T"></param>
+        /// <param name="source"></param>
+        /// <param name="target"></param>
+        /// <returns>The target object with fields decorated with [Persisted] set from the source object</returns>
+        public static object CopyPersistedFields(Type T, object source, object target)
+        {
+            List<FieldInfo> persistedFields = T
+            .GetRuntimeFields()
+            .Where(field => field.GetCustomAttributes(typeof(PersistedAttribute), inherit: false).Any())
+            .ToList();
+
+            foreach(FieldInfo field in persistedFields) 
+            {
+                field.SetValue(target, field.GetValue(source));
+            }
+            return target;
         }
     }
 }

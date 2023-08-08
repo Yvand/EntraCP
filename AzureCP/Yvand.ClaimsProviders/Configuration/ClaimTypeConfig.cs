@@ -14,11 +14,16 @@ namespace Yvand.ClaimsProviders.Configuration
     {
         public DirectoryObjectProperty DirectoryObjectPropertyForGuestUsers
         {
-            get { return (DirectoryObjectProperty)Enum.ToObject(typeof(DirectoryObjectProperty), _DirectoryObjectPropertyForGuestUsers); }
-            set { _DirectoryObjectPropertyForGuestUsers = (int)value; }
+            get
+            {
+                return String.IsNullOrWhiteSpace(_DirectoryObjectPropertyForGuestUsers) ?
+                    DirectoryObjectProperty.NotSet :
+                    (DirectoryObjectProperty)Enum.Parse(typeof(DirectoryObjectProperty), _DirectoryObjectPropertyForGuestUsers);
+            }
+            set { _DirectoryObjectPropertyForGuestUsers = value.ToString(); }
         }
         [Persisted]
-        private int _DirectoryObjectPropertyForGuestUsers = (int)DirectoryObjectProperty.Mail;
+        private string _DirectoryObjectPropertyForGuestUsers = DirectoryObjectProperty.Mail.ToString();
 
         public IdentityClaimTypeConfig()
         {
@@ -209,24 +214,40 @@ namespace Yvand.ClaimsProviders.Configuration
             if (this is IdentityClaimTypeConfig)
             {
                 copy = new IdentityClaimTypeConfig();
-                FieldInfo[] fieldsToCopyFromInheritedClass = typeof(IdentityClaimTypeConfig).GetFields(BindingFlags.NonPublic | BindingFlags.Instance | BindingFlags.DeclaredOnly);
-                foreach (FieldInfo field in fieldsToCopyFromInheritedClass)
-                {
-                    field.SetValue(copy, field.GetValue(this));
-                }
+                copy = (ClaimTypeConfig)Utils.CopyPersistedFields(typeof(ClaimTypeConfig), this, copy);
+                copy = (IdentityClaimTypeConfig)Utils.CopyPersistedFields(typeof(IdentityClaimTypeConfig), this, copy);
             }
             else
             {
                 copy = new ClaimTypeConfig();
-            }
-
-            // Copy non-inherited private fields
-            FieldInfo[] fieldsToCopy = typeof(ClaimTypeConfig).GetFields(BindingFlags.NonPublic | BindingFlags.Instance | BindingFlags.DeclaredOnly);
-            foreach (FieldInfo field in fieldsToCopy)
-            {
-                field.SetValue(copy, field.GetValue(this));
+                copy = (ClaimTypeConfig)Utils.CopyPersistedFields(typeof(ClaimTypeConfig), this, copy);
             }
             return copy;
+
+
+
+            //ClaimTypeConfig copy;
+            //if (this is IdentityClaimTypeConfig)
+            //{
+            //    copy = new IdentityClaimTypeConfig();
+            //    FieldInfo[] fieldsToCopyFromInheritedClass = typeof(IdentityClaimTypeConfig).GetFields(BindingFlags.NonPublic | BindingFlags.Instance | BindingFlags.DeclaredOnly);
+            //    foreach (FieldInfo field in fieldsToCopyFromInheritedClass)
+            //    {
+            //        field.SetValue(copy, field.GetValue(this));
+            //    }
+            //}
+            //else
+            //{
+            //    copy = new ClaimTypeConfig();
+            //}
+
+            //// Copy non-inherited private fields
+            //FieldInfo[] fieldsToCopy = typeof(ClaimTypeConfig).GetFields(BindingFlags.NonPublic | BindingFlags.Instance | BindingFlags.DeclaredOnly);
+            //foreach (FieldInfo field in fieldsToCopy)
+            //{
+            //    field.SetValue(copy, field.GetValue(this));
+            //}
+            //return copy;
         }
 
         /// <summary>

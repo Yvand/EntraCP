@@ -57,7 +57,7 @@ namespace Yvand.ClaimsProviders.Tests
         {
             Trace.TraceInformation($"{DateTime.Now.ToString("s")} Start backup of current AzureCP configuration");
             Config = AzureCP.GetConfiguration();
-            if (Config != null && BackupConfig != null)
+            if (Config != null && BackupConfig == null)
             {
                 BackupConfig = Config.CopyConfiguration() as AzureADEntityProviderConfiguration;
             }
@@ -93,14 +93,13 @@ namespace Yvand.ClaimsProviders.Tests
         {
             try
             {
-                //Config.ApplyConfiguration(BackupConfig);
-                //Config.Update();
                 if (BackupConfig != null)
                 {
-                    Config = BackupConfig.CopyConfiguration() as AzureADEntityProviderConfiguration;
-                    Config.Update();
+                    //Config.ApplyConfiguration(BackupConfig);
+                    ////Config = BackupConfig.CopyConfiguration() as AzureADEntityProviderConfiguration;
+                    //Config.Update();
                     //AzureCPSE.SaveConfiguration(Config);
-                    Trace.TraceInformation($"{DateTime.Now.ToString("s")} Restored original settings of AzureCP configuration");
+                    //Trace.TraceInformation($"{DateTime.Now.ToString("s")} Restored original settings of AzureCP configuration");
                 }
             }
             catch (Exception ex)

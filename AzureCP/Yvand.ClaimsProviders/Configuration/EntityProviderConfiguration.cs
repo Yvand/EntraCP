@@ -4,6 +4,7 @@ using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Linq;
+using Yvand.ClaimsProviders.Configuration.AzureAD;
 
 namespace Yvand.ClaimsProviders.Configuration
 {
@@ -378,21 +379,46 @@ namespace Yvand.ClaimsProviders.Configuration
             // Use default constructor to bypass initialization, which is useless since properties will be manually set here
             EntityProviderConfiguration copy = new EntityProviderConfiguration();
             copy.ClaimsProviderName = this.ClaimsProviderName;
-            copy.ClaimTypes = new ClaimTypeConfigCollection(this.ClaimTypes.SPTrust);
-            foreach (ClaimTypeConfig currentObject in this.ClaimTypes)
-            {
-                copy.ClaimTypes.Add(currentObject.CopyConfiguration(), false);
-            }
-            copy.AlwaysResolveUserInput = this.AlwaysResolveUserInput;
-            copy.FilterExactMatchOnly = this.FilterExactMatchOnly;
-            copy.EnableAugmentation = this.EnableAugmentation;
-            copy.EntityDisplayTextPrefix = this.EntityDisplayTextPrefix;
-            copy.Timeout = this.Timeout;
-            copy.CustomData = this.CustomData;
-            //copy.MaxSearchResultsCount = this.MaxSearchResultsCount;
-            
+            copy = (EntityProviderConfiguration)Utils.CopyPersistedFields(typeof(EntityProviderConfiguration), this, copy);
+            //copy.ClaimTypes = new ClaimTypeConfigCollection(this.ClaimTypes.SPTrust);
+            //foreach (ClaimTypeConfig currentObject in this.ClaimTypes)
+            //{
+            //    copy.ClaimTypes.Add(currentObject.CopyConfiguration(), false);
+            //}
             copy.InitializeRuntimeSettings();
             return copy;
+
+            //copy.ClaimsProviderName = this.ClaimsProviderName;
+            //copy.ClaimTypes = new ClaimTypeConfigCollection(this.ClaimTypes.SPTrust);
+            //foreach (ClaimTypeConfig currentObject in this.ClaimTypes)
+            //{
+            //    copy.ClaimTypes.Add(currentObject.CopyConfiguration(), false);
+            //}
+            //copy.AlwaysResolveUserInput = this.AlwaysResolveUserInput;
+            //copy.FilterExactMatchOnly = this.FilterExactMatchOnly;
+            //copy.EnableAugmentation = this.EnableAugmentation;
+            //copy.EntityDisplayTextPrefix = this.EntityDisplayTextPrefix;
+            //copy.Timeout = this.Timeout;
+            //copy.CustomData = this.CustomData;
+            ////copy.MaxSearchResultsCount = this.MaxSearchResultsCount;            
+
+            //copy.InitializeRuntimeSettings();
+            //return copy;
+        }
+
+        public virtual void ApplyConfiguration(EntityProviderConfiguration configuration)
+        {
+            this.ClaimsProviderName = configuration.ClaimsProviderName;
+            foreach (ClaimTypeConfig claimTypeConfig in this.ClaimTypes)
+            {
+                this.ClaimTypes.Add(claimTypeConfig.CopyConfiguration(), false);
+            }
+            this.AlwaysResolveUserInput = configuration.AlwaysResolveUserInput;
+            this.FilterExactMatchOnly = configuration.FilterExactMatchOnly;
+            this.EnableAugmentation = configuration.EnableAugmentation;
+            this.EntityDisplayTextPrefix = configuration.EntityDisplayTextPrefix;
+            this.Timeout = configuration.Timeout;
+            this.CustomData = configuration.CustomData;
         }
 
         //public virtual void ResetCurrentConfiguration()

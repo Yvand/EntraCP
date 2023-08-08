@@ -134,11 +134,11 @@ namespace Yvand.ClaimsProviders.AzureAD
 
         public async override Task<List<DirectoryObject>> SearchOrValidateEntitiesAsync(OperationContext currentContext)
         {
-            // this.CurrentConfiguration.AzureTenants must be cloned locally var to ensure its properties ($select / $filter) won't be updated by multiple threads
+            // this.CurrentConfiguration.AzureTenants must be cloned locally to ensure its properties ($select / $filter) won't be updated by multiple threads
             List<AzureTenant> azureTenants = new List<AzureTenant>(this.Configuration.AzureTenants.Count);
             foreach (AzureTenant tenant in this.Configuration.AzureTenants)
             {
-                azureTenants.Add(tenant.CopyConfiguration());
+                azureTenants.Add(tenant.CopyPublicProperties());
             }
             this.BuildFilter(currentContext, azureTenants);
             List<DirectoryObject> results = await this.QueryAzureADTenantsAsync(currentContext, azureTenants);
