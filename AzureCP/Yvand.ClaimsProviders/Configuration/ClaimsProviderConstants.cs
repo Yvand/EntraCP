@@ -8,6 +8,7 @@ using System.Diagnostics;
 using System.Linq;
 using System.Reflection;
 using System.Web;
+using Yvand.ClaimsProviders.Configuration.AzureAD;
 using WIF4_5 = System.Security.Claims;
 
 namespace Yvand.ClaimsProviders.Configuration
@@ -150,6 +151,7 @@ namespace Yvand.ClaimsProviders.Configuration
     /// </summary>
     public class OperationContext
     {
+        public IAzureADEntityProviderSettings Configuration { get; private set; }
         /// <summary>
         /// Indicates what kind of operation SharePoint is requesting
         /// </summary>
@@ -200,14 +202,25 @@ namespace Yvand.ClaimsProviders.Configuration
         /// </summary>
         public List<ClaimTypeConfig> CurrentClaimTypeConfigList { get; private set; }
 
-        public OperationContext(EntityProviderConfiguration currentConfiguration, OperationType currentRequestType, string input, SPClaim incomingEntity, Uri context, string[] entityTypes, string hierarchyNodeID, int maxCount)
+        public List<AzureTenant> AzureTenants { get; private set; }
+
+        public OperationContext(IAzureADEntityProviderSettings currentConfiguration, OperationType currentRequestType, string input, SPClaim incomingEntity, Uri context, string[] entityTypes, string hierarchyNodeID, int maxCount)
         {
+            this.Configuration = currentConfiguration;
+
             this.OperationType = currentRequestType;
             this.Input = input;
             this.IncomingEntity = incomingEntity;
             this.UriContext = context;
             this.HierarchyNodeID = hierarchyNodeID;
             this.MaxCount = maxCount;
+
+            // currentConfiguration.AzureTenants must be cloned locally to ensure its properties ($select / $filter) won't be updated by multiple threads
+            this.AzureTenants = new List<AzureTenant>(currentConfiguration.AzureTenants.Count);
+            foreach (AzureTenant tenant in currentConfiguration.AzureTenants)
+            {
+                AzureTenants.Add(tenant.CopyPublicProperties());
+            }
 
             if (entityTypes != null)
             {

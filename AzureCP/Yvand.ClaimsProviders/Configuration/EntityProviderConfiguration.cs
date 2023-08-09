@@ -4,28 +4,29 @@ using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Linq;
+using System.Reflection;
 using Yvand.ClaimsProviders.Configuration.AzureAD;
 
 namespace Yvand.ClaimsProviders.Configuration
 {
-    /// <summary>
-    /// Define base settings that are persisted in a persisted object
-    /// </summary>
-    public class IPersistedEntityProviderSettings : SPPersistedObject
-    {
-        // Class used as an interface becase, very unfortunately, protected set is not possible with an interface
-        public ClaimTypeConfigCollection ClaimTypes { get; protected set; }
-        public bool AlwaysResolveUserInput { get; set; }
-        public bool FilterExactMatchOnly { get; set; }
-        public bool EnableAugmentation { get; set; }
-        public string EntityDisplayTextPrefix { get; set; }
-        public int Timeout { get; set; }
-        public string CustomData { get; set; }
-        //public int MaxSearchResultsCount { get; set; }
+    ///// <summary>
+    ///// Define base settings that are persisted in a persisted object
+    ///// </summary>
+    //public class IPersistedEntityProviderSettings : SPPersistedObject
+    //{
+    //    // Class used as an interface becase, very unfortunately, protected set is not possible with an interface
+    //    public ClaimTypeConfigCollection ClaimTypes { get; protected set; }
+    //    public bool AlwaysResolveUserInput { get; set; }
+    //    public bool FilterExactMatchOnly { get; set; }
+    //    public bool EnableAugmentation { get; set; }
+    //    public string EntityDisplayTextPrefix { get; set; }
+    //    public int Timeout { get; set; }
+    //    public string CustomData { get; set; }
+    //    //public int MaxSearchResultsCount { get; set; }
 
-        public IPersistedEntityProviderSettings() { }
-        public IPersistedEntityProviderSettings(string persistedObjectName, SPPersistedObject parent) : base(persistedObjectName, parent) { }
-    }
+    //    public IPersistedEntityProviderSettings() { }
+    //    public IPersistedEntityProviderSettings(string persistedObjectName, SPPersistedObject parent) : base(persistedObjectName, parent) { }
+    //}
 
     ///// <summary>
     ///// Define base settings that are not persisted
@@ -45,7 +46,29 @@ namespace Yvand.ClaimsProviders.Configuration
     //    ClaimTypeConfig MainGroupClaimTypeConfig { get; set; }
     //}
 
-    public class EntityProviderConfiguration : IPersistedEntityProviderSettings // SPPersistedObject//, IPersistedEntityProviderSettings//, IRuntimeEntityProviderSettings
+    public interface IEntityProviderSettings
+    {
+        long Version { get; }
+        string Name { get; }
+        string ClaimsProviderName { get; }
+        ClaimTypeConfigCollection ClaimTypes { get; }
+        bool AlwaysResolveUserInput { get; }
+        bool FilterExactMatchOnly { get; }
+        bool EnableAugmentation { get; }
+        string EntityDisplayTextPrefix { get; }
+        int Timeout { get; }
+        string CustomData { get; }
+        IEntityProviderSettings CopyConfiguration();
+
+        string OriginalIssuerName { get; }
+        SPTrustedLoginProvider SPTrust { get; }
+        List<ClaimTypeConfig> RuntimeClaimTypesList { get; }
+        IEnumerable<ClaimTypeConfig> RuntimeMetadataConfig { get; }
+        IdentityClaimTypeConfig IdentityClaimTypeConfig { get; }
+        ClaimTypeConfig MainGroupClaimTypeConfig { get; }
+    }
+
+    public class EntityProviderConfiguration : SPPersistedObject, IEntityProviderSettings // SPPersistedObject//, IPersistedEntityProviderSettings//, IRuntimeEntityProviderSettings
     {
         /// <summary>
         /// Configuration of claim types and their mapping with LDAP attribute/class
@@ -139,11 +162,6 @@ namespace Yvand.ClaimsProviders.Configuration
             }
         }
 
-        /// <summary>
-        /// Returned issuer formatted like the property SPClaim.OriginalIssuer: "TrustedProvider:TrustedProviderName"
-        /// </summary>
-        public string OriginalIssuerName => this.SPTrust != null ? SPOriginalIssuers.Format(SPOriginalIssuerType.TrustedProvider, this.SPTrust.Name) : String.Empty;
-
         [Persisted]
         private string ClaimsProviderVersion;
 
@@ -172,10 +190,14 @@ namespace Yvand.ClaimsProviders.Configuration
         public bool RuntimeSettingsInitialized { get; private set; }
 
         // Runtime settings
-        internal List<ClaimTypeConfig> RuntimeClaimTypesList { get; private set; }
-        internal IEnumerable<ClaimTypeConfig> RuntimeMetadataConfig { get; private set; }
-        internal IdentityClaimTypeConfig IdentityClaimTypeConfig { get; private set; }
-        internal ClaimTypeConfig MainGroupClaimTypeConfig { get; private set; }
+        /// <summary>
+        /// Returned issuer formatted like the property SPClaim.OriginalIssuer: "TrustedProvider:TrustedProviderName"
+        /// </summary>
+        public string OriginalIssuerName => this.SPTrust != null ? SPOriginalIssuers.Format(SPOriginalIssuerType.TrustedProvider, this.SPTrust.Name) : String.Empty;
+        public List<ClaimTypeConfig> RuntimeClaimTypesList { get; private set; }
+        public IEnumerable<ClaimTypeConfig> RuntimeMetadataConfig { get; private set; }
+        public IdentityClaimTypeConfig IdentityClaimTypeConfig { get; private set; }
+        public ClaimTypeConfig MainGroupClaimTypeConfig { get; private set; }
 
         public EntityProviderConfiguration() { }
         public EntityProviderConfiguration(string persistedObjectName, SPPersistedObject parent, string claimsProviderName) : base(persistedObjectName, parent)
@@ -427,6 +449,82 @@ namespace Yvand.ClaimsProviders.Configuration
         //}
 
         public virtual ClaimTypeConfigCollection ReturnDefaultClaimTypesConfig()
+        {
+            throw new NotImplementedException();
+        }
+
+        //IEntityProviderSettings IEntityProviderSettings.CopyConfiguration()
+        //{
+        //    throw new NotImplementedException();
+        //}
+
+        /// <summary>
+        /// Returns the global configuration, stored as a persisted object in the SharePoint configuration database
+        /// </summary>
+        /// <param name="configurationName">The name of the configuration</param>
+        /// <param name="initializeRuntimeSettings">Set to true to initialize the runtime settings</param>
+        /// <returns></returns>
+        public static IEntityProviderSettings GetGlobalConfiguration(string configurationName, Type T, bool initializeRuntimeSettings = false)
+        {
+            SPFarm parent = SPFarm.Local;
+            try
+            {
+                //IEntityProviderSettings configuration = (IEntityProviderSettings)parent.GetObject(configurationName, parent.Id, typeof(EntityProviderConfiguration));
+                EntityProviderConfiguration configuration = (EntityProviderConfiguration)parent.GetObject(configurationName, parent.Id, T);
+                if (configuration != null && initializeRuntimeSettings == true)
+                {
+                    configuration.InitializeRuntimeSettings();
+                }
+                return configuration;
+            }
+            catch (Exception ex)
+            {
+                Logger.LogException(String.Empty, $"while retrieving configuration '{configurationName}'", TraceCategory.Configuration, ex);
+            }
+            return null;
+        }
+
+        public static void DeleteGlobalConfiguration(string configurationName, Type T)
+        {
+            EntityProviderConfiguration configuration = (EntityProviderConfiguration)GetGlobalConfiguration(configurationName, T);
+            if (configuration == null)
+            {
+                Logger.Log($"Configuration '{configurationName}' was not found in configuration database", TraceSeverity.Medium, EventSeverity.Error, TraceCategory.Core);
+                return;
+            }
+            configuration.Delete();
+            Logger.Log($"Configuration '{configurationName}' was successfully deleted from configuration database", TraceSeverity.High, EventSeverity.Information, TraceCategory.Core);
+        }
+
+        public static IEntityProviderSettings CreateGlobalConfiguration(string configurationID, string configurationName, string claimsProviderName, Type T)
+        {
+            if (String.IsNullOrWhiteSpace(claimsProviderName))
+            {
+                throw new ArgumentNullException(nameof(claimsProviderName));
+            }
+
+            // Ensure it doesn't already exists and delete it if so
+            EntityProviderConfiguration existingConfig = (EntityProviderConfiguration) GetGlobalConfiguration(configurationName, T);
+            if (existingConfig != null)
+            {
+                DeleteGlobalConfiguration(configurationName, T);
+            }
+
+            Logger.Log($"Creating configuration '{configurationName}' with Id {configurationID}...", TraceSeverity.VerboseEx, EventSeverity.Error, TraceCategory.Core);
+
+            // Calling constructor as below is not possible and generate Compiler Error CS0304, so use reflection to call the desired constructor instead
+            //TConfiguration config = new TConfiguration(persistedObjectName, SPFarm.Local, claimsProviderName);
+            ConstructorInfo ctorWithParameters = T.GetConstructor(new[] { typeof(string), typeof(SPFarm), typeof(string) });
+            EntityProviderConfiguration config = (EntityProviderConfiguration) ctorWithParameters.Invoke(new object[] { configurationName, SPFarm.Local, claimsProviderName });
+
+            config.Id = new Guid(configurationID);
+            // If parameter ensure is true, the call will not throw if the object already exists.
+            config.Update(true);
+            Logger.Log($"Created configuration '{configurationName}' with Id {config.Id}", TraceSeverity.High, EventSeverity.Information, TraceCategory.Core);
+            return config;
+        }
+
+        IEntityProviderSettings IEntityProviderSettings.CopyConfiguration()
         {
             throw new NotImplementedException();
         }

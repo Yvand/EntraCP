@@ -6,7 +6,14 @@ using System.Collections.Generic;
 
 namespace Yvand.ClaimsProviders.Configuration.AzureAD
 {
-    public class AzureADEntityProviderConfiguration : EntityProviderConfiguration
+    public interface IAzureADEntityProviderSettings : IEntityProviderSettings
+    {
+        List<AzureTenant> AzureTenants { get; }
+        string ProxyAddress { get; }
+        bool FilterSecurityEnabledGroupsOnly { get; }
+    }
+
+    public class AzureADEntityProviderConfiguration : EntityProviderConfiguration, IAzureADEntityProviderSettings
     {
         public List<AzureTenant> AzureTenants
         {
@@ -178,6 +185,12 @@ namespace Yvand.ClaimsProviders.Configuration.AzureAD
             ClaimTypes = ReturnDefaultClaimTypesConfig(this.ClaimsProviderName);
             Logger.Log($"Claim types list of configuration '{Name}' was successfully reset to default configuration",
                 TraceSeverity.High, EventSeverity.Information, TraceCategory.Core);
-        }        
+        }
+
+        IEntityProviderSettings IEntityProviderSettings.CopyConfiguration()
+        {
+            EntityProviderConfiguration copy = this.CopyConfiguration();
+            return copy;
+        }
     }
 }
