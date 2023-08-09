@@ -3,9 +3,7 @@ using Microsoft.SharePoint.Administration;
 using Microsoft.SharePoint.Utilities;
 using System;
 using System.Web.UI;
-using Yvand.ClaimsProviders.Configuration;
-using Yvand.ClaimsProviders.Configuration.AzureAD;
-using static Yvand.ClaimsProviders.Logger;
+using Yvand.ClaimsProviders.Config;
 
 namespace Yvand.ClaimsProviders.Administration
 {
@@ -44,8 +42,8 @@ namespace Yvand.ClaimsProviders.Administration
         //    }
         //}
 
-        private AzureADEntityProviderConfiguration<IAzureADEntityProviderSettings> _Configuration;
-        protected AzureADEntityProviderConfiguration<IAzureADEntityProviderSettings> Configuration
+        private AADConf<IAADSettings> _Configuration;
+        protected AADConf<IAADSettings> Configuration
         {
             get
             {
@@ -53,12 +51,12 @@ namespace Yvand.ClaimsProviders.Administration
                 {
                     if (_Configuration == null)
                     {
-                        _Configuration = (AzureADEntityProviderConfiguration<IAzureADEntityProviderSettings>)AzureADEntityProviderConfiguration<IAzureADEntityProviderSettings>.GetGlobalConfiguration(ConfigurationName, typeof(AzureADEntityProviderConfiguration<IAzureADEntityProviderSettings>), true);
+                        _Configuration = (AADConf<IAADSettings>)AADConf<IAADSettings>.GetGlobalConfiguration(ConfigurationName, typeof(AADConf<IAADSettings>), true);
                     }
                     if (_Configuration == null)
                     {
                         SPContext.Current.Web.AllowUnsafeUpdates = true;
-                        _Configuration = (AzureADEntityProviderConfiguration<IAzureADEntityProviderSettings>)AzureADEntityProviderConfiguration<IAzureADEntityProviderSettings>.CreateGlobalConfiguration(this.ConfigurationID, this.ConfigurationName, this.ClaimsProviderName, typeof(AzureADEntityProviderConfiguration<IAzureADEntityProviderSettings>));
+                        _Configuration = (AADConf<IAADSettings>)AADConf<IAADSettings>.CreateGlobalConfiguration(this.ConfigurationID, this.ConfigurationName, this.ClaimsProviderName, typeof(AADConf<IAADSettings>));
                         SPContext.Current.Web.AllowUnsafeUpdates = false;
                     }
                 });

@@ -1,11 +1,7 @@
 ﻿using Microsoft.Graph.Models;
-using Microsoft.SharePoint.Administration;
-using System;
 using System.Collections.Generic;
-using System.Reflection;
 using System.Threading.Tasks;
-using Yvand.ClaimsProviders.Configuration;
-using Yvand.ClaimsProviders.Configuration.AzureAD;
+using Yvand.ClaimsProviders.Config;
 
 namespace Yvand.ClaimsProviders
 {

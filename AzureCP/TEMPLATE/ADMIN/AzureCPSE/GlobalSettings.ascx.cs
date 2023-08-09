@@ -1,5 +1,4 @@
-﻿using Microsoft.Graph;
-using Microsoft.Graph.Models;
+﻿using Microsoft.Graph.Models;
 using Microsoft.Identity.Client;
 using Microsoft.SharePoint;
 using Microsoft.SharePoint.Administration;
@@ -13,13 +12,9 @@ using System.Linq;
 using System.Reflection;
 using System.Security.Cryptography;
 using System.Security.Cryptography.X509Certificates;
-using System.Threading.Tasks;
 using System.Web.UI.HtmlControls;
 using System.Web.UI.WebControls;
-using Yvand.ClaimsProviders;
-using Yvand.ClaimsProviders.Configuration;
-using Yvand.ClaimsProviders.Configuration.AzureAD;
-using static Yvand.ClaimsProviders.Logger;
+using Yvand.ClaimsProviders.Config;
 
 namespace Yvand.ClaimsProviders.Administration
 {
@@ -247,7 +242,7 @@ namespace Yvand.ClaimsProviders.Administration
         protected void BtnResetAzureCPConfig_Click(Object sender, EventArgs e)
         {
             //AzureADEntityProviderConfiguration.DeleteConfiguration(PersistedObjectName);
-            AzureADEntityProviderConfiguration<IAzureADEntityProviderSettings>.DeleteGlobalConfiguration(ConfigurationName, typeof(AzureADEntityProviderConfiguration<IAzureADEntityProviderSettings>));
+            AADConf<IAADSettings>.DeleteGlobalConfiguration(ConfigurationName, typeof(AADConf<IAADSettings>));
             Response.Redirect(Request.RawUrl, false);
         }
 

@@ -1,5 +1,4 @@
-﻿using Microsoft.Graph.Drives.Item.Items.Item.GetActivitiesByIntervalWithStartDateTimeWithEndDateTimeWithInterval;
-using Microsoft.SharePoint.Administration.Claims;
+﻿using Microsoft.SharePoint.Administration.Claims;
 using Microsoft.SharePoint.WebControls;
 using Newtonsoft.Json;
 using NUnit.Framework;
@@ -10,9 +9,7 @@ using System.IO;
 using System.Linq;
 using System.Security.Claims;
 using System.Text;
-using System.Threading.Tasks;
-using Yvand.ClaimsProviders.Configuration;
-using Yvand.ClaimsProviders.Configuration.AzureAD;
+using Yvand.ClaimsProviders.Config;
 
 namespace Yvand.ClaimsProviders.Tests
 {
@@ -49,8 +46,8 @@ namespace Yvand.ClaimsProviders.Tests
         public static string TrustedGroupToAdd_ClaimType => TestContext.Parameters["TrustedGroupToAdd_ClaimType"];
         public static string TrustedGroupToAdd_ClaimValue => TestContext.Parameters["TrustedGroupToAdd_ClaimValue"];
         public static SPClaim TrustedGroup => new SPClaim(TrustedGroupToAdd_ClaimType, TrustedGroupToAdd_ClaimValue, ClaimValueTypes.String, SPOriginalIssuers.Format(SPOriginalIssuerType.TrustedProvider, SPTrust.Name));
-        protected AzureADEntityProviderConfiguration<IAzureADEntityProviderSettings> Config;
-        private static AzureADEntityProviderConfiguration<IAzureADEntityProviderSettings> BackupConfig;
+        protected AADConf<IAADSettings> Config;
+        private static AADConf<IAADSettings> BackupConfig;
 
         [OneTimeSetUp]
         public void Init()
@@ -59,7 +56,7 @@ namespace Yvand.ClaimsProviders.Tests
             Config = AzureCP.GetConfiguration();
             if (Config != null && BackupConfig == null)
             {
-                BackupConfig = Config.CopyConfiguration() as AzureADEntityProviderConfiguration<IAzureADEntityProviderSettings>;
+                BackupConfig = Config.CopyConfiguration() as AADConf<IAADSettings>;
             }
             InitializeConfiguration();
         }

@@ -8,7 +8,7 @@ using System.Linq;
 using System.Reflection;
 using WIF4_5 = System.Security.Claims;
 
-namespace Yvand.ClaimsProviders.Configuration
+namespace Yvand.ClaimsProviders.Config
 {
     public class IdentityClaimTypeConfig : ClaimTypeConfig
     {

@@ -8,10 +8,9 @@ using System.Diagnostics;
 using System.Linq;
 using System.Reflection;
 using System.Web;
-using Yvand.ClaimsProviders.Configuration.AzureAD;
 using WIF4_5 = System.Security.Claims;
 
-namespace Yvand.ClaimsProviders.Configuration
+namespace Yvand.ClaimsProviders.Config
 {
     public static class ClaimsProviderConstants
     {
@@ -151,7 +150,7 @@ namespace Yvand.ClaimsProviders.Configuration
     /// </summary>
     public class OperationContext
     {
-        public IAzureADEntityProviderSettings Configuration { get; private set; }
+        public IAADSettings Configuration { get; private set; }
         /// <summary>
         /// Indicates what kind of operation SharePoint is requesting
         /// </summary>
@@ -204,7 +203,7 @@ namespace Yvand.ClaimsProviders.Configuration
 
         public List<AzureTenant> AzureTenants { get; private set; }
 
-        public OperationContext(IAzureADEntityProviderSettings currentConfiguration, OperationType currentRequestType, string input, SPClaim incomingEntity, Uri context, string[] entityTypes, string hierarchyNodeID, int maxCount)
+        public OperationContext(IAADSettings currentConfiguration, OperationType currentRequestType, string input, SPClaim incomingEntity, Uri context, string[] entityTypes, string hierarchyNodeID, int maxCount)
         {
             this.Configuration = currentConfiguration;
 

@@ -1,7 +1,7 @@
 ﻿using Microsoft.SharePoint.Administration.Claims;
 using NUnit.Framework;
 using System.Security.Claims;
-using Yvand.ClaimsProviders.Configuration;
+using Yvand.ClaimsProviders.Config;
 
 namespace Yvand.ClaimsProviders.Tests
 {
