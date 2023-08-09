@@ -10,30 +10,30 @@ using Yvand.ClaimsProviders.Configuration.AzureAD;
 namespace Yvand.ClaimsProviders
 {
     public abstract class EntityProviderBase<TConfiguration>
-    where TConfiguration : IEntityProviderSettings
+        where TConfiguration : IEntityProviderSettings
     {
         /// <summary>
-        /// Gets the local configuration, which is a copy of the global configuration stored in a persisted object
+        /// Gets or sets the local configuration, which is a copy of the global configuration stored in a persisted object
         /// </summary>
-        private TConfiguration Configuration { get; set; }
-        
+        private TConfiguration LocalConfiguration { get; set; }
+
         /// <summary>
-        /// Gets the version of the local configuration
+        /// Gets or sets the current version of the local configuration
         /// </summary>
-        private long ConfigurationVersion { get; set; }
-        
+        private long LocalConfigurationVersion { get; set; } = 0;
+
         /// <summary>
         /// Gets the name of the claims provider using this class
         /// </summary>
-        public string ClaimsProviderName { get; private set; }
-        
+        public string ClaimsProviderName { get; }
+
         /// <summary>
         /// Returns a list of users and groups
         /// </summary>
         /// <param name="currentContext"></param>
         /// <returns></returns>
         public abstract Task<List<DirectoryObject>> SearchOrValidateEntitiesAsync(OperationContext currentContext);
-        
+
         /// <summary>
         /// Returns the groups the user is member of
         /// </summary>
@@ -54,44 +54,37 @@ namespace Yvand.ClaimsProviders
         /// <returns>return true if local configuration is valid and up to date</returns>
         public TConfiguration RefreshLocalConfigurationIfNeeded(string configurationName)
         {
-            bool configIsVald = true;
-            // Use reflection to call method GetConfiguration(string) of the generic type because TConfiguration.GetConfiguration(persistedObjectName) return Compiler Error CS0704
-            //TConfiguration globalConfiguration = TConfiguration.GetConfiguration(persistedObjectName);
-            //TConfiguration globalConfiguration = (TConfiguration)typeof(TConfiguration).GetMethod("GetConfiguration", new[] { typeof(string) }).Invoke(null, new object[] { persistedObjectName });
             TConfiguration globalConfiguration = GetGlobalConfiguration(configurationName);
 
             if (globalConfiguration == null)
             {
                 Logger.Log($"[{ClaimsProviderName}] Cannot continue because configuration '{configurationName}' was not found in configuration database, visit AzureCP admin pages in central administration to create it.",
                     TraceSeverity.Unexpected, EventSeverity.Error, TraceCategory.Core);
-                this.Configuration = default(TConfiguration);
+                this.LocalConfiguration = default(TConfiguration);
                 return default(TConfiguration);
             }
 
-            if (this.ConfigurationVersion == globalConfiguration.Version)
+            if (this.LocalConfigurationVersion == globalConfiguration.Version)
             {
-                Logger.Log($"[{ClaimsProviderName}] Configuration '{configurationName}' is up to date with version {this.ConfigurationVersion}.",
+                Logger.Log($"[{ClaimsProviderName}] Configuration '{configurationName}' is up to date with version {this.LocalConfigurationVersion}.",
                     TraceSeverity.VerboseEx, EventSeverity.Information, TraceCategory.Core);
-                return this.Configuration;
+                return this.LocalConfiguration;
             }
 
             Logger.Log($"[{ClaimsProviderName}] Configuration '{globalConfiguration.Name}' has new version {globalConfiguration.Version}, refreshing local copy",
                 TraceSeverity.Medium, EventSeverity.Information, TraceCategory.Core);
 
-            //this.Configuration = (TConfiguration)globalConfiguration.CopyConfiguration();
-            this.Configuration = (TConfiguration)globalConfiguration.CopyConfiguration();
+            this.LocalConfiguration = (TConfiguration)globalConfiguration.CopyConfiguration();
 #if !DEBUGx
-            this.ConfigurationVersion = globalConfiguration.Version;
+            this.LocalConfigurationVersion = globalConfiguration.Version;
 #endif
 
-            if (this.Configuration.ClaimTypes == null || this.Configuration.ClaimTypes.Count == 0)
+            if (this.LocalConfiguration.ClaimTypes == null || this.LocalConfiguration.ClaimTypes.Count == 0)
             {
-                Logger.Log($"[{ClaimsProviderName}] Configuration '{this.Configuration.Name}' was found but collection ClaimTypes is empty. Visit AzureCP admin pages in central administration to create it.",
+                Logger.Log($"[{ClaimsProviderName}] Configuration '{this.LocalConfiguration.Name}' was found but collection ClaimTypes is empty. Visit AzureCP admin pages in central administration to create it.",
                     TraceSeverity.Unexpected, EventSeverity.Error, TraceCategory.Core);
-                configIsVald = false;
             }
-            //return configIsVald;
-            return this.Configuration;
+            return this.LocalConfiguration;
         }
 
         /// <summary>
@@ -103,7 +96,7 @@ namespace Yvand.ClaimsProviders
         public static TConfiguration GetGlobalConfiguration(string configurationName, bool initializeRuntimeSettings = false)
         {
             //TConfiguration configuration = (TConfiguration) EntityProviderConfiguration.GetGlobalConfiguration(configurationName, T, initializeRuntimeSettings);
-            TConfiguration configuration = (TConfiguration) EntityProviderConfiguration.GetGlobalConfiguration(configurationName, typeof(TConfiguration), initializeRuntimeSettings);
+            TConfiguration configuration = (TConfiguration)EntityProviderConfiguration.GetGlobalConfiguration(configurationName, typeof(TConfiguration), initializeRuntimeSettings);
             return configuration;
             //SPFarm parent = SPFarm.Local;
             //try
@@ -175,19 +168,6 @@ namespace Yvand.ClaimsProviders
             //config.Update(true);
             //Logger.Log($"Created configuration '{configurationName}' with Id {config.Id}", TraceSeverity.High, EventSeverity.Information, TraceCategory.Core);
             //return config;
-        }
-
-        public static void SaveGlobalConfiguration(TConfiguration globalConfiguration)
-        {
-            //try
-            //{ 
-            //// If parameter ensure is true, the call will not throw if the object already exists.
-            //globalConfiguration.Update(true);
-            //}
-            //catch (Exception ex)
-            //{
-            //    Logger.LogException("", "in SaveGlobalConfiguration", TraceCategory.Configuration, ex);
-            //}
         }
     }
 }

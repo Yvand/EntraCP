@@ -9,43 +9,6 @@ using Yvand.ClaimsProviders.Configuration.AzureAD;
 
 namespace Yvand.ClaimsProviders.Configuration
 {
-    ///// <summary>
-    ///// Define base settings that are persisted in a persisted object
-    ///// </summary>
-    //public class IPersistedEntityProviderSettings : SPPersistedObject
-    //{
-    //    // Class used as an interface becase, very unfortunately, protected set is not possible with an interface
-    //    public ClaimTypeConfigCollection ClaimTypes { get; protected set; }
-    //    public bool AlwaysResolveUserInput { get; set; }
-    //    public bool FilterExactMatchOnly { get; set; }
-    //    public bool EnableAugmentation { get; set; }
-    //    public string EntityDisplayTextPrefix { get; set; }
-    //    public int Timeout { get; set; }
-    //    public string CustomData { get; set; }
-    //    //public int MaxSearchResultsCount { get; set; }
-
-    //    public IPersistedEntityProviderSettings() { }
-    //    public IPersistedEntityProviderSettings(string persistedObjectName, SPPersistedObject parent) : base(persistedObjectName, parent) { }
-    //}
-
-    ///// <summary>
-    ///// Define base settings that are not persisted
-    ///// </summary>
-    //public interface IRuntimeEntityProviderSettings
-    //{
-    //    List<ClaimTypeConfig> ProcessedClaimTypesList { get; set; }
-    //    IEnumerable<ClaimTypeConfig> MetadataConfig { get; set; }
-    //    /// <summary>
-    //    /// ClaimTypeConfig mapped to the identity claim in the SPTrustedIdentityTokenIssuer
-    //    /// </summary>
-    //    IdentityClaimTypeConfig IdentityClaimTypeConfig { get; set; }
-
-    //    /// <summary>
-    //    /// Group ClaimTypeConfig used to set the claim type for other group ClaimTypeConfig that have UseMainClaimTypeOfDirectoryObject set to true
-    //    /// </summary>
-    //    ClaimTypeConfig MainGroupClaimTypeConfig { get; set; }
-    //}
-
     public interface IEntityProviderSettings
     {
         long Version { get; }
