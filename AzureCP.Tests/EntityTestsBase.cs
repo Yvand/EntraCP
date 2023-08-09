@@ -49,8 +49,8 @@ namespace Yvand.ClaimsProviders.Tests
         public static string TrustedGroupToAdd_ClaimType => TestContext.Parameters["TrustedGroupToAdd_ClaimType"];
         public static string TrustedGroupToAdd_ClaimValue => TestContext.Parameters["TrustedGroupToAdd_ClaimValue"];
         public static SPClaim TrustedGroup => new SPClaim(TrustedGroupToAdd_ClaimType, TrustedGroupToAdd_ClaimValue, ClaimValueTypes.String, SPOriginalIssuers.Format(SPOriginalIssuerType.TrustedProvider, SPTrust.Name));
-        protected AzureADEntityProviderConfiguration Config;
-        private static AzureADEntityProviderConfiguration BackupConfig;
+        protected AzureADEntityProviderConfiguration<IAzureADEntityProviderSettings> Config;
+        private static AzureADEntityProviderConfiguration<IAzureADEntityProviderSettings> BackupConfig;
 
         [OneTimeSetUp]
         public void Init()
@@ -59,7 +59,7 @@ namespace Yvand.ClaimsProviders.Tests
             Config = AzureCP.GetConfiguration();
             if (Config != null && BackupConfig == null)
             {
-                BackupConfig = Config.CopyConfiguration() as AzureADEntityProviderConfiguration;
+                BackupConfig = Config.CopyConfiguration() as AzureADEntityProviderConfiguration<IAzureADEntityProviderSettings>;
             }
             InitializeConfiguration();
         }

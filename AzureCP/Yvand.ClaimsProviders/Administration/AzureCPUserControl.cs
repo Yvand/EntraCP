@@ -44,8 +44,8 @@ namespace Yvand.ClaimsProviders.Administration
         //    }
         //}
 
-        private AzureADEntityProviderConfiguration _Configuration;
-        protected AzureADEntityProviderConfiguration Configuration
+        private AzureADEntityProviderConfiguration<IAzureADEntityProviderSettings> _Configuration;
+        protected AzureADEntityProviderConfiguration<IAzureADEntityProviderSettings> Configuration
         {
             get
             {
@@ -53,12 +53,12 @@ namespace Yvand.ClaimsProviders.Administration
                 {
                     if (_Configuration == null)
                     {
-                        _Configuration = EntityProviderBase<AzureADEntityProviderConfiguration>.GetGlobalConfiguration(ConfigurationName, true);
+                        _Configuration = (AzureADEntityProviderConfiguration<IAzureADEntityProviderSettings>)AzureADEntityProviderConfiguration<IAzureADEntityProviderSettings>.GetGlobalConfiguration(ConfigurationName, typeof(AzureADEntityProviderConfiguration<IAzureADEntityProviderSettings>), true);
                     }
                     if (_Configuration == null)
                     {
                         SPContext.Current.Web.AllowUnsafeUpdates = true;
-                        _Configuration = EntityProviderBase<AzureADEntityProviderConfiguration>.CreateGlobalConfiguration(this.ConfigurationID, this.ConfigurationName, this.ClaimsProviderName);
+                        _Configuration = (AzureADEntityProviderConfiguration<IAzureADEntityProviderSettings>)AzureADEntityProviderConfiguration<IAzureADEntityProviderSettings>.CreateGlobalConfiguration(this.ConfigurationID, this.ConfigurationName, this.ClaimsProviderName, typeof(AzureADEntityProviderConfiguration<IAzureADEntityProviderSettings>));
                         SPContext.Current.Web.AllowUnsafeUpdates = false;
                     }
                 });

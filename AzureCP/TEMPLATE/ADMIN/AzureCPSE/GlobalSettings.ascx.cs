@@ -247,7 +247,7 @@ namespace Yvand.ClaimsProviders.Administration
         protected void BtnResetAzureCPConfig_Click(Object sender, EventArgs e)
         {
             //AzureADEntityProviderConfiguration.DeleteConfiguration(PersistedObjectName);
-            EntityProviderBase<AzureADEntityProviderConfiguration>.DeleteGlobalConfiguration(ConfigurationName);
+            AzureADEntityProviderConfiguration<IAzureADEntityProviderSettings>.DeleteGlobalConfiguration(ConfigurationName, typeof(AzureADEntityProviderConfiguration<IAzureADEntityProviderSettings>));
             Response.Redirect(Request.RawUrl, false);
         }
 

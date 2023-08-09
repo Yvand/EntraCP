@@ -13,7 +13,45 @@ namespace Yvand.ClaimsProviders.Configuration.AzureAD
         bool FilterSecurityEnabledGroupsOnly { get; }
     }
 
-    public class AzureADEntityProviderConfiguration : EntityProviderConfiguration, IAzureADEntityProviderSettings
+    public class AzureADEntityProviderSettings : IAzureADEntityProviderSettings
+    {
+        public List<AzureTenant> AzureTenants  { get; set; }
+
+        public string ProxyAddress  { get; set; }
+
+        public bool FilterSecurityEnabledGroupsOnly  { get; set; }
+
+        public long Version  { get; set; }
+
+        public string Name  { get; set; }
+
+        public string ClaimsProviderName  { get; set; }
+
+        public ClaimTypeConfigCollection ClaimTypes  { get; set; }
+
+        public bool AlwaysResolveUserInput  { get; set; }
+
+        public bool FilterExactMatchOnly  { get; set; }
+
+        public bool EnableAugmentation  { get; set; }
+
+        public string EntityDisplayTextPrefix  { get; set; }
+
+        public int Timeout  { get; set; }
+
+        public string CustomData  { get; set; }
+
+        public List<ClaimTypeConfig> RuntimeClaimTypesList  { get; set; }
+
+        public IEnumerable<ClaimTypeConfig> RuntimeMetadataConfig  { get; set; }
+
+        public IdentityClaimTypeConfig IdentityClaimTypeConfig  { get; set; }
+
+        public ClaimTypeConfig MainGroupClaimTypeConfig  { get; set; }
+    }
+
+    public class AzureADEntityProviderConfiguration<TConfiguration> : EntityProviderConfiguration<TConfiguration>
+        where TConfiguration : IAzureADEntityProviderSettings
     {
         public List<AzureTenant> AzureTenants
         {
@@ -68,32 +106,55 @@ namespace Yvand.ClaimsProviders.Configuration.AzureAD
         }
 
         //public new AzureADEntityProviderConfiguration CopyConfiguration()
-        public override EntityProviderConfiguration CopyConfiguration()
+        public override TConfiguration CopyConfiguration()
         {
-            // This is not possible to case an object to an inherited type from its base type: https://stackoverflow.com/questions/12565736/convert-base-class-to-derived-class
-            //EntityProviderConfiguration baseCopy = base.CopyConfiguration();
-            //AzureADEntityProviderConfiguration copy = (AzureADEntityProviderConfiguration)baseCopy;
-            //AzureADEntityProviderConfiguration copy = new AzureADEntityProviderConfiguration(this.ClaimsProviderName);
-            // Use default constructor to bypass initialization, which is useless since properties will be manually set here
-            AzureADEntityProviderConfiguration copy = new AzureADEntityProviderConfiguration();
-            copy.ClaimsProviderName = this.ClaimsProviderName;
-            copy = (AzureADEntityProviderConfiguration)Utils.CopyPersistedFields(typeof(EntityProviderConfiguration), this, copy);
-            copy = (AzureADEntityProviderConfiguration)Utils.CopyPersistedFields(typeof(AzureADEntityProviderConfiguration), this, copy);
-            //copy.ClaimTypes = new ClaimTypeConfigCollection(this.ClaimTypes.SPTrust);
-            //foreach (ClaimTypeConfig currentObject in this.ClaimTypes)
-            //{
-            //    copy.ClaimTypes.Add(currentObject.CopyConfiguration(), false);
-            //}
-            //copy.AzureTenants = new List<AzureTenant>();
-            //foreach(AzureTenant tenant in this.AzureTenants)
-            //{
-            //    copy.AzureTenants.Add(tenant.CopyConfiguration());
-            //}
-            copy.InitializeRuntimeSettings();
-            return copy;
+            //IAzureADEntityProviderSettings settings = base.CopyConfiguration();
+            IAzureADEntityProviderSettings entityProviderSettings = new AzureADEntityProviderSettings
+            {
+                ClaimsProviderName = this.ClaimsProviderName,
+                AlwaysResolveUserInput = this.AlwaysResolveUserInput,
+                ClaimTypes = this.ClaimTypes,
+                CustomData = this.CustomData,
+                EnableAugmentation = this.EnableAugmentation,
+                EntityDisplayTextPrefix = this.EntityDisplayTextPrefix,
+                FilterExactMatchOnly = this.FilterExactMatchOnly,
+                IdentityClaimTypeConfig = this.IdentityClaimTypeConfig,
+                MainGroupClaimTypeConfig = this.MainGroupClaimTypeConfig,
+                Name = this.Name,
+                RuntimeClaimTypesList = this.RuntimeClaimTypesList,
+                RuntimeMetadataConfig = this.RuntimeMetadataConfig,
+                Timeout = this.Timeout,
+                Version = this.Version,
+
+                AzureTenants = this.AzureTenants,
+                ProxyAddress = this.ProxyAddress,
+                FilterSecurityEnabledGroupsOnly = this.FilterSecurityEnabledGroupsOnly,
+            };
+            return (TConfiguration)entityProviderSettings;
+            //// This is not possible to case an object to an inherited type from its base type: https://stackoverflow.com/questions/12565736/convert-base-class-to-derived-class
+            ////EntityProviderConfiguration baseCopy = base.CopyConfiguration();
+            ////AzureADEntityProviderConfiguration copy = (AzureADEntityProviderConfiguration)baseCopy;
+            ////AzureADEntityProviderConfiguration copy = new AzureADEntityProviderConfiguration(this.ClaimsProviderName);
+            //// Use default constructor to bypass initialization, which is useless since properties will be manually set here
+            //AzureADEntityProviderConfiguration<TConfiguration> copy = new AzureADEntityProviderConfiguration<TConfiguration>();
+            //copy.ClaimsProviderName = this.ClaimsProviderName;
+            //copy = (AzureADEntityProviderConfiguration<TConfiguration>)Utils.CopyPersistedFields(typeof(EntityProviderConfiguration<TConfiguration>), this, copy);
+            //copy = (AzureADEntityProviderConfiguration<TConfiguration>)Utils.CopyPersistedFields(typeof(AzureADEntityProviderConfiguration<TConfiguration>), this, copy);
+            ////copy.ClaimTypes = new ClaimTypeConfigCollection(this.ClaimTypes.SPTrust);
+            ////foreach (ClaimTypeConfig currentObject in this.ClaimTypes)
+            ////{
+            ////    copy.ClaimTypes.Add(currentObject.CopyConfiguration(), false);
+            ////}
+            ////copy.AzureTenants = new List<AzureTenant>();
+            ////foreach(AzureTenant tenant in this.AzureTenants)
+            ////{
+            ////    copy.AzureTenants.Add(tenant.CopyConfiguration());
+            ////}
+            //copy.InitializeRuntimeSettings();
+            //return copy.LocalConfiguration;
         }
 
-        public void ApplyConfiguration(AzureADEntityProviderConfiguration configuration)
+        public void ApplyConfiguration(AzureADEntityProviderConfiguration<TConfiguration> configuration)
         {
             // This is not possible to case an object to an inherited type from its base type: https://stackoverflow.com/questions/12565736/convert-base-class-to-derived-class
 
@@ -121,9 +182,9 @@ namespace Yvand.ClaimsProviders.Configuration.AzureAD
         /// Generate and return default configuration
         /// </summary>
         /// <returns></returns>
-        public static AzureADEntityProviderConfiguration ReturnDefaultConfiguration(string claimsProviderName)
+        public static AzureADEntityProviderConfiguration<TConfiguration> ReturnDefaultConfiguration(string claimsProviderName)
         {
-            AzureADEntityProviderConfiguration defaultConfig = new AzureADEntityProviderConfiguration();
+            AzureADEntityProviderConfiguration<TConfiguration> defaultConfig = new AzureADEntityProviderConfiguration<TConfiguration>();
             defaultConfig.ClaimsProviderName = claimsProviderName;
             defaultConfig.AzureTenants = new List<AzureTenant>();
             defaultConfig.ClaimTypes = ReturnDefaultClaimTypesConfig(claimsProviderName);
@@ -132,7 +193,7 @@ namespace Yvand.ClaimsProviders.Configuration.AzureAD
 
         public override ClaimTypeConfigCollection ReturnDefaultClaimTypesConfig()
         {
-            return AzureADEntityProviderConfiguration.ReturnDefaultClaimTypesConfig(this.ClaimsProviderName);
+            return AzureADEntityProviderConfiguration<TConfiguration>.ReturnDefaultClaimTypesConfig(this.ClaimsProviderName);
         }
 
         /// <summary>
@@ -185,12 +246,6 @@ namespace Yvand.ClaimsProviders.Configuration.AzureAD
             ClaimTypes = ReturnDefaultClaimTypesConfig(this.ClaimsProviderName);
             Logger.Log($"Claim types list of configuration '{Name}' was successfully reset to default configuration",
                 TraceSeverity.High, EventSeverity.Information, TraceCategory.Core);
-        }
-
-        IEntityProviderSettings IEntityProviderSettings.CopyConfiguration()
-        {
-            EntityProviderConfiguration copy = this.CopyConfiguration();
-            return copy;
         }
     }
 }

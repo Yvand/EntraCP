@@ -30,6 +30,7 @@ namespace Yvand.ClaimsProviders
         private ReaderWriterLockSlim Lock_LocalConfigurationRefresh = new ReaderWriterLockSlim();
         protected virtual string PickerEntityDisplayText => "({0}) {1}";
         protected virtual string PickerEntityOnMouseOver => "{0}={1}";
+        protected AzureADEntityProviderConfiguration<IAzureADEntityProviderSettings> PersistedConfiguration { get; private set; }
         public IAzureADEntityProviderSettings LocalConfiguration { get; private set; }
 
         public AzureCP(string displayName) : base(displayName)
@@ -37,23 +38,23 @@ namespace Yvand.ClaimsProviders
             this.EntityProvider = new AzureADEntityProvider(Name);
         }
 
-        public static AzureADEntityProviderConfiguration GetConfiguration(bool initializeRuntimeSettings = false)
+        public static AzureADEntityProviderConfiguration<IAzureADEntityProviderSettings> GetConfiguration(bool initializeRuntimeSettings = false)
         {
             //AzureADEntityProviderConfiguration configuration = EntityProviderBase<AzureADEntityProviderConfiguration>.GetGlobalConfiguration(ClaimsProviderConstants.CONFIGURATION_NAME, initializeRuntimeSettings);
-            AzureADEntityProviderConfiguration configuration = (AzureADEntityProviderConfiguration) EntityProviderConfiguration.GetGlobalConfiguration(ClaimsProviderConstants.CONFIGURATION_NAME, typeof(AzureADEntityProviderConfiguration), initializeRuntimeSettings);
+            AzureADEntityProviderConfiguration<IAzureADEntityProviderSettings> configuration = (AzureADEntityProviderConfiguration<IAzureADEntityProviderSettings>)AzureADEntityProviderConfiguration<IAzureADEntityProviderSettings>.GetGlobalConfiguration(ClaimsProviderConstants.CONFIGURATION_NAME, typeof(AzureADEntityProviderConfiguration<IAzureADEntityProviderSettings>), initializeRuntimeSettings);
             return configuration;
         }
 
-        public static AzureADEntityProviderConfiguration CreateConfiguration()
+        public static AzureADEntityProviderConfiguration<IAzureADEntityProviderSettings> CreateConfiguration()
         {
             //AzureADEntityProviderConfiguration configuration = EntityProviderBase<AzureADEntityProviderConfiguration>.CreateGlobalConfiguration(ClaimsProviderConstants.CONFIGURATION_ID, ClaimsProviderConstants.CONFIGURATION_NAME, AzureCP.ClaimsProviderName);
-            AzureADEntityProviderConfiguration configuration = (AzureADEntityProviderConfiguration) EntityProviderConfiguration.CreateGlobalConfiguration(ClaimsProviderConstants.CONFIGURATION_ID, ClaimsProviderConstants.CONFIGURATION_NAME, AzureCP.ClaimsProviderName, typeof(AzureADEntityProviderConfiguration));
+            AzureADEntityProviderConfiguration<IAzureADEntityProviderSettings> configuration = (AzureADEntityProviderConfiguration<IAzureADEntityProviderSettings>)AzureADEntityProviderConfiguration<IAzureADEntityProviderSettings>.CreateGlobalConfiguration(ClaimsProviderConstants.CONFIGURATION_ID, ClaimsProviderConstants.CONFIGURATION_NAME, AzureCP.ClaimsProviderName, typeof(AzureADEntityProviderConfiguration<IAzureADEntityProviderSettings>));
             return configuration;
         }
 
         public static void DeleteConfiguration()
         {
-            AzureADEntityProviderConfiguration configuration = EntityProviderBase<AzureADEntityProviderConfiguration>.GetGlobalConfiguration(ClaimsProviderConstants.CONFIGURATION_NAME);
+            AzureADEntityProviderConfiguration<IAzureADEntityProviderSettings> configuration = (AzureADEntityProviderConfiguration<IAzureADEntityProviderSettings>)  AzureADEntityProviderConfiguration<IAzureADEntityProviderSettings>.GetGlobalConfiguration(ClaimsProviderConstants.CONFIGURATION_NAME, typeof(AzureADEntityProviderConfiguration<IAzureADEntityProviderSettings>));
             if (configuration != null)
             {
                 configuration.Delete();
@@ -71,7 +72,9 @@ namespace Yvand.ClaimsProviders
             this.Lock_LocalConfigurationRefresh.EnterWriteLock();
             try
             {
-                LocalConfiguration = this.EntityProvider.RefreshLocalConfigurationIfNeeded(ClaimsProviderConstants.CONFIGURATION_NAME);
+                this.PersistedConfiguration = (AzureADEntityProviderConfiguration<IAzureADEntityProviderSettings>)AzureADEntityProviderConfiguration<IAzureADEntityProviderSettings>.GetGlobalConfiguration(ClaimsProviderConstants.CONFIGURATION_NAME, typeof(AzureADEntityProviderConfiguration<IAzureADEntityProviderSettings>));
+                //LocalConfiguration = this.EntityProvider.RefreshLocalConfigurationIfNeeded(ClaimsProviderConstants.CONFIGURATION_NAME);
+                LocalConfiguration = this.PersistedConfiguration.RefreshLocalConfigurationIfNeeded(ClaimsProviderConstants.CONFIGURATION_NAME);
             }
             catch (Exception ex)
             {
@@ -667,7 +670,7 @@ namespace Yvand.ClaimsProviders
             try
             {
                 // There can be multiple TrustedProvider on the farm, but AzureCP should only do augmentation if current entity is from TrustedProvider it is associated with
-                if (!String.Equals(decodedEntity.OriginalIssuer, this.LocalConfiguration.OriginalIssuerName, StringComparison.InvariantCultureIgnoreCase)) { return; }
+                if (!String.Equals(decodedEntity.OriginalIssuer, this.PersistedConfiguration.OriginalIssuerName, StringComparison.InvariantCultureIgnoreCase)) { return; }
 
                 if (!this.LocalConfiguration.EnableAugmentation) { return; }
 
@@ -718,7 +721,7 @@ namespace Yvand.ClaimsProviders
         {
             // SPClaimProvider.CreateClaim sets property OriginalIssuer to SPOriginalIssuerType.ClaimProvider, which is not correct
             //return CreateClaim(type, value, valueType);
-            return new SPClaim(type, value, valueType, this.LocalConfiguration.OriginalIssuerName);
+            return new SPClaim(type, value, valueType, this.PersistedConfiguration.OriginalIssuerName);
         }
 
         protected override void FillHierarchy(Uri context, string[] entityTypes, string hierarchyNodeID, int numberOfLevels, SPProviderHierarchyTree hierarchy)
@@ -794,7 +797,7 @@ namespace Yvand.ClaimsProviders
             {
                 // Ensure incoming claim should be validated by AzureCP
                 // Must be made after call to Initialize because SPTrustedLoginProvider name must be known
-                if (!String.Equals(resolveInput.OriginalIssuer, this.LocalConfiguration.OriginalIssuerName, StringComparison.InvariantCultureIgnoreCase)) { return; }
+                if (!String.Equals(resolveInput.OriginalIssuer, this.PersistedConfiguration.OriginalIssuerName, StringComparison.InvariantCultureIgnoreCase)) { return; }
 
                 OperationContext currentContext = new OperationContext(this.LocalConfiguration, OperationType.Validation, resolveInput.Value, resolveInput, context, entityTypes, null, 1);
                 List<PickerEntity> entities = this.SearchOrValidate(currentContext);
@@ -888,7 +891,7 @@ namespace Yvand.ClaimsProviders
                 this.Lock_LocalConfigurationRefresh.EnterReadLock();
                 try
                 {
-                    return this.LocalConfiguration.SPTrust.IdentityClaimTypeInformation.MappedClaimType;
+                    return this.PersistedConfiguration.SPTrust.IdentityClaimTypeInformation.MappedClaimType;
                 }
                 catch (Exception ex)
                 {
@@ -918,7 +921,7 @@ namespace Yvand.ClaimsProviders
             {
                 // If initialization failed but SPTrust is not null, rest of the method can be executed normally
                 // Otherwise return the entity
-                if (!initSucceeded && this.LocalConfiguration?.SPTrust == null)
+                if (!initSucceeded && this.PersistedConfiguration?.SPTrust == null)
                 {
                     return entity;
                 }
@@ -926,7 +929,7 @@ namespace Yvand.ClaimsProviders
                 // There are 2 scenarios:
                 // 1: OriginalIssuer is "SecurityTokenService": Value looks like "05.t|contoso.local|yvand@contoso.local", claim type is "http://schemas.microsoft.com/sharepoint/2009/08/claims/userid" and it must be decoded properly
                 // 2: OriginalIssuer is AzureCP: in this case incoming entity is valid and returned as is
-                if (String.Equals(entity.OriginalIssuer, this.LocalConfiguration.SPTrust.Name, StringComparison.InvariantCultureIgnoreCase))
+                if (String.Equals(entity.OriginalIssuer, this.PersistedConfiguration.SPTrust.Name, StringComparison.InvariantCultureIgnoreCase))
                 {
                     return entity;
                 }
@@ -936,7 +939,7 @@ namespace Yvand.ClaimsProviders
 
                 Logger.Log($"[{Name}] Returning user key for '{entity.Value}'",
                     TraceSeverity.VerboseEx, EventSeverity.Information, TraceCategory.Rehydration);
-                return CreateClaim(this.LocalConfiguration.SPTrust.IdentityClaimTypeInformation.MappedClaimType, curUser.Value, curUser.ValueType);
+                return CreateClaim(this.PersistedConfiguration.SPTrust.IdentityClaimTypeInformation.MappedClaimType, curUser.Value, curUser.ValueType);
             }
             catch (Exception ex)
             {
