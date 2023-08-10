@@ -81,11 +81,11 @@
       <SubType>ASPXCodeBehind</SubType>
     </Compile>
     <Compile Include="Yvand.ClaimsProviders\Logger.cs" />
-    <Compile Include="Yvand.ClaimsProviders\Configuration\AzureAD\AADConf.cs" />
+    <Compile Include="Yvand.ClaimsProviders\Configuration\AzureAD\AADEntityProviderConfig.cs" />
     <Compile Include="Yvand.ClaimsProviders\Configuration\AzureAD\AzureTenant.cs" />
     <Compile Include="Yvand.ClaimsProviders\Configuration\ClaimsProviderConstants.cs" />
     <Compile Include="Yvand.ClaimsProviders\Configuration\ClaimTypeConfig.cs" />
-    <Compile Include="Yvand.ClaimsProviders\Configuration\Conf.cs" />
+    <Compile Include="Yvand.ClaimsProviders\Configuration\EntityProviderConfig.cs" />
     <Compile Include="Yvand.ClaimsProviders\EntityProviderBase.cs" />
     <Compile Include="TEMPLATE\ADMIN\AzureCPSE\ClaimTypesConfig.ascx.cs">
       <DependentUpon>ClaimTypesConfig.ascx</DependentUpon>

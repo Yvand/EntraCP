@@ -42,8 +42,8 @@ namespace Yvand.ClaimsProviders.Administration
         //    }
         //}
 
-        private AADConf<IAADSettings> _Configuration;
-        protected AADConf<IAADSettings> Configuration
+        private AADEntityProviderConfig<IAADSettings> _Configuration;
+        protected AADEntityProviderConfig<IAADSettings> Configuration
         {
             get
             {
@@ -51,12 +51,12 @@ namespace Yvand.ClaimsProviders.Administration
                 {
                     if (_Configuration == null)
                     {
-                        _Configuration = (AADConf<IAADSettings>)AADConf<IAADSettings>.GetGlobalConfiguration(ConfigurationName, typeof(AADConf<IAADSettings>), true);
+                        _Configuration = (AADEntityProviderConfig<IAADSettings>)AADEntityProviderConfig<IAADSettings>.GetGlobalConfiguration(new Guid(this.ConfigurationID), typeof(AADEntityProviderConfig<IAADSettings>), true);
                     }
                     if (_Configuration == null)
                     {
                         SPContext.Current.Web.AllowUnsafeUpdates = true;
-                        _Configuration = (AADConf<IAADSettings>)AADConf<IAADSettings>.CreateGlobalConfiguration(this.ConfigurationID, this.ConfigurationName, this.ClaimsProviderName, typeof(AADConf<IAADSettings>));
+                        _Configuration = (AADEntityProviderConfig<IAADSettings>)AADEntityProviderConfig<IAADSettings>.CreateGlobalConfiguration(new Guid(this.ConfigurationID), this.ConfigurationName, this.ClaimsProviderName, typeof(AADEntityProviderConfig<IAADSettings>));
                         SPContext.Current.Web.AllowUnsafeUpdates = false;
                     }
                 });

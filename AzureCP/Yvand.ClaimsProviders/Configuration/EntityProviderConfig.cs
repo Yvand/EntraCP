@@ -60,7 +60,7 @@ namespace Yvand.ClaimsProviders.Config
         public ClaimTypeConfig MainGroupClaimTypeConfig { get; set; }
     }
 
-    public class Conf<TConfiguration> : SPPersistedObject
+    public class EntityProviderConfig<TConfiguration> : SPPersistedObject
         where TConfiguration : IEntityProviderSettings//, IEntityProviderSettings // SPPersistedObject//, IPersistedEntityProviderSettings//, IRuntimeEntityProviderSettings
     {
         /// <summary>
@@ -202,8 +202,8 @@ namespace Yvand.ClaimsProviders.Config
         public IdentityClaimTypeConfig IdentityClaimTypeConfig { get; private set; }
         public ClaimTypeConfig MainGroupClaimTypeConfig { get; private set; }
 
-        public Conf() { }
-        public Conf(string persistedObjectName, SPPersistedObject parent, string claimsProviderName) : base(persistedObjectName, parent)
+        public EntityProviderConfig() { }
+        public EntityProviderConfig(string persistedObjectName, SPPersistedObject parent, string claimsProviderName) : base(persistedObjectName, parent)
         {
             this.ClaimsProviderName = claimsProviderName;
             //this.InitializeDefaultSettings();
@@ -211,7 +211,7 @@ namespace Yvand.ClaimsProviders.Config
             this.Initialize();
         }
 
-        public Conf(string claimsProviderName)
+        public EntityProviderConfig(string claimsProviderName)
         {
             this.ClaimsProviderName = claimsProviderName;
             //this.InitializeDefaultSettings();
@@ -332,13 +332,14 @@ namespace Yvand.ClaimsProviders.Config
         /// </summary>
         /// <param name="configurationName"></param>
         /// <returns>return true if local configuration is valid and up to date</returns>
-        public TConfiguration RefreshLocalConfigurationIfNeeded(string configurationName)
+        public TConfiguration RefreshLocalConfigurationIfNeeded()
         {
-            Conf<TConfiguration> globalConfiguration = GetGlobalConfiguration(configurationName, typeof(TConfiguration));
+            Guid configurationId = this.Id;
+            EntityProviderConfig<TConfiguration> globalConfiguration = GetGlobalConfiguration(configurationId, typeof(TConfiguration));
 
             if (globalConfiguration == null)
             {
-                Logger.Log($"[{ClaimsProviderName}] Cannot continue because configuration '{configurationName}' was not found in configuration database, visit AzureCP admin pages in central administration to create it.",
+                Logger.Log($"[{ClaimsProviderName}] Cannot continue because configuration '{configurationId}' was not found in configuration database, visit AzureCP admin pages in central administration to create it.",
                     TraceSeverity.Unexpected, EventSeverity.Error, TraceCategory.Core);
                 this.LocalConfiguration = default(TConfiguration);
                 return default(TConfiguration);
@@ -346,7 +347,7 @@ namespace Yvand.ClaimsProviders.Config
 
             if (this.LocalConfigurationVersion == globalConfiguration.Version)
             {
-                Logger.Log($"[{ClaimsProviderName}] Configuration '{configurationName}' is up to date with version {this.LocalConfigurationVersion}.",
+                Logger.Log($"[{ClaimsProviderName}] Configuration '{configurationId}' is up to date with version {this.LocalConfigurationVersion}.",
                     TraceSeverity.VerboseEx, EventSeverity.Information, TraceCategory.Core);
                 return this.LocalConfiguration;
             }
@@ -354,6 +355,7 @@ namespace Yvand.ClaimsProviders.Config
             Logger.Log($"[{ClaimsProviderName}] Configuration '{globalConfiguration.Name}' has new version {globalConfiguration.Version}, refreshing local copy",
                 TraceSeverity.Medium, EventSeverity.Information, TraceCategory.Core);
 
+            this.InitializeRuntimeSettings();
             this.LocalConfiguration = (TConfiguration)globalConfiguration.CopyConfiguration();
 #if !DEBUGx
             this.LocalConfigurationVersion = globalConfiguration.Version;
@@ -535,14 +537,15 @@ namespace Yvand.ClaimsProviders.Config
         /// <param name="configurationName">The name of the configuration</param>
         /// <param name="initializeRuntimeSettings">Set to true to initialize the runtime settings</param>
         /// <returns></returns>
-        public static Conf<TConfiguration> GetGlobalConfiguration(string configurationName, Type T, bool initializeRuntimeSettings = false)
+        public static EntityProviderConfig<TConfiguration> GetGlobalConfiguration(Guid configurationId, Type T, bool initializeRuntimeSettings = false)
         {
             SPFarm parent = SPFarm.Local;
             try
             {
                 //IEntityProviderSettings configuration = (IEntityProviderSettings)parent.GetObject(configurationName, parent.Id, typeof(EntityProviderConfiguration));
                 //Conf<TConfiguration> configuration = (Conf<TConfiguration>)parent.GetObject(configurationName, parent.Id, T);
-                Conf<TConfiguration> configuration = (Conf<TConfiguration>)parent.GetObject(configurationName, parent.Id, typeof(Conf<TConfiguration>));
+                //Conf<TConfiguration> configuration = (Conf<TConfiguration>)parent.GetObject(configurationName, parent.Id, typeof(Conf<TConfiguration>));
+                EntityProviderConfig<TConfiguration> configuration = (EntityProviderConfig<TConfiguration>)parent.GetObject(configurationId);
                 if (configuration != null && initializeRuntimeSettings == true)
                 {
                     configuration.InitializeRuntimeSettings();
@@ -551,24 +554,24 @@ namespace Yvand.ClaimsProviders.Config
             }
             catch (Exception ex)
             {
-                Logger.LogException(String.Empty, $"while retrieving configuration '{configurationName}'", TraceCategory.Configuration, ex);
+                Logger.LogException(String.Empty, $"while retrieving configuration ID '{configurationId}'", TraceCategory.Configuration, ex);
             }
             return null;
         }
 
-        public static void DeleteGlobalConfiguration(string configurationName, Type T)
+        public static void DeleteGlobalConfiguration(Guid configurationId, Type T)
         {
-            Conf<TConfiguration> configuration = (Conf<TConfiguration>)GetGlobalConfiguration(configurationName, T);
+            EntityProviderConfig<TConfiguration> configuration = (EntityProviderConfig<TConfiguration>)GetGlobalConfiguration(configurationId, T);
             if (configuration == null)
             {
-                Logger.Log($"Configuration '{configurationName}' was not found in configuration database", TraceSeverity.Medium, EventSeverity.Error, TraceCategory.Core);
+                Logger.Log($"Configuration ID '{configurationId}' was not found in configuration database", TraceSeverity.Medium, EventSeverity.Error, TraceCategory.Core);
                 return;
             }
             configuration.Delete();
-            Logger.Log($"Configuration '{configurationName}' was successfully deleted from configuration database", TraceSeverity.High, EventSeverity.Information, TraceCategory.Core);
+            Logger.Log($"Configuration ID '{configurationId}' was successfully deleted from configuration database", TraceSeverity.High, EventSeverity.Information, TraceCategory.Core);
         }
 
-        public static Conf<TConfiguration> CreateGlobalConfiguration(string configurationID, string configurationName, string claimsProviderName, Type T)
+        public static EntityProviderConfig<TConfiguration> CreateGlobalConfiguration(Guid configurationID, string configurationName, string claimsProviderName, Type T)
         {
             if (String.IsNullOrWhiteSpace(claimsProviderName))
             {
@@ -576,10 +579,10 @@ namespace Yvand.ClaimsProviders.Config
             }
 
             // Ensure it doesn't already exists and delete it if so
-            Conf<TConfiguration> existingConfig = GetGlobalConfiguration(configurationName, T);
+            EntityProviderConfig<TConfiguration> existingConfig = GetGlobalConfiguration(configurationID, T);
             if (existingConfig != null)
             {
-                DeleteGlobalConfiguration(configurationName, T);
+                DeleteGlobalConfiguration(configurationID, T);
             }
 
             Logger.Log($"Creating configuration '{configurationName}' with Id {configurationID}...", TraceSeverity.VerboseEx, EventSeverity.Error, TraceCategory.Core);
@@ -587,9 +590,9 @@ namespace Yvand.ClaimsProviders.Config
             // Calling constructor as below is not possible and generate Compiler Error CS0304, so use reflection to call the desired constructor instead
             //TConfiguration config = new TConfiguration(persistedObjectName, SPFarm.Local, claimsProviderName);
             ConstructorInfo ctorWithParameters = T.GetConstructor(new[] { typeof(string), typeof(SPFarm), typeof(string) });
-            Conf<TConfiguration> config = (Conf<TConfiguration>)ctorWithParameters.Invoke(new object[] { configurationName, SPFarm.Local, claimsProviderName });
+            EntityProviderConfig<TConfiguration> config = (EntityProviderConfig<TConfiguration>)ctorWithParameters.Invoke(new object[] { configurationName, SPFarm.Local, claimsProviderName });
 
-            config.Id = new Guid(configurationID);
+            config.Id = configurationID;//new Guid(configurationID);
             // If parameter ensure is true, the call will not throw if the object already exists.
             config.Update(true);
             Logger.Log($"Created configuration '{configurationName}' with Id {config.Id}", TraceSeverity.High, EventSeverity.Information, TraceCategory.Core);

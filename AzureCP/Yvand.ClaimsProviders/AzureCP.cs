@@ -29,7 +29,7 @@ namespace Yvand.ClaimsProviders
         private ReaderWriterLockSlim Lock_LocalConfigurationRefresh = new ReaderWriterLockSlim();
         protected virtual string PickerEntityDisplayText => "({0}) {1}";
         protected virtual string PickerEntityOnMouseOver => "{0}={1}";
-        protected AADConf<IAADSettings> PersistedConfiguration { get; private set; }
+        protected AADEntityProviderConfig<IAADSettings> PersistedConfiguration { get; private set; }
         public IAADSettings LocalConfiguration { get; private set; }
 
         public AzureCP(string displayName) : base(displayName)
@@ -37,23 +37,23 @@ namespace Yvand.ClaimsProviders
             this.EntityProvider = new AzureADEntityProvider(Name);
         }
 
-        public static AADConf<IAADSettings> GetConfiguration(bool initializeRuntimeSettings = false)
+        public static AADEntityProviderConfig<IAADSettings> GetConfiguration(bool initializeRuntimeSettings = false)
         {
             //AzureADEntityProviderConfiguration configuration = EntityProviderBase<AzureADEntityProviderConfiguration>.GetGlobalConfiguration(ClaimsProviderConstants.CONFIGURATION_NAME, initializeRuntimeSettings);
-            AADConf<IAADSettings> configuration = (AADConf<IAADSettings>)AADConf<IAADSettings>.GetGlobalConfiguration(ClaimsProviderConstants.CONFIGURATION_NAME, typeof(AADConf<IAADSettings>), initializeRuntimeSettings);
+            AADEntityProviderConfig<IAADSettings> configuration = (AADEntityProviderConfig<IAADSettings>)AADEntityProviderConfig<IAADSettings>.GetGlobalConfiguration(new Guid(ClaimsProviderConstants.CONFIGURATION_ID), typeof(AADEntityProviderConfig<IAADSettings>), initializeRuntimeSettings);
             return configuration;
         }
 
-        public static AADConf<IAADSettings> CreateConfiguration()
+        public static AADEntityProviderConfig<IAADSettings> CreateConfiguration()
         {
             //AzureADEntityProviderConfiguration configuration = EntityProviderBase<AzureADEntityProviderConfiguration>.CreateGlobalConfiguration(ClaimsProviderConstants.CONFIGURATION_ID, ClaimsProviderConstants.CONFIGURATION_NAME, AzureCP.ClaimsProviderName);
-            AADConf<IAADSettings> configuration = (AADConf<IAADSettings>)AADConf<IAADSettings>.CreateGlobalConfiguration(ClaimsProviderConstants.CONFIGURATION_ID, ClaimsProviderConstants.CONFIGURATION_NAME, AzureCP.ClaimsProviderName, typeof(AADConf<IAADSettings>));
+            AADEntityProviderConfig<IAADSettings> configuration = (AADEntityProviderConfig<IAADSettings>)AADEntityProviderConfig<IAADSettings>.CreateGlobalConfiguration(new Guid(ClaimsProviderConstants.CONFIGURATION_ID), ClaimsProviderConstants.CONFIGURATION_NAME, AzureCP.ClaimsProviderName, typeof(AADEntityProviderConfig<IAADSettings>));
             return configuration;
         }
 
         public static void DeleteConfiguration()
         {
-            AADConf<IAADSettings> configuration = (AADConf<IAADSettings>)AADConf<IAADSettings>.GetGlobalConfiguration(ClaimsProviderConstants.CONFIGURATION_NAME, typeof(AADConf<IAADSettings>));
+            AADEntityProviderConfig<IAADSettings> configuration = (AADEntityProviderConfig<IAADSettings>)AADEntityProviderConfig<IAADSettings>.GetGlobalConfiguration(new Guid(ClaimsProviderConstants.CONFIGURATION_ID), typeof(AADEntityProviderConfig<IAADSettings>));
             if (configuration != null)
             {
                 configuration.Delete();
@@ -71,13 +71,16 @@ namespace Yvand.ClaimsProviders
             this.Lock_LocalConfigurationRefresh.EnterWriteLock();
             try
             {
-                this.PersistedConfiguration = (AADConf<IAADSettings>)AADConf<IAADSettings>.GetGlobalConfiguration(ClaimsProviderConstants.CONFIGURATION_NAME, typeof(AADConf<IAADSettings>));
-                if (this.PersistedConfiguration == null)
+                this.PersistedConfiguration = (AADEntityProviderConfig<IAADSettings>)AADEntityProviderConfig<IAADSettings>.GetGlobalConfiguration(new Guid(ClaimsProviderConstants.CONFIGURATION_ID), typeof(AADEntityProviderConfig<IAADSettings>));
+                //if (this.PersistedConfiguration == null)
+                //{
+                //    this.PersistedConfiguration = (AADEntityProviderConfig<IAADSettings>)AADEntityProviderConfig<IAADSettings>.CreateGlobalConfiguration(new Guid(ClaimsProviderConstants.CONFIGURATION_ID), ClaimsProviderConstants.CONFIGURATION_NAME, AzureCP.ClaimsProviderName, typeof(AADEntityProviderConfig<IAADSettings>));
+                //}
+                if (this.PersistedConfiguration != null)
                 {
-                    this.PersistedConfiguration = (AADConf<IAADSettings>)AADConf<IAADSettings>.CreateGlobalConfiguration(ClaimsProviderConstants.CONFIGURATION_ID, ClaimsProviderConstants.CONFIGURATION_NAME, AzureCP.ClaimsProviderName, typeof(AADConf<IAADSettings>));
+                    //LocalConfiguration = this.EntityProvider.RefreshLocalConfigurationIfNeeded(ClaimsProviderConstants.CONFIGURATION_NAME);
+                    LocalConfiguration = this.PersistedConfiguration.RefreshLocalConfigurationIfNeeded();
                 }
-                //LocalConfiguration = this.EntityProvider.RefreshLocalConfigurationIfNeeded(ClaimsProviderConstants.CONFIGURATION_NAME);
-                LocalConfiguration = this.PersistedConfiguration.RefreshLocalConfigurationIfNeeded(ClaimsProviderConstants.CONFIGURATION_NAME);
             }
             catch (Exception ex)
             {

@@ -50,7 +50,7 @@ namespace Yvand.ClaimsProviders.Config
         public ClaimTypeConfig MainGroupClaimTypeConfig  { get; set; }
     }
 
-    public class AADConf<TConfiguration> : Conf<TConfiguration>
+    public class AADEntityProviderConfig<TConfiguration> : EntityProviderConfig<TConfiguration>
         where TConfiguration : IAADSettings
     {
         public List<AzureTenant> AzureTenants
@@ -80,12 +80,12 @@ namespace Yvand.ClaimsProviders.Config
         [Persisted]
         private bool _FilterSecurityEnabledGroupsOnly = false;
 
-        public AADConf() : base() { }
-        public AADConf(string configurationName, SPPersistedObject parent, string claimsProviderName) : base(configurationName, parent, claimsProviderName)
+        public AADEntityProviderConfig() : base() { }
+        public AADEntityProviderConfig(string configurationName, SPPersistedObject parent, string claimsProviderName) : base(configurationName, parent, claimsProviderName)
         {
         }
 
-        public AADConf(string claimsProviderName) : base(claimsProviderName)
+        public AADEntityProviderConfig(string claimsProviderName) : base(claimsProviderName)
         {
         }
 
@@ -154,7 +154,7 @@ namespace Yvand.ClaimsProviders.Config
             //return copy.LocalConfiguration;
         }
 
-        public void ApplyConfiguration(AADConf<TConfiguration> configuration)
+        public void ApplyConfiguration(AADEntityProviderConfig<TConfiguration> configuration)
         {
             // This is not possible to case an object to an inherited type from its base type: https://stackoverflow.com/questions/12565736/convert-base-class-to-derived-class
 
@@ -182,9 +182,9 @@ namespace Yvand.ClaimsProviders.Config
         /// Generate and return default configuration
         /// </summary>
         /// <returns></returns>
-        public static AADConf<TConfiguration> ReturnDefaultConfiguration(string claimsProviderName)
+        public static AADEntityProviderConfig<TConfiguration> ReturnDefaultConfiguration(string claimsProviderName)
         {
-            AADConf<TConfiguration> defaultConfig = new AADConf<TConfiguration>();
+            AADEntityProviderConfig<TConfiguration> defaultConfig = new AADEntityProviderConfig<TConfiguration>();
             defaultConfig.ClaimsProviderName = claimsProviderName;
             defaultConfig.AzureTenants = new List<AzureTenant>();
             defaultConfig.ClaimTypes = ReturnDefaultClaimTypesConfig(claimsProviderName);
@@ -193,7 +193,7 @@ namespace Yvand.ClaimsProviders.Config
 
         public override ClaimTypeConfigCollection ReturnDefaultClaimTypesConfig()
         {
-            return AADConf<TConfiguration>.ReturnDefaultClaimTypesConfig(this.ClaimsProviderName);
+            return AADEntityProviderConfig<TConfiguration>.ReturnDefaultClaimTypesConfig(this.ClaimsProviderName);
         }
 
         /// <summary>

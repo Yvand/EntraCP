@@ -242,7 +242,7 @@ namespace Yvand.ClaimsProviders.Administration
         protected void BtnResetAzureCPConfig_Click(Object sender, EventArgs e)
         {
             //AzureADEntityProviderConfiguration.DeleteConfiguration(PersistedObjectName);
-            AADConf<IAADSettings>.DeleteGlobalConfiguration(ConfigurationName, typeof(AADConf<IAADSettings>));
+            AADEntityProviderConfig<IAADSettings>.DeleteGlobalConfiguration(new Guid(ConfigurationID), typeof(AADEntityProviderConfig<IAADSettings>));
             Response.Redirect(Request.RawUrl, false);
         }
 
