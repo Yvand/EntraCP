@@ -51,7 +51,7 @@ namespace Yvand.ClaimsProviders.Administration
                 {
                     if (_Configuration == null)
                     {
-                        _Configuration = (AADEntityProviderConfig<IAADSettings>)AADEntityProviderConfig<IAADSettings>.GetGlobalConfiguration(new Guid(this.ConfigurationID), typeof(AADEntityProviderConfig<IAADSettings>), true);
+                        _Configuration = (AADEntityProviderConfig<IAADSettings>)AADEntityProviderConfig<IAADSettings>.GetGlobalConfiguration(new Guid(this.ConfigurationID), true);
                     }
                     if (_Configuration == null)
                     {

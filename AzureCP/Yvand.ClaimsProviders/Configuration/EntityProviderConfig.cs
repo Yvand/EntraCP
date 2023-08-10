@@ -335,7 +335,7 @@ namespace Yvand.ClaimsProviders.Config
         public TConfiguration RefreshLocalConfigurationIfNeeded()
         {
             Guid configurationId = this.Id;
-            EntityProviderConfig<TConfiguration> globalConfiguration = GetGlobalConfiguration(configurationId, typeof(TConfiguration));
+            EntityProviderConfig<TConfiguration> globalConfiguration = GetGlobalConfiguration(configurationId);
 
             if (globalConfiguration == null)
             {
@@ -526,18 +526,13 @@ namespace Yvand.ClaimsProviders.Config
             throw new NotImplementedException();
         }
 
-        //IEntityProviderSettings IEntityProviderSettings.CopyConfiguration()
-        //{
-        //    throw new NotImplementedException();
-        //}
-
         /// <summary>
         /// Returns the global configuration, stored as a persisted object in the SharePoint configuration database
         /// </summary>
         /// <param name="configurationName">The name of the configuration</param>
         /// <param name="initializeRuntimeSettings">Set to true to initialize the runtime settings</param>
         /// <returns></returns>
-        public static EntityProviderConfig<TConfiguration> GetGlobalConfiguration(Guid configurationId, Type T, bool initializeRuntimeSettings = false)
+        public static EntityProviderConfig<TConfiguration> GetGlobalConfiguration(Guid configurationId, bool initializeRuntimeSettings = false)
         {
             SPFarm parent = SPFarm.Local;
             try
@@ -559,9 +554,9 @@ namespace Yvand.ClaimsProviders.Config
             return null;
         }
 
-        public static void DeleteGlobalConfiguration(Guid configurationId, Type T)
+        public static void DeleteGlobalConfiguration(Guid configurationId)
         {
-            EntityProviderConfig<TConfiguration> configuration = (EntityProviderConfig<TConfiguration>)GetGlobalConfiguration(configurationId, T);
+            EntityProviderConfig<TConfiguration> configuration = (EntityProviderConfig<TConfiguration>)GetGlobalConfiguration(configurationId);
             if (configuration == null)
             {
                 Logger.Log($"Configuration ID '{configurationId}' was not found in configuration database", TraceSeverity.Medium, EventSeverity.Error, TraceCategory.Core);
@@ -579,20 +574,18 @@ namespace Yvand.ClaimsProviders.Config
             }
 
             // Ensure it doesn't already exists and delete it if so
-            EntityProviderConfig<TConfiguration> existingConfig = GetGlobalConfiguration(configurationID, T);
+            EntityProviderConfig<TConfiguration> existingConfig = GetGlobalConfiguration(configurationID);
             if (existingConfig != null)
             {
-                DeleteGlobalConfiguration(configurationID, T);
+                DeleteGlobalConfiguration(configurationID);
             }
 
             Logger.Log($"Creating configuration '{configurationName}' with Id {configurationID}...", TraceSeverity.VerboseEx, EventSeverity.Error, TraceCategory.Core);
 
-            // Calling constructor as below is not possible and generate Compiler Error CS0304, so use reflection to call the desired constructor instead
-            //TConfiguration config = new TConfiguration(persistedObjectName, SPFarm.Local, claimsProviderName);
             ConstructorInfo ctorWithParameters = T.GetConstructor(new[] { typeof(string), typeof(SPFarm), typeof(string) });
             EntityProviderConfig<TConfiguration> config = (EntityProviderConfig<TConfiguration>)ctorWithParameters.Invoke(new object[] { configurationName, SPFarm.Local, claimsProviderName });
 
-            config.Id = configurationID;//new Guid(configurationID);
+            config.Id = configurationID;
             // If parameter ensure is true, the call will not throw if the object already exists.
             config.Update(true);
             Logger.Log($"Created configuration '{configurationName}' with Id {config.Id}", TraceSeverity.High, EventSeverity.Information, TraceCategory.Core);

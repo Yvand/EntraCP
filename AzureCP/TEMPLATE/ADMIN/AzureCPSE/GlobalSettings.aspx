@@ -1,7 +1,7 @@
 ﻿<%@ Assembly Name="$SharePoint.Project.AssemblyFullName$" %>
 <%@ Page Language="C#" AutoEventWireup="true" Inherits="Microsoft.SharePoint.WebControls.LayoutsPageBase" MasterPageFile="~/_admin/admin.master" %>
 <%@ Register TagPrefix="AzureCP" TagName="GlobalSettings" src="GlobalSettings.ascx" %>
-<%@ Import Namespace="Yvand.ClaimsProviders.Configuration" %>
+<%@ Import Namespace="Yvand.ClaimsProviders.Config" %>
 <%@ Import Namespace="Yvand.ClaimsProviders" %>
 <%@ Import Namespace="System.Diagnostics" %>
 <%@ Import Namespace="System.Reflection" %>
