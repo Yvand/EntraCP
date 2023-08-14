@@ -51,28 +51,42 @@ namespace Yvand.ClaimsProviders.Config
 
         public string CustomData { get; set; }
 
-        public List<ClaimTypeConfig> RuntimeClaimTypesList { get; set; }
+        public List<ClaimTypeConfig> RuntimeClaimTypesList { get; }
 
-        public IEnumerable<ClaimTypeConfig> RuntimeMetadataConfig { get; set; }
+        public IEnumerable<ClaimTypeConfig> RuntimeMetadataConfig { get; }
 
-        public IdentityClaimTypeConfig IdentityClaimTypeConfig { get; set; }
+        public IdentityClaimTypeConfig IdentityClaimTypeConfig { get; }
 
-        public ClaimTypeConfig MainGroupClaimTypeConfig { get; set; }
+        public ClaimTypeConfig MainGroupClaimTypeConfig { get; }
+
+        public EntityProviderSettings()
+        {
+            
+        }
+
+        public EntityProviderSettings(List<ClaimTypeConfig> runtimeClaimTypesList, IEnumerable<ClaimTypeConfig> runtimeMetadataConfig, IdentityClaimTypeConfig identityClaimTypeConfig, ClaimTypeConfig mainGroupClaimTypeConfig)
+        {
+            RuntimeClaimTypesList = runtimeClaimTypesList;
+            RuntimeMetadataConfig = runtimeMetadataConfig;
+            IdentityClaimTypeConfig = identityClaimTypeConfig;
+            MainGroupClaimTypeConfig = mainGroupClaimTypeConfig;
+        }
     }
 
     public class EntityProviderConfig<TConfiguration> : SPPersistedObject
-        where TConfiguration : IEntityProviderSettings//, IEntityProviderSettings // SPPersistedObject//, IPersistedEntityProviderSettings//, IRuntimeEntityProviderSettings
+        where TConfiguration : IEntityProviderSettings
     {
         /// <summary>
-        /// Gets or sets the local configuration, which is a copy of the global configuration stored in a persisted object
+        /// Gets the local configuration, which is a copy of the global configuration stored in a persisted object
         /// </summary>
-        protected TConfiguration LocalConfiguration { get; set; }
+        public TConfiguration LocalConfiguration { get; private set; }
 
         /// <summary>
         /// Gets or sets the current version of the local configuration
         /// </summary>
-        protected long LocalConfigurationVersion { get; set; } = 0;
+        protected long LocalConfigurationVersion { get; private set; } = 0;
 
+        #region "Internal runtime settings"
         /// <summary>
         /// Configuration of claim types and their mapping with LDAP attribute/class
         /// </summary>
@@ -151,20 +165,6 @@ namespace Yvand.ClaimsProviders.Config
             set => _ClaimsProviderName = value;
         }
 
-        private SPTrustedLoginProvider _SPTrust;
-        public SPTrustedLoginProvider SPTrust
-        {
-            get
-            {
-                if (this._SPTrust == null)
-                {
-                    //_SPTrust = SPSecurityTokenServiceManager.Local.TrustedLoginProviders.GetProviderByName(SPTrustName);
-                    this._SPTrust = Utils.GetSPTrustAssociatedWithClaimsProvider(this.ClaimsProviderName);
-                }
-                return this._SPTrust;
-            }
-        }
-
         [Persisted]
         private string ClaimsProviderVersion;
 
@@ -178,58 +178,53 @@ namespace Yvand.ClaimsProviders.Config
         }
         [Persisted]
         private string _CustomData;
+        #endregion
 
-        ///// <summary>
-        ///// Limit number of results returned to SharePoint during a search
-        ///// </summary>
-        //public int MaxSearchResultsCount
-        //{
-        //    get => _MaxSearchResultsCount;
-        //    set => _MaxSearchResultsCount = value;
-        //}
-        //[Persisted]
-        //private int _MaxSearchResultsCount = 30; // SharePoint sets maxCount to 30 in method FillSearch
 
-        public bool RuntimeSettingsInitialized { get; private set; }
-
-        // Runtime settings
+        #region "Public runtime settings"
+        private SPTrustedLoginProvider _SPTrust;
         /// <summary>
-        /// Returned issuer formatted like the property SPClaim.OriginalIssuer: "TrustedProvider:TrustedProviderName"
+        /// Gets the SharePoint trust that has its property ClaimProviderName set to the current claims provider
+        /// </summary>
+        public SPTrustedLoginProvider SPTrust
+        {
+            get
+            {
+                if (this._SPTrust == null)
+                {
+                    this._SPTrust = Utils.GetSPTrustAssociatedWithClaimsProvider(this.ClaimsProviderName);
+                }
+                return this._SPTrust;
+            }
+        }
+
+        /// <summary>
+        /// Gets the issuer formatted to be like the property SPClaim.OriginalIssuer: "TrustedProvider:TrustedProviderName"
         /// </summary>
         public string OriginalIssuerName => this.SPTrust != null ? SPOriginalIssuers.Format(SPOriginalIssuerType.TrustedProvider, this.SPTrust.Name) : String.Empty;
+        #endregion
+
+        #region "Internal runtime settings"
         protected List<ClaimTypeConfig> RuntimeClaimTypesList { get; private set; }
         protected IEnumerable<ClaimTypeConfig> RuntimeMetadataConfig { get; private set; }
-        public IdentityClaimTypeConfig IdentityClaimTypeConfig { get; private set; }
-        public ClaimTypeConfig MainGroupClaimTypeConfig { get; private set; }
+        protected IdentityClaimTypeConfig IdentityClaimTypeConfig { get; private set; }
+        protected ClaimTypeConfig MainGroupClaimTypeConfig { get; private set; }
+        #endregion
 
         public EntityProviderConfig() { }
         public EntityProviderConfig(string persistedObjectName, SPPersistedObject parent, string claimsProviderName) : base(persistedObjectName, parent)
         {
             this.ClaimsProviderName = claimsProviderName;
-            //this.InitializeDefaultSettings();
-            //this.InitializeRuntimeSettings();
-            this.Initialize();
-        }
-
-        public EntityProviderConfig(string claimsProviderName)
-        {
-            this.ClaimsProviderName = claimsProviderName;
-            //this.InitializeDefaultSettings();
-            //this.InitializeRuntimeSettings();
             this.Initialize();
         }
 
         private void Initialize()
         {
-            //if (!this.IsInitialized)
-            //{
             this.InitializeDefaultSettings();
-            this.InitializeRuntimeSettings();
-            //}
-            //return this.IsInitialized;
+            //this.InitializeRuntimeSettings();
         }
 
-        protected virtual bool InitializeDefaultSettings()
+        public virtual bool InitializeDefaultSettings()
         {
             this.ClaimTypes = ReturnDefaultClaimTypesConfig();
             return true;
@@ -238,13 +233,8 @@ namespace Yvand.ClaimsProviders.Config
         /// <summary>
         /// </summary>
         /// <returns></returns>
-        public virtual bool InitializeRuntimeSettings()
+        protected virtual bool InitializeRuntimeSettings()
         {
-            if (this.RuntimeSettingsInitialized)
-            {
-                return true;
-            }
-
             if (this.ClaimTypes?.Count <= 0)
             {
                 Logger.Log($"[{this.ClaimsProviderName}] Cannot continue because configuration '{this.Name}' has 0 claim configured.",
@@ -323,12 +313,11 @@ namespace Yvand.ClaimsProviders.Config
                 !String.IsNullOrEmpty(x.EntityDataKey) &&
                 x.EntityProperty != DirectoryObjectProperty.NotSet);
 
-            this.RuntimeSettingsInitialized = true;
             return true;
         }
 
         /// <summary>
-        /// Ensure that property LocalConfiguration is valid and up to date
+        /// Ensures that property LocalConfiguration is valid and up to date
         /// </summary>
         /// <param name="configurationName"></param>
         /// <returns>return true if local configuration is valid and up to date</returns>
@@ -355,8 +344,13 @@ namespace Yvand.ClaimsProviders.Config
             Logger.Log($"[{ClaimsProviderName}] Configuration '{globalConfiguration.Name}' has new version {globalConfiguration.Version}, refreshing local copy",
                 TraceSeverity.Medium, EventSeverity.Information, TraceCategory.Core);
 
-            this.InitializeRuntimeSettings();
+            globalConfiguration.ClaimsProviderName = this.ClaimsProviderName;
+            globalConfiguration.InitializeRuntimeSettings();
             this.LocalConfiguration = (TConfiguration)globalConfiguration.CopyConfiguration();
+            this.IdentityClaimTypeConfig = this.LocalConfiguration.IdentityClaimTypeConfig;
+            this.MainGroupClaimTypeConfig = this.LocalConfiguration.MainGroupClaimTypeConfig;
+            this.RuntimeClaimTypesList = this.LocalConfiguration.RuntimeClaimTypesList;
+            this.MainGroupClaimTypeConfig = this.LocalConfiguration.MainGroupClaimTypeConfig;
 #if !DEBUGx
             this.LocalConfigurationVersion = globalConfiguration.Version;
 #endif
@@ -373,7 +367,6 @@ namespace Yvand.ClaimsProviders.Config
         {
             this.ValidateConfiguration();
             base.Update();
-            this.RuntimeSettingsInitialized = false;
             Logger.Log($"Successfully updated configuration '{this.Name}' with Id {this.Id}", TraceSeverity.High, EventSeverity.Information, TraceCategory.Core);
         }
 
@@ -382,7 +375,6 @@ namespace Yvand.ClaimsProviders.Config
             this.ValidateConfiguration();
             // If parameter ensure is true, the call will not throw if the object already exists.
             base.Update(ensure);
-            this.RuntimeSettingsInitialized = false;
             Logger.Log($"Successfully updated configuration '{this.Name}' with Id {this.Id}", TraceSeverity.High, EventSeverity.Information, TraceCategory.Core);
         }
 
@@ -441,11 +433,11 @@ namespace Yvand.ClaimsProviders.Config
         /// <returns></returns>
         public virtual TConfiguration CopyConfiguration()
         {
-            // Cannot use reflection here to copy object because of the calls to methods CopyConfiguration() on some properties
-            //EntityProviderConfiguration copy = new EntityProviderConfiguration(this.ClaimsProviderName);
-            // Use default constructor to bypass initialization, which is useless since properties will be manually set here
-            //EntityProviderConfiguration copy = new EntityProviderConfiguration();
-            IEntityProviderSettings entityProviderSettings = new EntityProviderSettings
+            IEntityProviderSettings entityProviderSettings = new EntityProviderSettings(
+                this.RuntimeClaimTypesList,
+                this.RuntimeMetadataConfig,
+                this.IdentityClaimTypeConfig,
+                this.MainGroupClaimTypeConfig)
             {
                 ClaimsProviderName = this.ClaimsProviderName,
                 AlwaysResolveUserInput = this.AlwaysResolveUserInput,
@@ -454,56 +446,17 @@ namespace Yvand.ClaimsProviders.Config
                 EnableAugmentation = this.EnableAugmentation,
                 EntityDisplayTextPrefix = this.EntityDisplayTextPrefix,
                 FilterExactMatchOnly = this.FilterExactMatchOnly,
-                IdentityClaimTypeConfig = this.IdentityClaimTypeConfig,
-                MainGroupClaimTypeConfig = this.MainGroupClaimTypeConfig,
                 Name = this.Name,
-                RuntimeClaimTypesList = this.RuntimeClaimTypesList,
-                RuntimeMetadataConfig = this.RuntimeMetadataConfig,
                 Timeout = this.Timeout,
                 Version = this.Version,
             };
             return (TConfiguration)entityProviderSettings;
-            //EntityProviderConfiguration<TConfiguration> copy = new EntityProviderConfiguration<TConfiguration>();
-            //copy.ClaimsProviderName = this.ClaimsProviderName;
-            //copy.RuntimeClaimTypesList = this.RuntimeClaimTypesList;
-            //copy.RuntimeMetadataConfig = this.RuntimeMetadataConfig;
-            //copy.IdentityClaimTypeConfig = this.IdentityClaimTypeConfig;
-            //copy.MainGroupClaimTypeConfig = this.MainGroupClaimTypeConfig;
-            ////copy = (EntityProviderConfiguration)Utils.CopyPersistedFields(typeof(EntityProviderConfiguration), this, copy);
-            //copy.LocalConfiguration = (TConfiguration)Utils.CopyPersistedFields(typeof(TConfiguration), this, copy);
-            ////copy.ClaimTypes = new ClaimTypeConfigCollection(this.ClaimTypes.SPTrust);
-            ////foreach (ClaimTypeConfig currentObject in this.ClaimTypes)
-            ////{
-            ////    copy.ClaimTypes.Add(currentObject.CopyConfiguration(), false);
-            ////}
-            ////copy.InitializeRuntimeSettings();
-            //return (TConfiguration)copy.LocalConfiguration;
-
-
-
-
-
-            //copy.ClaimsProviderName = this.ClaimsProviderName;
-            //copy.ClaimTypes = new ClaimTypeConfigCollection(this.ClaimTypes.SPTrust);
-            //foreach (ClaimTypeConfig currentObject in this.ClaimTypes)
-            //{
-            //    copy.ClaimTypes.Add(currentObject.CopyConfiguration(), false);
-            //}
-            //copy.AlwaysResolveUserInput = this.AlwaysResolveUserInput;
-            //copy.FilterExactMatchOnly = this.FilterExactMatchOnly;
-            //copy.EnableAugmentation = this.EnableAugmentation;
-            //copy.EntityDisplayTextPrefix = this.EntityDisplayTextPrefix;
-            //copy.Timeout = this.Timeout;
-            //copy.CustomData = this.CustomData;
-            ////copy.MaxSearchResultsCount = this.MaxSearchResultsCount;            
-
-            //copy.InitializeRuntimeSettings();
-            //return copy;
         }
 
         public virtual void ApplyConfiguration(TConfiguration configuration)
         {
             this.ClaimsProviderName = configuration.ClaimsProviderName;
+            this.ClaimTypes = new ClaimTypeConfigCollection(this.SPTrust);
             foreach (ClaimTypeConfig claimTypeConfig in this.ClaimTypes)
             {
                 this.ClaimTypes.Add(claimTypeConfig.CopyConfiguration(), false);

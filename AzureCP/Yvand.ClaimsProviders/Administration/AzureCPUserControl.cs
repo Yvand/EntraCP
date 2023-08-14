@@ -34,14 +34,6 @@ namespace Yvand.ClaimsProviders.Administration
             }
         }
 
-        //protected virtual Type ConfigType
-        //{
-        //    get
-        //    {
-        //        return typeof(AzureADEntityProviderConfiguration);
-        //    }
-        //}
-
         private AADEntityProviderConfig<IAADSettings> _Configuration;
         protected AADEntityProviderConfig<IAADSettings> Configuration
         {
@@ -59,6 +51,7 @@ namespace Yvand.ClaimsProviders.Administration
                         _Configuration = (AADEntityProviderConfig<IAADSettings>)AADEntityProviderConfig<IAADSettings>.CreateGlobalConfiguration(new Guid(this.ConfigurationID), this.ConfigurationName, this.ClaimsProviderName, typeof(AADEntityProviderConfig<IAADSettings>));
                         SPContext.Current.Web.AllowUnsafeUpdates = false;
                     }
+                    _Configuration.RefreshLocalConfigurationIfNeeded();
                 });
                 return _Configuration;
             }
@@ -167,15 +160,16 @@ namespace Yvand.ClaimsProviders.Administration
                 return Status;
             }
 
+            if (Configuration == null)
+            {
+                Status |= ConfigStatus.PersistedObjectNotFound;
+                return Status;
+            }
+
             if (Configuration.SPTrust == null)
             {
                 Status |= ConfigStatus.NoSPTrustAssociation;
                 return Status;
-            }
-
-            if (Configuration == null)
-            {
-                Status |= ConfigStatus.PersistedObjectNotFound;
             }
 
             if (Status != ConfigStatus.AllGood)
@@ -185,7 +179,7 @@ namespace Yvand.ClaimsProviders.Administration
                 return Status;
             }
 
-            if (Configuration.IdentityClaimTypeConfig == null)
+            if (Configuration.LocalConfiguration.IdentityClaimTypeConfig == null)
             {
                 Status |= ConfigStatus.NoIdentityClaimType;
             }

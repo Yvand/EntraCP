@@ -47,7 +47,7 @@ namespace Yvand.ClaimsProviders.Tests
         public static string TrustedGroupToAdd_ClaimValue => TestContext.Parameters["TrustedGroupToAdd_ClaimValue"];
         public static SPClaim TrustedGroup => new SPClaim(TrustedGroupToAdd_ClaimType, TrustedGroupToAdd_ClaimValue, ClaimValueTypes.String, SPOriginalIssuers.Format(SPOriginalIssuerType.TrustedProvider, SPTrust.Name));
         protected AADEntityProviderConfig<IAADSettings> Config;
-        private static AADEntityProviderConfig<IAADSettings> BackupConfig;
+        private static IAADSettings BackupConfig;
 
         [OneTimeSetUp]
         public void Init()
@@ -56,7 +56,7 @@ namespace Yvand.ClaimsProviders.Tests
             Config = AzureCP.GetConfiguration();
             if (Config != null && BackupConfig == null)
             {
-                BackupConfig = Config.CopyConfiguration() as AADEntityProviderConfig<IAADSettings>;
+                BackupConfig = Config.CopyConfiguration();
             }
             InitializeConfiguration();
         }
@@ -93,10 +93,8 @@ namespace Yvand.ClaimsProviders.Tests
                 if (BackupConfig != null)
                 {
                     Config.ApplyConfiguration(BackupConfig);
-                    //Config = BackupConfig.CopyConfiguration() as AzureADEntityProviderConfiguration;
                     Config.Update();
-                    //AzureCPSE.SaveConfiguration(Config);
-                    //Trace.TraceInformation($"{DateTime.Now.ToString("s")} Restored original settings of AzureCP configuration");
+                    Trace.TraceInformation($"{DateTime.Now.ToString("s")} Restored original settings of AzureCP configuration");
                 }
             }
             catch (Exception ex)

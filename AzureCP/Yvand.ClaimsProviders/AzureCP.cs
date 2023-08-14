@@ -79,6 +79,10 @@ namespace Yvand.ClaimsProviders
                 {
                     //LocalConfiguration = this.EntityProvider.RefreshLocalConfigurationIfNeeded(ClaimsProviderConstants.CONFIGURATION_NAME);
                     LocalConfiguration = this.PersistedConfiguration.RefreshLocalConfigurationIfNeeded();
+                    if (LocalConfiguration == null)
+                    {
+                        success = false;
+                    }
                 }
                 else
                 {

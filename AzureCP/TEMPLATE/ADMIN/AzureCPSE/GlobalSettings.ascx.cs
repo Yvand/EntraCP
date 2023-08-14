@@ -67,17 +67,17 @@ namespace Yvand.ClaimsProviders.Administration
 
         private void PopulateFields()
         {
-            if (Configuration.IdentityClaimTypeConfig.EntityPropertyToUseAsDisplayText == DirectoryObjectProperty.NotSet)
+            if (Configuration.LocalConfiguration.IdentityClaimTypeConfig.EntityPropertyToUseAsDisplayText == DirectoryObjectProperty.NotSet)
             {
                 this.RbIdentityDefault.Checked = true;
             }
             else
             {
                 this.RbIdentityCustomGraphProperty.Checked = true;
-                this.DDLGraphPropertyToDisplay.Items.FindByValue(((int)Configuration.IdentityClaimTypeConfig.EntityPropertyToUseAsDisplayText).ToString()).Selected = true;
+                this.DDLGraphPropertyToDisplay.Items.FindByValue(((int)Configuration.LocalConfiguration.IdentityClaimTypeConfig.EntityPropertyToUseAsDisplayText).ToString()).Selected = true;
             }
-            this.DDLDirectoryPropertyMemberUsers.Items.FindByValue(((int)Configuration.IdentityClaimTypeConfig.EntityProperty).ToString()).Selected = true;
-            this.DDLDirectoryPropertyGuestUsers.Items.FindByValue(((int)Configuration.IdentityClaimTypeConfig.DirectoryObjectPropertyForGuestUsers).ToString()).Selected = true;
+            this.DDLDirectoryPropertyMemberUsers.Items.FindByValue(((int)Configuration.LocalConfiguration.IdentityClaimTypeConfig.EntityProperty).ToString()).Selected = true;
+            this.DDLDirectoryPropertyGuestUsers.Items.FindByValue(((int)Configuration.LocalConfiguration.IdentityClaimTypeConfig.DirectoryObjectPropertyForGuestUsers).ToString()).Selected = true;
             this.ChkAlwaysResolveUserInput.Checked = Configuration.AlwaysResolveUserInput;
             this.ChkFilterExactMatchOnly.Checked = Configuration.FilterExactMatchOnly;
             this.ChkAugmentAADRoles.Checked = Configuration.EnableAugmentation;
