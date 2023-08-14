@@ -19,6 +19,7 @@
     <customAssembly location="Microsoft.Kiota.Http.HttpClientLibrary.dll" deploymentTarget="GlobalAssemblyCache" sourcePath="bin\Microsoft.Kiota.Http.HttpClientLibrary.dll" />
     <customAssembly location="Microsoft.Kiota.Serialization.Form.dll" deploymentTarget="GlobalAssemblyCache" sourcePath="bin\Microsoft.Kiota.Serialization.Form.dll" />
     <customAssembly location="Microsoft.Kiota.Serialization.Json.dll" deploymentTarget="GlobalAssemblyCache" sourcePath="bin\Microsoft.Kiota.Serialization.Json.dll" />
+	<customAssembly location="Microsoft.Kiota.Serialization.Multipart.dll" deploymentTarget="GlobalAssemblyCache" sourcePath="bin\Microsoft.Kiota.Serialization.Multipart.dll" />
     <customAssembly location="Microsoft.Kiota.Serialization.Text.dll" deploymentTarget="GlobalAssemblyCache" sourcePath="bin\Microsoft.Kiota.Serialization.Text.dll" />
     <customAssembly location="Nito.AsyncEx.Context.dll" deploymentTarget="GlobalAssemblyCache" sourcePath="bin\Nito.AsyncEx.Context.dll" />
     <customAssembly location="Nito.AsyncEx.Coordination.dll" deploymentTarget="GlobalAssemblyCache" sourcePath="bin\Nito.AsyncEx.Coordination.dll" />
