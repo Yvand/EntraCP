@@ -218,7 +218,7 @@ namespace Yvand.ClaimsProviders.Config
         private void Initialize()
         {
             this.InitializeDefaultSettings();
-            //this.InitializeRuntimeSettings();
+            //this.InitializeInternalRuntimeSettings();
         }
 
         public virtual bool InitializeDefaultSettings()
@@ -230,7 +230,7 @@ namespace Yvand.ClaimsProviders.Config
         /// <summary>
         /// </summary>
         /// <returns></returns>
-        protected virtual bool InitializeRuntimeSettings()
+        protected virtual bool InitializeInternalRuntimeSettings()
         {
             if (this.ClaimTypes?.Count <= 0)
             {
@@ -342,12 +342,16 @@ namespace Yvand.ClaimsProviders.Config
                 TraceSeverity.Medium, EventSeverity.Information, TraceCategory.Core);
 
             globalConfiguration.ClaimsProviderName = this.ClaimsProviderName;
-            globalConfiguration.InitializeRuntimeSettings();
+            bool success = globalConfiguration.InitializeInternalRuntimeSettings();
+            if (!success)
+            {
+                return default;
+            }
             this.IdentityClaimTypeConfig = globalConfiguration.IdentityClaimTypeConfig;
             this.MainGroupClaimTypeConfig = globalConfiguration.MainGroupClaimTypeConfig;
             this.RuntimeClaimTypesList = globalConfiguration.RuntimeClaimTypesList;
             this.MainGroupClaimTypeConfig = globalConfiguration.MainGroupClaimTypeConfig;
-            this.LocalConfiguration = (TConfiguration)globalConfiguration.CopyConfiguration();
+            this.LocalConfiguration = (TConfiguration)globalConfiguration.GenerateLocalConfiguration();
 #if !DEBUGx
             this.LocalConfigurationVersion = globalConfiguration.Version;
 #endif
@@ -411,24 +415,18 @@ namespace Yvand.ClaimsProviders.Config
             return false;
         }
 
-        protected override void OnPostCreate()
-        {
-            base.OnPostCreate();
-            //this.InitializeRuntimeSettings();
-        }
-
         // This method fires 3 times in a raw just when the configurationis updated, and anyway it bypassws the logic to update only if needed (and safely in regards to thread safety)
         //protected override void OnDeserialization()
         //{
         //    base.OnDeserialization();
-        //    this.InitializeRuntimeSettings();
+        //    this.InitializeInternalRuntimeSettings();
         //}
 
         /// <summary>
-        /// Returns a copy of the current object. This copy does not have any member of the base SharePoint base class set
+        /// Returns a read-only configuration, copied from the current configuration.
         /// </summary>
         /// <returns></returns>
-        protected virtual TConfiguration CopyConfiguration()
+        protected virtual TConfiguration GenerateLocalConfiguration()
         {
             IEntityProviderSettings entityProviderSettings = new EntityProviderSettings(
                 this.RuntimeClaimTypesList,

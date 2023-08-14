@@ -69,9 +69,9 @@ namespace Yvand.ClaimsProviders.Config
             return base.InitializeDefaultSettings();
         }
 
-        protected override bool InitializeRuntimeSettings()
+        protected override bool InitializeInternalRuntimeSettings()
         {
-            bool success = base.InitializeRuntimeSettings();
+            bool success = base.InitializeInternalRuntimeSettings();
             foreach (var tenant in this.AzureTenants)
             {
                 tenant.InitializeAuthentication(this.Timeout, this.ProxyAddress);
@@ -80,9 +80,9 @@ namespace Yvand.ClaimsProviders.Config
             return success;
         }
 
-        protected override TConfiguration CopyConfiguration()
+        protected override TConfiguration GenerateLocalConfiguration()
         {
-            //IAADSettings entityProviderSettings = base.CopyConfiguration();
+            //IAADSettings entityProviderSettings = base.GenerateLocalConfiguration();
             IAADSettings entityProviderSettings = new AADEntityProviderSettings(
                this.RuntimeClaimTypesList,
                this.RuntimeMetadataConfig,

@@ -56,7 +56,7 @@ namespace Yvand.ClaimsProviders.Tests
             Config = AzureCP.GetConfiguration(true);
             if (Config != null && BackupConfig == null)
             {
-                //BackupConfig = Config.CopyConfiguration();
+                //BackupConfig = Config.GenerateLocalConfiguration();
                 BackupConfig = Config.LocalConfiguration;
             }
             InitializeConfiguration();

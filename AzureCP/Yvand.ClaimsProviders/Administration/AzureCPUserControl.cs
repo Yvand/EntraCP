@@ -89,6 +89,11 @@ namespace Yvand.ClaimsProviders.Administration
                     return TextErrorPersistedObjectNotFound;
                 }
 
+                if ((Status & ConfigStatus.ConfigurationInvalid) == ConfigStatus.ConfigurationInvalid)
+                {
+                    return TextErrorPersistedConfigInvalid;
+                }
+
                 if ((Status & ConfigStatus.NoIdentityClaimType) == ConfigStatus.NoIdentityClaimType)
                 {
                     return String.Format(TextErrorNoIdentityClaimType, Configuration.SPTrust.DisplayName, Configuration.SPTrust.IdentityClaimTypeInformation.MappedClaimType);
@@ -126,6 +131,7 @@ namespace Yvand.ClaimsProviders.Administration
         protected static readonly string TextErrorClaimsProviderNameNotSet = "The attribute 'ClaimsProviderName' must be set in the user control.";
         protected static readonly string TextErrorPersistedObjectNameNotSet = "The attribute 'PersistedObjectName' must be set in the user control.";
         protected static readonly string TextErrorPersistedObjectIDNotSet = "The attribute 'PersistedObjectID' must be set in the user control.";
+        protected static readonly string TextErrorPersistedConfigInvalid = "PersistedObject was found but its configuration is not valid. Check the SharePoint logs to see the actual problem.";
 
         /// <summary>
         /// Ensures configuration is valid to proceed
@@ -179,6 +185,12 @@ namespace Yvand.ClaimsProviders.Administration
                 return Status;
             }
 
+            if (Configuration.LocalConfiguration == null)
+            {
+                Status |= ConfigStatus.ConfigurationInvalid;
+                return Status;
+            }
+
             if (Configuration.LocalConfiguration.IdentityClaimTypeConfig == null)
             {
                 Status |= ConfigStatus.NoIdentityClaimType;
@@ -212,6 +224,7 @@ namespace Yvand.ClaimsProviders.Administration
         PersistedObjectStale = 0x8,
         ClaimsProviderNamePropNotSet = 0x10,
         PersistedObjectNamePropNotSet = 0x20,
-        PersistedObjectIDPropNotSet = 0x40
+        PersistedObjectIDPropNotSet = 0x40,
+        ConfigurationInvalid = 0x80,
     };
 }
