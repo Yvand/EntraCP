@@ -343,11 +343,11 @@ namespace Yvand.ClaimsProviders.Config
 
             globalConfiguration.ClaimsProviderName = this.ClaimsProviderName;
             globalConfiguration.InitializeRuntimeSettings();
+            this.IdentityClaimTypeConfig = globalConfiguration.IdentityClaimTypeConfig;
+            this.MainGroupClaimTypeConfig = globalConfiguration.MainGroupClaimTypeConfig;
+            this.RuntimeClaimTypesList = globalConfiguration.RuntimeClaimTypesList;
+            this.MainGroupClaimTypeConfig = globalConfiguration.MainGroupClaimTypeConfig;
             this.LocalConfiguration = (TConfiguration)globalConfiguration.CopyConfiguration();
-            this.IdentityClaimTypeConfig = this.LocalConfiguration.IdentityClaimTypeConfig;
-            this.MainGroupClaimTypeConfig = this.LocalConfiguration.MainGroupClaimTypeConfig;
-            this.RuntimeClaimTypesList = this.LocalConfiguration.RuntimeClaimTypesList;
-            this.MainGroupClaimTypeConfig = this.LocalConfiguration.MainGroupClaimTypeConfig;
 #if !DEBUGx
             this.LocalConfigurationVersion = globalConfiguration.Version;
 #endif
@@ -428,7 +428,7 @@ namespace Yvand.ClaimsProviders.Config
         /// Returns a copy of the current object. This copy does not have any member of the base SharePoint base class set
         /// </summary>
         /// <returns></returns>
-        public virtual TConfiguration CopyConfiguration()
+        protected virtual TConfiguration CopyConfiguration()
         {
             IEntityProviderSettings entityProviderSettings = new EntityProviderSettings(
                 this.RuntimeClaimTypesList,
@@ -454,7 +454,7 @@ namespace Yvand.ClaimsProviders.Config
         {
             this.ClaimsProviderName = configuration.ClaimsProviderName;
             this.ClaimTypes = new ClaimTypeConfigCollection(this.SPTrust);
-            foreach (ClaimTypeConfig claimTypeConfig in this.ClaimTypes)
+            foreach (ClaimTypeConfig claimTypeConfig in configuration.ClaimTypes)
             {
                 this.ClaimTypes.Add(claimTypeConfig.CopyConfiguration(), false);
             }
@@ -480,9 +480,9 @@ namespace Yvand.ClaimsProviders.Config
         /// Returns the global configuration, stored as a persisted object in the SharePoint configuration database
         /// </summary>
         /// <param name="configurationName">The name of the configuration</param>
-        /// <param name="initializeRuntimeSettings">Set to true to initialize the runtime settings</param>
+        /// <param name="initializeLocalConfiguration">Set to true to initialize the runtime settings</param>
         /// <returns></returns>
-        public static EntityProviderConfig<TConfiguration> GetGlobalConfiguration(Guid configurationId, bool initializeRuntimeSettings = false)
+        public static EntityProviderConfig<TConfiguration> GetGlobalConfiguration(Guid configurationId, bool initializeLocalConfiguration = false)
         {
             SPFarm parent = SPFarm.Local;
             try
@@ -491,9 +491,9 @@ namespace Yvand.ClaimsProviders.Config
                 //Conf<TConfiguration> configuration = (Conf<TConfiguration>)parent.GetObject(configurationName, parent.Id, T);
                 //Conf<TConfiguration> configuration = (Conf<TConfiguration>)parent.GetObject(configurationName, parent.Id, typeof(Conf<TConfiguration>));
                 EntityProviderConfig<TConfiguration> configuration = (EntityProviderConfig<TConfiguration>)parent.GetObject(configurationId);
-                if (configuration != null && initializeRuntimeSettings == true)
+                if (configuration != null && initializeLocalConfiguration == true)
                 {
-                    configuration.InitializeRuntimeSettings();
+                    configuration.RefreshLocalConfigurationIfNeeded();
                 }
                 return configuration;
             }

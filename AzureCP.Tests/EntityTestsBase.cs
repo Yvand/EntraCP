@@ -53,10 +53,11 @@ namespace Yvand.ClaimsProviders.Tests
         public void Init()
         {
             Trace.TraceInformation($"{DateTime.Now.ToString("s")} Start backup of current AzureCP configuration");
-            Config = AzureCP.GetConfiguration();
+            Config = AzureCP.GetConfiguration(true);
             if (Config != null && BackupConfig == null)
             {
-                BackupConfig = Config.CopyConfiguration();
+                //BackupConfig = Config.CopyConfiguration();
+                BackupConfig = Config.LocalConfiguration;
             }
             InitializeConfiguration();
         }

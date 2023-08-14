@@ -76,10 +76,11 @@ namespace Yvand.ClaimsProviders.Config
             {
                 tenant.InitializeAuthentication(this.Timeout, this.ProxyAddress);
             }
+            
             return success;
         }
 
-        public override TConfiguration CopyConfiguration()
+        protected override TConfiguration CopyConfiguration()
         {
             //IAADSettings entityProviderSettings = base.CopyConfiguration();
             IAADSettings entityProviderSettings = new AADEntityProviderSettings(

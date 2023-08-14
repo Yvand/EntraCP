@@ -37,16 +37,14 @@ namespace Yvand.ClaimsProviders
             this.EntityProvider = new AzureADEntityProvider(Name);
         }
 
-        public static AADEntityProviderConfig<IAADSettings> GetConfiguration(bool initializeRuntimeSettings = false)
+        public static AADEntityProviderConfig<IAADSettings> GetConfiguration(bool initializeLocalConfiguration = false)
         {
-            //AzureADEntityProviderConfiguration configuration = EntityProviderBase<AzureADEntityProviderConfiguration>.GetGlobalConfiguration(ClaimsProviderConstants.CONFIGURATION_NAME, initializeRuntimeSettings);
-            AADEntityProviderConfig<IAADSettings> configuration = (AADEntityProviderConfig<IAADSettings>)AADEntityProviderConfig<IAADSettings>.GetGlobalConfiguration(new Guid(ClaimsProviderConstants.CONFIGURATION_ID), initializeRuntimeSettings);
+            AADEntityProviderConfig<IAADSettings> configuration = (AADEntityProviderConfig<IAADSettings>)AADEntityProviderConfig<IAADSettings>.GetGlobalConfiguration(new Guid(ClaimsProviderConstants.CONFIGURATION_ID), initializeLocalConfiguration);
             return configuration;
         }
 
         public static AADEntityProviderConfig<IAADSettings> CreateConfiguration()
         {
-            //AzureADEntityProviderConfiguration configuration = EntityProviderBase<AzureADEntityProviderConfiguration>.CreateGlobalConfiguration(ClaimsProviderConstants.CONFIGURATION_ID, ClaimsProviderConstants.CONFIGURATION_NAME, AzureCP.ClaimsProviderName);
             AADEntityProviderConfig<IAADSettings> configuration = (AADEntityProviderConfig<IAADSettings>)AADEntityProviderConfig<IAADSettings>.CreateGlobalConfiguration(new Guid(ClaimsProviderConstants.CONFIGURATION_ID), ClaimsProviderConstants.CONFIGURATION_NAME, AzureCP.ClaimsProviderName, typeof(AADEntityProviderConfig<IAADSettings>));
             return configuration;
         }
@@ -77,7 +75,6 @@ namespace Yvand.ClaimsProviders
                 }
                 if (this.PersistedConfiguration != null)
                 {
-                    //LocalConfiguration = this.EntityProvider.RefreshLocalConfigurationIfNeeded(ClaimsProviderConstants.CONFIGURATION_NAME);
                     LocalConfiguration = this.PersistedConfiguration.RefreshLocalConfigurationIfNeeded();
                     if (LocalConfiguration == null)
                     {
