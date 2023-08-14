@@ -13,11 +13,10 @@ namespace Yvand.ClaimsProviders.Tests
     [Parallelizable(ParallelScope.Children)]
     public class WrongConfigTests : EntityTestsBase
     {
+        public override bool ConfigurationIsValid => false;
         public override void InitializeConfiguration()
         {
             base.InitializeConfiguration();
-
-            // Extra initialization for current test class
             ClaimTypeConfig randomClaimTypeConfig = new ClaimTypeConfig
             {
                 ClaimType = UnitTestsHelper.RandomClaimType,
@@ -25,13 +24,6 @@ namespace Yvand.ClaimsProviders.Tests
             };
             Config.ClaimTypes = new ClaimTypeConfigCollection(SPTrust) { randomClaimTypeConfig };
             Config.Update();
-        }
-
-        [Test]
-        public void ValiateInitialization()
-        {
-            Assert.IsNull(Config.RefreshLocalConfigurationIfNeeded(), "RefreshLocalConfigurationIfNeeded should return null because the configuration is not valid");
-            Assert.IsFalse(UnitTestsHelper.ClaimsProvider.ValidateLocalConfiguration(null), "ValidateLocalConfiguration should return false because the configuration is not valid");
         }
 
         [TestCase(@"random", 0, "")]

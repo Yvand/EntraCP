@@ -16,29 +16,34 @@ namespace Yvand.ClaimsProviders.Tests
     public class EntityTestsBase
     {
         /// <summary>
-        /// Configure whether to run entity search tests.
+        /// Configures whether to run entity search tests.
         /// </summary>
         public virtual bool TestSearch => true;
 
         /// <summary>
-        /// Configure whether to run entity validation tests.
+        /// Configures whether to run entity validation tests.
         /// </summary>
         public virtual bool TestValidation => true;
 
         /// <summary>
-        /// Configure whether to run entity augmentation tests.
+        /// Configures whether to run entity augmentation tests.
         /// </summary>
         public virtual bool TestAugmentation => true;
 
         /// <summary>
-        /// Configure whether to exclude AAD Guest users from search and validation. This does not impact augmentation.
+        /// Configures whether to exclude AAD Guest users from search and validation. This does not impact augmentation.
         /// </summary>
         public virtual bool ExcludeGuestUsers => false;
 
         /// <summary>
-        /// Configure whether to exclude AAD Member users from search and validation. This does not impact augmentation.
+        /// Configures whether to exclude AAD Member users from search and validation. This does not impact augmentation.
         /// </summary>
         public virtual bool ExcludeMemberUsers => false;
+
+        /// <summary>
+        /// Configures whether the configuration applied is valid, and whether the claims provider should be able to use it
+        /// </summary>
+        public virtual bool ConfigurationIsValid => true;
 
         private static readonly AzureCP ClaimsProvider = new AzureCP("AzureCPSE");
         public static SPTrustedLoginProvider SPTrust => SPSecurityTokenServiceManager.Local.TrustedLoginProviders.FirstOrDefault(x => String.Equals(x.ClaimProviderName, "AzureCPSE", StringComparison.InvariantCultureIgnoreCase));
@@ -185,6 +190,21 @@ namespace Yvand.ClaimsProviders.Tests
             if (!TestAugmentation) { return; }
 
             TestAugmentationOperation(Config.SPTrust.IdentityClaimTypeInformation.MappedClaimType, claimValue, shouldHavePermissions);
+        }
+
+        [Test]
+        public virtual void ValidateInitialization()
+        {
+            if (ConfigurationIsValid)
+            {
+                Assert.IsNotNull(Config.RefreshLocalConfigurationIfNeeded(), "RefreshLocalConfigurationIfNeeded should return a valid configuration");
+                Assert.IsTrue(UnitTestsHelper.ClaimsProvider.ValidateLocalConfiguration(null), "ValidateLocalConfiguration should return true because the configuration is valid");
+            }
+            else
+            {
+                Assert.IsNull(Config.RefreshLocalConfigurationIfNeeded(), "RefreshLocalConfigurationIfNeeded should return null because the configuration is not valid");
+                Assert.IsFalse(UnitTestsHelper.ClaimsProvider.ValidateLocalConfiguration(null), "ValidateLocalConfiguration should return false because the configuration is not valid");
+            }
         }
 
         /// <summary>
