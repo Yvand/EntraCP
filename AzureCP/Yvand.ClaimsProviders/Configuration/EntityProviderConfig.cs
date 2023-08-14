@@ -59,10 +59,7 @@ namespace Yvand.ClaimsProviders.Config
 
         public ClaimTypeConfig MainGroupClaimTypeConfig { get; }
 
-        public EntityProviderSettings()
-        {
-            
-        }
+        public EntityProviderSettings() { }
 
         public EntityProviderSettings(List<ClaimTypeConfig> runtimeClaimTypesList, IEnumerable<ClaimTypeConfig> runtimeMetadataConfig, IdentityClaimTypeConfig identityClaimTypeConfig, ClaimTypeConfig mainGroupClaimTypeConfig)
         {

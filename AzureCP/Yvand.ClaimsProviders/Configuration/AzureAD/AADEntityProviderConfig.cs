@@ -13,7 +13,7 @@ namespace Yvand.ClaimsProviders.Config
         bool FilterSecurityEnabledGroupsOnly { get; }
     }
 
-    public class AADEntityProviderSettings : IAADSettings
+    public class AADEntityProviderSettings : EntityProviderSettings, IAADSettings
     {
         public List<AzureTenant> AzureTenants  { get; set; }
 
@@ -21,33 +21,12 @@ namespace Yvand.ClaimsProviders.Config
 
         public bool FilterSecurityEnabledGroupsOnly  { get; set; }
 
-        public long Version  { get; set; }
+        public AADEntityProviderSettings() : base() { }
 
-        public string Name  { get; set; }
-
-        public string ClaimsProviderName  { get; set; }
-
-        public ClaimTypeConfigCollection ClaimTypes  { get; set; }
-
-        public bool AlwaysResolveUserInput  { get; set; }
-
-        public bool FilterExactMatchOnly  { get; set; }
-
-        public bool EnableAugmentation  { get; set; }
-
-        public string EntityDisplayTextPrefix  { get; set; }
-
-        public int Timeout  { get; set; }
-
-        public string CustomData  { get; set; }
-
-        public List<ClaimTypeConfig> RuntimeClaimTypesList  { get; set; }
-
-        public IEnumerable<ClaimTypeConfig> RuntimeMetadataConfig  { get; set; }
-
-        public IdentityClaimTypeConfig IdentityClaimTypeConfig  { get; set; }
-
-        public ClaimTypeConfig MainGroupClaimTypeConfig  { get; set; }
+        public AADEntityProviderSettings(List<ClaimTypeConfig> runtimeClaimTypesList, IEnumerable<ClaimTypeConfig> runtimeMetadataConfig, IdentityClaimTypeConfig identityClaimTypeConfig, ClaimTypeConfig mainGroupClaimTypeConfig)
+            : base(runtimeClaimTypesList, runtimeMetadataConfig, identityClaimTypeConfig, mainGroupClaimTypeConfig)
+        {
+        }
     }
 
     public class AADEntityProviderConfig<TConfiguration> : EntityProviderConfig<TConfiguration>
@@ -102,8 +81,12 @@ namespace Yvand.ClaimsProviders.Config
 
         public override TConfiguration CopyConfiguration()
         {
-            //IAzureADEntityProviderSettings settings = base.CopyConfiguration();
-            IAADSettings entityProviderSettings = new AADEntityProviderSettings
+            //IAADSettings entityProviderSettings = base.CopyConfiguration();
+            IAADSettings entityProviderSettings = new AADEntityProviderSettings(
+               this.RuntimeClaimTypesList,
+               this.RuntimeMetadataConfig,
+               this.IdentityClaimTypeConfig,
+               this.MainGroupClaimTypeConfig)
             {
                 ClaimsProviderName = this.ClaimsProviderName,
                 AlwaysResolveUserInput = this.AlwaysResolveUserInput,
@@ -112,11 +95,7 @@ namespace Yvand.ClaimsProviders.Config
                 EnableAugmentation = this.EnableAugmentation,
                 EntityDisplayTextPrefix = this.EntityDisplayTextPrefix,
                 FilterExactMatchOnly = this.FilterExactMatchOnly,
-                IdentityClaimTypeConfig = this.IdentityClaimTypeConfig,
-                MainGroupClaimTypeConfig = this.MainGroupClaimTypeConfig,
                 Name = this.Name,
-                RuntimeClaimTypesList = this.RuntimeClaimTypesList,
-                RuntimeMetadataConfig = this.RuntimeMetadataConfig,
                 Timeout = this.Timeout,
                 Version = this.Version,
 
