@@ -136,7 +136,7 @@
 					<asp:BoundField DataField="Id" ItemStyle-CssClass="Azurecp-HideCol" HeaderStyle-CssClass="Azurecp-HideCol"/>
 					<asp:BoundField HeaderText="Tenant" DataField="TenantName"/>
 					<asp:BoundField HeaderText="Application ID" DataField="ClientID"/>
-                    <asp:BoundField HeaderText="Cloud instance" DataField="CloudInstance" />
+                    <asp:BoundField HeaderText="Authentication mode" DataField="AuthenticationMode" />
                     <asp:BoundField HeaderText="Extension Attributes Application ID" DataField="ExtensionAttributesApplicationId" />
 					<asp:CommandField HeaderText="Action" ButtonType="Button" DeleteText="Remove" ShowDeleteButton="True" />
 				</Columns>

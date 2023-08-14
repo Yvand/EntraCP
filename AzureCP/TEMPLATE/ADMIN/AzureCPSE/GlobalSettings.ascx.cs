@@ -61,7 +61,7 @@ namespace Yvand.ClaimsProviders.Administration
                 PropertyCollectionBinder pcb = new PropertyCollectionBinder();
                 foreach (AzureTenant tenant in Configuration.AzureTenants)
                 {
-                    pcb.AddRow(tenant.Identifier, tenant.Name, tenant.ClientId, tenant.CloudInstance.ToString(), tenant.ExtensionAttributesApplicationId);
+                    pcb.AddRow(tenant.Identifier, tenant.Name, tenant.ClientId, tenant.AuthenticationMode, tenant.ExtensionAttributesApplicationId);
                 }
                 pcb.BindGrid(grdAzureTenants);
             }
@@ -391,18 +391,18 @@ namespace Yvand.ClaimsProviders.Administration
             PropertyCollection.Columns.Add("TenantName", typeof(string));
             PropertyCollection.Columns.Add("ClientID", typeof(string));
             //PropertyCollection.Columns.Add("MemberUserTypeOnly", typeof(bool));
-            PropertyCollection.Columns.Add("CloudInstance", typeof(string));
+            PropertyCollection.Columns.Add("AuthenticationMode", typeof(string));
             PropertyCollection.Columns.Add("ExtensionAttributesApplicationId", typeof(Guid));
         }
 
-        public void AddRow(Guid Id, string TenantName, string ClientID, string CloudInstance, Guid ExtensionAttributesApplicationId)
+        public void AddRow(Guid Id, string TenantName, string ClientID, string AuthenticationMode, Guid ExtensionAttributesApplicationId)
         {
             DataRow newRow = PropertyCollection.Rows.Add();
             newRow["Id"] = Id;
             newRow["TenantName"] = TenantName;
             newRow["ClientID"] = ClientID;
             //newRow["MemberUserTypeOnly"] = MemberUserTypeOnly;
-            newRow["CloudInstance"] = CloudInstance;
+            newRow["AuthenticationMode"] = AuthenticationMode;
             newRow["ExtensionAttributesApplicationId"] = ExtensionAttributesApplicationId;
         }
 

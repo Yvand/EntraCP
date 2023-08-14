@@ -134,6 +134,14 @@ namespace Yvand.ClaimsProviders.Config
             }
         }
 
+        public string AuthenticationMode
+        {
+            get
+            {
+                return String.IsNullOrWhiteSpace(this.ClientSecret) ? "Client certificate" : "Client secret";
+            }
+        }
+
         public GraphServiceClient GraphService { get; private set; }
         public string UserFilter { get; set; }
         public string GroupFilter { get; set; }
@@ -180,7 +188,7 @@ namespace Yvand.ClaimsProviders.Config
                 Logger.Log($"[{AzureCP.ClaimsProviderName}] Cannot initialize authentication because the property {nameof(Name)} of current tenant is not set.", TraceSeverity.Unexpected, EventSeverity.Error, TraceCategory.Configuration);
                 return;
             }
-            
+
             //try
             //{
             WebProxy webProxy = null;
@@ -216,7 +224,7 @@ namespace Yvand.ClaimsProviders.Config
             if (timeout > 0 && timeout < Int32.MaxValue)
             {
                 httpClient.Timeout = TimeSpan.FromMilliseconds(timeout);
-            }            
+            }
 
             // https://learn.microsoft.com/en-us/graph/sdks/customize-client?tabs=csharp
             var authProvider = new Microsoft.Graph.Authentication.AzureIdentityAuthenticationProvider(

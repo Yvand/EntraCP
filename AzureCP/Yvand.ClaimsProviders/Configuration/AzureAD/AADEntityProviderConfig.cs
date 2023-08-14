@@ -82,7 +82,6 @@ namespace Yvand.ClaimsProviders.Config
 
         protected override TConfiguration GenerateLocalConfiguration()
         {
-            //IAADSettings entityProviderSettings = base.GenerateLocalConfiguration();
             IAADSettings entityProviderSettings = new AADEntityProviderSettings(
                this.RuntimeClaimTypesList,
                this.RuntimeMetadataConfig,
@@ -100,18 +99,26 @@ namespace Yvand.ClaimsProviders.Config
                 Timeout = this.Timeout,
                 Version = this.Version,
 
+                // Properties specific to type IAADSettings
                 AzureTenants = this.AzureTenants,
                 ProxyAddress = this.ProxyAddress,
                 FilterSecurityEnabledGroupsOnly = this.FilterSecurityEnabledGroupsOnly,
             };
             return (TConfiguration)entityProviderSettings;
+
+            //TConfiguration baseEntityProviderSettings = base.GenerateLocalConfiguration();
+            //AADEntityProviderSettings entityProviderSettings = baseEntityProviderSettings as AADEntityProviderSettings;
+            //entityProviderSettings.AzureTenants = this.AzureTenants;
+            //entityProviderSettings.ProxyAddress = this.ProxyAddress;
+            //entityProviderSettings.FilterSecurityEnabledGroupsOnly = this.FilterSecurityEnabledGroupsOnly;
+            //return (TConfiguration)(IAADSettings)entityProviderSettings;
         }
 
         public override void ApplyConfiguration(TConfiguration configuration)
         {
             base.ApplyConfiguration(configuration);
 
-            // Copy properties specific to type AzureADEntityProviderConfiguration
+            // Properties specific to type IAADSettings
             this.AzureTenants = configuration.AzureTenants;
             this.FilterSecurityEnabledGroupsOnly = configuration.FilterSecurityEnabledGroupsOnly;
             this.ProxyAddress = configuration.ProxyAddress;
@@ -125,7 +132,6 @@ namespace Yvand.ClaimsProviders.Config
         {
             AADEntityProviderConfig<TConfiguration> defaultConfig = new AADEntityProviderConfig<TConfiguration>();
             defaultConfig.ClaimsProviderName = claimsProviderName;
-            defaultConfig.AzureTenants = new List<AzureTenant>();
             defaultConfig.ClaimTypes = ReturnDefaultClaimTypesConfig(claimsProviderName);
             return defaultConfig;
         }
