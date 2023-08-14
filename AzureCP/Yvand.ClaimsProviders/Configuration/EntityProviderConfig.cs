@@ -21,8 +21,7 @@ namespace Yvand.ClaimsProviders.Config
         int Timeout { get; }
         string CustomData { get; }
 
-        //string OriginalIssuerName { get; }
-        //SPTrustedLoginProvider SPTrust { get; }
+        // Copy of the internal runtime settings, which external classes can only access through an object implementing this interface
         List<ClaimTypeConfig> RuntimeClaimTypesList { get; }
         IEnumerable<ClaimTypeConfig> RuntimeMetadataConfig { get; }
         IdentityClaimTypeConfig IdentityClaimTypeConfig { get; }

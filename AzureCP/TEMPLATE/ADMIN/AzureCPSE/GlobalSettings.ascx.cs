@@ -25,6 +25,7 @@ namespace Yvand.ClaimsProviders.Administration
         readonly string TextConnectionSuccessful = "Connection successful.";
         readonly string TextErrorNewTenantCreds = "Specify either a client secret or a client certificate, but not both.";
         readonly string TextErrorExtensionAttributesApplicationId = "Please specify a valid Client ID for AD Connect.";
+        readonly string TextSummaryPersistedObjectInformation = "Found configuration '{0}' v{1} (Persisted Object ID: '{2}')";
 
         protected void Page_Load(object sender, EventArgs e)
         {
@@ -44,6 +45,7 @@ namespace Yvand.ClaimsProviders.Administration
                 return;
             }
 
+            LabelMessage.Text = String.Format(TextSummaryPersistedObjectInformation, Configuration.Name, Configuration.Version, Configuration.Id);
             PopulateConnectionsGrid();
             if (!this.IsPostBack)
             {
@@ -126,6 +128,7 @@ namespace Yvand.ClaimsProviders.Administration
                 Configuration.AzureTenants.Remove(tenantToRemove);
                 CommitChanges();
                 Logger.Log($"Azure AD tenant '{tenantToRemove.Name}' was successfully removed from configuration '{ConfigurationName}'", TraceSeverity.Medium, EventSeverity.Information, TraceCategory.Configuration);
+                LabelMessage.Text = String.Format(TextSummaryPersistedObjectInformation, Configuration.Name, Configuration.Version, Configuration.Id);
                 PopulateConnectionsGrid();
             }
         }
@@ -241,7 +244,7 @@ namespace Yvand.ClaimsProviders.Administration
 
         protected void BtnResetAzureCPConfig_Click(Object sender, EventArgs e)
         {
-            AADEntityProviderConfig<IAADSettings>.DeleteGlobalConfiguration(new Guid(ConfigurationID));
+            AADEntityProviderConfig<IAADSettings>.DeleteGlobalConfiguration(ConfigurationID);
             Response.Redirect(Request.RawUrl, false);
         }
 
@@ -314,6 +317,7 @@ namespace Yvand.ClaimsProviders.Administration
 
             CommitChanges();
             Logger.Log($"Azure AD tenant '{this.TxtTenantName.Text}' was successfully added to configuration '{ConfigurationName}'", TraceSeverity.Medium, EventSeverity.Information, TraceCategory.Configuration);
+            LabelMessage.Text = String.Format(TextSummaryPersistedObjectInformation, Configuration.Name, Configuration.Version, Configuration.Id);
 
             PopulateConnectionsGrid();
             this.TxtTenantName.Text = "TENANTNAME.onMicrosoft.com";

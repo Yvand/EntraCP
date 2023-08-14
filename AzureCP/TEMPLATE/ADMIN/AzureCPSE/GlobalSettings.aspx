@@ -13,6 +13,6 @@
 </asp:Content>
 <asp:Content ID="Main" ContentPlaceHolderID="PlaceHolderMain" runat="server">
     <table border="0" cellspacing="0" cellpadding="0" width="100%">
-        <AzureCP:GlobalSettings ID="GlobalSettings" Runat="server" ClaimsProviderName="<%# AzureCP.ClaimsProviderName %>" ConfigurationName="<%# ClaimsProviderConstants.CONFIGURATION_NAME %>" ConfigurationID="<%# ClaimsProviderConstants.CONFIGURATION_ID %>" />
+        <AzureCP:GlobalSettings ID="GlobalSettings" Runat="server" ClaimsProviderName="<%# AzureCP.ClaimsProviderName %>" ConfigurationName="<%# ClaimsProviderConstants.CONFIGURATION_NAME %>" ConfigurationID="<%# new Guid(ClaimsProviderConstants.CONFIGURATION_ID) %>" />
     </table>
 </asp:Content>

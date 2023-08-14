@@ -21,18 +21,8 @@ namespace Yvand.ClaimsProviders.Administration
         /// </summary>
         public string ConfigurationName;
 
-        private Guid _ConfigurationID;
-        public string ConfigurationID
-        {
-            get
-            {
-                return (this._ConfigurationID == null || this._ConfigurationID == Guid.Empty) ? String.Empty : this._ConfigurationID.ToString();
-            }
-            set
-            {
-                this._ConfigurationID = new Guid(value);
-            }
-        }
+        public Guid ConfigurationID { get; set; } = Guid.Empty;
+        
 
         private AADEntityProviderConfig<IAADSettings> _Configuration;
         protected AADEntityProviderConfig<IAADSettings> Configuration
@@ -43,12 +33,12 @@ namespace Yvand.ClaimsProviders.Administration
                 {
                     if (_Configuration == null)
                     {
-                        _Configuration = (AADEntityProviderConfig<IAADSettings>)AADEntityProviderConfig<IAADSettings>.GetGlobalConfiguration(new Guid(this.ConfigurationID), true);
+                        _Configuration = (AADEntityProviderConfig<IAADSettings>)AADEntityProviderConfig<IAADSettings>.GetGlobalConfiguration(this.ConfigurationID, true);
                     }
                     if (_Configuration == null)
                     {
                         SPContext.Current.Web.AllowUnsafeUpdates = true;
-                        _Configuration = (AADEntityProviderConfig<IAADSettings>)AADEntityProviderConfig<IAADSettings>.CreateGlobalConfiguration(new Guid(this.ConfigurationID), this.ConfigurationName, this.ClaimsProviderName, typeof(AADEntityProviderConfig<IAADSettings>));
+                        _Configuration = (AADEntityProviderConfig<IAADSettings>)AADEntityProviderConfig<IAADSettings>.CreateGlobalConfiguration(this.ConfigurationID, this.ConfigurationName, this.ClaimsProviderName, typeof(AADEntityProviderConfig<IAADSettings>));
                         SPContext.Current.Web.AllowUnsafeUpdates = false;
                     }
                     _Configuration.RefreshLocalConfigurationIfNeeded();
@@ -152,13 +142,13 @@ namespace Yvand.ClaimsProviders.Administration
             {
                 ClaimsProviderName = ViewState["ClaimsProviderName"].ToString();
                 ConfigurationName = ViewState["PersistedObjectName"].ToString();
-                ConfigurationID = ViewState["PersistedObjectID"].ToString();
+                ConfigurationID = new Guid(ViewState["PersistedObjectID"].ToString());
             }
 
             Status = ConfigStatus.AllGood;
             if (String.IsNullOrEmpty(ClaimsProviderName)) { Status |= ConfigStatus.ClaimsProviderNamePropNotSet; }
             if (String.IsNullOrEmpty(ConfigurationName)) { Status |= ConfigStatus.PersistedObjectNamePropNotSet; }
-            if (String.IsNullOrEmpty(ConfigurationID)) { Status |= ConfigStatus.PersistedObjectIDPropNotSet; }
+            if (ConfigurationID == Guid.Empty) { Status |= ConfigStatus.PersistedObjectIDPropNotSet; }
             if (Status != ConfigStatus.AllGood)
             {
                 Logger.Log($"[{ClaimsProviderName}] {MostImportantError}", TraceSeverity.Unexpected, EventSeverity.Error, TraceCategory.Configuration);
