@@ -1,7 +1,7 @@
 ﻿using Microsoft.SharePoint.Administration.Claims;
 using NUnit.Framework;
 using System.Security.Claims;
-using Yvand.ClaimsProviders.Configuration;
+using Yvand.ClaimsProviders.Config;
 
 namespace Yvand.ClaimsProviders.Tests
 {
@@ -50,15 +50,10 @@ namespace Yvand.ClaimsProviders.Tests
         [TestCase(@"bypass-group:domain\groupValue", 1, @"domain\groupValue")]
         [TestCase(@"domain\groupValue", 0, "")]
         [TestCase("bypass-group:", 0, "")]
-        public void BypassLookupOnGroupClaimTest(string inputValue, int expectedCount, string expectedClaimValue)
+        [TestCase("val", 1, "value1")]  // Extension attribute configuration
+        public override void SearchEntities(string inputValue, int expectedResultCount, string expectedEntityClaimValue)
         {
-            TestSearchOperation(inputValue, expectedCount, expectedClaimValue);
-
-            if (expectedCount > 0)
-            {
-                SPClaim inputClaim = new SPClaim(UnitTestsHelper.TrustedGroupToAdd_ClaimType, expectedClaimValue, ClaimValueTypes.String, SPOriginalIssuers.Format(SPOriginalIssuerType.TrustedProvider, Config.SPTrust.Name));
-                TestValidationOperation(inputClaim, true, expectedClaimValue);
-            }
+            base.SearchEntities(inputValue, expectedResultCount, expectedEntityClaimValue);
         }
 
         [Test]
@@ -81,30 +76,5 @@ namespace Yvand.ClaimsProviders.Tests
                 Config.Update();
             }
         }
-
-        [TestCase("val", 1, "value1")]  // Extension attribute configuration
-        public override void SearchEntities(string inputValue, int expectedResultCount, string expectedEntityClaimValue)
-        {
-            base.SearchEntities(inputValue, expectedResultCount, expectedEntityClaimValue);
-        }
-
-        //[Test, TestCaseSource(typeof(ValidateEntityDataSource), "GetTestData", new object[] { EntityDataSourceType.AllAccounts })]
-        ////[Repeat(UnitTestsHelper.TestRepeatCount)]
-        //public void RequireExactMatchDuringSearch(ValidateEntityData registrationData)
-        //{
-        //    Config.FilterExactMatchOnly = true;
-        //    Config.Update();
-
-        //    try
-        //    {
-        //        int expectedCount = registrationData.ShouldValidate ? 1 : 0;
-        //        UnitTestsHelper.TestSearchOperation(registrationData.ClaimValue, expectedCount, registrationData.ClaimValue);
-        //    }
-        //    finally
-        //    {
-        //        Config.FilterExactMatchOnly = false;
-        //        Config.Update();
-        //    }
-        //}
     }
 }

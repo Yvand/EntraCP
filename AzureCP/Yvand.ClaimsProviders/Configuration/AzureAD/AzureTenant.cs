@@ -14,7 +14,7 @@ using System.Reflection;
 using System.Security.Cryptography;
 using System.Security.Cryptography.X509Certificates;
 
-namespace Yvand.ClaimsProviders.Configuration.AzureAD
+namespace Yvand.ClaimsProviders.Config
 {
     public class AzureTenant : SPAutoSerializingObject
     {

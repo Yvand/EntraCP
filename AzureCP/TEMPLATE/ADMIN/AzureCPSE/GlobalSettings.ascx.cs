@@ -1,5 +1,4 @@
-﻿using Microsoft.Graph;
-using Microsoft.Graph.Models;
+﻿using Microsoft.Graph.Models;
 using Microsoft.Identity.Client;
 using Microsoft.SharePoint;
 using Microsoft.SharePoint.Administration;
@@ -13,13 +12,9 @@ using System.Linq;
 using System.Reflection;
 using System.Security.Cryptography;
 using System.Security.Cryptography.X509Certificates;
-using System.Threading.Tasks;
 using System.Web.UI.HtmlControls;
 using System.Web.UI.WebControls;
-using Yvand.ClaimsProviders;
-using Yvand.ClaimsProviders.Configuration;
-using Yvand.ClaimsProviders.Configuration.AzureAD;
-using static Yvand.ClaimsProviders.Logger;
+using Yvand.ClaimsProviders.Config;
 
 namespace Yvand.ClaimsProviders.Administration
 {
@@ -30,6 +25,7 @@ namespace Yvand.ClaimsProviders.Administration
         readonly string TextConnectionSuccessful = "Connection successful.";
         readonly string TextErrorNewTenantCreds = "Specify either a client secret or a client certificate, but not both.";
         readonly string TextErrorExtensionAttributesApplicationId = "Please specify a valid Client ID for AD Connect.";
+        readonly string TextSummaryPersistedObjectInformation = "Found configuration '{0}' v{1} (Persisted Object ID: '{2}')";
 
         protected void Page_Load(object sender, EventArgs e)
         {
@@ -49,6 +45,7 @@ namespace Yvand.ClaimsProviders.Administration
                 return;
             }
 
+            LabelMessage.Text = String.Format(TextSummaryPersistedObjectInformation, Configuration.Name, Configuration.Version, Configuration.Id);
             PopulateConnectionsGrid();
             if (!this.IsPostBack)
             {
@@ -72,17 +69,17 @@ namespace Yvand.ClaimsProviders.Administration
 
         private void PopulateFields()
         {
-            if (Configuration.IdentityClaimTypeConfig.EntityPropertyToUseAsDisplayText == DirectoryObjectProperty.NotSet)
+            if (Configuration.LocalConfiguration.IdentityClaimTypeConfig.EntityPropertyToUseAsDisplayText == DirectoryObjectProperty.NotSet)
             {
                 this.RbIdentityDefault.Checked = true;
             }
             else
             {
                 this.RbIdentityCustomGraphProperty.Checked = true;
-                this.DDLGraphPropertyToDisplay.Items.FindByValue(((int)Configuration.IdentityClaimTypeConfig.EntityPropertyToUseAsDisplayText).ToString()).Selected = true;
+                this.DDLGraphPropertyToDisplay.Items.FindByValue(((int)Configuration.LocalConfiguration.IdentityClaimTypeConfig.EntityPropertyToUseAsDisplayText).ToString()).Selected = true;
             }
-            this.DDLDirectoryPropertyMemberUsers.Items.FindByValue(((int)Configuration.IdentityClaimTypeConfig.EntityProperty).ToString()).Selected = true;
-            this.DDLDirectoryPropertyGuestUsers.Items.FindByValue(((int)Configuration.IdentityClaimTypeConfig.DirectoryObjectPropertyForGuestUsers).ToString()).Selected = true;
+            this.DDLDirectoryPropertyMemberUsers.Items.FindByValue(((int)Configuration.LocalConfiguration.IdentityClaimTypeConfig.EntityProperty).ToString()).Selected = true;
+            this.DDLDirectoryPropertyGuestUsers.Items.FindByValue(((int)Configuration.LocalConfiguration.IdentityClaimTypeConfig.DirectoryObjectPropertyForGuestUsers).ToString()).Selected = true;
             this.ChkAlwaysResolveUserInput.Checked = Configuration.AlwaysResolveUserInput;
             this.ChkFilterExactMatchOnly.Checked = Configuration.FilterExactMatchOnly;
             this.ChkAugmentAADRoles.Checked = Configuration.EnableAugmentation;
@@ -131,6 +128,7 @@ namespace Yvand.ClaimsProviders.Administration
                 Configuration.AzureTenants.Remove(tenantToRemove);
                 CommitChanges();
                 Logger.Log($"Azure AD tenant '{tenantToRemove.Name}' was successfully removed from configuration '{ConfigurationName}'", TraceSeverity.Medium, EventSeverity.Information, TraceCategory.Configuration);
+                LabelMessage.Text = String.Format(TextSummaryPersistedObjectInformation, Configuration.Name, Configuration.Version, Configuration.Id);
                 PopulateConnectionsGrid();
             }
         }
@@ -246,8 +244,7 @@ namespace Yvand.ClaimsProviders.Administration
 
         protected void BtnResetAzureCPConfig_Click(Object sender, EventArgs e)
         {
-            //AzureADEntityProviderConfiguration.DeleteConfiguration(PersistedObjectName);
-            EntityProviderBase<AzureADEntityProviderConfiguration>.DeleteGlobalConfiguration(ConfigurationName);
+            AADEntityProviderConfig<IAADSettings>.DeleteGlobalConfiguration(ConfigurationID);
             Response.Redirect(Request.RawUrl, false);
         }
 
@@ -320,6 +317,7 @@ namespace Yvand.ClaimsProviders.Administration
 
             CommitChanges();
             Logger.Log($"Azure AD tenant '{this.TxtTenantName.Text}' was successfully added to configuration '{ConfigurationName}'", TraceSeverity.Medium, EventSeverity.Information, TraceCategory.Configuration);
+            LabelMessage.Text = String.Format(TextSummaryPersistedObjectInformation, Configuration.Name, Configuration.Version, Configuration.Id);
 
             PopulateConnectionsGrid();
             this.TxtTenantName.Text = "TENANTNAME.onMicrosoft.com";

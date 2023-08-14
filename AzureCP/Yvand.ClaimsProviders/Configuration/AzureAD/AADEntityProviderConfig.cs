@@ -4,9 +4,33 @@ using Microsoft.SharePoint.WebControls;
 using System;
 using System.Collections.Generic;
 
-namespace Yvand.ClaimsProviders.Configuration.AzureAD
+namespace Yvand.ClaimsProviders.Config
 {
-    public class AzureADEntityProviderConfiguration : EntityProviderConfiguration
+    public interface IAADSettings : IEntityProviderSettings
+    {
+        List<AzureTenant> AzureTenants { get; }
+        string ProxyAddress { get; }
+        bool FilterSecurityEnabledGroupsOnly { get; }
+    }
+
+    public class AADEntityProviderSettings : EntityProviderSettings, IAADSettings
+    {
+        public List<AzureTenant> AzureTenants  { get; set; }
+
+        public string ProxyAddress  { get; set; }
+
+        public bool FilterSecurityEnabledGroupsOnly  { get; set; }
+
+        public AADEntityProviderSettings() : base() { }
+
+        public AADEntityProviderSettings(List<ClaimTypeConfig> runtimeClaimTypesList, IEnumerable<ClaimTypeConfig> runtimeMetadataConfig, IdentityClaimTypeConfig identityClaimTypeConfig, ClaimTypeConfig mainGroupClaimTypeConfig)
+            : base(runtimeClaimTypesList, runtimeMetadataConfig, identityClaimTypeConfig, mainGroupClaimTypeConfig)
+        {
+        }
+    }
+
+    public class AADEntityProviderConfig<TConfiguration> : EntityProviderConfig<TConfiguration>
+        where TConfiguration : IAADSettings
     {
         public List<AzureTenant> AzureTenants
         {
@@ -14,7 +38,7 @@ namespace Yvand.ClaimsProviders.Configuration.AzureAD
             set => _AzureTenants = value;
         }
         [Persisted]
-        private List<AzureTenant> _AzureTenants;
+        private List<AzureTenant> _AzureTenants = new List<AzureTenant>();
 
         public string ProxyAddress
         {
@@ -35,74 +59,57 @@ namespace Yvand.ClaimsProviders.Configuration.AzureAD
         [Persisted]
         private bool _FilterSecurityEnabledGroupsOnly = false;
 
-        public AzureADEntityProviderConfiguration() : base() { }
-        public AzureADEntityProviderConfiguration(string configurationName, SPPersistedObject parent, string claimsProviderName) : base(configurationName, parent, claimsProviderName)
+        public AADEntityProviderConfig() : base() { }
+        public AADEntityProviderConfig(string configurationName, SPPersistedObject parent, string claimsProviderName) : base(configurationName, parent, claimsProviderName)
         {
         }
 
-        public AzureADEntityProviderConfiguration(string claimsProviderName) : base(claimsProviderName)
+        public override bool InitializeDefaultSettings()
         {
-        }
-
-        protected override bool InitializeDefaultSettings()
-        {
-            this.AzureTenants = new List<AzureTenant>();
             return base.InitializeDefaultSettings();
         }
 
-        public override bool InitializeRuntimeSettings()
+        protected override bool InitializeInternalRuntimeSettings()
         {
-            bool success = base.InitializeRuntimeSettings();
+            bool success = base.InitializeInternalRuntimeSettings();
             foreach (var tenant in this.AzureTenants)
             {
                 tenant.InitializeAuthentication(this.Timeout, this.ProxyAddress);
             }
+            
             return success;
         }
 
-        //public new AzureADEntityProviderConfiguration CopyConfiguration()
-        public override EntityProviderConfiguration CopyConfiguration()
+        protected override TConfiguration GenerateLocalConfiguration()
         {
-            // This is not possible to case an object to an inherited type from its base type: https://stackoverflow.com/questions/12565736/convert-base-class-to-derived-class
-            //EntityProviderConfiguration baseCopy = base.CopyConfiguration();
-            //AzureADEntityProviderConfiguration copy = (AzureADEntityProviderConfiguration)baseCopy;
-            //AzureADEntityProviderConfiguration copy = new AzureADEntityProviderConfiguration(this.ClaimsProviderName);
-            // Use default constructor to bypass initialization, which is useless since properties will be manually set here
-            AzureADEntityProviderConfiguration copy = new AzureADEntityProviderConfiguration();
-            copy.ClaimsProviderName = this.ClaimsProviderName;
-            copy = (AzureADEntityProviderConfiguration)Utils.CopyPersistedFields(typeof(EntityProviderConfiguration), this, copy);
-            copy = (AzureADEntityProviderConfiguration)Utils.CopyPersistedFields(typeof(AzureADEntityProviderConfiguration), this, copy);
-            //copy.ClaimTypes = new ClaimTypeConfigCollection(this.ClaimTypes.SPTrust);
-            //foreach (ClaimTypeConfig currentObject in this.ClaimTypes)
-            //{
-            //    copy.ClaimTypes.Add(currentObject.CopyConfiguration(), false);
-            //}
-            //copy.AzureTenants = new List<AzureTenant>();
-            //foreach(AzureTenant tenant in this.AzureTenants)
-            //{
-            //    copy.AzureTenants.Add(tenant.CopyConfiguration());
-            //}
-            copy.InitializeRuntimeSettings();
-            return copy;
+            //IAADSettings entityProviderSettings = base.GenerateLocalConfiguration();
+            IAADSettings entityProviderSettings = new AADEntityProviderSettings(
+               this.RuntimeClaimTypesList,
+               this.RuntimeMetadataConfig,
+               this.IdentityClaimTypeConfig,
+               this.MainGroupClaimTypeConfig)
+            {
+                ClaimsProviderName = this.ClaimsProviderName,
+                AlwaysResolveUserInput = this.AlwaysResolveUserInput,
+                ClaimTypes = this.ClaimTypes,
+                CustomData = this.CustomData,
+                EnableAugmentation = this.EnableAugmentation,
+                EntityDisplayTextPrefix = this.EntityDisplayTextPrefix,
+                FilterExactMatchOnly = this.FilterExactMatchOnly,
+                Name = this.Name,
+                Timeout = this.Timeout,
+                Version = this.Version,
+
+                AzureTenants = this.AzureTenants,
+                ProxyAddress = this.ProxyAddress,
+                FilterSecurityEnabledGroupsOnly = this.FilterSecurityEnabledGroupsOnly,
+            };
+            return (TConfiguration)entityProviderSettings;
         }
 
-        public void ApplyConfiguration(AzureADEntityProviderConfiguration configuration)
+        public override void ApplyConfiguration(TConfiguration configuration)
         {
-            // This is not possible to case an object to an inherited type from its base type: https://stackoverflow.com/questions/12565736/convert-base-class-to-derived-class
-
-            // Redo here the ApplyConfiguration done in base class
-            this.ClaimsProviderName = configuration.ClaimsProviderName;
-            this.ClaimTypes = new ClaimTypeConfigCollection(configuration.ClaimTypes.SPTrust);
-            foreach (ClaimTypeConfig claimTypeConfig in configuration.ClaimTypes)
-            {
-                this.ClaimTypes.Add(claimTypeConfig.CopyConfiguration(), false);
-            }
-            this.AlwaysResolveUserInput = configuration.AlwaysResolveUserInput;
-            this.FilterExactMatchOnly = configuration.FilterExactMatchOnly;
-            this.EnableAugmentation = configuration.EnableAugmentation;
-            this.EntityDisplayTextPrefix = configuration.EntityDisplayTextPrefix;
-            this.Timeout = configuration.Timeout;
-            this.CustomData = configuration.CustomData;
+            base.ApplyConfiguration(configuration);
 
             // Copy properties specific to type AzureADEntityProviderConfiguration
             this.AzureTenants = configuration.AzureTenants;
@@ -114,9 +121,9 @@ namespace Yvand.ClaimsProviders.Configuration.AzureAD
         /// Generate and return default configuration
         /// </summary>
         /// <returns></returns>
-        public static AzureADEntityProviderConfiguration ReturnDefaultConfiguration(string claimsProviderName)
+        public static AADEntityProviderConfig<TConfiguration> ReturnDefaultConfiguration(string claimsProviderName)
         {
-            AzureADEntityProviderConfiguration defaultConfig = new AzureADEntityProviderConfiguration();
+            AADEntityProviderConfig<TConfiguration> defaultConfig = new AADEntityProviderConfig<TConfiguration>();
             defaultConfig.ClaimsProviderName = claimsProviderName;
             defaultConfig.AzureTenants = new List<AzureTenant>();
             defaultConfig.ClaimTypes = ReturnDefaultClaimTypesConfig(claimsProviderName);
@@ -125,7 +132,7 @@ namespace Yvand.ClaimsProviders.Configuration.AzureAD
 
         public override ClaimTypeConfigCollection ReturnDefaultClaimTypesConfig()
         {
-            return AzureADEntityProviderConfiguration.ReturnDefaultClaimTypesConfig(this.ClaimsProviderName);
+            return AADEntityProviderConfig<TConfiguration>.ReturnDefaultClaimTypesConfig(this.ClaimsProviderName);
         }
 
         /// <summary>
@@ -178,6 +185,6 @@ namespace Yvand.ClaimsProviders.Configuration.AzureAD
             ClaimTypes = ReturnDefaultClaimTypesConfig(this.ClaimsProviderName);
             Logger.Log($"Claim types list of configuration '{Name}' was successfully reset to default configuration",
                 TraceSeverity.High, EventSeverity.Information, TraceCategory.Core);
-        }        
+        }
     }
 }

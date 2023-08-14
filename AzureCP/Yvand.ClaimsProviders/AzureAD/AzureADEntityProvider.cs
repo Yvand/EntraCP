@@ -15,21 +15,20 @@ using System.Diagnostics;
 using System.Linq;
 using System.Reflection;
 using System.Threading.Tasks;
-using Yvand.ClaimsProviders.Configuration;
-using Yvand.ClaimsProviders.Configuration.AzureAD;
+using Yvand.ClaimsProviders.Config;
 
 namespace Yvand.ClaimsProviders.AzureAD
 {
-    public class AzureADEntityProvider : EntityProviderBase<AzureADEntityProviderConfiguration>
+    public class AzureADEntityProvider : EntityProviderBase//<AzureADEntityProviderConfiguration>
     {
         public AzureADEntityProvider(string claimsProviderName) : base(claimsProviderName) { }
 
         public async override Task<List<string>> GetEntityGroupsAsync(OperationContext currentContext, DirectoryObjectProperty groupProperty)
         {
-            List<AzureTenant> azureTenants = this.Configuration.AzureTenants;
+            List<AzureTenant> azureTenants = currentContext.AzureTenants;
             // URL encode the filter to prevent that it gets truncated like this: "UserPrincipalName eq 'guest_contoso.com" instead of "UserPrincipalName eq 'guest_contoso.com#EXT#@TENANT.onmicrosoft.com'"
             string getMemberUserFilter = $"{currentContext.IncomingEntityClaimTypeConfig.EntityProperty} eq '{currentContext.IncomingEntity.Value}'";
-            string getGuestUserFilter = $"userType eq 'Guest' and {this.Configuration.IdentityClaimTypeConfig.DirectoryObjectPropertyForGuestUsers} eq '{currentContext.IncomingEntity.Value}'";
+            string getGuestUserFilter = $"userType eq 'Guest' and {currentContext.Configuration.IdentityClaimTypeConfig.DirectoryObjectPropertyForGuestUsers} eq '{currentContext.IncomingEntity.Value}'";
 
             // Create a task for each tenant to query
             IEnumerable<Task<List<string>>> tenantTasks = azureTenants.Select(async tenant =>
@@ -69,7 +68,7 @@ namespace Yvand.ClaimsProviders.AzureAD
                         // POST to /v1.0/users/user@TENANT.onmicrosoft.com/microsoft.graph.getMemberGroups is the preferred way to return security groups as it includes nested groups
                         // But it returns only the group IDs so it can be used only if groupClaimTypeConfig.DirectoryObjectProperty == AzureADObjectProperty.Id
                         // For Guest users, it must be the id: POST to /v1.0/users/18ff6ae9-dd01-4008-a786-aabf71f1492a/microsoft.graph.getMemberGroups
-                        GetMemberGroupsPostRequestBody getGroupsOptions = new GetMemberGroupsPostRequestBody { SecurityEnabledOnly = this.Configuration.FilterSecurityEnabledGroupsOnly };
+                        GetMemberGroupsPostRequestBody getGroupsOptions = new GetMemberGroupsPostRequestBody { SecurityEnabledOnly = currentContext.Configuration.FilterSecurityEnabledGroupsOnly };
                         GetMemberGroupsResponse memberGroupsResponse = await Task.Run(() => tenant.GraphService.Users[user.Id].GetMemberGroups.PostAsync(getGroupsOptions)).ConfigureAwait(false);
                         if (memberGroupsResponse?.Value != null)
                         {
@@ -134,14 +133,14 @@ namespace Yvand.ClaimsProviders.AzureAD
 
         public async override Task<List<DirectoryObject>> SearchOrValidateEntitiesAsync(OperationContext currentContext)
         {
-            // this.CurrentConfiguration.AzureTenants must be cloned locally to ensure its properties ($select / $filter) won't be updated by multiple threads
-            List<AzureTenant> azureTenants = new List<AzureTenant>(this.Configuration.AzureTenants.Count);
-            foreach (AzureTenant tenant in this.Configuration.AzureTenants)
-            {
-                azureTenants.Add(tenant.CopyPublicProperties());
-            }
-            this.BuildFilter(currentContext, azureTenants);
-            List<DirectoryObject> results = await this.QueryAzureADTenantsAsync(currentContext, azureTenants);
+            //// this.CurrentConfiguration.AzureTenants must be cloned locally to ensure its properties ($select / $filter) won't be updated by multiple threads
+            //List<AzureTenant> azureTenants = new List<AzureTenant>(this.Configuration.AzureTenants.Count);
+            //foreach (AzureTenant tenant in this.Configuration.AzureTenants)
+            //{
+            //    azureTenants.Add(tenant.CopyPublicProperties());
+            //}
+            this.BuildFilter(currentContext, currentContext.AzureTenants);
+            List<DirectoryObject> results = await this.QueryAzureADTenantsAsync(currentContext, currentContext.AzureTenants);
             return results;
         }
 
@@ -241,14 +240,14 @@ namespace Yvand.ClaimsProviders.AzureAD
             // Also add metadata properties to $select of corresponding object type
             if (userFilterBuilder.Count > 0)
             {
-                foreach (ClaimTypeConfig ctConfig in Configuration.RuntimeMetadataConfig.Where(x => x.EntityType == DirectoryObjectType.User))
+                foreach (ClaimTypeConfig ctConfig in currentContext.Configuration.RuntimeMetadataConfig.Where(x => x.EntityType == DirectoryObjectType.User))
                 {
                     userSelectBuilder.Add(ctConfig.EntityProperty.ToString());
                 }
             }
             if (groupFilterBuilder.Count > 0)
             {
-                foreach (ClaimTypeConfig ctConfig in Configuration.RuntimeMetadataConfig.Where(x => x.EntityType == DirectoryObjectType.Group))
+                foreach (ClaimTypeConfig ctConfig in currentContext.Configuration.RuntimeMetadataConfig.Where(x => x.EntityType == DirectoryObjectType.Group))
                 {
                     groupSelectBuilder.Add(ctConfig.EntityProperty.ToString());
                 }
@@ -359,7 +358,7 @@ namespace Yvand.ClaimsProviders.AzureAD
 
             Logger.Log($"[{ClaimsProviderName}] Querying Azure AD tenant '{tenant.Name}' for users and groups, with input '{currentContext.Input}'", TraceSeverity.VerboseEx, EventSeverity.Information, TraceCategory.Lookup);
             object lockAddResultToCollection = new object();
-            int timeout = this.Configuration.Timeout;
+            int timeout = currentContext.Configuration.Timeout;
             int maxRetry = currentContext.OperationType == OperationType.Validation ? 3 : 2;
             int tenantResultCount = 0;
 

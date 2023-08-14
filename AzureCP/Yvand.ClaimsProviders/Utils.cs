@@ -5,7 +5,7 @@ using System.CodeDom;
 using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
-using Yvand.ClaimsProviders.Configuration;
+using Yvand.ClaimsProviders.Config;
 using static Yvand.ClaimsProviders.Logger;
 
 namespace Yvand.ClaimsProviders

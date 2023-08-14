@@ -9,7 +9,7 @@ using System.Text;
 using System.Web.UI;
 using System.Web.UI.WebControls;
 using Yvand.ClaimsProviders;
-using Yvand.ClaimsProviders.Configuration;
+using Yvand.ClaimsProviders.Config;
 
 namespace Yvand.ClaimsProviders.Administration
 {

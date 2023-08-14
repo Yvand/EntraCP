@@ -9,7 +9,7 @@ using System.Diagnostics;
 using System.Linq;
 using System.Reflection;
 using System.Security.Claims;
-using Yvand.ClaimsProviders.Configuration;
+using Yvand.ClaimsProviders.Config;
 
 namespace Yvand.ClaimsProviders.Tests
 {

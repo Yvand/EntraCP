@@ -1,5 +1,5 @@
 ﻿using NUnit.Framework;
-using Yvand.ClaimsProviders.Configuration;
+using Yvand.ClaimsProviders.Config;
 
 namespace Yvand.ClaimsProviders.Tests
 {

@@ -3,7 +3,7 @@ using Microsoft.SharePoint.Administration;
 using Microsoft.SharePoint.Administration.Claims;
 using System;
 using System.Runtime.InteropServices;
-using Yvand.ClaimsProviders.Configuration;
+using Yvand.ClaimsProviders.Config;
 
 namespace Yvand.ClaimsProviders
 {

@@ -3,9 +3,7 @@ using Microsoft.SharePoint.Administration;
 using Microsoft.SharePoint.Utilities;
 using System;
 using System.Web.UI;
-using Yvand.ClaimsProviders.Configuration;
-using Yvand.ClaimsProviders.Configuration.AzureAD;
-using static Yvand.ClaimsProviders.Logger;
+using Yvand.ClaimsProviders.Config;
 
 namespace Yvand.ClaimsProviders.Administration
 {
@@ -23,29 +21,11 @@ namespace Yvand.ClaimsProviders.Administration
         /// </summary>
         public string ConfigurationName;
 
-        private Guid _ConfigurationID;
-        public string ConfigurationID
-        {
-            get
-            {
-                return (this._ConfigurationID == null || this._ConfigurationID == Guid.Empty) ? String.Empty : this._ConfigurationID.ToString();
-            }
-            set
-            {
-                this._ConfigurationID = new Guid(value);
-            }
-        }
+        public Guid ConfigurationID { get; set; } = Guid.Empty;
+        
 
-        //protected virtual Type ConfigType
-        //{
-        //    get
-        //    {
-        //        return typeof(AzureADEntityProviderConfiguration);
-        //    }
-        //}
-
-        private AzureADEntityProviderConfiguration _Configuration;
-        protected AzureADEntityProviderConfiguration Configuration
+        private AADEntityProviderConfig<IAADSettings> _Configuration;
+        protected AADEntityProviderConfig<IAADSettings> Configuration
         {
             get
             {
@@ -53,14 +33,15 @@ namespace Yvand.ClaimsProviders.Administration
                 {
                     if (_Configuration == null)
                     {
-                        _Configuration = EntityProviderBase<AzureADEntityProviderConfiguration>.GetGlobalConfiguration(ConfigurationName, true);
+                        _Configuration = (AADEntityProviderConfig<IAADSettings>)AADEntityProviderConfig<IAADSettings>.GetGlobalConfiguration(this.ConfigurationID, true);
                     }
                     if (_Configuration == null)
                     {
                         SPContext.Current.Web.AllowUnsafeUpdates = true;
-                        _Configuration = EntityProviderBase<AzureADEntityProviderConfiguration>.CreateGlobalConfiguration(this.ConfigurationID, this.ConfigurationName, this.ClaimsProviderName);
+                        _Configuration = (AADEntityProviderConfig<IAADSettings>)AADEntityProviderConfig<IAADSettings>.CreateGlobalConfiguration(this.ConfigurationID, this.ConfigurationName, this.ClaimsProviderName, typeof(AADEntityProviderConfig<IAADSettings>));
                         SPContext.Current.Web.AllowUnsafeUpdates = false;
                     }
+                    _Configuration.RefreshLocalConfigurationIfNeeded();
                 });
                 return _Configuration;
             }
@@ -96,6 +77,11 @@ namespace Yvand.ClaimsProviders.Administration
                 if ((Status & ConfigStatus.PersistedObjectNotFound) == ConfigStatus.PersistedObjectNotFound)
                 {
                     return TextErrorPersistedObjectNotFound;
+                }
+
+                if ((Status & ConfigStatus.ConfigurationInvalid) == ConfigStatus.ConfigurationInvalid)
+                {
+                    return TextErrorPersistedConfigInvalid;
                 }
 
                 if ((Status & ConfigStatus.NoIdentityClaimType) == ConfigStatus.NoIdentityClaimType)
@@ -135,6 +121,7 @@ namespace Yvand.ClaimsProviders.Administration
         protected static readonly string TextErrorClaimsProviderNameNotSet = "The attribute 'ClaimsProviderName' must be set in the user control.";
         protected static readonly string TextErrorPersistedObjectNameNotSet = "The attribute 'PersistedObjectName' must be set in the user control.";
         protected static readonly string TextErrorPersistedObjectIDNotSet = "The attribute 'PersistedObjectID' must be set in the user control.";
+        protected static readonly string TextErrorPersistedConfigInvalid = "PersistedObject was found but its configuration is not valid. Check the SharePoint logs to see the actual problem.";
 
         /// <summary>
         /// Ensures configuration is valid to proceed
@@ -155,17 +142,23 @@ namespace Yvand.ClaimsProviders.Administration
             {
                 ClaimsProviderName = ViewState["ClaimsProviderName"].ToString();
                 ConfigurationName = ViewState["PersistedObjectName"].ToString();
-                ConfigurationID = ViewState["PersistedObjectID"].ToString();
+                ConfigurationID = new Guid(ViewState["PersistedObjectID"].ToString());
             }
 
             Status = ConfigStatus.AllGood;
             if (String.IsNullOrEmpty(ClaimsProviderName)) { Status |= ConfigStatus.ClaimsProviderNamePropNotSet; }
             if (String.IsNullOrEmpty(ConfigurationName)) { Status |= ConfigStatus.PersistedObjectNamePropNotSet; }
-            if (String.IsNullOrEmpty(ConfigurationID)) { Status |= ConfigStatus.PersistedObjectIDPropNotSet; }
+            if (ConfigurationID == Guid.Empty) { Status |= ConfigStatus.PersistedObjectIDPropNotSet; }
             if (Status != ConfigStatus.AllGood)
             {
                 Logger.Log($"[{ClaimsProviderName}] {MostImportantError}", TraceSeverity.Unexpected, EventSeverity.Error, TraceCategory.Configuration);
                 // Should not go further if those requirements are not met
+                return Status;
+            }
+
+            if (Configuration == null)
+            {
+                Status |= ConfigStatus.PersistedObjectNotFound;
                 return Status;
             }
 
@@ -175,11 +168,6 @@ namespace Yvand.ClaimsProviders.Administration
                 return Status;
             }
 
-            if (Configuration == null)
-            {
-                Status |= ConfigStatus.PersistedObjectNotFound;
-            }
-
             if (Status != ConfigStatus.AllGood)
             {
                 Logger.Log($"[{ClaimsProviderName}] {MostImportantError}", TraceSeverity.Unexpected, EventSeverity.Error, TraceCategory.Configuration);
@@ -187,7 +175,13 @@ namespace Yvand.ClaimsProviders.Administration
                 return Status;
             }
 
-            if (Configuration.IdentityClaimTypeConfig == null)
+            if (Configuration.LocalConfiguration == null)
+            {
+                Status |= ConfigStatus.ConfigurationInvalid;
+                return Status;
+            }
+
+            if (Configuration.LocalConfiguration.IdentityClaimTypeConfig == null)
             {
                 Status |= ConfigStatus.NoIdentityClaimType;
             }
@@ -220,6 +214,7 @@ namespace Yvand.ClaimsProviders.Administration
         PersistedObjectStale = 0x8,
         ClaimsProviderNamePropNotSet = 0x10,
         PersistedObjectNamePropNotSet = 0x20,
-        PersistedObjectIDPropNotSet = 0x40
+        PersistedObjectIDPropNotSet = 0x40,
+        ConfigurationInvalid = 0x80,
     };
 }

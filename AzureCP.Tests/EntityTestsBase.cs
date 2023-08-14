@@ -1,5 +1,4 @@
-﻿using Microsoft.Graph.Drives.Item.Items.Item.GetActivitiesByIntervalWithStartDateTimeWithEndDateTimeWithInterval;
-using Microsoft.SharePoint.Administration.Claims;
+﻿using Microsoft.SharePoint.Administration.Claims;
 using Microsoft.SharePoint.WebControls;
 using Newtonsoft.Json;
 using NUnit.Framework;
@@ -10,38 +9,41 @@ using System.IO;
 using System.Linq;
 using System.Security.Claims;
 using System.Text;
-using System.Threading.Tasks;
-using Yvand.ClaimsProviders.Configuration;
-using Yvand.ClaimsProviders.Configuration.AzureAD;
+using Yvand.ClaimsProviders.Config;
 
 namespace Yvand.ClaimsProviders.Tests
 {
     public class EntityTestsBase
     {
         /// <summary>
-        /// Configure whether to run entity search tests.
+        /// Configures whether to run entity search tests.
         /// </summary>
         public virtual bool TestSearch => true;
 
         /// <summary>
-        /// Configure whether to run entity validation tests.
+        /// Configures whether to run entity validation tests.
         /// </summary>
         public virtual bool TestValidation => true;
 
         /// <summary>
-        /// Configure whether to run entity augmentation tests.
+        /// Configures whether to run entity augmentation tests.
         /// </summary>
         public virtual bool TestAugmentation => true;
 
         /// <summary>
-        /// Configure whether to exclude AAD Guest users from search and validation. This does not impact augmentation.
+        /// Configures whether to exclude AAD Guest users from search and validation. This does not impact augmentation.
         /// </summary>
         public virtual bool ExcludeGuestUsers => false;
 
         /// <summary>
-        /// Configure whether to exclude AAD Member users from search and validation. This does not impact augmentation.
+        /// Configures whether to exclude AAD Member users from search and validation. This does not impact augmentation.
         /// </summary>
         public virtual bool ExcludeMemberUsers => false;
+
+        /// <summary>
+        /// Configures whether the configuration applied is valid, and whether the claims provider should be able to use it
+        /// </summary>
+        public virtual bool ConfigurationIsValid => true;
 
         private static readonly AzureCP ClaimsProvider = new AzureCP("AzureCPSE");
         public static SPTrustedLoginProvider SPTrust => SPSecurityTokenServiceManager.Local.TrustedLoginProviders.FirstOrDefault(x => String.Equals(x.ClaimProviderName, "AzureCPSE", StringComparison.InvariantCultureIgnoreCase));
@@ -49,17 +51,18 @@ namespace Yvand.ClaimsProviders.Tests
         public static string TrustedGroupToAdd_ClaimType => TestContext.Parameters["TrustedGroupToAdd_ClaimType"];
         public static string TrustedGroupToAdd_ClaimValue => TestContext.Parameters["TrustedGroupToAdd_ClaimValue"];
         public static SPClaim TrustedGroup => new SPClaim(TrustedGroupToAdd_ClaimType, TrustedGroupToAdd_ClaimValue, ClaimValueTypes.String, SPOriginalIssuers.Format(SPOriginalIssuerType.TrustedProvider, SPTrust.Name));
-        protected AzureADEntityProviderConfiguration Config;
-        private static AzureADEntityProviderConfiguration BackupConfig;
+        protected AADEntityProviderConfig<IAADSettings> Config;
+        private static IAADSettings BackupConfig;
 
         [OneTimeSetUp]
         public void Init()
         {
             Trace.TraceInformation($"{DateTime.Now.ToString("s")} Start backup of current AzureCP configuration");
-            Config = AzureCP.GetConfiguration();
+            Config = AzureCP.GetConfiguration(true);
             if (Config != null && BackupConfig == null)
             {
-                BackupConfig = Config.CopyConfiguration() as AzureADEntityProviderConfiguration;
+                //BackupConfig = Config.GenerateLocalConfiguration();
+                BackupConfig = Config.LocalConfiguration;
             }
             InitializeConfiguration();
         }
@@ -96,10 +99,8 @@ namespace Yvand.ClaimsProviders.Tests
                 if (BackupConfig != null)
                 {
                     Config.ApplyConfiguration(BackupConfig);
-                    //Config = BackupConfig.CopyConfiguration() as AzureADEntityProviderConfiguration;
                     Config.Update();
-                    //AzureCPSE.SaveConfiguration(Config);
-                    //Trace.TraceInformation($"{DateTime.Now.ToString("s")} Restored original settings of AzureCP configuration");
+                    Trace.TraceInformation($"{DateTime.Now.ToString("s")} Restored original settings of AzureCP configuration");
                 }
             }
             catch (Exception ex)
@@ -189,6 +190,21 @@ namespace Yvand.ClaimsProviders.Tests
             if (!TestAugmentation) { return; }
 
             TestAugmentationOperation(Config.SPTrust.IdentityClaimTypeInformation.MappedClaimType, claimValue, shouldHavePermissions);
+        }
+
+        [Test]
+        public virtual void ValidateInitialization()
+        {
+            if (ConfigurationIsValid)
+            {
+                Assert.IsNotNull(Config.RefreshLocalConfigurationIfNeeded(), "RefreshLocalConfigurationIfNeeded should return a valid configuration");
+                Assert.IsTrue(UnitTestsHelper.ClaimsProvider.ValidateLocalConfiguration(null), "ValidateLocalConfiguration should return true because the configuration is valid");
+            }
+            else
+            {
+                Assert.IsNull(Config.RefreshLocalConfigurationIfNeeded(), "RefreshLocalConfigurationIfNeeded should return null because the configuration is not valid");
+                Assert.IsFalse(UnitTestsHelper.ClaimsProvider.ValidateLocalConfiguration(null), "ValidateLocalConfiguration should return false because the configuration is not valid");
+            }
         }
 
         /// <summary>
