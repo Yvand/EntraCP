@@ -54,7 +54,7 @@ namespace Yvand.ClaimsProviders.Tests
             GlobalConfiguration = AzureCP.GetConfiguration(true);
             if (GlobalConfiguration != null && OriginalSettings == null)
             {
-                OriginalSettings = GlobalConfiguration.LocalConfiguration;
+                OriginalSettings = GlobalConfiguration.LocalSettings;
                 Trace.TraceInformation($"{DateTime.Now.ToString("s")} Took a backup of the original settings");
             }
             InitializeConfiguration();
@@ -91,7 +91,7 @@ namespace Yvand.ClaimsProviders.Tests
             {
                 if (OriginalSettings != null)
                 {
-                    GlobalConfiguration.ApplyConfiguration(OriginalSettings);
+                    GlobalConfiguration.ApplySettings(OriginalSettings);
                     GlobalConfiguration.Update();
                     Trace.TraceInformation($"{DateTime.Now.ToString("s")} Restored original settings of AzureCP configuration");
                 }
@@ -190,12 +190,12 @@ namespace Yvand.ClaimsProviders.Tests
         {
             if (ConfigurationIsValid)
             {
-                Assert.IsNotNull(GlobalConfiguration.RefreshLocalConfigurationIfNeeded(), "RefreshLocalConfigurationIfNeeded should return a valid configuration");
+                Assert.IsNotNull(GlobalConfiguration.RefreshLocalSettingsIfNeeded(), "RefreshLocalConfigurationIfNeeded should return a valid configuration");
                 Assert.IsTrue(UnitTestsHelper.ClaimsProvider.ValidateLocalConfiguration(null), "ValidateLocalConfiguration should return true because the configuration is valid");
             }
             else
             {
-                Assert.IsNull(GlobalConfiguration.RefreshLocalConfigurationIfNeeded(), "RefreshLocalConfigurationIfNeeded should return null because the configuration is not valid");
+                Assert.IsNull(GlobalConfiguration.RefreshLocalSettingsIfNeeded(), "RefreshLocalConfigurationIfNeeded should return null because the configuration is not valid");
                 Assert.IsFalse(UnitTestsHelper.ClaimsProvider.ValidateLocalConfiguration(null), "ValidateLocalConfiguration should return false because the configuration is not valid");
             }
         }

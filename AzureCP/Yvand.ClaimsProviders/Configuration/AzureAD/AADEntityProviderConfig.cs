@@ -80,7 +80,7 @@ namespace Yvand.ClaimsProviders.Config
             return success;
         }
 
-        protected override TConfiguration GenerateLocalConfiguration()
+        protected override TConfiguration GenerateLocalSettings()
         {
             IAADSettings entityProviderSettings = new AADEntityProviderSettings(
                this.RuntimeClaimTypesList,
@@ -106,17 +106,17 @@ namespace Yvand.ClaimsProviders.Config
             };
             return (TConfiguration)entityProviderSettings;
 
-            //TConfiguration baseEntityProviderSettings = base.GenerateLocalConfiguration();
+            //TSettings baseEntityProviderSettings = base.GenerateLocalSettings();
             //AADEntityProviderSettings entityProviderSettings = baseEntityProviderSettings as AADEntityProviderSettings;
             //entityProviderSettings.AzureTenants = this.AzureTenants;
             //entityProviderSettings.ProxyAddress = this.ProxyAddress;
             //entityProviderSettings.FilterSecurityEnabledGroupsOnly = this.FilterSecurityEnabledGroupsOnly;
-            //return (TConfiguration)(IAADSettings)entityProviderSettings;
+            //return (TSettings)(IAADSettings)entityProviderSettings;
         }
 
-        public override void ApplyConfiguration(TConfiguration configuration)
+        public override void ApplySettings(TConfiguration configuration)
         {
-            base.ApplyConfiguration(configuration);
+            base.ApplySettings(configuration);
 
             // Properties specific to type IAADSettings
             this.AzureTenants = configuration.AzureTenants;

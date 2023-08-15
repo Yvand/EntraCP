@@ -8,7 +8,7 @@ using Yvand.ClaimsProviders.Config;
 namespace Yvand.ClaimsProviders.Administration
 {
     // Sadly, using a generic class with a UserControl seems not possible: https://stackoverflow.com/questions/74733106/asp-net-webforms-usercontrol-with-generic-type-parameter
-    //public abstract class AzureCPUserControl<TConfiguration> : UserControl where TConfiguration : EntityProviderConfiguration
+    //public abstract class AzureCPUserControl<TSettings> : UserControl where TSettings : EntityProviderConfiguration
     public abstract class AzureCPUserControl : UserControl
     {
         /// <summary>
@@ -41,7 +41,7 @@ namespace Yvand.ClaimsProviders.Administration
                         _Configuration = (AADEntityProviderConfig<IAADSettings>)AADEntityProviderConfig<IAADSettings>.CreateGlobalConfiguration(this.ConfigurationID, this.ConfigurationName, this.ClaimsProviderName, typeof(AADEntityProviderConfig<IAADSettings>));
                         SPContext.Current.Web.AllowUnsafeUpdates = false;
                     }
-                    _Configuration.RefreshLocalConfigurationIfNeeded();
+                    _Configuration.RefreshLocalSettingsIfNeeded();
                 });
                 return _Configuration;
             }
@@ -175,13 +175,13 @@ namespace Yvand.ClaimsProviders.Administration
                 return Status;
             }
 
-            if (Configuration.LocalConfiguration == null)
+            if (Configuration.LocalSettings == null)
             {
                 Status |= ConfigStatus.ConfigurationInvalid;
                 return Status;
             }
 
-            if (Configuration.LocalConfiguration.IdentityClaimTypeConfig == null)
+            if (Configuration.LocalSettings.IdentityClaimTypeConfig == null)
             {
                 Status |= ConfigStatus.NoIdentityClaimType;
             }
