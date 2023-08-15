@@ -45,24 +45,17 @@ namespace Yvand.ClaimsProviders.Tests
         /// </summary>
         public virtual bool ConfigurationIsValid => true;
 
-        private static readonly AzureCP ClaimsProvider = new AzureCP("AzureCPSE");
-        public static SPTrustedLoginProvider SPTrust => SPSecurityTokenServiceManager.Local.TrustedLoginProviders.FirstOrDefault(x => String.Equals(x.ClaimProviderName, "AzureCPSE", StringComparison.InvariantCultureIgnoreCase));
-        public static Uri TestSiteCollUri;
-        public static string TrustedGroupToAdd_ClaimType => TestContext.Parameters["TrustedGroupToAdd_ClaimType"];
-        public static string TrustedGroupToAdd_ClaimValue => TestContext.Parameters["TrustedGroupToAdd_ClaimValue"];
-        public static SPClaim TrustedGroup => new SPClaim(TrustedGroupToAdd_ClaimType, TrustedGroupToAdd_ClaimValue, ClaimValueTypes.String, SPOriginalIssuers.Format(SPOriginalIssuerType.TrustedProvider, SPTrust.Name));
-        protected AADEntityProviderConfig<IAADSettings> Config;
-        private static IAADSettings BackupConfig;
+        protected AADEntityProviderConfig<IAADSettings> GlobalConfiguration;
+        private static IAADSettings OriginalSettings;
 
         [OneTimeSetUp]
         public void Init()
         {
-            Trace.TraceInformation($"{DateTime.Now.ToString("s")} Start backup of current AzureCP configuration");
-            Config = AzureCP.GetConfiguration(true);
-            if (Config != null && BackupConfig == null)
+            GlobalConfiguration = AzureCP.GetConfiguration(true);
+            if (GlobalConfiguration != null && OriginalSettings == null)
             {
-                //BackupConfig = Config.GenerateLocalConfiguration();
-                BackupConfig = Config.LocalConfiguration;
+                OriginalSettings = GlobalConfiguration.LocalConfiguration;
+                Trace.TraceInformation($"{DateTime.Now.ToString("s")} Took a backup of the original settings");
             }
             InitializeConfiguration();
         }
@@ -72,23 +65,23 @@ namespace Yvand.ClaimsProviders.Tests
         /// </summary>
         public virtual void InitializeConfiguration()
         {
-            Config = AzureCP.CreateConfiguration();
-            Config.ProxyAddress = TestContext.Parameters["ProxyAddress"];
+            GlobalConfiguration = AzureCP.CreateConfiguration();
+            GlobalConfiguration.ProxyAddress = TestContext.Parameters["ProxyAddress"];
 
 #if DEBUG
-            Config.Timeout = 99999;
+            GlobalConfiguration.Timeout = 99999;
 #endif
 
             string json = File.ReadAllText(UnitTestsHelper.AzureTenantsJsonFile);
             List<AzureTenant> azureTenants = JsonConvert.DeserializeObject<List<AzureTenant>>(json);
-            Config.AzureTenants = azureTenants;
+            GlobalConfiguration.AzureTenants = azureTenants;
             foreach (AzureTenant tenant in azureTenants)
             {
                 tenant.ExcludeMemberUsers = ExcludeMemberUsers;
                 tenant.ExcludeGuestUsers = ExcludeGuestUsers;
             }
-            Config.Update();
-            Trace.TraceInformation($"{DateTime.Now.ToString("s")} Set {Config.AzureTenants.Count} Azure AD tenants to AzureCP configuration");
+            GlobalConfiguration.Update();
+            Trace.TraceInformation($"{DateTime.Now.ToString("s")} Set {GlobalConfiguration.AzureTenants.Count} Azure AD tenants to AzureCP configuration");
         }
 
         [OneTimeTearDown]
@@ -96,10 +89,10 @@ namespace Yvand.ClaimsProviders.Tests
         {
             try
             {
-                if (BackupConfig != null)
+                if (OriginalSettings != null)
                 {
-                    Config.ApplyConfiguration(BackupConfig);
-                    Config.Update();
+                    GlobalConfiguration.ApplyConfiguration(OriginalSettings);
+                    GlobalConfiguration.Update();
                     Trace.TraceInformation($"{DateTime.Now.ToString("s")} Restored original settings of AzureCP configuration");
                 }
             }
@@ -133,7 +126,7 @@ namespace Yvand.ClaimsProviders.Tests
                 expectedResultCount = 0;
             }
 
-            if (Config.FilterExactMatchOnly == true)
+            if (GlobalConfiguration.FilterExactMatchOnly == true)
             {
                 expectedResultCount = registrationData.ExactMatch ? 1 : 0;
             }
@@ -163,10 +156,10 @@ namespace Yvand.ClaimsProviders.Tests
             }
 
             string claimType = registrationData.EntityType == ResultEntityType.User ?
-                Config.SPTrust.IdentityClaimTypeInformation.MappedClaimType :
+                UnitTestsHelper.SPTrust.IdentityClaimTypeInformation.MappedClaimType :
                 UnitTestsHelper.TrustedGroupToAdd_ClaimType;
 
-            SPClaim inputClaim = new SPClaim(claimType, registrationData.ClaimValue, ClaimValueTypes.String, SPOriginalIssuers.Format(SPOriginalIssuerType.TrustedProvider, Config.SPTrust.Name));
+            SPClaim inputClaim = new SPClaim(claimType, registrationData.ClaimValue, ClaimValueTypes.String, SPOriginalIssuers.Format(SPOriginalIssuerType.TrustedProvider, UnitTestsHelper.SPTrust.Name));
             TestValidationOperation(inputClaim, shouldValidate, registrationData.ClaimValue);
         }
 
@@ -174,7 +167,7 @@ namespace Yvand.ClaimsProviders.Tests
         {
             if (!TestValidation) { return; }
 
-            SPClaim inputClaim = new SPClaim(claimType, claimValue, ClaimValueTypes.String, SPOriginalIssuers.Format(SPOriginalIssuerType.TrustedProvider, Config.SPTrust.Name));
+            SPClaim inputClaim = new SPClaim(claimType, claimValue, ClaimValueTypes.String, SPOriginalIssuers.Format(SPOriginalIssuerType.TrustedProvider, UnitTestsHelper.SPTrust.Name));
             TestValidationOperation(inputClaim, shouldValidate, claimValue);
         }
 
@@ -182,14 +175,14 @@ namespace Yvand.ClaimsProviders.Tests
         {
             if (!TestAugmentation) { return; }
 
-            TestAugmentationOperation(Config.SPTrust.IdentityClaimTypeInformation.MappedClaimType, registrationData.ClaimValue, registrationData.IsMemberOfTrustedGroup);
+            TestAugmentationOperation(UnitTestsHelper.SPTrust.IdentityClaimTypeInformation.MappedClaimType, registrationData.ClaimValue, registrationData.IsMemberOfTrustedGroup);
         }
 
         public virtual void AugmentEntity(string claimValue, bool shouldHavePermissions)
         {
             if (!TestAugmentation) { return; }
 
-            TestAugmentationOperation(Config.SPTrust.IdentityClaimTypeInformation.MappedClaimType, claimValue, shouldHavePermissions);
+            TestAugmentationOperation(UnitTestsHelper.SPTrust.IdentityClaimTypeInformation.MappedClaimType, claimValue, shouldHavePermissions);
         }
 
         [Test]
@@ -197,12 +190,12 @@ namespace Yvand.ClaimsProviders.Tests
         {
             if (ConfigurationIsValid)
             {
-                Assert.IsNotNull(Config.RefreshLocalConfigurationIfNeeded(), "RefreshLocalConfigurationIfNeeded should return a valid configuration");
+                Assert.IsNotNull(GlobalConfiguration.RefreshLocalConfigurationIfNeeded(), "RefreshLocalConfigurationIfNeeded should return a valid configuration");
                 Assert.IsTrue(UnitTestsHelper.ClaimsProvider.ValidateLocalConfiguration(null), "ValidateLocalConfiguration should return true because the configuration is valid");
             }
             else
             {
-                Assert.IsNull(Config.RefreshLocalConfigurationIfNeeded(), "RefreshLocalConfigurationIfNeeded should return null because the configuration is not valid");
+                Assert.IsNull(GlobalConfiguration.RefreshLocalConfigurationIfNeeded(), "RefreshLocalConfigurationIfNeeded should return null because the configuration is not valid");
                 Assert.IsFalse(UnitTestsHelper.ClaimsProvider.ValidateLocalConfiguration(null), "ValidateLocalConfiguration should return false because the configuration is not valid");
             }
         }
@@ -221,7 +214,7 @@ namespace Yvand.ClaimsProviders.Tests
                 timer.Start();
                 var entityTypes = new[] { "User", "SecGroup", "SharePointGroup", "System", "FormsRole" };
 
-                SPProviderHierarchyTree providerResults = ClaimsProvider.Search(TestSiteCollUri, entityTypes, inputValue, null, 30);
+                SPProviderHierarchyTree providerResults = UnitTestsHelper.ClaimsProvider.Search(UnitTestsHelper.TestSiteCollUri, entityTypes, inputValue, null, 30);
                 List<PickerEntity> entities = new List<PickerEntity>();
                 foreach (var children in providerResults.Children)
                 {
@@ -229,7 +222,7 @@ namespace Yvand.ClaimsProviders.Tests
                 }
                 VerifySearchTest(entities, inputValue, expectedCount, expectedClaimValue);
 
-                entities = ClaimsProvider.Resolve(TestSiteCollUri, entityTypes, inputValue).ToList();
+                entities = UnitTestsHelper.ClaimsProvider.Resolve(UnitTestsHelper.TestSiteCollUri, entityTypes, inputValue).ToList();
                 VerifySearchTest(entities, inputValue, expectedCount, expectedClaimValue);
                 timer.Stop();
                 Trace.TraceInformation($"{DateTime.Now.ToString("s")} TestSearchOperation finished in {timer.ElapsedMilliseconds} ms. Parameters: inputValue: '{inputValue}', expectedCount: '{expectedCount}', expectedClaimValue: '{expectedClaimValue}'.");
@@ -275,7 +268,7 @@ namespace Yvand.ClaimsProviders.Tests
                 timer.Start();
                 var entityTypes = new[] { "User" };
 
-                PickerEntity[] entities = ClaimsProvider.Resolve(TestSiteCollUri, entityTypes, inputClaim);
+                PickerEntity[] entities = UnitTestsHelper.ClaimsProvider.Resolve(UnitTestsHelper.TestSiteCollUri, entityTypes, inputClaim);
 
                 int expectedCount = shouldValidate ? 1 : 0;
                 Assert.AreEqual(expectedCount, entities.Length, $"Validation of entity \"{inputClaim.Value}\" should have returned {expectedCount} entity, but it returned {entities.Length} instead.");
@@ -298,24 +291,24 @@ namespace Yvand.ClaimsProviders.Tests
             {
                 Stopwatch timer = new Stopwatch();
                 timer.Start();
-                SPClaim inputClaim = new SPClaim(claimType, claimValue, ClaimValueTypes.String, SPOriginalIssuers.Format(SPOriginalIssuerType.TrustedProvider, SPTrust.Name));
-                Uri context = new Uri(TestSiteCollUri.AbsoluteUri);
+                SPClaim inputClaim = new SPClaim(claimType, claimValue, ClaimValueTypes.String, SPOriginalIssuers.Format(SPOriginalIssuerType.TrustedProvider, UnitTestsHelper.SPTrust.Name));
+                Uri context = new Uri(UnitTestsHelper.TestSiteCollUri.AbsoluteUri);
 
-                SPClaim[] groups = ClaimsProvider.GetClaimsForEntity(context, inputClaim);
+                SPClaim[] groups = UnitTestsHelper.ClaimsProvider.GetClaimsForEntity(context, inputClaim);
 
                 bool groupFound = false;
-                if (groups != null && groups.Contains(TrustedGroup))
+                if (groups != null && groups.Contains(UnitTestsHelper.TrustedGroup))
                 {
                     groupFound = true;
                 }
 
                 if (isMemberOfTrustedGroup)
                 {
-                    Assert.IsTrue(groupFound, $"Entity \"{claimValue}\" should be member of group \"{TrustedGroupToAdd_ClaimValue}\", but this group was not found in the claims returned by the claims provider.");
+                    Assert.IsTrue(groupFound, $"Entity \"{claimValue}\" should be member of group \"{UnitTestsHelper.TrustedGroupToAdd_ClaimValue}\", but this group was not found in the claims returned by the claims provider.");
                 }
                 else
                 {
-                    Assert.IsFalse(groupFound, $"Entity \"{claimValue}\" should NOT be member of group \"{TrustedGroupToAdd_ClaimValue}\", but this group was found in the claims returned by the claims provider.");
+                    Assert.IsFalse(groupFound, $"Entity \"{claimValue}\" should NOT be member of group \"{UnitTestsHelper.TrustedGroupToAdd_ClaimValue}\", but this group was found in the claims returned by the claims provider.");
                 }
                 timer.Stop();
                 Trace.TraceInformation($"{DateTime.Now.ToString("s")} TestAugmentationOperation finished in {timer.ElapsedMilliseconds} ms. Parameters: claimType: '{claimType}', claimValue: '{claimValue}', isMemberOfTrustedGroup: '{isMemberOfTrustedGroup}'.");

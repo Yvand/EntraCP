@@ -4,6 +4,7 @@
     <TargetPlatform>x64</TargetPlatform>
   </RunConfiguration>
   <TestRunParameters>
+    <Parameter name="ClaimsProviderName" value="AzureCPSE" />
     <Parameter name="AzureTenantsJsonFile" value="C:\YvanData\Dev\AzureCP_Tenants.json" />
     <Parameter name="DataFile_AllAccounts_Search" value="C:\YvanData\Dev\AzureCP_Tests_AllAccounts_Search.csv" />
     <Parameter name="DataFile_AllAccounts_Validate" value="C:\YvanData\Dev\AzureCP_Tests_AllAccounts_Validate.csv" />

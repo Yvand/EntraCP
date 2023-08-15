@@ -16,7 +16,9 @@ namespace Yvand.ClaimsProviders.Tests
     [SetUpFixture]
     public class UnitTestsHelper
     {
-        public static readonly AzureCP ClaimsProvider = new AzureCP("AzureCPSE");
+        public static readonly AzureCP ClaimsProvider = new AzureCP(TestContext.Parameters["ClaimsProviderName"]);
+        public static SPTrustedLoginProvider SPTrust => SPSecurityTokenServiceManager.Local.TrustedLoginProviders.FirstOrDefault(x => String.Equals(x.ClaimProviderName, TestContext.Parameters["ClaimsProviderName"], StringComparison.InvariantCultureIgnoreCase));
+        public static Uri TestSiteCollUri;
         public static string TestSiteRelativePath => $"/sites/{TestContext.Parameters["TestSiteCollectionName"]}";
         public const int MaxTime = 50000;
         public static string FarmAdmin => TestContext.Parameters["FarmAdmin"];
@@ -40,7 +42,6 @@ namespace Yvand.ClaimsProviders.Tests
         public static string DataFile_AllAccounts_Search => TestContext.Parameters["DataFile_AllAccounts_Search"];
         public static string DataFile_AllAccounts_Validate => TestContext.Parameters["DataFile_AllAccounts_Validate"];
         static TextWriterTraceListener Logger { get; set; }
-        public static SPTrustedLoginProvider SPTrust => SPSecurityTokenServiceManager.Local.TrustedLoginProviders.FirstOrDefault(x => String.Equals(x.ClaimProviderName, "AzureCPSE", StringComparison.InvariantCultureIgnoreCase));
 
         [OneTimeSetUp]
         public static void InitializeSiteCollection()
@@ -65,7 +66,7 @@ namespace Yvand.ClaimsProviders.Tests
             }
 
 #if DEBUG
-            EntityTestsBase.TestSiteCollUri = new Uri($"http://spsites{TestSiteRelativePath}");
+            TestSiteCollUri = new Uri($"http://spsites{TestSiteRelativePath}");
             return; // Uncommented when debugging AzureCP code from unit tests
 #endif
 
@@ -92,7 +93,7 @@ namespace Yvand.ClaimsProviders.Tests
 
             Trace.TraceInformation($"{DateTime.Now.ToString("s")} Web application {wa.Name} found.");
             Uri waRootAuthority = wa.AlternateUrls[0].Uri;
-            EntityTestsBase.TestSiteCollUri = new Uri($"{waRootAuthority.GetLeftPart(UriPartial.Authority)}{TestSiteRelativePath}");
+            TestSiteCollUri = new Uri($"{waRootAuthority.GetLeftPart(UriPartial.Authority)}{TestSiteRelativePath}");
             SPClaimProviderManager claimMgr = SPClaimProviderManager.Local;
             string encodedClaim = claimMgr.EncodeClaim(TrustedGroup);
             SPUserInfo userInfo = new SPUserInfo { LoginName = encodedClaim, Name = TrustedGroupToAdd_ClaimValue };
@@ -109,10 +110,10 @@ namespace Yvand.ClaimsProviders.Tests
                 spSite.Dispose();
             }
 
-            if (!SPSite.Exists(EntityTestsBase.TestSiteCollUri))
+            if (!SPSite.Exists(TestSiteCollUri))
             {
-                Trace.TraceInformation($"{DateTime.Now.ToString("s")} Creating site collection {EntityTestsBase.TestSiteCollUri.AbsoluteUri}...");
-                SPSite spSite = wa.Sites.Add(EntityTestsBase.TestSiteCollUri.AbsoluteUri, AzureCP.ClaimsProviderName, AzureCP.ClaimsProviderName, 1033, "STS#3", FarmAdmin, String.Empty, String.Empty);
+                Trace.TraceInformation($"{DateTime.Now.ToString("s")} Creating site collection {TestSiteCollUri.AbsoluteUri}...");
+                SPSite spSite = wa.Sites.Add(TestSiteCollUri.AbsoluteUri, AzureCP.ClaimsProviderName, AzureCP.ClaimsProviderName, 1033, "STS#3", FarmAdmin, String.Empty, String.Empty);
                 spSite.RootWeb.CreateDefaultAssociatedGroups(FarmAdmin, FarmAdmin, spSite.RootWeb.Title);
 
                 SPGroup membersGroup = spSite.RootWeb.AssociatedMemberGroup;
@@ -121,7 +122,7 @@ namespace Yvand.ClaimsProviders.Tests
             }
             else
             {
-                using (SPSite spSite = new SPSite(EntityTestsBase.TestSiteCollUri.AbsoluteUri))
+                using (SPSite spSite = new SPSite(TestSiteCollUri.AbsoluteUri))
                 {
                     SPGroup membersGroup = spSite.RootWeb.AssociatedMemberGroup;
                     membersGroup.AddUser(userInfo.LoginName, userInfo.Email, userInfo.Name, userInfo.Notes);

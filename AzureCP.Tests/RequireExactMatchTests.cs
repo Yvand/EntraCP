@@ -10,8 +10,8 @@ namespace Yvand.ClaimsProviders.Tests
             base.InitializeConfiguration();
 
             // Extra initialization for current test class
-            Config.FilterExactMatchOnly = true;
-            Config.Update();
+            GlobalConfiguration.FilterExactMatchOnly = true;
+            GlobalConfiguration.Update();
         }
 
         [Test, TestCaseSource(typeof(SearchEntityDataSource), "GetTestData", new object[] { EntityDataSourceType.AllAccounts })]
@@ -36,8 +36,8 @@ namespace Yvand.ClaimsProviders.Tests
             base.InitializeConfiguration();
 
             // Extra initialization for current test class
-            Config.FilterExactMatchOnly = true;
-            Config.Update();
+            GlobalConfiguration.FilterExactMatchOnly = true;
+            GlobalConfiguration.Update();
         }
 
         [Test, TestCaseSource(typeof(SearchEntityDataSource), "GetTestData", new object[] { EntityDataSourceType.AllAccounts })]

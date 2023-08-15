@@ -22,8 +22,8 @@ namespace Yvand.ClaimsProviders.Tests
                 ClaimType = UnitTestsHelper.RandomClaimType,
                 EntityProperty = UnitTestsHelper.RandomObjectProperty,
             };
-            Config.ClaimTypes = new ClaimTypeConfigCollection(SPTrust) { randomClaimTypeConfig };
-            Config.Update();
+            GlobalConfiguration.ClaimTypes = new ClaimTypeConfigCollection(UnitTestsHelper.SPTrust) { randomClaimTypeConfig };
+            GlobalConfiguration.Update();
         }
 
         [TestCase(@"random", 0, "")]

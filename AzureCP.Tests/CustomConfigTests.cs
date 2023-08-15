@@ -14,9 +14,9 @@ namespace Yvand.ClaimsProviders.Tests
             base.InitializeConfiguration();
 
             // Extra initialization for current test class
-            Config.EnableAugmentation = true;
-            Config.ClaimTypes.GetByClaimType(Config.SPTrust.IdentityClaimTypeInformation.MappedClaimType).PrefixToBypassLookup = "bypass-user:";
-            Config.ClaimTypes.GetByClaimType(UnitTestsHelper.TrustedGroupToAdd_ClaimType).PrefixToBypassLookup = "bypass-group:";
+            GlobalConfiguration.EnableAugmentation = true;
+            GlobalConfiguration.ClaimTypes.GetByClaimType(UnitTestsHelper.SPTrust.IdentityClaimTypeInformation.MappedClaimType).PrefixToBypassLookup = "bypass-user:";
+            GlobalConfiguration.ClaimTypes.GetByClaimType(UnitTestsHelper.TrustedGroupToAdd_ClaimType).PrefixToBypassLookup = "bypass-group:";
             ClaimTypeConfig ctConfigExtensionAttribute = new ClaimTypeConfig
             {
                 ClaimType = TestContext.Parameters["MultiPurposeCustomClaimType"],
@@ -24,8 +24,8 @@ namespace Yvand.ClaimsProviders.Tests
                 EntityProperty = DirectoryObjectProperty.extensionAttribute1,
                 SharePointEntityType = "FormsRole",
             };
-            Config.ClaimTypes.Add(ctConfigExtensionAttribute);
-            Config.Update();
+            GlobalConfiguration.ClaimTypes.Add(ctConfigExtensionAttribute);
+            GlobalConfiguration.Update();
         }
     }
 
@@ -42,7 +42,7 @@ namespace Yvand.ClaimsProviders.Tests
 
             if (expectedCount > 0)
             {
-                SPClaim inputClaim = new SPClaim(Config.SPTrust.IdentityClaimTypeInformation.MappedClaimType, expectedClaimValue, ClaimValueTypes.String, SPOriginalIssuers.Format(SPOriginalIssuerType.TrustedProvider, Config.SPTrust.Name));
+                SPClaim inputClaim = new SPClaim(UnitTestsHelper.SPTrust.IdentityClaimTypeInformation.MappedClaimType, expectedClaimValue, ClaimValueTypes.String, SPOriginalIssuers.Format(SPOriginalIssuerType.TrustedProvider, UnitTestsHelper.SPTrust.Name));
                 TestValidationOperation(inputClaim, true, expectedClaimValue);
             }
         }
@@ -60,20 +60,20 @@ namespace Yvand.ClaimsProviders.Tests
         [NonParallelizable]
         public void BypassServer()
         {
-            Config.AlwaysResolveUserInput = true;
-            Config.Update();
+            GlobalConfiguration.AlwaysResolveUserInput = true;
+            GlobalConfiguration.Update();
 
             try
             {
                 TestSearchOperation(UnitTestsHelper.RandomClaimValue, 3, UnitTestsHelper.RandomClaimValue);
 
-                SPClaim inputClaim = new SPClaim(Config.SPTrust.IdentityClaimTypeInformation.MappedClaimType, UnitTestsHelper.RandomClaimValue, ClaimValueTypes.String, SPOriginalIssuers.Format(SPOriginalIssuerType.TrustedProvider, Config.SPTrust.Name));
+                SPClaim inputClaim = new SPClaim(UnitTestsHelper.SPTrust.IdentityClaimTypeInformation.MappedClaimType, UnitTestsHelper.RandomClaimValue, ClaimValueTypes.String, SPOriginalIssuers.Format(SPOriginalIssuerType.TrustedProvider, UnitTestsHelper.SPTrust.Name));
                 TestValidationOperation(inputClaim, true, UnitTestsHelper.RandomClaimValue);
             }
             finally
             {
-                Config.AlwaysResolveUserInput = false;
-                Config.Update();
+                GlobalConfiguration.AlwaysResolveUserInput = false;
+                GlobalConfiguration.Update();
             }
         }
     }
