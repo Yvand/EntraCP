@@ -138,9 +138,7 @@ namespace Yvand.ClaimsProviders.Config
                 EnableAugmentation = this.EnableAugmentation,
                 EntityDisplayTextPrefix = this.EntityDisplayTextPrefix,
                 FilterExactMatchOnly = this.FilterExactMatchOnly,
-                Name = this.Name,
                 Timeout = this.Timeout,
-                Version = this.Version,
 
                 // Properties specific to type IAADSettings
                 AzureTenants = this.AzureTenants,

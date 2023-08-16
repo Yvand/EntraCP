@@ -10,8 +10,6 @@ namespace Yvand.ClaimsProviders.Config
 {
     public interface IEntityProviderSettings
     {
-        long Version { get; }
-        string Name { get; }
         ClaimTypeConfigCollection ClaimTypes { get; }
         bool AlwaysResolveUserInput { get; }
         bool FilterExactMatchOnly { get; }
@@ -29,10 +27,6 @@ namespace Yvand.ClaimsProviders.Config
 
     public class EntityProviderSettings : IEntityProviderSettings
     {
-        public long Version { get; set; } = 0;
-
-        public string Name { get; set; }
-
         public ClaimTypeConfigCollection ClaimTypes { get; set; }
 
         public bool AlwaysResolveUserInput { get; set; } = false;
@@ -365,7 +359,7 @@ namespace Yvand.ClaimsProviders.Config
 
             if (this.LocalSettings.ClaimTypes == null || this.LocalSettings.ClaimTypes.Count == 0)
             {
-                Logger.Log($"[{ClaimsProviderName}] Configuration '{this.LocalSettings.Name}' was found but collection ClaimTypes is empty. Visit AzureCP admin pages in central administration to create it.",
+                Logger.Log($"[{ClaimsProviderName}] Configuration '{this.Name}' was found but collection ClaimTypes is empty. Visit AzureCP admin pages in central administration to create it.",
                     TraceSeverity.Unexpected, EventSeverity.Error, TraceCategory.Core);
             }
             return this.LocalSettings;
@@ -456,9 +450,7 @@ namespace Yvand.ClaimsProviders.Config
                 EnableAugmentation = this.EnableAugmentation,
                 EntityDisplayTextPrefix = this.EntityDisplayTextPrefix,
                 FilterExactMatchOnly = this.FilterExactMatchOnly,
-                Name = this.Name,
                 Timeout = this.Timeout,
-                Version = this.Version,
             };
             return (TSettings)entityProviderSettings;
         }
