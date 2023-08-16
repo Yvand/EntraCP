@@ -479,10 +479,11 @@ namespace Yvand.ClaimsProviders.Config
             }
         }
 
-        //public virtual void ResetCurrentConfiguration()
-        //{
-        //    throw new NotImplementedException();
-        //}
+        public virtual TSettings GetDefaultSettings()
+        {
+            IEntityProviderSettings entityProviderSettings = new EntityProviderSettings();
+            return (TSettings)entityProviderSettings;
+        }
 
         public virtual ClaimTypeConfigCollection ReturnDefaultClaimTypesConfig()
         {
@@ -544,15 +545,14 @@ namespace Yvand.ClaimsProviders.Config
             }
 
             Logger.Log($"Creating configuration '{configurationName}' with Id {configurationID}...", TraceSeverity.VerboseEx, EventSeverity.Error, TraceCategory.Core);
-
             ConstructorInfo ctorWithParameters = T.GetConstructor(new[] { typeof(string), typeof(SPFarm), typeof(string) });
-            EntityProviderConfig<TSettings> config = (EntityProviderConfig<TSettings>)ctorWithParameters.Invoke(new object[] { configurationName, SPFarm.Local, claimsProviderName });
-
-            config.Id = configurationID;
-            // If parameter ensure is true, the call will not throw if the object already exists.
-            config.Update(true);
-            Logger.Log($"Created configuration '{configurationName}' with Id {config.Id}", TraceSeverity.High, EventSeverity.Information, TraceCategory.Core);
-            return config;
+            EntityProviderConfig<TSettings> globalConfiguration = (EntityProviderConfig<TSettings>)ctorWithParameters.Invoke(new object[] { configurationName, SPFarm.Local, claimsProviderName });
+            TSettings defaultSettings = globalConfiguration.GetDefaultSettings();
+            globalConfiguration.ApplySettings(defaultSettings, false);
+            globalConfiguration.Id = configurationID;
+            globalConfiguration.Update(true);
+            Logger.Log($"Created configuration '{configurationName}' with Id {globalConfiguration.Id}", TraceSeverity.High, EventSeverity.Information, TraceCategory.Core);
+            return globalConfiguration;
         }
     }
 }

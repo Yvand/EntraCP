@@ -3,6 +3,7 @@ using Microsoft.SharePoint.Administration.Claims;
 using Microsoft.SharePoint.WebControls;
 using System;
 using System.Collections.Generic;
+using System.Runtime;
 
 namespace Yvand.ClaimsProviders.Config
 {
@@ -73,8 +74,8 @@ namespace Yvand.ClaimsProviders.Config
         }
     }
 
-    public class AADEntityProviderConfig<TConfiguration> : EntityProviderConfig<TConfiguration>
-        where TConfiguration : IAADSettings
+    public class AADEntityProviderConfig<TSettings> : EntityProviderConfig<TSettings>
+        where TSettings : IAADSettings
     {
         public List<AzureTenant> AzureTenants
         {
@@ -124,7 +125,7 @@ namespace Yvand.ClaimsProviders.Config
             return success;
         }
 
-        protected override TConfiguration GenerateLocalSettings()
+        protected override TSettings GenerateLocalSettings()
         {
             IAADSettings entityProviderSettings = new AADEntityProviderSettings(
                this.RuntimeClaimTypesList,
@@ -145,7 +146,7 @@ namespace Yvand.ClaimsProviders.Config
                 ProxyAddress = this.ProxyAddress,
                 FilterSecurityEnabledGroupsOnly = this.FilterSecurityEnabledGroupsOnly,
             };
-            return (TConfiguration)entityProviderSettings;
+            return (TSettings)entityProviderSettings;
 
             //TSettings baseEntityProviderSettings = base.GenerateLocalSettings();
             //AADEntityProviderSettings entityProviderSettings = baseEntityProviderSettings as AADEntityProviderSettings;
@@ -155,23 +156,32 @@ namespace Yvand.ClaimsProviders.Config
             //return (TSettings)(IAADSettings)entityProviderSettings;
         }
 
-        public override void ApplySettings(TConfiguration configuration, bool commitIfValid)
+        public override void ApplySettings(TSettings settings, bool commitIfValid)
         {
             // Properties specific to type IAADSettings
-            this.AzureTenants = configuration.AzureTenants;
-            this.FilterSecurityEnabledGroupsOnly = configuration.FilterSecurityEnabledGroupsOnly;
-            this.ProxyAddress = configuration.ProxyAddress;
-            
-            base.ApplySettings(configuration, commitIfValid);
+            this.AzureTenants = settings.AzureTenants;
+            this.FilterSecurityEnabledGroupsOnly = settings.FilterSecurityEnabledGroupsOnly;
+            this.ProxyAddress = settings.ProxyAddress;
+
+            base.ApplySettings(settings, commitIfValid);
+        }
+
+        public override TSettings GetDefaultSettings()
+        {
+            IAADSettings entityProviderSettings = new AADEntityProviderSettings
+            {
+                ClaimTypes = AADEntityProviderSettings.ReturnDefaultClaimTypesConfig(this.ClaimsProviderName),
+            };
+            return (TSettings)entityProviderSettings;
         }
 
         /// <summary>
         /// Generate and return default configuration
         /// </summary>
         /// <returns></returns>
-        public static AADEntityProviderConfig<TConfiguration> ReturnDefaultConfiguration(string claimsProviderName)
+        public static AADEntityProviderConfig<TSettings> ReturnDefaultConfiguration(string claimsProviderName)
         {
-            AADEntityProviderConfig<TConfiguration> defaultConfig = new AADEntityProviderConfig<TConfiguration>();
+            AADEntityProviderConfig<TSettings> defaultConfig = new AADEntityProviderConfig<TSettings>();
             defaultConfig.ClaimsProviderName = claimsProviderName;
             defaultConfig.ClaimTypes = AADEntityProviderSettings.ReturnDefaultClaimTypesConfig(claimsProviderName);
             return defaultConfig;
