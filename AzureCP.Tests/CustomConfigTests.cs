@@ -1,94 +1,78 @@
-﻿using azurecp;
-using Microsoft.SharePoint.Administration.Claims;
+﻿using Microsoft.SharePoint.Administration.Claims;
 using NUnit.Framework;
-using System;
-using System.Linq;
 using System.Security.Claims;
+using Yvand.ClaimsProviders.AzureAD;
+using Yvand.ClaimsProviders.Config;
 
-namespace AzureCP.Tests
+namespace Yvand.ClaimsProviders.Tests
 {
-    [TestFixture]
-    public class CustomConfigTests : BackupCurrentConfig
+    public class CustomConfigTestsBase : EntityTestsBase
     {
         public static string GroupsClaimType = ClaimsProviderConstants.DefaultMainGroupClaimType;
 
         public override void InitializeConfiguration()
         {
             base.InitializeConfiguration();
-
-            // Extra initialization for current test class
-            Config.EnableAugmentation = true;
-            Config.ClaimTypes.GetByClaimType(UnitTestsHelper.SPTrust.IdentityClaimTypeInformation.MappedClaimType).PrefixToBypassLookup = "bypass-user:";
-            Config.ClaimTypes.GetByClaimType(UnitTestsHelper.TrustedGroupToAdd_ClaimType).PrefixToBypassLookup = "bypass-group:";
-            Config.Update();
+            Settings.EnableAugmentation = true;
+            Settings.ClaimTypes.GetByClaimType(UnitTestsHelper.SPTrust.IdentityClaimTypeInformation.MappedClaimType).PrefixToBypassLookup = "bypass-user:";
+            Settings.ClaimTypes.GetByClaimType(UnitTestsHelper.TrustedGroupToAdd_ClaimType).PrefixToBypassLookup = "bypass-group:";
+            ClaimTypeConfig ctConfigExtensionAttribute = new ClaimTypeConfig
+            {
+                ClaimType = TestContext.Parameters["MultiPurposeCustomClaimType"],
+                ClaimTypeDisplayName = "extattr1",
+                EntityProperty = DirectoryObjectProperty.extensionAttribute1,
+                SharePointEntityType = "FormsRole",
+            };
+            Settings.ClaimTypes.Add(ctConfigExtensionAttribute);
+            GlobalConfiguration.ApplySettings(Settings, true);
         }
+    }
 
+    [TestFixture]
+    [Parallelizable(ParallelScope.Children)]
+    public class CustomConfigTests : CustomConfigTestsBase
+    {
         [TestCase("bypass-user:externalUser@contoso.com", 1, "externalUser@contoso.com")]
         [TestCase("externalUser@contoso.com", 0, "")]
         [TestCase("bypass-user:", 0, "")]
         public void BypassLookupOnIdentityClaimTest(string inputValue, int expectedCount, string expectedClaimValue)
         {
-            UnitTestsHelper.TestSearchOperation(inputValue, expectedCount, expectedClaimValue);
+            TestSearchOperation(inputValue, expectedCount, expectedClaimValue);
 
             if (expectedCount > 0)
             {
                 SPClaim inputClaim = new SPClaim(UnitTestsHelper.SPTrust.IdentityClaimTypeInformation.MappedClaimType, expectedClaimValue, ClaimValueTypes.String, SPOriginalIssuers.Format(SPOriginalIssuerType.TrustedProvider, UnitTestsHelper.SPTrust.Name));
-                UnitTestsHelper.TestValidationOperation(inputClaim, true, expectedClaimValue);
+                TestValidationOperation(inputClaim, true, expectedClaimValue);
             }
         }
 
         [TestCase(@"bypass-group:domain\groupValue", 1, @"domain\groupValue")]
         [TestCase(@"domain\groupValue", 0, "")]
         [TestCase("bypass-group:", 0, "")]
-        public void BypassLookupOnGroupClaimTest(string inputValue, int expectedCount, string expectedClaimValue)
+        [TestCase("val", 1, "value1")]  // Extension attribute configuration
+        public override void SearchEntities(string inputValue, int expectedResultCount, string expectedEntityClaimValue)
         {
-            UnitTestsHelper.TestSearchOperation(inputValue, expectedCount, expectedClaimValue);
-
-            if (expectedCount > 0)
-            {
-                SPClaim inputClaim = new SPClaim(UnitTestsHelper.TrustedGroupToAdd_ClaimType, expectedClaimValue, ClaimValueTypes.String, SPOriginalIssuers.Format(SPOriginalIssuerType.TrustedProvider, UnitTestsHelper.SPTrust.Name));
-                UnitTestsHelper.TestValidationOperation(inputClaim, true, expectedClaimValue);
-            }
+            base.SearchEntities(inputValue, expectedResultCount, expectedEntityClaimValue);
         }
 
         [Test]
         [NonParallelizable]
         public void BypassServer()
         {
-            Config.AlwaysResolveUserInput = true;
-            Config.Update();
-
+            Settings.AlwaysResolveUserInput = true;
+            GlobalConfiguration.ApplySettings(Settings, true);
             try
             {
-                UnitTestsHelper.TestSearchOperation(UnitTestsHelper.RandomClaimValue, 2, UnitTestsHelper.RandomClaimValue);
+                TestSearchOperation(UnitTestsHelper.RandomClaimValue, 3, UnitTestsHelper.RandomClaimValue);
 
                 SPClaim inputClaim = new SPClaim(UnitTestsHelper.SPTrust.IdentityClaimTypeInformation.MappedClaimType, UnitTestsHelper.RandomClaimValue, ClaimValueTypes.String, SPOriginalIssuers.Format(SPOriginalIssuerType.TrustedProvider, UnitTestsHelper.SPTrust.Name));
-                UnitTestsHelper.TestValidationOperation(inputClaim, true, UnitTestsHelper.RandomClaimValue);
+                TestValidationOperation(inputClaim, true, UnitTestsHelper.RandomClaimValue);
             }
             finally
             {
-                Config.AlwaysResolveUserInput = false;
-                Config.Update();
+                Settings.AlwaysResolveUserInput = false;
+                GlobalConfiguration.ApplySettings(Settings, true);
             }
         }
-
-        //[Test, TestCaseSource(typeof(ValidateEntityDataSource), "GetTestData", new object[] { EntityDataSourceType.AllAccounts })]
-        ////[Repeat(UnitTestsHelper.TestRepeatCount)]
-        //public void RequireExactMatchDuringSearch(ValidateEntityData registrationData)
-        //{
-        //    Config.FilterExactMatchOnly = true;
-        //    Config.Update();
-
-        //    try
-        //    {
-        //        int expectedCount = registrationData.ShouldValidate ? 1 : 0;
-        //        UnitTestsHelper.TestSearchOperation(registrationData.ClaimValue, expectedCount, registrationData.ClaimValue);
-        //    }
-        //    finally
-        //    {
-        //        Config.FilterExactMatchOnly = false;
-        //        Config.Update();
-        //    }
-        //}
     }
 }

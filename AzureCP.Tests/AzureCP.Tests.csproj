@@ -6,8 +6,8 @@
     <ProjectGuid>{DB8C79E5-F7F7-4841-8A8C-A9832A9CAE88}</ProjectGuid>
     <OutputType>Library</OutputType>
     <AppDesignerFolder>Properties</AppDesignerFolder>
-    <RootNamespace>AzureCP.Tests</RootNamespace>
-    <AssemblyName>AzureCP.Tests</AssemblyName>
+    <RootNamespace>Yvand.ClaimsProviders.Tests</RootNamespace>
+    <AssemblyName>AzureCPSE.Tests</AssemblyName>
     <TargetFrameworkVersion>v4.8</TargetFrameworkVersion>
     <FileAlignment>512</FileAlignment>
     <ProjectTypeGuids>{3AC096D0-A1C2-E12C-1390-A8335801FDAB};{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}</ProjectTypeGuids>
@@ -47,17 +47,16 @@
     <Reference Include="System.Core" />
   </ItemGroup>
   <ItemGroup>
-    <Compile Include="ExcludeAllUserAccountsTests.cs" />
+    <Compile Include="BasicTests.cs" />
+    <Compile Include="ExcludeAUserTypeTests.cs" />
     <Compile Include="EntityTestsBase.cs" />
-    <Compile Include="ExcludeMemberUserAccountsTests.cs" />
-    <Compile Include="ExcludeGuestUserAccountsTests.cs" />
     <Compile Include="GuestAccountsUPNTests.cs" />
-    <Compile Include="BackupCurrentConfig.cs" />
     <Compile Include="RequireExactMatchTests.cs" />
     <Compile Include="UnitTestsHelper.cs" />
     <Compile Include="CustomConfigTests.cs" />
-    <Compile Include="ModifyConfigTests.cs" />
+    <Compile Include="CustomizeConfigTests.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
+    <Compile Include="WrongConfigTests.cs" />
   </ItemGroup>
   <ItemGroup>
     <None Include="local.runsettings" />
