@@ -145,7 +145,7 @@ jobs:
       uses: actions/upload-artifact@v3
       with:
         name: "${{ env.project-name }}-${{ env.Configuration }}-wsp"
-        path: "${{ env.Project_Directory }}/bin/${{ env.Configuration }}/${{ env.project-name }}.wsp"
+        path: "${{ env.Project_Directory }}/bin/${{ env.Configuration }}/*.wsp"
         if-no-files-found: error
       env:
         Configuration: ${{ matrix.configuration }}
