@@ -1,53 +1,112 @@
 ﻿using Microsoft.SharePoint.Administration.Claims;
+using Microsoft.SharePoint.WebControls;
+using Newtonsoft.Json;
 using NUnit.Framework;
 using System;
+using System.Collections.Generic;
+using System.Diagnostics;
+using System.IO;
+using System.Linq;
 using System.Security.Claims;
+using System.Text;
+using Yvand.ClaimsProviders.Config;
 
-namespace AzureCP.Tests
+namespace Yvand.ClaimsProviders.Tests
 {
-    [TestFixture]
-    //[Parallelizable(ParallelScope.Children)]
-    public class EntityTestsBase : BackupCurrentConfig
+    public class EntityTestsBase
     {
         /// <summary>
-        /// Configure whether to run entity search tests.
+        /// Configures whether to run entity search tests.
         /// </summary>
         public virtual bool TestSearch => true;
 
         /// <summary>
-        /// Configure whether to run entity validation tests.
+        /// Configures whether to run entity validation tests.
         /// </summary>
         public virtual bool TestValidation => true;
 
         /// <summary>
-        /// Configure whether to run entity augmentation tests.
+        /// Configures whether to run entity augmentation tests.
         /// </summary>
         public virtual bool TestAugmentation => true;
 
         /// <summary>
-        /// Configure whether to exclude AAD Guest users from search and validation. This does not impact augmentation.
+        /// Configures whether to exclude AAD Guest users from search and validation. This does not impact augmentation.
         /// </summary>
         public virtual bool ExcludeGuestUsers => false;
 
         /// <summary>
-        /// Configure whether to exclude AAD Member users from search and validation. This does not impact augmentation.
+        /// Configures whether to exclude AAD Member users from search and validation. This does not impact augmentation.
         /// </summary>
         public virtual bool ExcludeMemberUsers => false;
 
-        public override void InitializeConfiguration()
+        /// <summary>
+        /// Configures whether the configuration applied is valid, and whether the claims provider should be able to use it
+        /// </summary>
+        public virtual bool ConfigurationIsValid => true;
+
+        protected AADEntityProviderConfig<IAADSettings> GlobalConfiguration;
+        protected AADEntityProviderSettings Settings = new AADEntityProviderSettings();
+        private static IAADSettings OriginalSettings;
+
+        [OneTimeSetUp]
+        public void Init()
         {
-            base.InitializeConfiguration();
-            Config.EnableAugmentation = true;
-            foreach (var tenant in Config.AzureTenants)
+            GlobalConfiguration = AzureCP.GetConfiguration(true);
+            if (GlobalConfiguration == null)
             {
-                tenant.ExcludeGuests = ExcludeGuestUsers;
-                tenant.ExcludeMembers = ExcludeMemberUsers;
+                GlobalConfiguration = AzureCP.CreateConfiguration();
             }
-            Config.Update();
+            else
+            {
+                Settings = (AADEntityProviderSettings)GlobalConfiguration.LocalSettings;
+                OriginalSettings = GlobalConfiguration.LocalSettings;
+                Trace.TraceInformation($"{DateTime.Now.ToString("s")} Took a backup of the original settings");
+            }
+            InitializeConfiguration();
         }
 
-        [Test, TestCaseSource(typeof(SearchEntityDataSource), "GetTestData", new object[] { EntityDataSourceType.AllAccounts })]
-        [Repeat(UnitTestsHelper.TestRepeatCount)]
+        /// <summary>
+        /// Initialize configuration
+        /// </summary>
+        public virtual void InitializeConfiguration()
+        {
+            Settings.ClaimTypes = AADEntityProviderSettings.ReturnDefaultClaimTypesConfig(UnitTestsHelper.ClaimsProvider.Name);
+            Settings.ProxyAddress = TestContext.Parameters["ProxyAddress"];
+
+#if DEBUG
+            Settings.Timeout = 99999;
+#endif
+
+            string json = File.ReadAllText(UnitTestsHelper.AzureTenantsJsonFile);
+            List<AzureTenant> azureTenants = JsonConvert.DeserializeObject<List<AzureTenant>>(json);
+            Settings.AzureTenants = azureTenants;
+            foreach (AzureTenant tenant in azureTenants)
+            {
+                tenant.ExcludeMemberUsers = ExcludeMemberUsers;
+                tenant.ExcludeGuestUsers = ExcludeGuestUsers;
+            }
+            GlobalConfiguration.ApplySettings(Settings, true);
+            Trace.TraceInformation($"{DateTime.Now.ToString("s")} Set {Settings.AzureTenants.Count} Azure AD tenants to AzureCP configuration");
+        }
+
+        [OneTimeTearDown]
+        public void Cleanup()
+        {
+            try
+            {
+                if (OriginalSettings != null)
+                {
+                    GlobalConfiguration.ApplySettings(OriginalSettings, true);
+                    Trace.TraceInformation($"{DateTime.Now.ToString("s")} Restored original settings of AzureCP configuration");
+                }
+            }
+            catch (Exception ex)
+            {
+                Trace.TraceError($"{DateTime.Now.ToString("s")} Unexpected error while restoring the original settings of AzureCP configuration: {ex.Message}");
+            }
+        }
+
         public virtual void SearchEntities(SearchEntityData registrationData)
         {
             if (!TestSearch)
@@ -55,94 +114,214 @@ namespace AzureCP.Tests
                 return;
             }
 
-            // If current entry does not return only users, cannot reliably test number of results returned if guest and/or members should be excluded
-            if (!String.Equals(registrationData.ResultType, "User", StringComparison.InvariantCultureIgnoreCase) &&
+            // If current entry does not return only users AND either guests or members are excluded, ExpectedResultCount cannot be determined so test cannot run
+            if (registrationData.SearchResultEntityTypes != ResultEntityType.User &&
                 (ExcludeGuestUsers || ExcludeMemberUsers))
             {
                 return;
             }
 
-            int expectedResultCount = registrationData.ExpectedResultCount;
-            if (ExcludeGuestUsers && String.Equals(registrationData.UserType, UnitTestsHelper.GUEST_USERTYPE, StringComparison.InvariantCultureIgnoreCase))
+            int expectedResultCount = registrationData.SearchResultCount;
+            if (ExcludeGuestUsers && registrationData.SearchResultUserTypes == ResultUserType.Guest)
             {
                 expectedResultCount = 0;
             }
-            if (ExcludeMemberUsers && String.Equals(registrationData.UserType, UnitTestsHelper.MEMBER_USERTYPE, StringComparison.InvariantCultureIgnoreCase))
+            if (ExcludeMemberUsers && registrationData.SearchResultUserTypes == ResultUserType.Member)
             {
                 expectedResultCount = 0;
             }
 
-            UnitTestsHelper.TestSearchOperation(registrationData.Input, expectedResultCount, registrationData.ExpectedEntityClaimValue);
+            if (Settings.FilterExactMatchOnly == true)
+            {
+                expectedResultCount = registrationData.ExactMatch ? 1 : 0;
+            }
+
+            TestSearchOperation(registrationData.Input, expectedResultCount, registrationData.SearchResultSingleEntityClaimValue);
         }
 
-        [Test, TestCaseSource(typeof(ValidateEntityDataSource), "GetTestData", new object[] { EntityDataSourceType.AllAccounts })]
-        [MaxTime(UnitTestsHelper.MaxTime)]
-        [Repeat(UnitTestsHelper.TestRepeatCount)]
+        public virtual void SearchEntities(string inputValue, int expectedResultCount, string expectedEntityClaimValue)
+        {
+            if (!TestSearch) { return; }
+
+            TestSearchOperation(inputValue, expectedResultCount, expectedEntityClaimValue);
+        }
+
         public virtual void ValidateClaim(ValidateEntityData registrationData)
         {
             if (!TestValidation) { return; }
 
             bool shouldValidate = registrationData.ShouldValidate;
-            if (ExcludeGuestUsers && String.Equals(registrationData.UserType, UnitTestsHelper.GUEST_USERTYPE, StringComparison.InvariantCultureIgnoreCase))
+            if (ExcludeGuestUsers && registrationData.UserType == ResultUserType.Guest)
             {
                 shouldValidate = false;
             }
-            if (ExcludeMemberUsers && String.Equals(registrationData.UserType, UnitTestsHelper.MEMBER_USERTYPE, StringComparison.InvariantCultureIgnoreCase))
+            if (ExcludeMemberUsers && registrationData.UserType == ResultUserType.Member)
             {
                 shouldValidate = false;
             }
 
-            SPClaim inputClaim = new SPClaim(UnitTestsHelper.SPTrust.IdentityClaimTypeInformation.MappedClaimType, registrationData.ClaimValue, ClaimValueTypes.String, SPOriginalIssuers.Format(SPOriginalIssuerType.TrustedProvider, UnitTestsHelper.SPTrust.Name));
-            UnitTestsHelper.TestValidationOperation(inputClaim, shouldValidate, registrationData.ClaimValue);
+            string claimType = registrationData.EntityType == ResultEntityType.User ?
+                UnitTestsHelper.SPTrust.IdentityClaimTypeInformation.MappedClaimType :
+                UnitTestsHelper.TrustedGroupToAdd_ClaimType;
+
+            SPClaim inputClaim = new SPClaim(claimType, registrationData.ClaimValue, ClaimValueTypes.String, SPOriginalIssuers.Format(SPOriginalIssuerType.TrustedProvider, UnitTestsHelper.SPTrust.Name));
+            TestValidationOperation(inputClaim, shouldValidate, registrationData.ClaimValue);
         }
 
-        [Test, TestCaseSource(typeof(ValidateEntityDataSource), "GetTestData", new object[] { EntityDataSourceType.AllAccounts })]
-        [Repeat(UnitTestsHelper.TestRepeatCount)]
-        public virtual void AugmentEntity(ValidateEntityData registrationData)
-        {
-            if (!TestAugmentation) { return; }
-
-            UnitTestsHelper.TestAugmentationOperation(UnitTestsHelper.SPTrust.IdentityClaimTypeInformation.MappedClaimType, registrationData.ClaimValue, registrationData.IsMemberOfTrustedGroup);
-        }
-
-#if DEBUG
-        //[TestCaseSource(typeof(SearchEntityDataSourceCollection))]
-        public void DEBUG_SearchEntitiesFromCollection(string inputValue, string expectedCount, string expectedClaimValue)
-        {
-            if (!TestSearch) { return; }
-
-            UnitTestsHelper.TestSearchOperation(inputValue, Convert.ToInt32(expectedCount), expectedClaimValue);
-        }
-
-        [TestCase(@"AADGroup1", 1, "30ef0958-c003-4667-a0ad-ef9783acaf25")]
-        [TestCase(@"xyzguest", 0, "xyzGUEST@contoso.com")]
-        [TestCase(@"AzureGr}", 1, "ef7d18e6-5c4d-451a-9663-a976be81c91e")]
-        public void DEBUG_SearchEntities(string inputValue, int expectedResultCount, string expectedEntityClaimValue)
-        {
-            if (!TestSearch) { return; }
-
-            UnitTestsHelper.TestSearchOperation(inputValue, expectedResultCount, expectedEntityClaimValue);
-        }
-
-        //[TestCase("http://schemas.microsoft.com/ws/2008/06/identity/claims/role", "5b0f6c56-c87f-44c3-9354-56cba03da433", true)]
-        [TestCase("http://schemas.xmlsoap.org/ws/2005/05/identity/claims/upn", "FakeGuest@contoso.com", false)]
-        [TestCase("http://schemas.xmlsoap.org/ws/2005/05/identity/claims/emailaddress", "FakeGuest.com#EXT#@XXX.onmicrosoft.com", false)]
-        [TestCase("http://schemas.xmlsoap.org/ws/2005/05/identity/claims/upn", "FakeGuest.com#EXT#@XXX.onmicrosoft.com", false)]
-        public void DEBUG_ValidateClaim(string claimType, string claimValue, bool shouldValidate)
+        public virtual void ValidateClaim(string claimType, string claimValue, bool shouldValidate)
         {
             if (!TestValidation) { return; }
 
             SPClaim inputClaim = new SPClaim(claimType, claimValue, ClaimValueTypes.String, SPOriginalIssuers.Format(SPOriginalIssuerType.TrustedProvider, UnitTestsHelper.SPTrust.Name));
-            UnitTestsHelper.TestValidationOperation(inputClaim, shouldValidate, claimValue);
+            TestValidationOperation(inputClaim, shouldValidate, claimValue);
         }
 
-        [TestCase("xydGUEST@FAKE.onmicrosoft.com", false)]
-        public void DEBUG_AugmentEntity(string claimValue, bool shouldHavePermissions)
+        public virtual void AugmentEntity(ValidateEntityData registrationData)
         {
             if (!TestAugmentation) { return; }
 
-            UnitTestsHelper.TestAugmentationOperation(UnitTestsHelper.SPTrust.IdentityClaimTypeInformation.MappedClaimType, claimValue, shouldHavePermissions);
+            TestAugmentationOperation(UnitTestsHelper.SPTrust.IdentityClaimTypeInformation.MappedClaimType, registrationData.ClaimValue, registrationData.IsMemberOfTrustedGroup);
         }
-#endif
+
+        public virtual void AugmentEntity(string claimValue, bool shouldHavePermissions)
+        {
+            if (!TestAugmentation) { return; }
+
+            TestAugmentationOperation(UnitTestsHelper.SPTrust.IdentityClaimTypeInformation.MappedClaimType, claimValue, shouldHavePermissions);
+        }
+
+        [Test]
+        public virtual void ValidateInitialization()
+        {
+            if (ConfigurationIsValid)
+            {
+                Assert.IsNotNull(GlobalConfiguration.RefreshLocalSettingsIfNeeded(), "RefreshLocalConfigurationIfNeeded should return a valid configuration");
+                Assert.IsTrue(UnitTestsHelper.ClaimsProvider.ValidateLocalConfiguration(null), "ValidateLocalConfiguration should return true because the configuration is valid");
+            }
+            else
+            {
+                Assert.IsNull(GlobalConfiguration.RefreshLocalSettingsIfNeeded(), "RefreshLocalConfigurationIfNeeded should return null because the configuration is not valid");
+                Assert.IsFalse(UnitTestsHelper.ClaimsProvider.ValidateLocalConfiguration(null), "ValidateLocalConfiguration should return false because the configuration is not valid");
+            }
+        }
+
+        /// <summary>
+        /// Start search operation on a specific claims provider
+        /// </summary>
+        /// <param name="inputValue"></param>
+        /// <param name="expectedCount">How many entities are expected to be returned. Set to Int32.MaxValue if exact number is unknown but greater than 0</param>
+        /// <param name="expectedClaimValue"></param>
+        public static void TestSearchOperation(string inputValue, int expectedCount, string expectedClaimValue)
+        {
+            try
+            {
+                Stopwatch timer = new Stopwatch();
+                timer.Start();
+                var entityTypes = new[] { "User", "SecGroup", "SharePointGroup", "System", "FormsRole" };
+
+                SPProviderHierarchyTree providerResults = UnitTestsHelper.ClaimsProvider.Search(UnitTestsHelper.TestSiteCollUri, entityTypes, inputValue, null, 30);
+                List<PickerEntity> entities = new List<PickerEntity>();
+                foreach (var children in providerResults.Children)
+                {
+                    entities.AddRange(children.EntityData);
+                }
+                VerifySearchTest(entities, inputValue, expectedCount, expectedClaimValue);
+
+                entities = UnitTestsHelper.ClaimsProvider.Resolve(UnitTestsHelper.TestSiteCollUri, entityTypes, inputValue).ToList();
+                VerifySearchTest(entities, inputValue, expectedCount, expectedClaimValue);
+                timer.Stop();
+                Trace.TraceInformation($"{DateTime.Now.ToString("s")} TestSearchOperation finished in {timer.ElapsedMilliseconds} ms. Parameters: inputValue: '{inputValue}', expectedCount: '{expectedCount}', expectedClaimValue: '{expectedClaimValue}'.");
+            }
+            catch (Exception ex)
+            {
+                Trace.TraceError($"{DateTime.Now.ToString("s")} TestSearchOperation failed with exception '{ex.GetType()}', message '{ex.Message}'. Parameters: inputValue: '{inputValue}', expectedCount: '{expectedCount}', expectedClaimValue: '{expectedClaimValue}'.");
+            }
+        }
+
+        public static void VerifySearchTest(List<PickerEntity> entities, string input, int expectedCount, string expectedClaimValue)
+        {
+            bool entityValueFound = false;
+            StringBuilder detailedLog = new StringBuilder($"It returned {entities.Count} entities: ");
+            string entityLogPattern = "entity \"{0}\", claim type: \"{1}\"; ";
+            foreach (PickerEntity entity in entities)
+            {
+                detailedLog.AppendLine(String.Format(entityLogPattern, entity.Claim.Value, entity.Claim.ClaimType));
+                if (String.Equals(expectedClaimValue, entity.Claim.Value, StringComparison.InvariantCultureIgnoreCase))
+                {
+                    entityValueFound = true;
+                }
+            }
+
+            if (!String.IsNullOrWhiteSpace(expectedClaimValue) && !entityValueFound && expectedCount > 0)
+            {
+                Assert.Fail($"Input \"{input}\" returned no entity with claim value \"{expectedClaimValue}\". {detailedLog.ToString()}");
+            }
+
+            if (expectedCount == Int32.MaxValue)
+            {
+                expectedCount = entities.Count;
+            }
+
+            Assert.AreEqual(expectedCount, entities.Count, $"Input \"{input}\" should have returned {expectedCount} entities, but it returned {entities.Count} instead. {detailedLog.ToString()}");
+        }
+
+        public static void TestValidationOperation(SPClaim inputClaim, bool shouldValidate, string expectedClaimValue)
+        {
+            try
+            {
+                Stopwatch timer = new Stopwatch();
+                timer.Start();
+                var entityTypes = new[] { "User" };
+
+                PickerEntity[] entities = UnitTestsHelper.ClaimsProvider.Resolve(UnitTestsHelper.TestSiteCollUri, entityTypes, inputClaim);
+
+                int expectedCount = shouldValidate ? 1 : 0;
+                Assert.AreEqual(expectedCount, entities.Length, $"Validation of entity \"{inputClaim.Value}\" should have returned {expectedCount} entity, but it returned {entities.Length} instead.");
+                if (shouldValidate)
+                {
+                    StringAssert.AreEqualIgnoringCase(expectedClaimValue, entities[0].Claim.Value, $"Validation of entity \"{inputClaim.Value}\" should have returned value \"{expectedClaimValue}\", but it returned \"{entities[0].Claim.Value}\" instead.");
+                }
+                timer.Stop();
+                Trace.TraceInformation($"{DateTime.Now.ToString("s")} TestValidationOperation finished in {timer.ElapsedMilliseconds} ms. Parameters: inputClaim.Value: '{inputClaim.Value}', shouldValidate: '{shouldValidate}', expectedClaimValue: '{expectedClaimValue}'.");
+            }
+            catch (Exception ex)
+            {
+                Trace.TraceError($"{DateTime.Now.ToString("s")} TestValidationOperation failed with exception '{ex.GetType()}', message '{ex.Message}'. Parameters: inputClaim.Value: '{inputClaim.Value}', shouldValidate: '{shouldValidate}', expectedClaimValue: '{expectedClaimValue}'.");
+            }
+        }
+
+        public static void TestAugmentationOperation(string claimType, string claimValue, bool isMemberOfTrustedGroup)
+        {
+            try
+            {
+                Stopwatch timer = new Stopwatch();
+                timer.Start();
+                SPClaim inputClaim = new SPClaim(claimType, claimValue, ClaimValueTypes.String, SPOriginalIssuers.Format(SPOriginalIssuerType.TrustedProvider, UnitTestsHelper.SPTrust.Name));
+                Uri context = new Uri(UnitTestsHelper.TestSiteCollUri.AbsoluteUri);
+
+                SPClaim[] groups = UnitTestsHelper.ClaimsProvider.GetClaimsForEntity(context, inputClaim);
+
+                bool groupFound = false;
+                if (groups != null && groups.Contains(UnitTestsHelper.TrustedGroup))
+                {
+                    groupFound = true;
+                }
+
+                if (isMemberOfTrustedGroup)
+                {
+                    Assert.IsTrue(groupFound, $"Entity \"{claimValue}\" should be member of group \"{UnitTestsHelper.TrustedGroupToAdd_ClaimValue}\", but this group was not found in the claims returned by the claims provider.");
+                }
+                else
+                {
+                    Assert.IsFalse(groupFound, $"Entity \"{claimValue}\" should NOT be member of group \"{UnitTestsHelper.TrustedGroupToAdd_ClaimValue}\", but this group was found in the claims returned by the claims provider.");
+                }
+                timer.Stop();
+                Trace.TraceInformation($"{DateTime.Now.ToString("s")} TestAugmentationOperation finished in {timer.ElapsedMilliseconds} ms. Parameters: claimType: '{claimType}', claimValue: '{claimValue}', isMemberOfTrustedGroup: '{isMemberOfTrustedGroup}'.");
+            }
+            catch (Exception ex)
+            {
+                Trace.TraceError($"{DateTime.Now.ToString("s")} TestAugmentationOperation failed with exception '{ex.GetType()}', message '{ex.Message}'. Parameters: claimType: '{claimType}', claimValue: '{claimValue}', isMemberOfTrustedGroup: '{isMemberOfTrustedGroup}'.");
+            }
+        }
     }
 }

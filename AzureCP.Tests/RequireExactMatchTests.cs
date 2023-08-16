@@ -1,46 +1,46 @@
 ﻿using NUnit.Framework;
 
-namespace AzureCP.Tests
+namespace Yvand.ClaimsProviders.Tests
 {
     [TestFixture]
-    public class RequireExactMatchOnBaseConfigTests : BackupCurrentConfig
+    public class RequireExactMatchOnBaseConfigTests : EntityTestsBase
     {
         public override void InitializeConfiguration()
         {
             base.InitializeConfiguration();
-
-            // Extra initialization for current test class
-            Config.FilterExactMatchOnly = true;
-            Config.Update();
+            Settings.FilterExactMatchOnly = true;
+            GlobalConfiguration.ApplySettings(Settings, true);
         }
 
-        [Test, TestCaseSource(typeof(ValidateEntityDataSource), "GetTestData", new object[] { EntityDataSourceType.AllAccounts })]
+        [Test, TestCaseSource(typeof(SearchEntityDataSource), "GetTestData", new object[] { EntityDataSourceType.AllAccounts })]
         [Repeat(UnitTestsHelper.TestRepeatCount)]
-        public void RequireExactMatchDuringSearch(ValidateEntityData registrationData)
+        public override void SearchEntities(SearchEntityData registrationData)
         {
-            int expectedCount = registrationData.ShouldValidate ? 1 : 0;
-            UnitTestsHelper.TestSearchOperation(registrationData.ClaimValue, expectedCount, registrationData.ClaimValue);
+            base.SearchEntities(registrationData);
+        }
+
+        [TestCase(@"aadgroup1143", 1, "3f4b724c-125d-47b4-b989-195b29417d6e")]
+        public override void SearchEntities(string inputValue, int expectedResultCount, string expectedEntityClaimValue)
+        {
+            base.SearchEntities(inputValue, expectedResultCount, expectedEntityClaimValue);
         }
     }
 
     [TestFixture]
-    public class RequireExactMatchOnCustomConfigTests : CustomConfigTests
+    public class RequireExactMatchOnCustomConfigTests : CustomConfigTestsBase
     {
         public override void InitializeConfiguration()
         {
             base.InitializeConfiguration();
-
-            // Extra initialization for current test class
-            Config.FilterExactMatchOnly = true;
-            Config.Update();
+            Settings.FilterExactMatchOnly = true;
+            GlobalConfiguration.ApplySettings(Settings, true);
         }
 
-        [Test, TestCaseSource(typeof(ValidateEntityDataSource), "GetTestData", new object[] { EntityDataSourceType.AllAccounts })]
+        [Test, TestCaseSource(typeof(SearchEntityDataSource), "GetTestData", new object[] { EntityDataSourceType.AllAccounts })]
         [Repeat(UnitTestsHelper.TestRepeatCount)]
-        public void RequireExactMatchDuringSearch(ValidateEntityData registrationData)
+        public override void SearchEntities(SearchEntityData registrationData)
         {
-            int expectedCount = registrationData.ShouldValidate ? 1 : 0;
-            UnitTestsHelper.TestSearchOperation(registrationData.ClaimValue, expectedCount, registrationData.ClaimValue);
+            base.SearchEntities(registrationData);
         }
     }
 }

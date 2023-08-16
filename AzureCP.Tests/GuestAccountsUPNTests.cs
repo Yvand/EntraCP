@@ -1,12 +1,13 @@
-﻿using azurecp;
-using NUnit.Framework;
+﻿using NUnit.Framework;
+using Yvand.ClaimsProviders.Config;
 
-namespace AzureCP.Tests
+namespace Yvand.ClaimsProviders.Tests
 {
     /// <summary>
     /// Test guest accounts when their identity claim is the UserPrincipalName
     /// </summary>
     [TestFixture]
+    [Parallelizable(ParallelScope.Children)]
     public class GuestAccountsUPNTests : EntityTestsBase
     {
         public override void InitializeConfiguration()
@@ -14,9 +15,9 @@ namespace AzureCP.Tests
             base.InitializeConfiguration();
 
             // Extra initialization for current test class
-            Config.ClaimTypes.UpdateIdentifierForGuestUsers(AzureADObjectProperty.UserPrincipalName);
-            Config.EnableAugmentation = true;
-            Config.Update();
+            Settings.ClaimTypes.UpdateIdentifierForGuestUsers(DirectoryObjectProperty.UserPrincipalName);
+            Settings.EnableAugmentation = true;
+            GlobalConfiguration.ApplySettings(Settings, true);
         }
 
         [Test, TestCaseSource(typeof(SearchEntityDataSource), "GetTestData", new object[] { EntityDataSourceType.UPNB2BGuestAccounts })]
@@ -27,12 +28,11 @@ namespace AzureCP.Tests
         }
 
         [Test, TestCaseSource(typeof(ValidateEntityDataSource), "GetTestData", new object[] { EntityDataSourceType.UPNB2BGuestAccounts })]
-        [MaxTime(UnitTestsHelper.MaxTime)]
         [Repeat(UnitTestsHelper.TestRepeatCount)]
         public override void ValidateClaim(ValidateEntityData registrationData)
         {
             base.ValidateClaim(registrationData);
-        }        
+        }
 
         [Test, TestCaseSource(typeof(ValidateEntityDataSource), "GetTestData", new object[] { EntityDataSourceType.UPNB2BGuestAccounts })]
         [Repeat(UnitTestsHelper.TestRepeatCount)]

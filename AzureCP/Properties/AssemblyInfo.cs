@@ -6,12 +6,12 @@ using System.Security;
 // General Information about an assembly is controlled through the following 
 // set of attributes. Change these azureObject values to modify the information
 // associated with an assembly.
-[assembly: AssemblyTitle("AzureCP")]
+[assembly: AssemblyTitle("AzureCP Subscription Edition")]
 [assembly: AssemblyDescription("")]
 [assembly: AssemblyConfiguration("")]
 [assembly: AssemblyCompany("Yvan Duhamel -  yvandev@outlook.fr")]
 [assembly: AssemblyProduct("AzureCP")]
-[assembly: AssemblyCopyright("Copyright ©  2018, Yvan Duhamel - yvandev@outlook.fr")]
+[assembly: AssemblyCopyright("Copyright ©  2023, Yvan Duhamel - yvandev@outlook.fr")]
 [assembly: AssemblyTrademark("")]
 [assembly: AssemblyCulture("")]
 
