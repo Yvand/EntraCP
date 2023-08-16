@@ -166,7 +166,7 @@ jobs:
         path: |
             ${{ env.Project_Directory }}/bin/${{ env.Configuration }}/${{ env.project-name }}.dll
             ${{ env.Project_Directory }}/bin/${{ env.Configuration }}/${{ env.project-name }}.pdb
-            ${{ env.Project_Directory }}/bin/${{ env.Configuration }}/${{ env.project-name }}.wsp
+            ${{ env.Project_Directory }}/bin/${{ env.Configuration }}/*.wsp
         if-no-files-found: error
       env:
         Configuration: ${{ matrix.configuration }}
