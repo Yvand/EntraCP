@@ -1,6 +1,7 @@
 ﻿using Microsoft.SharePoint.Administration.Claims;
 using NUnit.Framework;
 using System.Security.Claims;
+using Yvand.ClaimsProviders.AzureAD;
 using Yvand.ClaimsProviders.Config;
 
 namespace Yvand.ClaimsProviders.Tests
@@ -12,11 +13,9 @@ namespace Yvand.ClaimsProviders.Tests
         public override void InitializeConfiguration()
         {
             base.InitializeConfiguration();
-
-            // Extra initialization for current test class
-            GlobalConfiguration.EnableAugmentation = true;
-            GlobalConfiguration.ClaimTypes.GetByClaimType(UnitTestsHelper.SPTrust.IdentityClaimTypeInformation.MappedClaimType).PrefixToBypassLookup = "bypass-user:";
-            GlobalConfiguration.ClaimTypes.GetByClaimType(UnitTestsHelper.TrustedGroupToAdd_ClaimType).PrefixToBypassLookup = "bypass-group:";
+            Settings.EnableAugmentation = true;
+            Settings.ClaimTypes.GetByClaimType(UnitTestsHelper.SPTrust.IdentityClaimTypeInformation.MappedClaimType).PrefixToBypassLookup = "bypass-user:";
+            Settings.ClaimTypes.GetByClaimType(UnitTestsHelper.TrustedGroupToAdd_ClaimType).PrefixToBypassLookup = "bypass-group:";
             ClaimTypeConfig ctConfigExtensionAttribute = new ClaimTypeConfig
             {
                 ClaimType = TestContext.Parameters["MultiPurposeCustomClaimType"],
@@ -24,8 +23,8 @@ namespace Yvand.ClaimsProviders.Tests
                 EntityProperty = DirectoryObjectProperty.extensionAttribute1,
                 SharePointEntityType = "FormsRole",
             };
-            GlobalConfiguration.ClaimTypes.Add(ctConfigExtensionAttribute);
-            GlobalConfiguration.Update();
+            Settings.ClaimTypes.Add(ctConfigExtensionAttribute);
+            GlobalConfiguration.ApplySettings(Settings, true);
         }
     }
 
@@ -60,9 +59,8 @@ namespace Yvand.ClaimsProviders.Tests
         [NonParallelizable]
         public void BypassServer()
         {
-            GlobalConfiguration.AlwaysResolveUserInput = true;
-            GlobalConfiguration.Update();
-
+            Settings.AlwaysResolveUserInput = true;
+            GlobalConfiguration.ApplySettings(Settings, true);
             try
             {
                 TestSearchOperation(UnitTestsHelper.RandomClaimValue, 3, UnitTestsHelper.RandomClaimValue);
@@ -72,8 +70,8 @@ namespace Yvand.ClaimsProviders.Tests
             }
             finally
             {
-                GlobalConfiguration.AlwaysResolveUserInput = false;
-                GlobalConfiguration.Update();
+                Settings.AlwaysResolveUserInput = false;
+                GlobalConfiguration.ApplySettings(Settings, true);
             }
         }
     }

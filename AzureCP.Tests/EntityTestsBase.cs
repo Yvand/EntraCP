@@ -46,14 +46,20 @@ namespace Yvand.ClaimsProviders.Tests
         public virtual bool ConfigurationIsValid => true;
 
         protected AADEntityProviderConfig<IAADSettings> GlobalConfiguration;
+        protected AADEntityProviderSettings Settings = new AADEntityProviderSettings();
         private static IAADSettings OriginalSettings;
 
         [OneTimeSetUp]
         public void Init()
         {
             GlobalConfiguration = AzureCP.GetConfiguration(true);
-            if (GlobalConfiguration != null && OriginalSettings == null)
+            if (GlobalConfiguration == null)
             {
+                GlobalConfiguration = AzureCP.CreateConfiguration();
+            }
+            else
+            {
+                Settings = (AADEntityProviderSettings)GlobalConfiguration.LocalSettings;
                 OriginalSettings = GlobalConfiguration.LocalSettings;
                 Trace.TraceInformation($"{DateTime.Now.ToString("s")} Took a backup of the original settings");
             }
@@ -65,23 +71,23 @@ namespace Yvand.ClaimsProviders.Tests
         /// </summary>
         public virtual void InitializeConfiguration()
         {
-            GlobalConfiguration = AzureCP.CreateConfiguration();
-            GlobalConfiguration.ProxyAddress = TestContext.Parameters["ProxyAddress"];
+            Settings.ClaimTypes = AADEntityProviderSettings.ReturnDefaultClaimTypesConfig(UnitTestsHelper.ClaimsProvider.Name);
+            Settings.ProxyAddress = TestContext.Parameters["ProxyAddress"];
 
 #if DEBUG
-            GlobalConfiguration.Timeout = 99999;
+            Settings.Timeout = 99999;
 #endif
 
             string json = File.ReadAllText(UnitTestsHelper.AzureTenantsJsonFile);
             List<AzureTenant> azureTenants = JsonConvert.DeserializeObject<List<AzureTenant>>(json);
-            GlobalConfiguration.AzureTenants = azureTenants;
+            Settings.AzureTenants = azureTenants;
             foreach (AzureTenant tenant in azureTenants)
             {
                 tenant.ExcludeMemberUsers = ExcludeMemberUsers;
                 tenant.ExcludeGuestUsers = ExcludeGuestUsers;
             }
-            GlobalConfiguration.Update();
-            Trace.TraceInformation($"{DateTime.Now.ToString("s")} Set {GlobalConfiguration.AzureTenants.Count} Azure AD tenants to AzureCP configuration");
+            GlobalConfiguration.ApplySettings(Settings, true);
+            Trace.TraceInformation($"{DateTime.Now.ToString("s")} Set {Settings.AzureTenants.Count} Azure AD tenants to AzureCP configuration");
         }
 
         [OneTimeTearDown]
@@ -91,8 +97,7 @@ namespace Yvand.ClaimsProviders.Tests
             {
                 if (OriginalSettings != null)
                 {
-                    GlobalConfiguration.ApplySettings(OriginalSettings);
-                    GlobalConfiguration.Update();
+                    GlobalConfiguration.ApplySettings(OriginalSettings, true);
                     Trace.TraceInformation($"{DateTime.Now.ToString("s")} Restored original settings of AzureCP configuration");
                 }
             }
@@ -126,7 +131,7 @@ namespace Yvand.ClaimsProviders.Tests
                 expectedResultCount = 0;
             }
 
-            if (GlobalConfiguration.FilterExactMatchOnly == true)
+            if (Settings.FilterExactMatchOnly == true)
             {
                 expectedResultCount = registrationData.ExactMatch ? 1 : 0;
             }

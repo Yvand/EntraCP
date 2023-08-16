@@ -15,17 +15,61 @@ namespace Yvand.ClaimsProviders.Config
 
     public class AADEntityProviderSettings : EntityProviderSettings, IAADSettings
     {
-        public List<AzureTenant> AzureTenants  { get; set; }
+        public List<AzureTenant> AzureTenants { get; set; }
 
-        public string ProxyAddress  { get; set; }
+        public string ProxyAddress { get; set; }
 
-        public bool FilterSecurityEnabledGroupsOnly  { get; set; }
+        public bool FilterSecurityEnabledGroupsOnly { get; set; }
 
         public AADEntityProviderSettings() : base() { }
 
         public AADEntityProviderSettings(List<ClaimTypeConfig> runtimeClaimTypesList, IEnumerable<ClaimTypeConfig> runtimeMetadataConfig, IdentityClaimTypeConfig identityClaimTypeConfig, ClaimTypeConfig mainGroupClaimTypeConfig)
             : base(runtimeClaimTypesList, runtimeMetadataConfig, identityClaimTypeConfig, mainGroupClaimTypeConfig)
         {
+        }
+
+        /// <summary>
+        /// Generate and return default claim types configuration list
+        /// </summary>
+        /// <returns></returns>
+        public static ClaimTypeConfigCollection ReturnDefaultClaimTypesConfig(string claimsProviderName)
+        {
+            if (String.IsNullOrWhiteSpace(claimsProviderName))
+            {
+                throw new ArgumentNullException(nameof(claimsProviderName));
+            }
+
+            SPTrustedLoginProvider spTrust = Utils.GetSPTrustAssociatedWithClaimsProvider(claimsProviderName);
+            if (spTrust == null)
+            {
+                Logger.Log($"No SPTrustedLoginProvider associated with claims provider '{claimsProviderName}' was found.", TraceSeverity.Unexpected, EventSeverity.Error, TraceCategory.Core);
+                return null;
+            }
+
+            ClaimTypeConfigCollection newCTConfigCollection = new ClaimTypeConfigCollection(spTrust)
+            {
+                // Identity claim type. "Name" (http://schemas.xmlsoap.org/ws/2005/05/identity/claims/name) is a reserved claim type in SharePoint that cannot be used in the SPTrust.
+                //new ClaimTypeConfig{EntityType = DirectoryObjectType.User, DirectoryObjectProperty = AzureADObjectProperty.UserPrincipalName, ClaimType = WIF4_5.ClaimTypes.Upn},
+                new IdentityClaimTypeConfig{EntityType = DirectoryObjectType.User, EntityProperty = DirectoryObjectProperty.UserPrincipalName, ClaimType = spTrust.IdentityClaimTypeInformation.MappedClaimType},
+
+                // Additional properties to find user and create entity with the identity claim type (UseMainClaimTypeOfDirectoryObject=true)
+                new ClaimTypeConfig{EntityType = DirectoryObjectType.User, EntityProperty = DirectoryObjectProperty.DisplayName, UseMainClaimTypeOfDirectoryObject = true, EntityDataKey = PeopleEditorEntityDataKeys.DisplayName},
+                new ClaimTypeConfig{EntityType = DirectoryObjectType.User, EntityProperty = DirectoryObjectProperty.GivenName, UseMainClaimTypeOfDirectoryObject = true}, //Yvan
+                new ClaimTypeConfig{EntityType = DirectoryObjectType.User, EntityProperty = DirectoryObjectProperty.Surname, UseMainClaimTypeOfDirectoryObject = true},   //Duhamel
+                new ClaimTypeConfig{EntityType = DirectoryObjectType.User, EntityProperty = DirectoryObjectProperty.Mail, EntityDataKey = PeopleEditorEntityDataKeys.Email, UseMainClaimTypeOfDirectoryObject = true},
+
+                // Additional properties to populate metadata of entity created: no claim type set, EntityDataKey is set and UseMainClaimTypeOfDirectoryObject = false (default value)
+                new ClaimTypeConfig{EntityType = DirectoryObjectType.User, EntityProperty = DirectoryObjectProperty.MobilePhone, EntityDataKey = PeopleEditorEntityDataKeys.MobilePhone},
+                new ClaimTypeConfig{EntityType = DirectoryObjectType.User, EntityProperty = DirectoryObjectProperty.JobTitle, EntityDataKey = PeopleEditorEntityDataKeys.JobTitle},
+                new ClaimTypeConfig{EntityType = DirectoryObjectType.User, EntityProperty = DirectoryObjectProperty.Department, EntityDataKey = PeopleEditorEntityDataKeys.Department},
+                new ClaimTypeConfig{EntityType = DirectoryObjectType.User, EntityProperty = DirectoryObjectProperty.OfficeLocation, EntityDataKey = PeopleEditorEntityDataKeys.Location},
+
+                // Group
+                new ClaimTypeConfig{EntityType = DirectoryObjectType.Group, EntityProperty = DirectoryObjectProperty.Id, ClaimType = ClaimsProviderConstants.DefaultMainGroupClaimType, EntityPropertyToUseAsDisplayText = DirectoryObjectProperty.DisplayName},
+                new ClaimTypeConfig{EntityType = DirectoryObjectType.Group, EntityProperty = DirectoryObjectProperty.DisplayName, UseMainClaimTypeOfDirectoryObject = true, EntityDataKey = PeopleEditorEntityDataKeys.DisplayName},
+                new ClaimTypeConfig{EntityType = DirectoryObjectType.Group, EntityProperty = DirectoryObjectProperty.Mail, EntityDataKey = PeopleEditorEntityDataKeys.Email},
+            };
+            return newCTConfigCollection;
         }
     }
 
@@ -76,7 +120,7 @@ namespace Yvand.ClaimsProviders.Config
             {
                 tenant.InitializeAuthentication(this.Timeout, this.ProxyAddress);
             }
-            
+
             return success;
         }
 
@@ -88,7 +132,6 @@ namespace Yvand.ClaimsProviders.Config
                this.IdentityClaimTypeConfig,
                this.MainGroupClaimTypeConfig)
             {
-                ClaimsProviderName = this.ClaimsProviderName,
                 AlwaysResolveUserInput = this.AlwaysResolveUserInput,
                 ClaimTypes = this.ClaimTypes,
                 CustomData = this.CustomData,
@@ -114,14 +157,14 @@ namespace Yvand.ClaimsProviders.Config
             //return (TSettings)(IAADSettings)entityProviderSettings;
         }
 
-        public override void ApplySettings(TConfiguration configuration)
+        public override void ApplySettings(TConfiguration configuration, bool commitIfValid)
         {
-            base.ApplySettings(configuration);
-
             // Properties specific to type IAADSettings
             this.AzureTenants = configuration.AzureTenants;
             this.FilterSecurityEnabledGroupsOnly = configuration.FilterSecurityEnabledGroupsOnly;
             this.ProxyAddress = configuration.ProxyAddress;
+            
+            base.ApplySettings(configuration, commitIfValid);
         }
 
         /// <summary>
@@ -132,63 +175,19 @@ namespace Yvand.ClaimsProviders.Config
         {
             AADEntityProviderConfig<TConfiguration> defaultConfig = new AADEntityProviderConfig<TConfiguration>();
             defaultConfig.ClaimsProviderName = claimsProviderName;
-            defaultConfig.ClaimTypes = ReturnDefaultClaimTypesConfig(claimsProviderName);
+            defaultConfig.ClaimTypes = AADEntityProviderSettings.ReturnDefaultClaimTypesConfig(claimsProviderName);
             return defaultConfig;
         }
 
         public override ClaimTypeConfigCollection ReturnDefaultClaimTypesConfig()
         {
-            return AADEntityProviderConfig<TConfiguration>.ReturnDefaultClaimTypesConfig(this.ClaimsProviderName);
-        }
-
-        /// <summary>
-        /// Generate and return default claim types configuration list
-        /// </summary>
-        /// <returns></returns>
-        public static ClaimTypeConfigCollection ReturnDefaultClaimTypesConfig(string claimsProviderName)
-        {
-            if (String.IsNullOrWhiteSpace(claimsProviderName))
-            {
-                throw new ArgumentNullException(nameof(claimsProviderName));
-            }
-
-            SPTrustedLoginProvider spTrust = Utils.GetSPTrustAssociatedWithClaimsProvider(claimsProviderName);
-            if (spTrust == null)
-            {
-                Logger.Log($"No SPTrustedLoginProvider associated with claims provider '{claimsProviderName}' was found.", TraceSeverity.Unexpected, EventSeverity.Error, TraceCategory.Core);
-                return null;
-            }
-
-            ClaimTypeConfigCollection newCTConfigCollection = new ClaimTypeConfigCollection(spTrust)
-            {
-                // Identity claim type. "Name" (http://schemas.xmlsoap.org/ws/2005/05/identity/claims/name) is a reserved claim type in SharePoint that cannot be used in the SPTrust.
-                //new ClaimTypeConfig{EntityType = DirectoryObjectType.User, DirectoryObjectProperty = AzureADObjectProperty.UserPrincipalName, ClaimType = WIF4_5.ClaimTypes.Upn},
-                new IdentityClaimTypeConfig{EntityType = DirectoryObjectType.User, EntityProperty = DirectoryObjectProperty.UserPrincipalName, ClaimType = spTrust.IdentityClaimTypeInformation.MappedClaimType},
-
-                // Additional properties to find user and create entity with the identity claim type (UseMainClaimTypeOfDirectoryObject=true)
-                new ClaimTypeConfig{EntityType = DirectoryObjectType.User, EntityProperty = DirectoryObjectProperty.DisplayName, UseMainClaimTypeOfDirectoryObject = true, EntityDataKey = PeopleEditorEntityDataKeys.DisplayName},
-                new ClaimTypeConfig{EntityType = DirectoryObjectType.User, EntityProperty = DirectoryObjectProperty.GivenName, UseMainClaimTypeOfDirectoryObject = true}, //Yvan
-                new ClaimTypeConfig{EntityType = DirectoryObjectType.User, EntityProperty = DirectoryObjectProperty.Surname, UseMainClaimTypeOfDirectoryObject = true},   //Duhamel
-                new ClaimTypeConfig{EntityType = DirectoryObjectType.User, EntityProperty = DirectoryObjectProperty.Mail, EntityDataKey = PeopleEditorEntityDataKeys.Email, UseMainClaimTypeOfDirectoryObject = true},
-
-                // Additional properties to populate metadata of entity created: no claim type set, EntityDataKey is set and UseMainClaimTypeOfDirectoryObject = false (default value)
-                new ClaimTypeConfig{EntityType = DirectoryObjectType.User, EntityProperty = DirectoryObjectProperty.MobilePhone, EntityDataKey = PeopleEditorEntityDataKeys.MobilePhone},
-                new ClaimTypeConfig{EntityType = DirectoryObjectType.User, EntityProperty = DirectoryObjectProperty.JobTitle, EntityDataKey = PeopleEditorEntityDataKeys.JobTitle},
-                new ClaimTypeConfig{EntityType = DirectoryObjectType.User, EntityProperty = DirectoryObjectProperty.Department, EntityDataKey = PeopleEditorEntityDataKeys.Department},
-                new ClaimTypeConfig{EntityType = DirectoryObjectType.User, EntityProperty = DirectoryObjectProperty.OfficeLocation, EntityDataKey = PeopleEditorEntityDataKeys.Location},
-
-                // Group
-                new ClaimTypeConfig{EntityType = DirectoryObjectType.Group, EntityProperty = DirectoryObjectProperty.Id, ClaimType = ClaimsProviderConstants.DefaultMainGroupClaimType, EntityPropertyToUseAsDisplayText = DirectoryObjectProperty.DisplayName},
-                new ClaimTypeConfig{EntityType = DirectoryObjectType.Group, EntityProperty = DirectoryObjectProperty.DisplayName, UseMainClaimTypeOfDirectoryObject = true, EntityDataKey = PeopleEditorEntityDataKeys.DisplayName},
-                new ClaimTypeConfig{EntityType = DirectoryObjectType.Group, EntityProperty = DirectoryObjectProperty.Mail, EntityDataKey = PeopleEditorEntityDataKeys.Email},
-            };
-            return newCTConfigCollection;
+            return AADEntityProviderSettings.ReturnDefaultClaimTypesConfig(this.ClaimsProviderName);
         }
 
         public void ResetClaimTypesList()
         {
             ClaimTypes.Clear();
-            ClaimTypes = ReturnDefaultClaimTypesConfig(this.ClaimsProviderName);
+            ClaimTypes = AADEntityProviderSettings.ReturnDefaultClaimTypesConfig(this.ClaimsProviderName);
             Logger.Log($"Claim types list of configuration '{Name}' was successfully reset to default configuration",
                 TraceSeverity.High, EventSeverity.Information, TraceCategory.Core);
         }

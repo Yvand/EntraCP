@@ -19,38 +19,38 @@ namespace Yvand.ClaimsProviders.Tests
             // Add a ClaimTypeConfig with a claim type already set should throw exception InvalidOperationException
             ctConfig.ClaimType = UnitTestsHelper.SPTrust.IdentityClaimTypeInformation.MappedClaimType;
             ctConfig.EntityProperty = UnitTestsHelper.RandomObjectProperty;
-            Assert.Throws<InvalidOperationException>(() => GlobalConfiguration.ClaimTypes.Add(ctConfig), $"Add a ClaimTypeConfig with a claim type already set should throw exception InvalidOperationException with this message: \"Claim type '{UnitTestsHelper.SPTrust.IdentityClaimTypeInformation.MappedClaimType}' already exists in the collection\"");
+            Assert.Throws<InvalidOperationException>(() => Settings.ClaimTypes.Add(ctConfig), $"Add a ClaimTypeConfig with a claim type already set should throw exception InvalidOperationException with this message: \"Claim type '{UnitTestsHelper.SPTrust.IdentityClaimTypeInformation.MappedClaimType}' already exists in the collection\"");
 
             // Add a ClaimTypeConfig with UseMainClaimTypeOfDirectoryObject = false (default value) and DirectoryObjectProperty not set should throw exception InvalidOperationException
             ctConfig.ClaimType = UnitTestsHelper.RandomClaimType;
             ctConfig.EntityProperty = DirectoryObjectProperty.NotSet;
-            Assert.Throws<InvalidOperationException>(() => GlobalConfiguration.ClaimTypes.Add(ctConfig), $"Add a ClaimTypeConfig with UseMainClaimTypeOfDirectoryObject = false (default value) and DirectoryObjectProperty not set should throw exception InvalidOperationException with this message: \"Property DirectoryObjectProperty is required\"");
+            Assert.Throws<InvalidOperationException>(() => Settings.ClaimTypes.Add(ctConfig), $"Add a ClaimTypeConfig with UseMainClaimTypeOfDirectoryObject = false (default value) and DirectoryObjectProperty not set should throw exception InvalidOperationException with this message: \"Property DirectoryObjectProperty is required\"");
 
             // Add a ClaimTypeConfig with UseMainClaimTypeOfDirectoryObject = true and ClaimType set should throw exception InvalidOperationException
             ctConfig.ClaimType = UnitTestsHelper.RandomClaimType;
             ctConfig.EntityProperty = UnitTestsHelper.RandomObjectProperty;
             ctConfig.UseMainClaimTypeOfDirectoryObject = true;
-            Assert.Throws<InvalidOperationException>(() => GlobalConfiguration.ClaimTypes.Add(ctConfig), $"Add a ClaimTypeConfig with UseMainClaimTypeOfDirectoryObject = true and ClaimType set should throw exception InvalidOperationException with this message: \"No claim type should be set if UseMainClaimTypeOfDirectoryObject is set to true\"");
+            Assert.Throws<InvalidOperationException>(() => Settings.ClaimTypes.Add(ctConfig), $"Add a ClaimTypeConfig with UseMainClaimTypeOfDirectoryObject = true and ClaimType set should throw exception InvalidOperationException with this message: \"No claim type should be set if UseMainClaimTypeOfDirectoryObject is set to true\"");
 
             // Add a ClaimTypeConfig with EntityType 'Group' should throw exception InvalidOperationException since 1 already exists by default and AzureCP allows only 1 claim type for EntityType 'Group'
             ctConfig.ClaimType = UnitTestsHelper.RandomClaimType;
             ctConfig.EntityProperty = UnitTestsHelper.RandomObjectProperty;
             ctConfig.EntityType = DirectoryObjectType.Group;
             ctConfig.UseMainClaimTypeOfDirectoryObject = false;
-            Assert.Throws<InvalidOperationException>(() => GlobalConfiguration.ClaimTypes.Add(ctConfig), $"Add a ClaimTypeConfig with EntityType 'Group' should throw exception InvalidOperationException with this message: \"A claim type for EntityType 'Group' already exists in the collection\"");
+            Assert.Throws<InvalidOperationException>(() => Settings.ClaimTypes.Add(ctConfig), $"Add a ClaimTypeConfig with EntityType 'Group' should throw exception InvalidOperationException with this message: \"A claim type for EntityType 'Group' already exists in the collection\"");
 
             // Add a valid ClaimTypeConfig should succeed
             ctConfig.ClaimType = UnitTestsHelper.RandomClaimType;
             ctConfig.EntityProperty = UnitTestsHelper.RandomObjectProperty;
             ctConfig.EntityType = DirectoryObjectType.User;
             ctConfig.UseMainClaimTypeOfDirectoryObject = false;
-            Assert.DoesNotThrow(() => GlobalConfiguration.ClaimTypes.Add(ctConfig), $"Add a valid ClaimTypeConfig should succeed");
+            Assert.DoesNotThrow(() => Settings.ClaimTypes.Add(ctConfig), $"Add a valid ClaimTypeConfig should succeed");
 
             // Add a ClaimTypeConfig twice should throw exception InvalidOperationException
-            Assert.Throws<InvalidOperationException>(() => GlobalConfiguration.ClaimTypes.Add(ctConfig), $"Add a ClaimTypeConfig with a claim type already set should throw exception InvalidOperationException with this message: \"Claim type '{UnitTestsHelper.RandomClaimType}' already exists in the collection\"");
+            Assert.Throws<InvalidOperationException>(() => Settings.ClaimTypes.Add(ctConfig), $"Add a ClaimTypeConfig with a claim type already set should throw exception InvalidOperationException with this message: \"Claim type '{UnitTestsHelper.RandomClaimType}' already exists in the collection\"");
 
             // Delete the ClaimTypeConfig by calling method ClaimTypeConfigCollection.Remove(ClaimTypeConfig) should succeed
-            Assert.IsTrue(GlobalConfiguration.ClaimTypes.Remove(ctConfig), $"Delete the ClaimTypeConfig by calling method ClaimTypeConfigCollection.Remove(ClaimTypeConfig) should succeed");
+            Assert.IsTrue(Settings.ClaimTypes.Remove(ctConfig), $"Delete the ClaimTypeConfig by calling method ClaimTypeConfigCollection.Remove(ClaimTypeConfig) should succeed");
         }
 
         [Test]
@@ -58,30 +58,30 @@ namespace Yvand.ClaimsProviders.Tests
         {
             // Delete identity claim type from ClaimTypes list based on its claim type should throw exception InvalidOperationException
             string identityClaimType = UnitTestsHelper.SPTrust.IdentityClaimTypeInformation.MappedClaimType;
-            Assert.Throws<InvalidOperationException>(() => GlobalConfiguration.ClaimTypes.Remove(identityClaimType), $"Delete identity claim type from ClaimTypes list should throw exception InvalidOperationException with this message: \"Cannot delete claim type \"{UnitTestsHelper.SPTrust.IdentityClaimTypeInformation.MappedClaimType}\" because it is the identity claim type of \"{UnitTestsHelper.SPTrust.Name}\"\"");
+            Assert.Throws<InvalidOperationException>(() => Settings.ClaimTypes.Remove(identityClaimType), $"Delete identity claim type from ClaimTypes list should throw exception InvalidOperationException with this message: \"Cannot delete claim type \"{UnitTestsHelper.SPTrust.IdentityClaimTypeInformation.MappedClaimType}\" because it is the identity claim type of \"{UnitTestsHelper.SPTrust.Name}\"\"");
 
             // Delete identity claim type from ClaimTypes list based on its ClaimTypeConfig should throw exception InvalidOperationException
-            ClaimTypeConfig identityCTConfig = GlobalConfiguration.ClaimTypes.FirstOrDefault(x => String.Equals(UnitTestsHelper.SPTrust.IdentityClaimTypeInformation.MappedClaimType, x.ClaimType, StringComparison.InvariantCultureIgnoreCase));
-            Assert.Throws<InvalidOperationException>(() => GlobalConfiguration.ClaimTypes.Remove(identityClaimType), $"Delete identity claim type from ClaimTypes list should throw exception InvalidOperationException with this message: \"Cannot delete claim type \"{UnitTestsHelper.SPTrust.IdentityClaimTypeInformation.MappedClaimType}\" because it is the identity claim type of \"{UnitTestsHelper.SPTrust.Name}\"\"");
+            ClaimTypeConfig identityCTConfig = Settings.ClaimTypes.FirstOrDefault(x => String.Equals(UnitTestsHelper.SPTrust.IdentityClaimTypeInformation.MappedClaimType, x.ClaimType, StringComparison.InvariantCultureIgnoreCase));
+            Assert.Throws<InvalidOperationException>(() => Settings.ClaimTypes.Remove(identityClaimType), $"Delete identity claim type from ClaimTypes list should throw exception InvalidOperationException with this message: \"Cannot delete claim type \"{UnitTestsHelper.SPTrust.IdentityClaimTypeInformation.MappedClaimType}\" because it is the identity claim type of \"{UnitTestsHelper.SPTrust.Name}\"\"");
 
             // Modify identity ClaimTypeConfig to set its EntityType to Group should throw exception InvalidOperationException
             identityCTConfig.EntityType = DirectoryObjectType.Group;
-            Assert.Throws<InvalidOperationException>(() => GlobalConfiguration.Update(), $"Modify identity claim type to set its EntityType to Group should throw exception InvalidOperationException with this message: \"{ConfigUpdateErrorMessage}\"");
+            Assert.Throws<InvalidOperationException>(() => GlobalConfiguration.ApplySettings(Settings, true), $"Modify identity claim type to set its EntityType to Group should throw exception InvalidOperationException with this message: \"{ConfigUpdateErrorMessage}\"");
         }
 
         [Test]
         public void DuplicateClaimType()
         {
-            var firstCTConfig = GlobalConfiguration.ClaimTypes.FirstOrDefault(x => !String.IsNullOrEmpty(x.ClaimType));
+            var firstCTConfig = Settings.ClaimTypes.FirstOrDefault(x => !String.IsNullOrEmpty(x.ClaimType));
 
             // Add a ClaimTypeConfig with property ClaimType already defined in another ClaimTypeConfig should throw exception InvalidOperationException
             ClaimTypeConfig ctConfig = new ClaimTypeConfig() { ClaimType = firstCTConfig.ClaimType, EntityProperty = UnitTestsHelper.RandomObjectProperty };
-            Assert.Throws<InvalidOperationException>(() => GlobalConfiguration.ClaimTypes.Add(ctConfig), $"Add a ClaimTypeConfig with property ClaimType already defined in another ClaimTypeConfig should throw exception InvalidOperationException with this message: \"Claim type '{firstCTConfig.ClaimType}' already exists in the collection\"");
+            Assert.Throws<InvalidOperationException>(() => Settings.ClaimTypes.Add(ctConfig), $"Add a ClaimTypeConfig with property ClaimType already defined in another ClaimTypeConfig should throw exception InvalidOperationException with this message: \"Claim type '{firstCTConfig.ClaimType}' already exists in the collection\"");
 
             // Modify an existing claim type to set a claim type already defined should throw exception InvalidOperationException
-            ClaimTypeConfig anotherCTConfig = GlobalConfiguration.ClaimTypes.FirstOrDefault(x => !String.IsNullOrEmpty(x.ClaimType) && !String.Equals(firstCTConfig.ClaimType, x.ClaimType, StringComparison.InvariantCultureIgnoreCase));
+            ClaimTypeConfig anotherCTConfig = Settings.ClaimTypes.FirstOrDefault(x => !String.IsNullOrEmpty(x.ClaimType) && !String.Equals(firstCTConfig.ClaimType, x.ClaimType, StringComparison.InvariantCultureIgnoreCase));
             anotherCTConfig.ClaimType = firstCTConfig.ClaimType;
-            Assert.Throws<InvalidOperationException>(() => GlobalConfiguration.Update(), $"Modify an existing claim type to set a claim type already defined should throw exception InvalidOperationException with this message: \"{ConfigUpdateErrorMessage}\"");
+            Assert.Throws<InvalidOperationException>(() => GlobalConfiguration.ApplySettings(Settings, true), $"Modify an existing claim type to set a claim type already defined should throw exception InvalidOperationException with this message: \"{ConfigUpdateErrorMessage}\"");
         }
 
         [Test]
@@ -90,14 +90,14 @@ namespace Yvand.ClaimsProviders.Tests
             string prefixToBypassLookup = "test:";
 
             // Set a duplicate PrefixToBypassLookup on 2 items already existing in the list should throw exception InvalidOperationException
-            GlobalConfiguration.ClaimTypes.Where(x => !String.IsNullOrEmpty(x.ClaimType)).Take(2).Select(x => x.PrefixToBypassLookup = prefixToBypassLookup).ToList();
-            Assert.Throws<InvalidOperationException>(() => GlobalConfiguration.Update(), $"Set a duplicate PrefixToBypassLookup on 2 items already existing in the list should throw exception InvalidOperationException with this message: \"{ConfigUpdateErrorMessage}\"");
+            Settings.ClaimTypes.Where(x => !String.IsNullOrEmpty(x.ClaimType)).Take(2).Select(x => x.PrefixToBypassLookup = prefixToBypassLookup).ToList();
+            Assert.Throws<InvalidOperationException>(() => GlobalConfiguration.ApplySettings(Settings, true), $"Set a duplicate PrefixToBypassLookup on 2 items already existing in the list should throw exception InvalidOperationException with this message: \"{ConfigUpdateErrorMessage}\"");
 
             // Set a PrefixToBypassLookup on an existing item and add a new item with the same PrefixToBypassLookup should throw exception InvalidOperationException
-            var firstCTConfig = GlobalConfiguration.ClaimTypes.FirstOrDefault(x => !String.IsNullOrEmpty(x.ClaimType));
+            var firstCTConfig = Settings.ClaimTypes.FirstOrDefault(x => !String.IsNullOrEmpty(x.ClaimType));
             firstCTConfig.PrefixToBypassLookup = prefixToBypassLookup;
             ClaimTypeConfig ctConfig = new ClaimTypeConfig() { ClaimType = UnitTestsHelper.RandomClaimType, PrefixToBypassLookup = prefixToBypassLookup, EntityProperty = UnitTestsHelper.RandomObjectProperty };
-            Assert.Throws<InvalidOperationException>(() => GlobalConfiguration.Update(), $"Set a duplicate PrefixToBypassLookup on an existing item and add a new item with the same PrefixToBypassLookup should throw exception InvalidOperationException with this message: \"{ConfigUpdateErrorMessage}\"");
+            Assert.Throws<InvalidOperationException>(() => GlobalConfiguration.ApplySettings(Settings, true), $"Set a duplicate PrefixToBypassLookup on an existing item and add a new item with the same PrefixToBypassLookup should throw exception InvalidOperationException with this message: \"{ConfigUpdateErrorMessage}\"");
         }
 
         [Test]
@@ -106,65 +106,65 @@ namespace Yvand.ClaimsProviders.Tests
             string entityDataKey = "test";
 
             // Duplicate EntityDataKey on 2 items already existing in the list should throw exception InvalidOperationException
-            GlobalConfiguration.ClaimTypes.Where(x => x.EntityType == DirectoryObjectType.User).Take(2).Select(x => x.EntityDataKey = entityDataKey).ToList();
-            Assert.Throws<InvalidOperationException>(() => GlobalConfiguration.Update(), $"Duplicate EntityDataKey on 2 items already existing in the list should throw exception InvalidOperationException with this message: \"{ConfigUpdateErrorMessage}\"");
+            Settings.ClaimTypes.Where(x => x.EntityType == DirectoryObjectType.User).Take(2).Select(x => x.EntityDataKey = entityDataKey).ToList();
+            Assert.Throws<InvalidOperationException>(() => GlobalConfiguration.ApplySettings(Settings, true), $"Duplicate EntityDataKey on 2 items already existing in the list should throw exception InvalidOperationException with this message: \"{ConfigUpdateErrorMessage}\"");
 
             // Remove one of the duplicated EntityDataKey
-            GlobalConfiguration.ClaimTypes.FirstOrDefault(x => x.EntityDataKey == entityDataKey).EntityDataKey = String.Empty;
+            Settings.ClaimTypes.FirstOrDefault(x => x.EntityDataKey == entityDataKey).EntityDataKey = String.Empty;
             // Set an EntityDataKey on an existing item and add a new item with the same EntityDataKey should throw exception InvalidOperationException
             ClaimTypeConfig ctConfig = new ClaimTypeConfig() { ClaimType = UnitTestsHelper.RandomClaimType, EntityDataKey = entityDataKey, EntityProperty = UnitTestsHelper.RandomObjectProperty };
-            Assert.Throws<InvalidOperationException>(() => GlobalConfiguration.ClaimTypes.Add(ctConfig), $"Set an EntityDataKey on an existing item and add a new item with the same EntityDataKey should throw exception InvalidOperationException with this message: \"Entity metadata '{entityDataKey}' already exists in the collection for the directory object User\"");
+            Assert.Throws<InvalidOperationException>(() => Settings.ClaimTypes.Add(ctConfig), $"Set an EntityDataKey on an existing item and add a new item with the same EntityDataKey should throw exception InvalidOperationException with this message: \"Entity metadata '{entityDataKey}' already exists in the collection for the directory object User\"");
         }
 
         [Test]
         public void DuplicateDirectoryObjectProperty()
         {
-            ClaimTypeConfig existingCTConfig = GlobalConfiguration.ClaimTypes.FirstOrDefault(x => !String.IsNullOrEmpty(x.ClaimType) && x.EntityType == DirectoryObjectType.User);
+            ClaimTypeConfig existingCTConfig = Settings.ClaimTypes.FirstOrDefault(x => !String.IsNullOrEmpty(x.ClaimType) && x.EntityType == DirectoryObjectType.User);
 
             // Create a new ClaimTypeConfig with a DirectoryObjectProperty already set should throw exception InvalidOperationException
             ClaimTypeConfig ctConfig = new ClaimTypeConfig() { ClaimType = UnitTestsHelper.RandomClaimType, EntityType = DirectoryObjectType.User, EntityProperty = existingCTConfig.EntityProperty };
-            Assert.Throws<InvalidOperationException>(() => GlobalConfiguration.ClaimTypes.Add(ctConfig), $"Create a new ClaimTypeConfig with a DirectoryObjectProperty already set should throw exception InvalidOperationException with this message: \"An item with property '{existingCTConfig.EntityProperty.ToString()}' already exists for the object type 'User'\"");
+            Assert.Throws<InvalidOperationException>(() => Settings.ClaimTypes.Add(ctConfig), $"Create a new ClaimTypeConfig with a DirectoryObjectProperty already set should throw exception InvalidOperationException with this message: \"An item with property '{existingCTConfig.EntityProperty.ToString()}' already exists for the object type 'User'\"");
 
             // Add a valid ClaimTypeConfig should succeed (done for next test)
             ctConfig.EntityProperty = UnitTestsHelper.RandomObjectProperty;
-            Assert.DoesNotThrow(() => GlobalConfiguration.ClaimTypes.Add(ctConfig), $"Add a valid ClaimTypeConfig should succeed");
+            Assert.DoesNotThrow(() => Settings.ClaimTypes.Add(ctConfig), $"Add a valid ClaimTypeConfig should succeed");
 
             // Update an existing ClaimTypeConfig with a DirectoryObjectProperty already set should throw exception InvalidOperationException
             ctConfig.EntityProperty = existingCTConfig.EntityProperty;
-            Assert.Throws<InvalidOperationException>(() => GlobalConfiguration.Update(), $"Update an existing ClaimTypeConfig with a DirectoryObjectProperty already set should throw exception InvalidOperationException with this message: \"{ConfigUpdateErrorMessage}\"");
+            Assert.Throws<InvalidOperationException>(() => GlobalConfiguration.ApplySettings(Settings, true), $"Update an existing ClaimTypeConfig with a DirectoryObjectProperty already set should throw exception InvalidOperationException with this message: \"{ConfigUpdateErrorMessage}\"");
 
             // Delete the ClaimTypeConfig should succeed
-            Assert.IsTrue(GlobalConfiguration.ClaimTypes.Remove(ctConfig), "Delete the ClaimTypeConfig should succeed");
+            Assert.IsTrue(Settings.ClaimTypes.Remove(ctConfig), "Delete the ClaimTypeConfig should succeed");
         }
 
         [Test]
         public void ModifyUserIdentifier()
         {
-            IdentityClaimTypeConfig backupIdentityCTConfig = GlobalConfiguration.ClaimTypes.FirstOrDefault(x => x is IdentityClaimTypeConfig) as IdentityClaimTypeConfig;
+            IdentityClaimTypeConfig backupIdentityCTConfig = Settings.ClaimTypes.FirstOrDefault(x => x is IdentityClaimTypeConfig) as IdentityClaimTypeConfig;
             backupIdentityCTConfig = backupIdentityCTConfig.CopyConfiguration() as IdentityClaimTypeConfig;
 
             // Member UserType
-            Assert.Throws<ArgumentNullException>(() => GlobalConfiguration.ClaimTypes.UpdateUserIdentifier(DirectoryObjectProperty.NotSet), $"Update user identifier with value NotSet should throw exception ArgumentNullException");
+            Assert.Throws<ArgumentNullException>(() => Settings.ClaimTypes.UpdateUserIdentifier(DirectoryObjectProperty.NotSet), $"Update user identifier with value NotSet should throw exception ArgumentNullException");
 
-            bool configUpdated = GlobalConfiguration.ClaimTypes.UpdateUserIdentifier(UnitTestsHelper.RandomObjectProperty);
+            bool configUpdated = Settings.ClaimTypes.UpdateUserIdentifier(UnitTestsHelper.RandomObjectProperty);
             Assert.IsTrue(configUpdated, $"Update user identifier with any DirectoryObjectProperty should succeed and return true");
 
-            configUpdated = GlobalConfiguration.ClaimTypes.UpdateUserIdentifier(backupIdentityCTConfig.EntityProperty);
+            configUpdated = Settings.ClaimTypes.UpdateUserIdentifier(backupIdentityCTConfig.EntityProperty);
             Assert.IsTrue(configUpdated, $"Update user identifier with any DirectoryObjectProperty should succeed and return true");
 
-            configUpdated = GlobalConfiguration.ClaimTypes.UpdateUserIdentifier(backupIdentityCTConfig.EntityProperty);
+            configUpdated = Settings.ClaimTypes.UpdateUserIdentifier(backupIdentityCTConfig.EntityProperty);
             Assert.IsFalse(configUpdated, $"Update user identifier with the same DirectoryObjectProperty should not change anything and return false");
 
             // Guest UserType
-            Assert.Throws<ArgumentNullException>(() => GlobalConfiguration.ClaimTypes.UpdateIdentifierForGuestUsers(DirectoryObjectProperty.NotSet), $"Update user identifier of Guest UserType with value NotSet should throw exception ArgumentNullException");
+            Assert.Throws<ArgumentNullException>(() => Settings.ClaimTypes.UpdateIdentifierForGuestUsers(DirectoryObjectProperty.NotSet), $"Update user identifier of Guest UserType with value NotSet should throw exception ArgumentNullException");
 
-            configUpdated = GlobalConfiguration.ClaimTypes.UpdateIdentifierForGuestUsers(UnitTestsHelper.RandomObjectProperty);
+            configUpdated = Settings.ClaimTypes.UpdateIdentifierForGuestUsers(UnitTestsHelper.RandomObjectProperty);
             Assert.IsTrue(configUpdated, $"Update user identifier of Guest UserType with any DirectoryObjectProperty should succeed and return true");
 
-            configUpdated = GlobalConfiguration.ClaimTypes.UpdateIdentifierForGuestUsers(backupIdentityCTConfig.DirectoryObjectPropertyForGuestUsers);
+            configUpdated = Settings.ClaimTypes.UpdateIdentifierForGuestUsers(backupIdentityCTConfig.DirectoryObjectPropertyForGuestUsers);
             Assert.IsTrue(configUpdated, $"Update user identifier of Guest UserType with any DirectoryObjectProperty should succeed and return true");
 
-            configUpdated = GlobalConfiguration.ClaimTypes.UpdateIdentifierForGuestUsers(backupIdentityCTConfig.DirectoryObjectPropertyForGuestUsers);
+            configUpdated = Settings.ClaimTypes.UpdateIdentifierForGuestUsers(backupIdentityCTConfig.DirectoryObjectPropertyForGuestUsers);
             Assert.IsFalse(configUpdated, $"Update user identifier of Guest UserType with the same DirectoryObjectProperty should not change anything and return false");
         }
     }

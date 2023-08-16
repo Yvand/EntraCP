@@ -15,9 +15,9 @@ namespace Yvand.ClaimsProviders.Tests
             base.InitializeConfiguration();
 
             // Extra initialization for current test class
-            GlobalConfiguration.ClaimTypes.UpdateIdentifierForGuestUsers(DirectoryObjectProperty.UserPrincipalName);
-            GlobalConfiguration.EnableAugmentation = true;
-            GlobalConfiguration.Update();
+            Settings.ClaimTypes.UpdateIdentifierForGuestUsers(DirectoryObjectProperty.UserPrincipalName);
+            Settings.EnableAugmentation = true;
+            GlobalConfiguration.ApplySettings(Settings, true);
         }
 
         [Test, TestCaseSource(typeof(SearchEntityDataSource), "GetTestData", new object[] { EntityDataSourceType.UPNB2BGuestAccounts })]

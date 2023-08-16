@@ -12,7 +12,6 @@ namespace Yvand.ClaimsProviders.Config
     {
         long Version { get; }
         string Name { get; }
-        string ClaimsProviderName { get; }
         ClaimTypeConfigCollection ClaimTypes { get; }
         bool AlwaysResolveUserInput { get; }
         bool FilterExactMatchOnly { get; }
@@ -33,8 +32,6 @@ namespace Yvand.ClaimsProviders.Config
         public long Version { get; set; }
 
         public string Name { get; set; }
-
-        public string ClaimsProviderName { get; set; }
 
         public ClaimTypeConfigCollection ClaimTypes { get; set; }
 
@@ -139,7 +136,7 @@ namespace Yvand.ClaimsProviders.Config
         }
         [Persisted]
         private bool _EnableAugmentation = true;
-        
+
         /// <summary>
         /// Gets or sets a string that will appear as a prefix of the text of each result, in the people picker.
         /// </summary>
@@ -150,7 +147,7 @@ namespace Yvand.ClaimsProviders.Config
         }
         [Persisted]
         private string _EntityDisplayTextPrefix;
-        
+
         /// <summary>
         /// Gets or sets the timeout before giving up the query to Azure AD.
         /// </summary>
@@ -453,7 +450,6 @@ namespace Yvand.ClaimsProviders.Config
                 this.IdentityClaimTypeConfig,
                 this.MainGroupClaimTypeConfig)
             {
-                ClaimsProviderName = this.ClaimsProviderName,
                 AlwaysResolveUserInput = this.AlwaysResolveUserInput,
                 ClaimTypes = this.ClaimTypes,
                 CustomData = this.CustomData,
@@ -471,9 +467,8 @@ namespace Yvand.ClaimsProviders.Config
         /// Applies the settings passed in parameter to the current settings
         /// </summary>
         /// <param name="settings"></param>
-        public virtual void ApplySettings(TSettings settings)
+        public virtual void ApplySettings(TSettings settings, bool commitIfValid)
         {
-            this.ClaimsProviderName = settings.ClaimsProviderName;
             this.ClaimTypes = new ClaimTypeConfigCollection(this.SPTrust);
             foreach (ClaimTypeConfig claimTypeConfig in settings.ClaimTypes)
             {
@@ -485,6 +480,11 @@ namespace Yvand.ClaimsProviders.Config
             this.EntityDisplayTextPrefix = settings.EntityDisplayTextPrefix;
             this.Timeout = settings.Timeout;
             this.CustomData = settings.CustomData;
+
+            if(commitIfValid)
+            {
+                this.Update();
+            }
         }
 
         //public virtual void ResetCurrentConfiguration()
