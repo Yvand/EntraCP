@@ -71,6 +71,7 @@ namespace Yvand.ClaimsProviders.Tests
         /// </summary>
         public virtual void InitializeConfiguration()
         {
+            Settings = new AADEntityProviderSettings();
             Settings.ClaimTypes = AADEntityProviderSettings.ReturnDefaultClaimTypesConfig(UnitTestsHelper.ClaimsProvider.Name);
             Settings.ProxyAddress = TestContext.Parameters["ProxyAddress"];
 

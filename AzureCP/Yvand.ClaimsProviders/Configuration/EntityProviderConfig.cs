@@ -29,21 +29,21 @@ namespace Yvand.ClaimsProviders.Config
 
     public class EntityProviderSettings : IEntityProviderSettings
     {
-        public long Version { get; set; }
+        public long Version { get; set; } = 0;
 
         public string Name { get; set; }
 
         public ClaimTypeConfigCollection ClaimTypes { get; set; }
 
-        public bool AlwaysResolveUserInput { get; set; }
+        public bool AlwaysResolveUserInput { get; set; } = false;
 
-        public bool FilterExactMatchOnly { get; set; }
+        public bool FilterExactMatchOnly { get; set; } = false;
 
-        public bool EnableAugmentation { get; set; }
+        public bool EnableAugmentation { get; set; } = true;
 
         public string EntityDisplayTextPrefix { get; set; }
 
-        public int Timeout { get; set; }
+        public int Timeout { get; set; } = ClaimsProviderConstants.DEFAULT_TIMEOUT;
 
         public string CustomData { get; set; }
 

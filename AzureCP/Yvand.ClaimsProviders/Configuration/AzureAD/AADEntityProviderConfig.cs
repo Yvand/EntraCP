@@ -19,7 +19,7 @@ namespace Yvand.ClaimsProviders.Config
 
         public string ProxyAddress { get; set; }
 
-        public bool FilterSecurityEnabledGroupsOnly { get; set; }
+        public bool FilterSecurityEnabledGroupsOnly { get; set; } = false;
 
         public AADEntityProviderSettings() : base() { }
 
