@@ -16,7 +16,7 @@ namespace Yvand.ClaimsProviders.Config
 
     public class AADEntityProviderSettings : EntityProviderSettings, IAADSettings
     {
-        public List<AzureTenant> AzureTenants { get; set; }
+        public List<AzureTenant> AzureTenants { get; set; } = new List<AzureTenant>();
 
         public string ProxyAddress { get; set; }
 
@@ -117,11 +117,13 @@ namespace Yvand.ClaimsProviders.Config
         protected override bool InitializeInternalRuntimeSettings()
         {
             bool success = base.InitializeInternalRuntimeSettings();
-            foreach (var tenant in this.AzureTenants)
+            if (this.AzureTenants != null)
             {
-                tenant.InitializeAuthentication(this.Timeout, this.ProxyAddress);
+                foreach (var tenant in this.AzureTenants)
+                {
+                    tenant.InitializeAuthentication(this.Timeout, this.ProxyAddress);
+                }
             }
-
             return success;
         }
 
