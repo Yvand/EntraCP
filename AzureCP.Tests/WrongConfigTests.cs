@@ -26,6 +26,7 @@ namespace Yvand.ClaimsProviders.Tests
         }
 
         [TestCase(@"random", 0, "")]
+        [TestCase(@"aad", 0, "")]
         public override void SearchEntities(string inputValue, int expectedResultCount, string expectedEntityClaimValue)
         {
             base.SearchEntities(inputValue, expectedResultCount, expectedEntityClaimValue);
@@ -40,6 +41,13 @@ namespace Yvand.ClaimsProviders.Tests
             base.InitializeConfiguration();
             Settings.AzureTenants = new List<AzureTenant>();
             GlobalConfiguration.ApplySettings(Settings, true);
+        }
+
+        [TestCase(@"random", 0, "")]
+        [TestCase(@"aad", 0, "")]
+        public override void SearchEntities(string inputValue, int expectedResultCount, string expectedEntityClaimValue)
+        {
+            base.SearchEntities(inputValue, expectedResultCount, expectedEntityClaimValue);
         }
     }
 }
