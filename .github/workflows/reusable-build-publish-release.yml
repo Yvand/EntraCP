@@ -77,7 +77,7 @@ jobs:
           body: |
             ${{ env.project-name }} ${{ env.tag-name }}
           files: |
-            ./${{ env.project-name }}-Release-wsp/${{ env.project-name }}.wsp
+            ./${{ env.project-name }}-Release-wsp/*.wsp
             ./${{ env.project-name }}-${{ env.assembly-version }}-symbols.zip
             ./${{ env.project-name }}-${{ env.assembly-version }}-dependencies.zip
 
@@ -93,7 +93,7 @@ jobs:
           body: |
             This is a nightly release, use it with caution **and do not deploy it in a production environment**
           files: |
-            ./${{ env.project-name }}-Release-wsp/${{ env.project-name }}.wsp
+            ./${{ env.project-name }}-Release-wsp/*.wsp
             ./${{ env.project-name }}-${{ env.assembly-version }}-symbols.zip
             ./${{ env.project-name }}-${{ env.assembly-version }}-dependencies.zip
             ./${{ env.project-name }}-unit-tests.zip
