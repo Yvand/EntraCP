@@ -96,7 +96,7 @@ namespace Yvand.ClaimsProviders.Administration
             // Copy claims list in a key value pair so that each item has a unique ID that can be used later for update/delete operations
             ClaimsMapping = new List<KeyValuePair<int, ClaimTypeConfig>>();
             int i = 0;
-            foreach (ClaimTypeConfig attr in this.Configuration.ClaimTypes)
+            foreach (ClaimTypeConfig attr in this.Settings.ClaimTypes)
             {
                 ClaimsMapping.Add(new KeyValuePair<int, ClaimTypeConfig>(i++, attr));
             }
@@ -369,7 +369,7 @@ namespace Yvand.ClaimsProviders.Administration
 
             string itemId = e.CommandArgument.ToString();
             ClaimTypeConfig ctConfig = ClaimsMapping.Find(x => x.Key == Convert.ToInt32(itemId)).Value;
-            Configuration.ClaimTypes.Remove(ctConfig);
+            Settings.ClaimTypes.Remove(ctConfig);
             CommitChanges();
             this.BuildAttributesListTable(false);
         }
@@ -415,7 +415,7 @@ namespace Yvand.ClaimsProviders.Administration
             try
             {
                 // ClaimTypeConfigCollection.Update() may thrown an exception if new ClaimTypeConfig is not valid for any reason
-                Configuration.ClaimTypes.Update(existingCTConfig.ClaimType, newCTConfig);
+                Settings.ClaimTypes.Update(existingCTConfig.ClaimType, newCTConfig);
             }
             catch (Exception ex)
             {
@@ -487,7 +487,7 @@ namespace Yvand.ClaimsProviders.Administration
             try
             {
                 // ClaimTypeConfigCollection.Add() may thrown an exception if new ClaimTypeConfig is not valid for any reason
-                Configuration.ClaimTypes.Add(newCTConfig);
+                Settings.ClaimTypes.Add(newCTConfig);
             }
             catch (Exception ex)
             {

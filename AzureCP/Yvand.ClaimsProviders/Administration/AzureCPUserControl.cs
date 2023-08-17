@@ -3,6 +3,7 @@ using Microsoft.SharePoint.Administration;
 using Microsoft.SharePoint.Utilities;
 using System;
 using System.Web.UI;
+using Yvand.ClaimsProviders.AzureAD;
 using Yvand.ClaimsProviders.Config;
 
 namespace Yvand.ClaimsProviders.Administration
@@ -22,30 +23,40 @@ namespace Yvand.ClaimsProviders.Administration
         public string ConfigurationName;
 
         public Guid ConfigurationID { get; set; } = Guid.Empty;
-        
+
 
         private AADEntityProviderConfig<IAADSettings> _Configuration;
         protected AADEntityProviderConfig<IAADSettings> Configuration
         {
             get
             {
-                SPSecurity.RunWithElevatedPrivileges(delegate ()
+                //SPSecurity.RunWithElevatedPrivileges(delegate ()
+                //{
+                if (_Configuration == null)
                 {
-                    if (_Configuration == null)
+                    var configuration = (AADEntityProviderConfig<IAADSettings>)AADEntityProviderConfig<IAADSettings>.GetGlobalConfiguration(this.ConfigurationID, true);
+                    if (configuration != null)
                     {
-                        _Configuration = (AADEntityProviderConfig<IAADSettings>)AADEntityProviderConfig<IAADSettings>.GetGlobalConfiguration(this.ConfigurationID, true);
+                        _Configuration = configuration;
+                        Settings = (AADEntityProviderSettings)configuration.GetSettings();
                     }
-                    if (_Configuration == null)
+                }
+                if (_Configuration == null)
+                {
+                    SPContext.Current.Web.AllowUnsafeUpdates = true;
+                    var configuration = (AADEntityProviderConfig<IAADSettings>)AADEntityProviderConfig<IAADSettings>.CreateGlobalConfiguration(this.ConfigurationID, this.ConfigurationName, this.ClaimsProviderName, typeof(AADEntityProviderConfig<IAADSettings>));
+                    SPContext.Current.Web.AllowUnsafeUpdates = false;
+                    if (configuration != null)
                     {
-                        SPContext.Current.Web.AllowUnsafeUpdates = true;
-                        _Configuration = (AADEntityProviderConfig<IAADSettings>)AADEntityProviderConfig<IAADSettings>.CreateGlobalConfiguration(this.ConfigurationID, this.ConfigurationName, this.ClaimsProviderName, typeof(AADEntityProviderConfig<IAADSettings>));
-                        SPContext.Current.Web.AllowUnsafeUpdates = false;
+                        _Configuration = configuration;
+                        Settings = (AADEntityProviderSettings)configuration.GetSettings();
                     }
-                    _Configuration.RefreshLocalSettingsIfNeeded();
-                });
+                }
+                //});
                 return _Configuration;
             }
         }
+        protected AADEntityProviderSettings Settings { get; set; }
 
         protected ConfigStatus Status;
 
@@ -175,13 +186,13 @@ namespace Yvand.ClaimsProviders.Administration
                 return Status;
             }
 
-            if (Configuration.LocalSettings == null)
+            if (Settings == null)
             {
                 Status |= ConfigStatus.ConfigurationInvalid;
                 return Status;
             }
 
-            if (Configuration.LocalSettings.IdentityClaimTypeConfig == null)
+            if (Settings.IdentityClaimTypeConfig == null)
             {
                 Status |= ConfigStatus.NoIdentityClaimType;
             }
@@ -199,7 +210,8 @@ namespace Yvand.ClaimsProviders.Administration
 
         public virtual void CommitChanges()
         {
-            Configuration.Update();
+            //Configuration.Update();
+            Configuration.ApplySettings(Settings, true);
             ConfigurationVersion = Configuration.Version;
         }
     }

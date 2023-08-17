@@ -77,7 +77,7 @@ namespace Yvand.ClaimsProviders.Config
     public class AADEntityProviderConfig<TSettings> : EntityProviderConfig<TSettings>
         where TSettings : IAADSettings
     {
-        public List<AzureTenant> AzureTenants
+        protected List<AzureTenant> AzureTenants
         {
             get => _AzureTenants;
             set => _AzureTenants = value;
@@ -85,7 +85,7 @@ namespace Yvand.ClaimsProviders.Config
         [Persisted]
         private List<AzureTenant> _AzureTenants = new List<AzureTenant>();
 
-        public string ProxyAddress
+        protected string ProxyAddress
         {
             get => _ProxyAddress;
             set => _ProxyAddress = value;
@@ -96,7 +96,7 @@ namespace Yvand.ClaimsProviders.Config
         /// <summary>
         /// Set if only AAD groups with securityEnabled = true should be returned - https://docs.microsoft.com/en-us/graph/api/resources/groups-overview?view=graph-rest-1.0
         /// </summary>
-        public bool FilterSecurityEnabledGroupsOnly
+        protected bool FilterSecurityEnabledGroupsOnly
         {
             get => _FilterSecurityEnabledGroupsOnly;
             set => _FilterSecurityEnabledGroupsOnly = value;
@@ -127,7 +127,7 @@ namespace Yvand.ClaimsProviders.Config
             return success;
         }
 
-        protected override TSettings GenerateLocalSettings()
+        protected override TSettings GenerateSettingsFromConfiguration()
         {
             IAADSettings entityProviderSettings = new AADEntityProviderSettings(
                this.RuntimeClaimTypesList,
@@ -150,7 +150,7 @@ namespace Yvand.ClaimsProviders.Config
             };
             return (TSettings)entityProviderSettings;
 
-            //TSettings baseEntityProviderSettings = base.GenerateLocalSettings();
+            //TSettings baseEntityProviderSettings = base.GenerateSettingsFromConfiguration();
             //AADEntityProviderSettings entityProviderSettings = baseEntityProviderSettings as AADEntityProviderSettings;
             //entityProviderSettings.AzureTenants = this.AzureTenants;
             //entityProviderSettings.ProxyAddress = this.ProxyAddress;
@@ -160,6 +160,10 @@ namespace Yvand.ClaimsProviders.Config
 
         public override void ApplySettings(TSettings settings, bool commitIfValid)
         {
+            if (settings == null)
+            {
+                return;
+            }
             // Properties specific to type IAADSettings
             this.AzureTenants = settings.AzureTenants;
             this.FilterSecurityEnabledGroupsOnly = settings.FilterSecurityEnabledGroupsOnly;
