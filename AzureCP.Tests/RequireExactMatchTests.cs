@@ -5,11 +5,14 @@ namespace Yvand.ClaimsProviders.Tests
     [TestFixture]
     public class RequireExactMatchOnBaseConfigTests : EntityTestsBase
     {
-        public override void InitializeConfiguration()
+        public override void InitializeConfiguration(bool applyChanges)
         {
-            base.InitializeConfiguration();
+            base.InitializeConfiguration(false);
             Settings.FilterExactMatchOnly = true;
-            GlobalConfiguration.ApplySettings(Settings, true);
+            if (applyChanges)
+            {
+                GlobalConfiguration.ApplySettings(Settings, true);
+            }
         }
 
         [Test, TestCaseSource(typeof(SearchEntityDataSource), "GetTestData", new object[] { EntityDataSourceType.AllAccounts })]
@@ -29,11 +32,14 @@ namespace Yvand.ClaimsProviders.Tests
     [TestFixture]
     public class RequireExactMatchOnCustomConfigTests : CustomConfigTestsBase
     {
-        public override void InitializeConfiguration()
+        public override void InitializeConfiguration(bool applyChanges)
         {
-            base.InitializeConfiguration();
+            base.InitializeConfiguration(false);
             Settings.FilterExactMatchOnly = true;
-            GlobalConfiguration.ApplySettings(Settings, true);
+            if(applyChanges)
+            {
+                GlobalConfiguration.ApplySettings(Settings, true);
+            }
         }
 
         [Test, TestCaseSource(typeof(SearchEntityDataSource), "GetTestData", new object[] { EntityDataSourceType.AllAccounts })]

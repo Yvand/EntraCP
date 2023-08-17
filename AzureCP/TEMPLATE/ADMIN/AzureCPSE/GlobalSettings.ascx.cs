@@ -56,10 +56,10 @@ namespace Yvand.ClaimsProviders.Administration
 
         void PopulateConnectionsGrid()
         {
-            if (Configuration.AzureTenants != null)
+            if (Settings.AzureTenants != null)
             {
                 PropertyCollectionBinder pcb = new PropertyCollectionBinder();
-                foreach (AzureTenant tenant in Configuration.AzureTenants)
+                foreach (AzureTenant tenant in Settings.AzureTenants)
                 {
                     pcb.AddRow(tenant.Identifier, tenant.Name, tenant.ClientId, tenant.AuthenticationMode, tenant.ExtensionAttributesApplicationId);
                 }
@@ -69,22 +69,22 @@ namespace Yvand.ClaimsProviders.Administration
 
         private void PopulateFields()
         {
-            if (Configuration.LocalSettings.IdentityClaimTypeConfig.EntityPropertyToUseAsDisplayText == DirectoryObjectProperty.NotSet)
+            if (Settings.IdentityClaimTypeConfig.EntityPropertyToUseAsDisplayText == DirectoryObjectProperty.NotSet)
             {
                 this.RbIdentityDefault.Checked = true;
             }
             else
             {
                 this.RbIdentityCustomGraphProperty.Checked = true;
-                this.DDLGraphPropertyToDisplay.Items.FindByValue(((int)Configuration.LocalSettings.IdentityClaimTypeConfig.EntityPropertyToUseAsDisplayText).ToString()).Selected = true;
+                this.DDLGraphPropertyToDisplay.Items.FindByValue(((int)Settings.IdentityClaimTypeConfig.EntityPropertyToUseAsDisplayText).ToString()).Selected = true;
             }
-            this.DDLDirectoryPropertyMemberUsers.Items.FindByValue(((int)Configuration.LocalSettings.IdentityClaimTypeConfig.EntityProperty).ToString()).Selected = true;
-            this.DDLDirectoryPropertyGuestUsers.Items.FindByValue(((int)Configuration.LocalSettings.IdentityClaimTypeConfig.DirectoryObjectPropertyForGuestUsers).ToString()).Selected = true;
-            this.ChkAlwaysResolveUserInput.Checked = Configuration.AlwaysResolveUserInput;
-            this.ChkFilterExactMatchOnly.Checked = Configuration.FilterExactMatchOnly;
-            this.ChkAugmentAADRoles.Checked = Configuration.EnableAugmentation;
-            this.ChkFilterSecurityEnabledGroupsOnly.Checked = Configuration.FilterSecurityEnabledGroupsOnly;
-            this.InputProxyAddress.Text = Configuration.ProxyAddress;
+            this.DDLDirectoryPropertyMemberUsers.Items.FindByValue(((int)Settings.IdentityClaimTypeConfig.EntityProperty).ToString()).Selected = true;
+            this.DDLDirectoryPropertyGuestUsers.Items.FindByValue(((int)Settings.IdentityClaimTypeConfig.DirectoryObjectPropertyForGuestUsers).ToString()).Selected = true;
+            this.ChkAlwaysResolveUserInput.Checked = Settings.AlwaysResolveUserInput;
+            this.ChkFilterExactMatchOnly.Checked = Settings.FilterExactMatchOnly;
+            this.ChkAugmentAADRoles.Checked = Settings.EnableAugmentation;
+            this.ChkFilterSecurityEnabledGroupsOnly.Checked = Settings.FilterSecurityEnabledGroupsOnly;
+            this.InputProxyAddress.Text = Settings.ProxyAddress;
 
             AzureCloudInstance[] azureCloudInstanceValues = (AzureCloudInstance[])Enum.GetValues(typeof(AzureCloudInstance));
             foreach (var azureCloudInstanceValue in azureCloudInstanceValues)
@@ -118,14 +118,14 @@ namespace Yvand.ClaimsProviders.Administration
         protected void grdAzureTenants_RowDeleting(object sender, GridViewDeleteEventArgs e)
         {
             if (ValidatePrerequisite() != ConfigStatus.AllGood) { return; }
-            if (Configuration.AzureTenants == null) { return; }
+            if (Settings.AzureTenants == null) { return; }
 
             GridViewRow rowToDelete = grdAzureTenants.Rows[e.RowIndex];
             Guid Id = new Guid(rowToDelete.Cells[0].Text);
-            AzureTenant tenantToRemove = Configuration.AzureTenants.FirstOrDefault(x => x.Identifier == Id);
+            AzureTenant tenantToRemove = Settings.AzureTenants.FirstOrDefault(x => x.Identifier == Id);
             if (tenantToRemove != null)
             {
-                Configuration.AzureTenants.Remove(tenantToRemove);
+                Settings.AzureTenants.Remove(tenantToRemove);
                 CommitChanges();
                 Logger.Log($"Azure AD tenant '{tenantToRemove.Name}' was successfully removed from configuration '{ConfigurationName}'", TraceSeverity.Medium, EventSeverity.Information, TraceCategory.Configuration);
                 LabelMessage.Text = String.Format(TextSummaryPersistedObjectInformation, Configuration.Name, Configuration.Version, Configuration.Id);
@@ -139,30 +139,30 @@ namespace Yvand.ClaimsProviders.Administration
 
             if (this.RbIdentityCustomGraphProperty.Checked)
             {
-                Configuration.ClaimTypes.IdentityClaim.EntityPropertyToUseAsDisplayText = (DirectoryObjectProperty)Convert.ToInt32(this.DDLGraphPropertyToDisplay.SelectedValue);
+                Settings.ClaimTypes.IdentityClaim.EntityPropertyToUseAsDisplayText = (DirectoryObjectProperty)Convert.ToInt32(this.DDLGraphPropertyToDisplay.SelectedValue);
             }
             else
             {
-                Configuration.ClaimTypes.IdentityClaim.EntityPropertyToUseAsDisplayText = DirectoryObjectProperty.NotSet;
+                Settings.ClaimTypes.IdentityClaim.EntityPropertyToUseAsDisplayText = DirectoryObjectProperty.NotSet;
             }
 
             DirectoryObjectProperty newUserIdentifier = (DirectoryObjectProperty)Convert.ToInt32(this.DDLDirectoryPropertyMemberUsers.SelectedValue);
             if (newUserIdentifier != DirectoryObjectProperty.NotSet)
             {
-                Configuration.ClaimTypes.UpdateUserIdentifier(newUserIdentifier);
+                Settings.ClaimTypes.UpdateUserIdentifier(newUserIdentifier);
             }
 
             DirectoryObjectProperty newIdentifierForGuestUsers = (DirectoryObjectProperty)Convert.ToInt32(this.DDLDirectoryPropertyGuestUsers.SelectedValue);
             if (newIdentifierForGuestUsers != DirectoryObjectProperty.NotSet)
             {
-                Configuration.ClaimTypes.UpdateIdentifierForGuestUsers(newIdentifierForGuestUsers);
+                Settings.ClaimTypes.UpdateIdentifierForGuestUsers(newIdentifierForGuestUsers);
             }
 
-            Configuration.AlwaysResolveUserInput = this.ChkAlwaysResolveUserInput.Checked;
-            Configuration.FilterExactMatchOnly = this.ChkFilterExactMatchOnly.Checked;
-            Configuration.EnableAugmentation = this.ChkAugmentAADRoles.Checked;
-            Configuration.FilterSecurityEnabledGroupsOnly = this.ChkFilterSecurityEnabledGroupsOnly.Checked;
-            Configuration.ProxyAddress = this.InputProxyAddress.Text;
+            Settings.AlwaysResolveUserInput = this.ChkAlwaysResolveUserInput.Checked;
+            Settings.FilterExactMatchOnly = this.ChkFilterExactMatchOnly.Checked;
+            Settings.EnableAugmentation = this.ChkAugmentAADRoles.Checked;
+            Settings.FilterSecurityEnabledGroupsOnly = this.ChkFilterSecurityEnabledGroupsOnly.Checked;
+            Settings.ProxyAddress = this.InputProxyAddress.Text;
 
             if (commitChanges) { CommitChanges(); }
             return true;
@@ -299,11 +299,11 @@ namespace Yvand.ClaimsProviders.Administration
             Uri cloudInstance = ClaimsProviderConstants.AzureCloudEndpoints.FirstOrDefault(item => item.Key == (AzureCloudInstance)Enum.Parse(typeof(AzureCloudInstance), this.DDLAzureCloudInstance.SelectedValue)).Value;
 
 
-            if (Configuration.AzureTenants == null)
+            if (Settings.AzureTenants == null)
             {
-                Configuration.AzureTenants = new List<AzureTenant>();
+                Settings.AzureTenants = new List<AzureTenant>();
             }
-            this.Configuration.AzureTenants.Add(
+            this.Settings.AzureTenants.Add(
                 new AzureTenant
                 {
                     Name = this.TxtTenantName.Text,

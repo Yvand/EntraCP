@@ -66,18 +66,18 @@ namespace Yvand.ClaimsProviders.Config
         /// <summary>
         /// Gets the local settings, based on the global settings stored in a persisted object
         /// </summary>
-        public TSettings LocalSettings { get; private set; }
+        protected TSettings Settings { get; private set; }
 
         /// <summary>
         /// Gets the current version of the local settings
         /// </summary>
-        protected long LocalSettingsVersion { get; private set; } = 0;
+        protected long SettingsVersion { get; private set; } = 0;
 
         #region "Public runtime settings"
         /// <summary>
         /// gets or sets the claim types and their mapping with a DirectoryObject property
         /// </summary>
-        public ClaimTypeConfigCollection ClaimTypes
+        protected ClaimTypeConfigCollection ClaimTypes
         {
             get
             {
@@ -101,7 +101,7 @@ namespace Yvand.ClaimsProviders.Config
         /// Gets or sets whether to skip Azure AD lookup and consider any input as valid.
         /// This can be useful to keep people picker working even if connectivity with the Azure tenant is lost.
         /// </summary>
-        public bool AlwaysResolveUserInput
+        protected bool AlwaysResolveUserInput
         {
             get => _AlwaysResolveUserInput;
             set => _AlwaysResolveUserInput = value;
@@ -112,7 +112,7 @@ namespace Yvand.ClaimsProviders.Config
         /// <summary>
         /// Gets or sets whether to return only results that match exactly the user input (case-insensitive).
         /// </summary>
-        public bool FilterExactMatchOnly
+        protected bool FilterExactMatchOnly
         {
             get => _FilterExactMatchOnly;
             set => _FilterExactMatchOnly = value;
@@ -123,7 +123,7 @@ namespace Yvand.ClaimsProviders.Config
         /// <summary>
         /// Gets or sets whether to return the Azure AD groups that the user is a member of.
         /// </summary>
-        public bool EnableAugmentation
+        protected bool EnableAugmentation
         {
             get => _EnableAugmentation;
             set => _EnableAugmentation = value;
@@ -134,7 +134,7 @@ namespace Yvand.ClaimsProviders.Config
         /// <summary>
         /// Gets or sets a string that will appear as a prefix of the text of each result, in the people picker.
         /// </summary>
-        public string EntityDisplayTextPrefix
+        protected string EntityDisplayTextPrefix
         {
             get => _EntityDisplayTextPrefix;
             set => _EntityDisplayTextPrefix = value;
@@ -145,7 +145,7 @@ namespace Yvand.ClaimsProviders.Config
         /// <summary>
         /// Gets or sets the timeout before giving up the query to Azure AD.
         /// </summary>
-        public int Timeout
+        protected int Timeout
         {
             get
             {
@@ -176,7 +176,7 @@ namespace Yvand.ClaimsProviders.Config
         /// <summary>
         /// This property is not used by AzureCP and is available to developers for their own needs
         /// </summary>
-        public string CustomData
+        protected string CustomData
         {
             get => _CustomData;
             set => _CustomData = value;
@@ -226,6 +226,17 @@ namespace Yvand.ClaimsProviders.Config
         {
             this.ClaimTypes = ReturnDefaultClaimTypesConfig();
             return true;
+        }
+
+        /// <summary>
+        /// Returns the up to date settings of the current configuration
+        /// </summary>
+        /// <returns></returns>
+        public TSettings GetSettings()
+        {
+            RefreshSettingsIfNeeded();
+            TSettings settings = GenerateSettingsFromConfiguration();
+            return settings;
         }
 
         /// <summary>
@@ -316,53 +327,69 @@ namespace Yvand.ClaimsProviders.Config
         }
 
         /// <summary>
-        /// Ensures that property <see cref="LocalSettings"/> is valid and up to date
+        /// Ensure that property <see cref="Settings"/> is up  to date
         /// </summary>
-        /// <returns>The property <see cref="LocalSettings"/> if is valid, null otherwise</returns>
-        public TSettings RefreshLocalSettingsIfNeeded()
+        /// <returns>The up to date <see cref="Settings"/></returns>
+        protected void RefreshSettingsIfNeeded()
         {
-            Guid configurationId = this.Id;
-            EntityProviderConfig<TSettings> globalConfiguration = GetGlobalConfiguration(configurationId);
-
+            EntityProviderConfig<TSettings> globalConfiguration = GetGlobalConfiguration(this.Id);
             if (globalConfiguration == null)
             {
-                Logger.Log($"[{ClaimsProviderName}] Cannot continue because configuration '{configurationId}' was not found in configuration database, visit AzureCP admin pages in central administration to create it.",
+                Logger.Log($"[{ClaimsProviderName}] Cannot continue because configuration '{this.Id}' was not found in configuration database, visit AzureCP admin pages in central administration to create it.",
                     TraceSeverity.Unexpected, EventSeverity.Error, TraceCategory.Core);
-                this.LocalSettings = default(TSettings);
-                return default(TSettings);
+                return;
             }
 
-            if (this.LocalSettingsVersion == globalConfiguration.Version)
+            if (this.SettingsVersion == globalConfiguration.Version)
             {
-                Logger.Log($"[{ClaimsProviderName}] Configuration '{configurationId}' is up to date with version {this.LocalSettingsVersion}.",
+                Logger.Log($"[{ClaimsProviderName}] Local copy of configuration '{this.Name}' is up to date with version {this.SettingsVersion}.",
                     TraceSeverity.VerboseEx, EventSeverity.Information, TraceCategory.Core);
-                return this.LocalSettings;
+                return;
             }
 
-            Logger.Log($"[{ClaimsProviderName}] Configuration '{globalConfiguration.Name}' has new version {globalConfiguration.Version}, refreshing local copy",
+            Logger.Log($"[{ClaimsProviderName}] Configuration '{this.Name}' has new version {globalConfiguration.Version}, refreshing local copy",
                 TraceSeverity.Medium, EventSeverity.Information, TraceCategory.Core);
-
-            globalConfiguration.ClaimsProviderName = this.ClaimsProviderName;
-            bool success = globalConfiguration.InitializeInternalRuntimeSettings();
-            if (!success)
-            {
-                return default;
-            }
-            this.IdentityClaimTypeConfig = globalConfiguration.IdentityClaimTypeConfig;
-            this.MainGroupClaimTypeConfig = globalConfiguration.MainGroupClaimTypeConfig;
-            this.RuntimeClaimTypesList = globalConfiguration.RuntimeClaimTypesList;
-            this.MainGroupClaimTypeConfig = globalConfiguration.MainGroupClaimTypeConfig;
-            this.LocalSettings = (TSettings)globalConfiguration.GenerateLocalSettings();
+            this.Settings = globalConfiguration.GenerateSettingsFromConfiguration();
+            this.ApplySettings(this.Settings, false);
+            // New settings, must reset runtime settings in case InitializeInternalRuntimeSettings() does not set them
+            this.IdentityClaimTypeConfig = null;
+            this.MainGroupClaimTypeConfig = null;
+            this.RuntimeClaimTypesList = null;
+            this.RuntimeMetadataConfig = null;
+            this.InitializeInternalRuntimeSettings();
 #if !DEBUGx
-            this.LocalSettingsVersion = globalConfiguration.Version;
+            this.SettingsVersion = globalConfiguration.Version;
 #endif
 
-            if (this.LocalSettings.ClaimTypes == null || this.LocalSettings.ClaimTypes.Count == 0)
+            if (this.Settings.ClaimTypes == null || this.Settings.ClaimTypes.Count == 0)
             {
                 Logger.Log($"[{ClaimsProviderName}] Configuration '{this.Name}' was found but collection ClaimTypes is empty. Visit AzureCP admin pages in central administration to create it.",
                     TraceSeverity.Unexpected, EventSeverity.Error, TraceCategory.Core);
             }
-            return this.LocalSettings;
+            return;
+        }
+
+        /// <summary>
+        /// Returns a TSettings from the properties of the current persisted object
+        /// </summary>
+        /// <returns></returns>
+        protected virtual TSettings GenerateSettingsFromConfiguration()
+        {
+            IEntityProviderSettings entityProviderSettings = new EntityProviderSettings(
+                this.RuntimeClaimTypesList,
+                this.RuntimeMetadataConfig,
+                this.IdentityClaimTypeConfig,
+                this.MainGroupClaimTypeConfig)
+            {
+                AlwaysResolveUserInput = this.AlwaysResolveUserInput,
+                ClaimTypes = this.ClaimTypes,
+                CustomData = this.CustomData,
+                EnableAugmentation = this.EnableAugmentation,
+                EntityDisplayTextPrefix = this.EntityDisplayTextPrefix,
+                FilterExactMatchOnly = this.FilterExactMatchOnly,
+                Timeout = this.Timeout,
+            };
+            return (TSettings)entityProviderSettings;
         }
 
         /// <summary>
@@ -387,12 +414,16 @@ namespace Yvand.ClaimsProviders.Config
         }
 
         /// <summary>
-        /// Ensures that the current settings is valid and can be safely saved and used
+        /// Ensures that the current configuration is valid and can be safely persisted in the configuration database
         /// </summary>
         /// <exception cref="InvalidOperationException"></exception>
         public virtual void ValidateConfiguration()
         {
-            // In case ClaimTypes collection was modified, test if it is still valid before committed changes to database
+            // In case ClaimTypes collection was modified, test if it is still valid
+            if (this.ClaimTypes == null)
+            {
+                throw new InvalidOperationException("Configuration is not valid because property ClaimTypes is null");
+            }
             try
             {
                 ClaimTypeConfigCollection testUpdateCollection = new ClaimTypeConfigCollection(this.SPTrust);
@@ -433,38 +464,26 @@ namespace Yvand.ClaimsProviders.Config
         //}
 
         /// <summary>
-        /// Returns a read-only settings, copied from the current settings.
-        /// </summary>
-        /// <returns></returns>
-        protected virtual TSettings GenerateLocalSettings()
-        {
-            IEntityProviderSettings entityProviderSettings = new EntityProviderSettings(
-                this.RuntimeClaimTypesList,
-                this.RuntimeMetadataConfig,
-                this.IdentityClaimTypeConfig,
-                this.MainGroupClaimTypeConfig)
-            {
-                AlwaysResolveUserInput = this.AlwaysResolveUserInput,
-                ClaimTypes = this.ClaimTypes,
-                CustomData = this.CustomData,
-                EnableAugmentation = this.EnableAugmentation,
-                EntityDisplayTextPrefix = this.EntityDisplayTextPrefix,
-                FilterExactMatchOnly = this.FilterExactMatchOnly,
-                Timeout = this.Timeout,
-            };
-            return (TSettings)entityProviderSettings;
-        }
-
-        /// <summary>
         /// Applies the settings passed in parameter to the current settings
         /// </summary>
         /// <param name="settings"></param>
         public virtual void ApplySettings(TSettings settings, bool commitIfValid)
         {
-            this.ClaimTypes = new ClaimTypeConfigCollection(this.SPTrust);
-            foreach (ClaimTypeConfig claimTypeConfig in settings.ClaimTypes)
+            if(settings == null)
             {
-                this.ClaimTypes.Add(claimTypeConfig.CopyConfiguration(), false);
+                return;
+            }
+            if (settings.ClaimTypes == null)
+            {
+                this.ClaimTypes = null;
+            }
+            else
+            {
+                this.ClaimTypes = new ClaimTypeConfigCollection(this.SPTrust);
+                foreach (ClaimTypeConfig claimTypeConfig in settings.ClaimTypes)
+                {
+                    this.ClaimTypes.Add(claimTypeConfig.CopyConfiguration(), false);
+                }
             }
             this.AlwaysResolveUserInput = settings.AlwaysResolveUserInput;
             this.FilterExactMatchOnly = settings.FilterExactMatchOnly;
@@ -494,7 +513,7 @@ namespace Yvand.ClaimsProviders.Config
         /// Returns the global configuration, stored as a persisted object in the SharePoint configuration database
         /// </summary>
         /// <param name="configurationId">The ID of the configuration</param>
-        /// <param name="initializeLocalSettings">Set to true to initialize the property <see cref="LocalSettings"/></param>
+        /// <param name="initializeLocalSettings">Set to true to initialize the property <see cref="Settings"/></param>
         /// <returns></returns>
         public static EntityProviderConfig<TSettings> GetGlobalConfiguration(Guid configurationId, bool initializeLocalSettings = false)
         {
@@ -507,7 +526,7 @@ namespace Yvand.ClaimsProviders.Config
                 EntityProviderConfig<TSettings> configuration = (EntityProviderConfig<TSettings>)parent.GetObject(configurationId);
                 if (configuration != null && initializeLocalSettings == true)
                 {
-                    configuration.RefreshLocalSettingsIfNeeded();
+                    configuration.RefreshSettingsIfNeeded();
                 }
                 return configuration;
             }

@@ -59,17 +59,17 @@ namespace Yvand.ClaimsProviders.Tests
             }
             else
             {
-                Settings = (AADEntityProviderSettings)GlobalConfiguration.LocalSettings;
-                OriginalSettings = GlobalConfiguration.LocalSettings;
+                OriginalSettings = GlobalConfiguration.GetSettings();
+                Settings = (AADEntityProviderSettings)GlobalConfiguration.GetSettings();
                 Trace.TraceInformation($"{DateTime.Now.ToString("s")} Took a backup of the original settings");
             }
-            InitializeConfiguration();
+            InitializeConfiguration(true);
         }
 
         /// <summary>
         /// Initialize configuration
         /// </summary>
-        public virtual void InitializeConfiguration()
+        public virtual void InitializeConfiguration(bool applyChanges)
         {
             Settings = new AADEntityProviderSettings();
             Settings.ClaimTypes = AADEntityProviderSettings.ReturnDefaultClaimTypesConfig(UnitTestsHelper.ClaimsProvider.Name);
@@ -87,8 +87,11 @@ namespace Yvand.ClaimsProviders.Tests
                 tenant.ExcludeMemberUsers = ExcludeMemberUsers;
                 tenant.ExcludeGuestUsers = ExcludeGuestUsers;
             }
-            GlobalConfiguration.ApplySettings(Settings, true);
-            Trace.TraceInformation($"{DateTime.Now.ToString("s")} Set {Settings.AzureTenants.Count} Azure AD tenants to AzureCP configuration");
+
+            if (applyChanges)
+            {
+                GlobalConfiguration.ApplySettings(Settings, true);
+            }
         }
 
         [OneTimeTearDown]
@@ -196,13 +199,11 @@ namespace Yvand.ClaimsProviders.Tests
         {
             if (ConfigurationIsValid)
             {
-                Assert.IsNotNull(GlobalConfiguration.RefreshLocalSettingsIfNeeded(), "RefreshLocalConfigurationIfNeeded should return a valid configuration");
-                Assert.IsTrue(UnitTestsHelper.ClaimsProvider.ValidateLocalConfiguration(null), "ValidateLocalConfiguration should return true because the configuration is valid");
+                Assert.IsTrue(UnitTestsHelper.ClaimsProvider.ValidateSettings(null), "ValidateLocalConfiguration should return true because the configuration is valid");
             }
             else
             {
-                Assert.IsNull(GlobalConfiguration.RefreshLocalSettingsIfNeeded(), "RefreshLocalConfigurationIfNeeded should return null because the configuration is not valid");
-                Assert.IsFalse(UnitTestsHelper.ClaimsProvider.ValidateLocalConfiguration(null), "ValidateLocalConfiguration should return false because the configuration is not valid");
+                Assert.IsFalse(UnitTestsHelper.ClaimsProvider.ValidateSettings(null), "ValidateLocalConfiguration should return false because the configuration is not valid");
             }
         }
 

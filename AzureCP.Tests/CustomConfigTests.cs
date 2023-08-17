@@ -10,9 +10,9 @@ namespace Yvand.ClaimsProviders.Tests
     {
         public static string GroupsClaimType = ClaimsProviderConstants.DefaultMainGroupClaimType;
 
-        public override void InitializeConfiguration()
+        public override void InitializeConfiguration(bool applyChanges)
         {
-            base.InitializeConfiguration();
+            base.InitializeConfiguration(false);
             Settings.EnableAugmentation = true;
             Settings.ClaimTypes.GetByClaimType(UnitTestsHelper.SPTrust.IdentityClaimTypeInformation.MappedClaimType).PrefixToBypassLookup = "bypass-user:";
             Settings.ClaimTypes.GetByClaimType(UnitTestsHelper.TrustedGroupToAdd_ClaimType).PrefixToBypassLookup = "bypass-group:";
@@ -24,7 +24,10 @@ namespace Yvand.ClaimsProviders.Tests
                 SharePointEntityType = "FormsRole",
             };
             Settings.ClaimTypes.Add(ctConfigExtensionAttribute);
-            GlobalConfiguration.ApplySettings(Settings, true);
+            if (applyChanges)
+            {
+                GlobalConfiguration.ApplySettings(Settings, true);
+            }
         }
     }
 
