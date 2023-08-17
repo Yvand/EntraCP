@@ -351,6 +351,11 @@ namespace Yvand.ClaimsProviders.Config
                 TraceSeverity.Medium, EventSeverity.Information, TraceCategory.Core);
             this.Settings = globalConfiguration.GenerateSettingsFromConfiguration();
             this.ApplySettings(this.Settings, false);
+            // New settings, must reset runtime settings in case InitializeInternalRuntimeSettings() does not set them
+            this.IdentityClaimTypeConfig = null;
+            this.MainGroupClaimTypeConfig = null;
+            this.RuntimeClaimTypesList = null;
+            this.RuntimeMetadataConfig = null;
             this.InitializeInternalRuntimeSettings();
 #if !DEBUGx
             this.SettingsVersion = globalConfiguration.Version;

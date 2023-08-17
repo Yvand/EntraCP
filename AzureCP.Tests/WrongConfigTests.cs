@@ -10,19 +10,23 @@ using Yvand.ClaimsProviders.Config;
 
 namespace Yvand.ClaimsProviders.Tests
 {
+    [TestFixture]
     public class WrongConfigBadClaimTypeTests : EntityTestsBase
     {
         public override bool ConfigurationIsValid => false;
-        public override void InitializeConfiguration()
+        public override void InitializeConfiguration(bool applyChanges)
         {
-            base.InitializeConfiguration();
+            base.InitializeConfiguration(false);
             ClaimTypeConfig randomClaimTypeConfig = new ClaimTypeConfig
             {
                 ClaimType = UnitTestsHelper.RandomClaimType,
                 EntityProperty = UnitTestsHelper.RandomObjectProperty,
             };
             Settings.ClaimTypes = new ClaimTypeConfigCollection(UnitTestsHelper.SPTrust) { randomClaimTypeConfig };
-            GlobalConfiguration.ApplySettings(Settings, true);
+            if (applyChanges)
+            {
+                GlobalConfiguration.ApplySettings(Settings, true);
+            }
         }
 
         [TestCase(@"random", 0, "")]
@@ -33,14 +37,18 @@ namespace Yvand.ClaimsProviders.Tests
         }
     }
 
+    [TestFixture]
     public class WrongConfigNoTenantTests : EntityTestsBase
     {
         public override bool ConfigurationIsValid => false;
-        public override void InitializeConfiguration()
+        public override void InitializeConfiguration(bool applyChanges)
         {
-            base.InitializeConfiguration();
+            base.InitializeConfiguration(false);
             Settings.AzureTenants = new List<AzureTenant>();
-            GlobalConfiguration.ApplySettings(Settings, true);
+            if (applyChanges)
+            {
+                GlobalConfiguration.ApplySettings(Settings, true);
+            }
         }
 
         [TestCase(@"random", 0, "")]
