@@ -38,7 +38,7 @@ namespace Yvand.ClaimsProviders.Administration
                     if (configuration != null)
                     {
                         _Configuration = configuration;
-                        Settings = (AADEntityProviderSettings)configuration.GetSettings();
+                        Settings = (AADEntityProviderSettings)configuration.Settings;
                     }
                 }
                 if (_Configuration == null)
@@ -49,7 +49,7 @@ namespace Yvand.ClaimsProviders.Administration
                     if (configuration != null)
                     {
                         _Configuration = configuration;
-                        Settings = (AADEntityProviderSettings)configuration.GetSettings();
+                        Settings = (AADEntityProviderSettings)configuration.Settings;
                     }
                 }
                 //});
@@ -57,7 +57,18 @@ namespace Yvand.ClaimsProviders.Administration
             }
         }
         protected AADEntityProviderSettings Settings { get; set; }
-
+        private IdentityClaimTypeConfig _IdentityCTConfig;
+        protected IdentityClaimTypeConfig IdentityCTConfig
+        {
+            get
+            {
+                if (_IdentityCTConfig == null)
+                {
+                    _IdentityCTConfig = Utils.IdentifyIdentityClaimTypeConfigFromClaimTypeConfigCollection(Settings.ClaimTypes, Configuration.SPTrust.IdentityClaimTypeInformation.MappedClaimType);
+                }
+                return _IdentityCTConfig;
+            }
+        }
         protected ConfigStatus Status;
 
         protected long ConfigurationVersion
@@ -192,7 +203,7 @@ namespace Yvand.ClaimsProviders.Administration
                 return Status;
             }
 
-            if (Settings.IdentityClaimTypeConfig == null)
+            if (IdentityCTConfig == null)
             {
                 Status |= ConfigStatus.NoIdentityClaimType;
             }

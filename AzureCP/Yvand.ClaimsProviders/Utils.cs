@@ -13,7 +13,7 @@ namespace Yvand.ClaimsProviders
     public static class Utils
     {
         /// <summary>
-        /// Get the first TrustedLoginProvider associated with current claim provider
+        /// Gets the first SharePoint TrustedLoginProvider that has its property ClaimProviderName equals to <paramref name="claimProviderName"/>
         /// LIMITATION: The same claims provider (uniquely identified by its name) cannot be associated to multiple TrustedLoginProvider because at runtime there is no way to determine what TrustedLoginProvider is currently calling
         /// </summary>
         /// <param name="claimProviderName"></param>
@@ -73,6 +73,20 @@ namespace Yvand.ClaimsProviders
                 }
             }
             return false;
+        }
+
+        public static IdentityClaimTypeConfig IdentifyIdentityClaimTypeConfigFromClaimTypeConfigCollection(ClaimTypeConfigCollection claimTypeConfigCollection, string identityClaimType)
+        {
+            ClaimTypeConfig claimTypeConfig = claimTypeConfigCollection.FirstOrDefault(x =>
+                String.Equals(x.ClaimType, identityClaimType, StringComparison.InvariantCultureIgnoreCase) &&
+                !x.UseMainClaimTypeOfDirectoryObject &&
+                x.EntityProperty != DirectoryObjectProperty.NotSet);
+
+            if (claimTypeConfig != null) 
+            {
+                claimTypeConfig = IdentityClaimTypeConfig.ConvertClaimTypeConfig(claimTypeConfig);
+            }
+            return (IdentityClaimTypeConfig)claimTypeConfig;
         }
 
         /// <summary>

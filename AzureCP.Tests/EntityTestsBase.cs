@@ -59,8 +59,8 @@ namespace Yvand.ClaimsProviders.Tests
             }
             else
             {
-                OriginalSettings = GlobalConfiguration.GetSettings();
-                Settings = (AADEntityProviderSettings)GlobalConfiguration.GetSettings();
+                OriginalSettings = GlobalConfiguration.Settings;
+                Settings = (AADEntityProviderSettings)GlobalConfiguration.Settings;
                 Trace.TraceInformation($"{DateTime.Now.ToString("s")} Took a backup of the original settings");
             }
             InitializeConfiguration(true);

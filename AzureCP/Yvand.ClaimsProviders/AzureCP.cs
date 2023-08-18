@@ -16,6 +16,25 @@ using WIF4_5 = System.Security.Claims;
 
 namespace Yvand.ClaimsProviders
 {
+    public interface IAzureCPSettings : IAADSettings
+    {
+        List<ClaimTypeConfig> RuntimeClaimTypesList { get; }
+        IEnumerable<ClaimTypeConfig> RuntimeMetadataConfig { get; }
+        IdentityClaimTypeConfig IdentityClaimTypeConfig { get; }
+        ClaimTypeConfig MainGroupClaimTypeConfig { get; }
+    }
+
+    public class AzureCPSettings : AADEntityProviderSettings, IAzureCPSettings
+    {
+        public List<ClaimTypeConfig> RuntimeClaimTypesList { get; set; }
+
+        public IEnumerable<ClaimTypeConfig> RuntimeMetadataConfig { get; set; }
+
+        public IdentityClaimTypeConfig IdentityClaimTypeConfig { get; set; }
+
+        public ClaimTypeConfig MainGroupClaimTypeConfig { get; set; }
+    }
+
     public class AzureCP : SPClaimProvider
     {
         public static string ClaimsProviderName => "AzureCPSE";
@@ -29,13 +48,34 @@ namespace Yvand.ClaimsProviders
         private ReaderWriterLockSlim Lock_LocalConfigurationRefresh = new ReaderWriterLockSlim();
         protected virtual string PickerEntityDisplayText => "({0}) {1}";
         protected virtual string PickerEntityOnMouseOver => "{0}={1}";
-        protected AADEntityProviderConfig<IAADSettings> PersistedConfiguration { get; private set; }
-        public IAADSettings Settings { get; protected set; }
+        public IAzureCPSettings Settings { get; protected set; }
+        public long SettingsVersion { get; private set; } = -1;
+        #region "Runtime settings"
+        //protected List<ClaimTypeConfig> RuntimeClaimTypesList { get; private set; }
+        //protected IEnumerable<ClaimTypeConfig> RuntimeMetadataConfig { get; private set; }
+        //protected IdentityClaimTypeConfig IdentityClaimTypeConfig { get; private set; }
+        //protected ClaimTypeConfig MainGroupClaimTypeConfig { get; private set; }
+        private SPTrustedLoginProvider _SPTrust;
+        /// <summary>
+        /// Gets the SharePoint trust that has its property ClaimProviderName equals to <see cref="Name"/>
+        /// </summary>
+        private SPTrustedLoginProvider SPTrust
+        {
+            get
+            {
+                if (this._SPTrust == null)
+                {
+                    this._SPTrust = Utils.GetSPTrustAssociatedWithClaimsProvider(this.Name);
+                }
+                return this._SPTrust;
+            }
+        }
+        #endregion
 
         /// <summary>
         /// Gets the issuer formatted to be like the property SPClaim.OriginalIssuer: "TrustedProvider:TrustedProviderName"
         /// </summary>
-        public string OriginalIssuerName => this.PersistedConfiguration.SPTrust != null ? SPOriginalIssuers.Format(SPOriginalIssuerType.TrustedProvider, this.PersistedConfiguration.SPTrust.Name) : String.Empty;
+        public string OriginalIssuerName => this.SPTrust != null ? SPOriginalIssuers.Format(SPOriginalIssuerType.TrustedProvider, this.SPTrust.Name) : String.Empty;
 
         public AzureCP(string displayName) : base(displayName)
         {
@@ -74,26 +114,43 @@ namespace Yvand.ClaimsProviders
             this.Lock_LocalConfigurationRefresh.EnterWriteLock();
             try
             {
-                if (this.PersistedConfiguration == null)
+                IAADSettings settings = this.GetSettings();
+                if (settings == null)
                 {
-                    this.PersistedConfiguration = (AADEntityProviderConfig<IAADSettings>)AADEntityProviderConfig<IAADSettings>.GetGlobalConfiguration(new Guid(ClaimsProviderConstants.CONFIGURATION_ID));
+                    return false;
                 }
-                if (this.PersistedConfiguration != null)
+
+                if (settings.Version == this.SettingsVersion)
                 {
-                    Settings = this.PersistedConfiguration.GetSettings();
-                    if (Settings == null ||
-                        Settings.AzureTenants == null || Settings.AzureTenants.Count() == 0 ||
-                        Settings.RuntimeClaimTypesList == null ||
-                        Settings.RuntimeMetadataConfig == null ||
-                        Settings.MainGroupClaimTypeConfig == null ||
-                        Settings.IdentityClaimTypeConfig == null)
-                    {
-                        success = false;
-                    }
+                    Logger.Log($"[{ClaimsProviderName}] Local copy of configuration '{this.Name}' is up to date with version {this.SettingsVersion}.",
+                    TraceSeverity.VerboseEx, EventSeverity.Information, TraceCategory.Core);
+                    return true;
                 }
-                else
+
+                IAzureCPSettings claimsProviderSettings = new AzureCPSettings
                 {
-                    success = false;
+                    AlwaysResolveUserInput = settings.AlwaysResolveUserInput,
+                    AzureTenants = settings.AzureTenants,
+                    ClaimTypes = settings.ClaimTypes,
+                    CustomData = settings.CustomData,
+                    EnableAugmentation = settings.EnableAugmentation,
+                    EntityDisplayTextPrefix = settings.EntityDisplayTextPrefix,
+                    FilterExactMatchOnly = settings.FilterExactMatchOnly,
+                    FilterSecurityEnabledGroupsOnly = settings.FilterSecurityEnabledGroupsOnly,
+                    ProxyAddress = settings.ProxyAddress,
+                    Timeout = settings.Timeout,
+                    Version = settings.Version,
+                };
+                this.Settings = (IAzureCPSettings)claimsProviderSettings;
+
+                Logger.Log($"[{ClaimsProviderName}] Settings have new version {this.Settings.Version}, refreshing local copy",
+                    TraceSeverity.Medium, EventSeverity.Information, TraceCategory.Core);
+                success = this.InitializeInternalRuntimeSettings();
+                if (success)
+                {
+#if !DEBUGx
+                    this.SettingsVersion = this.Settings.Version;
+#endif
                 }
             }
             catch (Exception ex)
@@ -106,6 +163,115 @@ namespace Yvand.ClaimsProviders
                 this.Lock_LocalConfigurationRefresh.ExitWriteLock();
             }
             return success;
+        }
+
+        protected virtual IAADSettings GetSettings()
+        {
+            IAADSettings settings = null;
+            AADEntityProviderConfig<IAADSettings> PersistedConfiguration = (AADEntityProviderConfig<IAADSettings>)AADEntityProviderConfig<IAADSettings>.GetGlobalConfiguration(new Guid(ClaimsProviderConstants.CONFIGURATION_ID));
+            if (PersistedConfiguration != null)
+            {
+                settings = PersistedConfiguration.Settings;
+            }
+            return settings;
+        }
+
+        /// <summary>
+        /// Sets the internal runtime settings properties
+        /// </summary>
+        /// <returns>True if successful, false if not</returns>
+        private bool InitializeInternalRuntimeSettings()
+        {
+            AzureCPSettings settings = (AzureCPSettings)this.Settings;
+            if (settings.ClaimTypes?.Count <= 0)
+            {
+                Logger.Log($"[{this.Name}] Cannot continue because configuration has 0 claim configured.",
+                    TraceSeverity.Unexpected, EventSeverity.Error, TraceCategory.Core);
+                return false;
+            }
+
+            bool identityClaimTypeFound = false;
+            bool groupClaimTypeFound = false;
+            List<ClaimTypeConfig> claimTypesSetInTrust = new List<ClaimTypeConfig>();
+            // Parse the ClaimTypeInformation collection set in the SPTrustedLoginProvider
+            foreach (SPTrustedClaimTypeInformation claimTypeInformation in this.SPTrust.ClaimTypeInformation)
+            {
+                // Search if current claim type in trust exists in ClaimTypeConfigCollection
+                ClaimTypeConfig claimTypeConfig = settings.ClaimTypes.FirstOrDefault(x =>
+                    String.Equals(x.ClaimType, claimTypeInformation.MappedClaimType, StringComparison.InvariantCultureIgnoreCase) &&
+                    !x.UseMainClaimTypeOfDirectoryObject &&
+                    x.EntityProperty != DirectoryObjectProperty.NotSet);
+
+                if (claimTypeConfig == null)
+                {
+                    continue;
+                }
+                ClaimTypeConfig localClaimTypeConfig = claimTypeConfig.CopyConfiguration();
+                localClaimTypeConfig.ClaimTypeDisplayName = claimTypeInformation.DisplayName;
+                claimTypesSetInTrust.Add(localClaimTypeConfig);
+                if (String.Equals(this.SPTrust.IdentityClaimTypeInformation.MappedClaimType, localClaimTypeConfig.ClaimType, StringComparison.InvariantCultureIgnoreCase))
+                {
+                    // Identity claim type found, set IdentityClaimTypeConfig property
+                    identityClaimTypeFound = true;
+                    settings.IdentityClaimTypeConfig = IdentityClaimTypeConfig.ConvertClaimTypeConfig(localClaimTypeConfig);
+                }
+                else if (!groupClaimTypeFound && localClaimTypeConfig.EntityType == DirectoryObjectType.Group)
+                {
+                    groupClaimTypeFound = true;
+                    settings.MainGroupClaimTypeConfig = localClaimTypeConfig;
+                }
+            }
+
+            if (!identityClaimTypeFound)
+            {
+                Logger.Log($"[{this.Name}] Cannot continue because identity claim type '{this.SPTrust.IdentityClaimTypeInformation.MappedClaimType}' set in the SPTrustedIdentityTokenIssuer '{SPTrust.Name}' is missing in the ClaimTypeConfig list.", TraceSeverity.Unexpected, EventSeverity.ErrorCritical, TraceCategory.Core);
+                return false;
+            }
+
+            // Check if there are additional properties to use in queries (UseMainClaimTypeOfDirectoryObject set to true)
+            List<ClaimTypeConfig> additionalClaimTypeConfigList = new List<ClaimTypeConfig>();
+            foreach (ClaimTypeConfig claimTypeConfig in settings.ClaimTypes.Where(x => x.UseMainClaimTypeOfDirectoryObject))
+            {
+                ClaimTypeConfig localClaimTypeConfig = claimTypeConfig.CopyConfiguration();
+                if (localClaimTypeConfig.EntityType == DirectoryObjectType.User)
+                {
+                    localClaimTypeConfig.ClaimType = settings.IdentityClaimTypeConfig.ClaimType;
+                    localClaimTypeConfig.EntityPropertyToUseAsDisplayText = settings.IdentityClaimTypeConfig.EntityPropertyToUseAsDisplayText;
+                }
+                else
+                {
+                    // If not a user, it must be a group
+                    if (settings.MainGroupClaimTypeConfig == null)
+                    {
+                        continue;
+                    }
+                    localClaimTypeConfig.ClaimType = settings.MainGroupClaimTypeConfig.ClaimType;
+                    localClaimTypeConfig.EntityPropertyToUseAsDisplayText = settings.MainGroupClaimTypeConfig.EntityPropertyToUseAsDisplayText;
+                    localClaimTypeConfig.ClaimTypeDisplayName = settings.MainGroupClaimTypeConfig.ClaimTypeDisplayName;
+                }
+                additionalClaimTypeConfigList.Add(localClaimTypeConfig);
+            }
+
+            settings.RuntimeClaimTypesList = new List<ClaimTypeConfig>(claimTypesSetInTrust.Count + additionalClaimTypeConfigList.Count);
+            settings.RuntimeClaimTypesList.AddRange(claimTypesSetInTrust);
+            settings.RuntimeClaimTypesList.AddRange(additionalClaimTypeConfigList);
+
+            // Get all PickerEntity metadata with a DirectoryObjectProperty set
+            settings.RuntimeMetadataConfig = settings.ClaimTypes.Where(x =>
+                !String.IsNullOrEmpty(x.EntityDataKey) &&
+                x.EntityProperty != DirectoryObjectProperty.NotSet);
+
+            if (settings.AzureTenants == null || settings.AzureTenants.Count < 1)
+            {
+                return false;
+            }
+            // Initialize Graph client on each tenant
+            foreach (var tenant in settings.AzureTenants)
+            {
+                tenant.InitializeAuthentication(settings.Timeout, settings.ProxyAddress);
+            }
+            this.Settings = settings;
+            return true;
         }
 
         /// <summary>
@@ -903,25 +1069,25 @@ namespace Yvand.ClaimsProviders
         /// <returns></returns>
         public override string GetClaimTypeForUserKey()
         {
-            // Initialization may fail because there is no yet configuration (fresh install)
-            // In this case, AzureCP should not return null because it causes null exceptions in SharePoint when users sign-in
-            bool configIsValid = ValidateSettings(null);
-            if (configIsValid)
+            //// Initialization may fail because there is no yet configuration (fresh install)
+            //// In this case, AzureCP should not return null because it causes null exceptions in SharePoint when users sign-in
+            ///bool configIsValid = ValidateSettings(null);
+            //if (configIsValid)
+            //{
+            //this.Lock_LocalConfigurationRefresh.EnterReadLock();
+            try
             {
-                this.Lock_LocalConfigurationRefresh.EnterReadLock();
-                try
-                {
-                    return this.PersistedConfiguration.SPTrust.IdentityClaimTypeInformation.MappedClaimType;
-                }
-                catch (Exception ex)
-                {
-                    Logger.LogException(Name, "in GetClaimTypeForUserKey", TraceCategory.Rehydration, ex);
-                }
-                finally
-                {
-                    this.Lock_LocalConfigurationRefresh.ExitReadLock();
-                }
+                return this.SPTrust.IdentityClaimTypeInformation.MappedClaimType;
             }
+            catch (Exception ex)
+            {
+                Logger.LogException(Name, "in GetClaimTypeForUserKey", TraceCategory.Rehydration, ex);
+            }
+            //finally
+            //{
+            //    this.Lock_LocalConfigurationRefresh.ExitReadLock();
+            //}
+            //}
             return String.Empty;
         }
 
@@ -934,41 +1100,49 @@ namespace Yvand.ClaimsProviders
         {
             // Initialization may fail because there is no yet configuration (fresh install)
             // In this case, AzureCP should not return null because it causes null exceptions in SharePoint when users sign-in
-            bool initSucceeded = ValidateSettings(null);
+            //bool initSucceeded = ValidateSettings(null);
 
-            this.Lock_LocalConfigurationRefresh.EnterReadLock();
+            //this.Lock_LocalConfigurationRefresh.EnterReadLock();
             try
             {
                 // If initialization failed but SPTrust is not null, rest of the method can be executed normally
                 // Otherwise return the entity
-                if (!initSucceeded && this.PersistedConfiguration?.SPTrust == null)
+                if (this.SPTrust == null)
                 {
                     return entity;
                 }
 
                 // There are 2 scenarios:
                 // 1: OriginalIssuer is "SecurityTokenService": Value looks like "05.t|contoso.local|yvand@contoso.local", claim type is "http://schemas.microsoft.com/sharepoint/2009/08/claims/userid" and it must be decoded properly
-                // 2: OriginalIssuer is AzureCP: in this case incoming entity is valid and returned as is
-                if (String.Equals(entity.OriginalIssuer, this.PersistedConfiguration.SPTrust.Name, StringComparison.InvariantCultureIgnoreCase))
+                // 2: OriginalIssuer is "TrustedProvider:contoso.local": The incoming entity is fine and returned as is
+                if (String.Equals(entity.OriginalIssuer, this.OriginalIssuerName, StringComparison.InvariantCultureIgnoreCase))
                 {
                     return entity;
                 }
 
-                SPClaimProviderManager cpm = SPClaimProviderManager.Local;
-                SPClaim curUser = SPClaimProviderManager.DecodeUserIdentifierClaim(entity);
+                // SPClaimProviderManager.IsUserIdentifierClaim tests if:
+                // ClaimType == SPClaimTypes.UserIdentifier ("http://schemas.microsoft.com/sharepoint/2009/08/claims/userid")
+                // OriginalIssuer type == SPOriginalIssuerType.SecurityTokenService
+                if (!SPClaimProviderManager.IsUserIdentifierClaim(entity))
+                {
+                    // return entity if not true, otherwise SPClaimProviderManager.DecodeUserIdentifierClaim(entity) throws an ArgumentException
+                    return entity;
+                }
 
+                // Since SPClaimProviderManager.IsUserIdentifierClaim() returned true, SPClaimProviderManager.DecodeUserIdentifierClaim() will work
+                SPClaim curUser = SPClaimProviderManager.DecodeUserIdentifierClaim(entity);
                 Logger.Log($"[{Name}] Returning user key for '{entity.Value}'",
                     TraceSeverity.VerboseEx, EventSeverity.Information, TraceCategory.Rehydration);
-                return CreateClaim(this.PersistedConfiguration.SPTrust.IdentityClaimTypeInformation.MappedClaimType, curUser.Value, curUser.ValueType);
+                return CreateClaim(this.SPTrust.IdentityClaimTypeInformation.MappedClaimType, curUser.Value, curUser.ValueType);
             }
             catch (Exception ex)
             {
                 Logger.LogException(Name, "in GetUserKeyForEntity", TraceCategory.Rehydration, ex);
             }
-            finally
-            {
-                this.Lock_LocalConfigurationRefresh.ExitReadLock();
-            }
+            //finally
+            //{
+            //    this.Lock_LocalConfigurationRefresh.ExitReadLock();
+            //}
             return null;
         }
     }

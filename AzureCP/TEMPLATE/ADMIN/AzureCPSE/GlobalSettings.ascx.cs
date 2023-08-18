@@ -69,17 +69,17 @@ namespace Yvand.ClaimsProviders.Administration
 
         private void PopulateFields()
         {
-            if (Settings.IdentityClaimTypeConfig.EntityPropertyToUseAsDisplayText == DirectoryObjectProperty.NotSet)
+            if (IdentityCTConfig.EntityPropertyToUseAsDisplayText == DirectoryObjectProperty.NotSet)
             {
                 this.RbIdentityDefault.Checked = true;
             }
             else
             {
                 this.RbIdentityCustomGraphProperty.Checked = true;
-                this.DDLGraphPropertyToDisplay.Items.FindByValue(((int)Settings.IdentityClaimTypeConfig.EntityPropertyToUseAsDisplayText).ToString()).Selected = true;
+                this.DDLGraphPropertyToDisplay.Items.FindByValue(((int)IdentityCTConfig.EntityPropertyToUseAsDisplayText).ToString()).Selected = true;
             }
-            this.DDLDirectoryPropertyMemberUsers.Items.FindByValue(((int)Settings.IdentityClaimTypeConfig.EntityProperty).ToString()).Selected = true;
-            this.DDLDirectoryPropertyGuestUsers.Items.FindByValue(((int)Settings.IdentityClaimTypeConfig.DirectoryObjectPropertyForGuestUsers).ToString()).Selected = true;
+            this.DDLDirectoryPropertyMemberUsers.Items.FindByValue(((int)IdentityCTConfig.EntityProperty).ToString()).Selected = true;
+            this.DDLDirectoryPropertyGuestUsers.Items.FindByValue(((int)IdentityCTConfig.DirectoryObjectPropertyForGuestUsers).ToString()).Selected = true;
             this.ChkAlwaysResolveUserInput.Checked = Settings.AlwaysResolveUserInput;
             this.ChkFilterExactMatchOnly.Checked = Settings.FilterExactMatchOnly;
             this.ChkAugmentAADRoles.Checked = Settings.EnableAugmentation;

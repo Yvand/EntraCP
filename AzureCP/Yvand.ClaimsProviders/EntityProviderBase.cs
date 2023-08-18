@@ -8,7 +8,7 @@ namespace Yvand.ClaimsProviders
     public abstract class EntityProviderBase
     {
         /// <summary>
-        /// Gets the name of the claims provider using this class
+        /// Gets the name of the claims provider using this entity provider
         /// </summary>
         public string ClaimsProviderName { get; }
 
