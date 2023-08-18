@@ -19,7 +19,7 @@ using Yvand.ClaimsProviders.Config;
 
 namespace Yvand.ClaimsProviders.AzureAD
 {
-    public class AzureADEntityProvider : EntityProviderBase//<AzureADEntityProviderConfiguration>
+    public class AzureADEntityProvider : EntityProviderBase
     {
         public AzureADEntityProvider(string claimsProviderName) : base(claimsProviderName) { }
 

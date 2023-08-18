@@ -10,13 +10,45 @@ namespace Yvand.ClaimsProviders.Config
 {
     public interface IEntityProviderSettings
     {
+        /// <summary>
+        /// Gets the version of the settings
+        /// </summary>
         long Version { get; }
+        
+        /// <summary>
+        /// Gets the claim types and their mapping with a DirectoryObject property
+        /// </summary>
         ClaimTypeConfigCollection ClaimTypes { get; }
+        
+        /// <summary>
+        /// Gets or sets whether to skip Azure AD lookup and consider any input as valid.
+        /// This can be useful to keep people picker working even if connectivity with the Azure tenant is lost.
+        /// </summary>
         bool AlwaysResolveUserInput { get; }
+
+        /// <summary>
+        /// Gets or sets whether to return only results that match exactly the user input (case-insensitive).
+        /// </summary>
         bool FilterExactMatchOnly { get; }
+
+        /// <summary>
+        /// Gets or sets whether to return the Azure AD groups that the user is a member of.
+        /// </summary>
         bool EnableAugmentation { get; }
+
+        /// <summary>
+        /// Gets or sets a string that will appear as a prefix of the text of each result, in the people picker.
+        /// </summary>
         string EntityDisplayTextPrefix { get; }
+
+        /// <summary>
+        /// Gets or sets the timeout before giving up the query to Azure AD.
+        /// </summary>
         int Timeout { get; }
+
+        /// <summary>
+        /// This property is not used by AzureCP and is available to developers for their own needs
+        /// </summary>
         string CustomData { get; }
     }
 
@@ -24,20 +56,13 @@ namespace Yvand.ClaimsProviders.Config
     {
         public long Version { get; set; }
         public ClaimTypeConfigCollection ClaimTypes { get; set; }
-
         public bool AlwaysResolveUserInput { get; set; } = false;
-
         public bool FilterExactMatchOnly { get; set; } = false;
-
         public bool EnableAugmentation { get; set; } = true;
-
         public string EntityDisplayTextPrefix { get; set; }
-
         public int Timeout { get; set; } = ClaimsProviderConstants.DEFAULT_TIMEOUT;
-
-        public string CustomData { get; set; }       
-
-        public EntityProviderSettings() { }        
+        public string CustomData { get; set; }
+        public EntityProviderSettings() { }
     }
 
     public class EntityProviderConfig<TSettings> : SPPersistedObject
@@ -45,7 +70,7 @@ namespace Yvand.ClaimsProviders.Config
     {
         private TSettings _Settings;
         /// <summary>
-        /// Gets the settings, based on the configuration stored in this persisted object
+        /// Gets the settings, based on the configuration stored in current persisted object
         /// </summary>
         public TSettings Settings {
             get
@@ -58,15 +83,7 @@ namespace Yvand.ClaimsProviders.Config
             }
         }
 
-        ///// <summary>
-        ///// Gets the current version of the local settings
-        ///// </summary>
-        //protected long SettingsVersion { get; private set; } = 0;
-
-        #region "Public runtime settings"
-        /// <summary>
-        /// gets or sets the claim types and their mapping with a DirectoryObject property
-        /// </summary>
+        #region "Settings implemented from the interface"
         protected ClaimTypeConfigCollection ClaimTypes
         {
             get
@@ -87,10 +104,6 @@ namespace Yvand.ClaimsProviders.Config
         private Collection<ClaimTypeConfig> _ClaimTypesCollection;
         private ClaimTypeConfigCollection _ClaimTypes;
 
-        /// <summary>
-        /// Gets or sets whether to skip Azure AD lookup and consider any input as valid.
-        /// This can be useful to keep people picker working even if connectivity with the Azure tenant is lost.
-        /// </summary>
         protected bool AlwaysResolveUserInput
         {
             get => _AlwaysResolveUserInput;
@@ -99,9 +112,6 @@ namespace Yvand.ClaimsProviders.Config
         [Persisted]
         private bool _AlwaysResolveUserInput;
 
-        /// <summary>
-        /// Gets or sets whether to return only results that match exactly the user input (case-insensitive).
-        /// </summary>
         protected bool FilterExactMatchOnly
         {
             get => _FilterExactMatchOnly;
@@ -110,9 +120,6 @@ namespace Yvand.ClaimsProviders.Config
         [Persisted]
         private bool _FilterExactMatchOnly;
 
-        /// <summary>
-        /// Gets or sets whether to return the Azure AD groups that the user is a member of.
-        /// </summary>
         protected bool EnableAugmentation
         {
             get => _EnableAugmentation;
@@ -121,9 +128,6 @@ namespace Yvand.ClaimsProviders.Config
         [Persisted]
         private bool _EnableAugmentation = true;
 
-        /// <summary>
-        /// Gets or sets a string that will appear as a prefix of the text of each result, in the people picker.
-        /// </summary>
         protected string EntityDisplayTextPrefix
         {
             get => _EntityDisplayTextPrefix;
@@ -132,9 +136,6 @@ namespace Yvand.ClaimsProviders.Config
         [Persisted]
         private string _EntityDisplayTextPrefix;
 
-        /// <summary>
-        /// Gets or sets the timeout before giving up the query to Azure AD.
-        /// </summary>
         protected int Timeout
         {
             get
@@ -149,6 +150,16 @@ namespace Yvand.ClaimsProviders.Config
         [Persisted]
         private int _Timeout = ClaimsProviderConstants.DEFAULT_TIMEOUT;
 
+        protected string CustomData
+        {
+            get => _CustomData;
+            set => _CustomData = value;
+        }
+        [Persisted]
+        private string _CustomData;
+        #endregion
+
+        #region "Other properties"
         /// <summary>
         /// Gets or sets the name of the claims provider using this settings
         /// </summary>
@@ -163,19 +174,6 @@ namespace Yvand.ClaimsProviders.Config
         [Persisted]
         private string ClaimsProviderVersion;
 
-        /// <summary>
-        /// This property is not used by AzureCP and is available to developers for their own needs
-        /// </summary>
-        protected string CustomData
-        {
-            get => _CustomData;
-            set => _CustomData = value;
-        }
-        [Persisted]
-        private string _CustomData;
-        #endregion
-
-        #region "Public runtime properties"
         private SPTrustedLoginProvider _SPTrust;
         public SPTrustedLoginProvider SPTrust
         {
@@ -188,9 +186,7 @@ namespace Yvand.ClaimsProviders.Config
                 return this._SPTrust;
             }
         }
-        #endregion
-
-       
+        #endregion       
 
         public EntityProviderConfig() { }
         public EntityProviderConfig(string persistedObjectName, SPPersistedObject parent, string claimsProviderName) : base(persistedObjectName, parent)

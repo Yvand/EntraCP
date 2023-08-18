@@ -3,14 +3,24 @@ using Microsoft.SharePoint.Administration.Claims;
 using Microsoft.SharePoint.WebControls;
 using System;
 using System.Collections.Generic;
-using System.Runtime;
 
 namespace Yvand.ClaimsProviders.Config
 {
     public interface IAADSettings : IEntityProviderSettings
     {
+        /// <summary>
+        /// Gets the list of Azure tenants to use to get entities
+        /// </summary>
         List<AzureTenant> AzureTenants { get; }
+
+        /// <summary>
+        /// Gets the proxy address used by AzureCP to connect to Azure AD
+        /// </summary>
         string ProxyAddress { get; }
+
+        /// <summary>
+        /// Gets if only security-enabled groups should be returned
+        /// </summary>
         bool FilterSecurityEnabledGroupsOnly { get; }
     }
 
@@ -25,7 +35,7 @@ namespace Yvand.ClaimsProviders.Config
         public AADEntityProviderSettings() : base() { }
 
         /// <summary>
-        /// Generate and return default claim types configuration list
+        /// Returns the default claim types configuration list, based on the identity claim type set in the TrustedLoginProvider associated with <paramref name="claimProviderName"/>
         /// </summary>
         /// <returns></returns>
         public static ClaimTypeConfigCollection ReturnDefaultClaimTypesConfig(string claimsProviderName)
