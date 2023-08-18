@@ -150,7 +150,7 @@ namespace Yvand.ClaimsProviders.Config
     /// </summary>
     public class OperationContext
     {
-        public IAADSettings Configuration { get; private set; }
+        public IAzureCPSettings Settings { get; private set; }
         /// <summary>
         /// Indicates what kind of operation SharePoint is requesting
         /// </summary>
@@ -203,10 +203,9 @@ namespace Yvand.ClaimsProviders.Config
 
         public List<AzureTenant> AzureTenants { get; private set; }
 
-        public OperationContext(IAADSettings currentConfiguration, OperationType currentRequestType, string input, SPClaim incomingEntity, Uri context, string[] entityTypes, string hierarchyNodeID, int maxCount)
+        public OperationContext(IAzureCPSettings settings, OperationType currentRequestType, string input, SPClaim incomingEntity, Uri context, string[] entityTypes, string hierarchyNodeID, int maxCount)
         {
-            this.Configuration = currentConfiguration;
-
+            this.Settings = settings;
             this.OperationType = currentRequestType;
             this.Input = input;
             this.IncomingEntity = incomingEntity;
@@ -214,9 +213,9 @@ namespace Yvand.ClaimsProviders.Config
             this.HierarchyNodeID = hierarchyNodeID;
             this.MaxCount = maxCount;
 
-            // currentConfiguration.AzureTenants must be cloned locally to ensure its properties ($select / $filter) won't be updated by multiple threads
-            this.AzureTenants = new List<AzureTenant>(currentConfiguration.AzureTenants.Count);
-            foreach (AzureTenant tenant in currentConfiguration.AzureTenants)
+            // settings.AzureTenants must be cloned locally to ensure its properties ($select / $filter) won't be updated by multiple threads
+            this.AzureTenants = new List<AzureTenant>(settings.AzureTenants.Count);
+            foreach (AzureTenant tenant in settings.AzureTenants)
             {
                 AzureTenants.Add(tenant.CopyPublicProperties());
             }
@@ -255,15 +254,15 @@ namespace Yvand.ClaimsProviders.Config
 
             if (currentRequestType == OperationType.Validation)
             {
-                this.InitializeValidation(currentConfiguration.RuntimeClaimTypesList);
+                this.InitializeValidation(settings.RuntimeClaimTypesList);
             }
             else if (currentRequestType == OperationType.Search)
             {
-                this.InitializeSearch(currentConfiguration.RuntimeClaimTypesList, currentConfiguration.FilterExactMatchOnly);
+                this.InitializeSearch(settings.RuntimeClaimTypesList, settings.FilterExactMatchOnly);
             }
             else if (currentRequestType == OperationType.Augmentation)
             {
-                this.InitializeAugmentation(currentConfiguration.RuntimeClaimTypesList);
+                this.InitializeAugmentation(settings.RuntimeClaimTypesList);
             }
         }
 

@@ -24,11 +24,6 @@ namespace Yvand.ClaimsProviders.Config
 
         public AADEntityProviderSettings() : base() { }
 
-        public AADEntityProviderSettings(List<ClaimTypeConfig> runtimeClaimTypesList, IEnumerable<ClaimTypeConfig> runtimeMetadataConfig, IdentityClaimTypeConfig identityClaimTypeConfig, ClaimTypeConfig mainGroupClaimTypeConfig)
-            : base(runtimeClaimTypesList, runtimeMetadataConfig, identityClaimTypeConfig, mainGroupClaimTypeConfig)
-        {
-        }
-
         /// <summary>
         /// Generate and return default claim types configuration list
         /// </summary>
@@ -114,26 +109,22 @@ namespace Yvand.ClaimsProviders.Config
             return base.InitializeDefaultSettings();
         }
 
-        protected override bool InitializeInternalRuntimeSettings()
-        {
-            bool success = base.InitializeInternalRuntimeSettings();
-            if (this.AzureTenants != null)
-            {
-                foreach (var tenant in this.AzureTenants)
-                {
-                    tenant.InitializeAuthentication(this.Timeout, this.ProxyAddress);
-                }
-            }
-            return success;
-        }
+        //protected override bool InitializeInternalRuntimeSettings()
+        //{
+        //    bool success = base.InitializeInternalRuntimeSettings();
+        //    if (this.AzureTenants != null)
+        //    {
+        //        foreach (var tenant in this.AzureTenants)
+        //        {
+        //            tenant.InitializeAuthentication(this.Timeout, this.ProxyAddress);
+        //        }
+        //    }
+        //    return success;
+        //}
 
         protected override TSettings GenerateSettingsFromConfiguration()
         {
-            IAADSettings entityProviderSettings = new AADEntityProviderSettings(
-               this.RuntimeClaimTypesList,
-               this.RuntimeMetadataConfig,
-               this.IdentityClaimTypeConfig,
-               this.MainGroupClaimTypeConfig)
+            IAADSettings entityProviderSettings = new AADEntityProviderSettings()
             {
                 AlwaysResolveUserInput = this.AlwaysResolveUserInput,
                 ClaimTypes = this.ClaimTypes,
@@ -142,6 +133,7 @@ namespace Yvand.ClaimsProviders.Config
                 EntityDisplayTextPrefix = this.EntityDisplayTextPrefix,
                 FilterExactMatchOnly = this.FilterExactMatchOnly,
                 Timeout = this.Timeout,
+                Version = this.Version,
 
                 // Properties specific to type IAADSettings
                 AzureTenants = this.AzureTenants,

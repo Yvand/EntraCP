@@ -10,6 +10,7 @@ namespace Yvand.ClaimsProviders.Config
 {
     public interface IEntityProviderSettings
     {
+        long Version { get; }
         ClaimTypeConfigCollection ClaimTypes { get; }
         bool AlwaysResolveUserInput { get; }
         bool FilterExactMatchOnly { get; }
@@ -17,16 +18,11 @@ namespace Yvand.ClaimsProviders.Config
         string EntityDisplayTextPrefix { get; }
         int Timeout { get; }
         string CustomData { get; }
-
-        // Copy of the internal runtime settings, which external classes can only access through an object implementing this interface
-        List<ClaimTypeConfig> RuntimeClaimTypesList { get; }
-        IEnumerable<ClaimTypeConfig> RuntimeMetadataConfig { get; }
-        IdentityClaimTypeConfig IdentityClaimTypeConfig { get; }
-        ClaimTypeConfig MainGroupClaimTypeConfig { get; }
     }
 
     public class EntityProviderSettings : IEntityProviderSettings
     {
+        public long Version { get; set; }
         public ClaimTypeConfigCollection ClaimTypes { get; set; }
 
         public bool AlwaysResolveUserInput { get; set; } = false;
@@ -39,39 +35,33 @@ namespace Yvand.ClaimsProviders.Config
 
         public int Timeout { get; set; } = ClaimsProviderConstants.DEFAULT_TIMEOUT;
 
-        public string CustomData { get; set; }
+        public string CustomData { get; set; }       
 
-        public List<ClaimTypeConfig> RuntimeClaimTypesList { get; }
-
-        public IEnumerable<ClaimTypeConfig> RuntimeMetadataConfig { get; }
-
-        public IdentityClaimTypeConfig IdentityClaimTypeConfig { get; }
-
-        public ClaimTypeConfig MainGroupClaimTypeConfig { get; }
-
-        public EntityProviderSettings() { }
-
-        public EntityProviderSettings(List<ClaimTypeConfig> runtimeClaimTypesList, IEnumerable<ClaimTypeConfig> runtimeMetadataConfig, IdentityClaimTypeConfig identityClaimTypeConfig, ClaimTypeConfig mainGroupClaimTypeConfig)
-        {
-            RuntimeClaimTypesList = runtimeClaimTypesList;
-            RuntimeMetadataConfig = runtimeMetadataConfig;
-            IdentityClaimTypeConfig = identityClaimTypeConfig;
-            MainGroupClaimTypeConfig = mainGroupClaimTypeConfig;
-        }
+        public EntityProviderSettings() { }        
     }
 
     public class EntityProviderConfig<TSettings> : SPPersistedObject
         where TSettings : IEntityProviderSettings
     {
+        private TSettings _Settings;
         /// <summary>
-        /// Gets the local settings, based on the global settings stored in a persisted object
+        /// Gets the settings, based on the configuration stored in this persisted object
         /// </summary>
-        protected TSettings Settings { get; private set; }
+        public TSettings Settings {
+            get
+            {
+                if (_Settings == null)
+                {
+                    _Settings = GenerateSettingsFromConfiguration();
+                }
+                return _Settings;
+            }
+        }
 
-        /// <summary>
-        /// Gets the current version of the local settings
-        /// </summary>
-        protected long SettingsVersion { get; private set; } = 0;
+        ///// <summary>
+        ///// Gets the current version of the local settings
+        ///// </summary>
+        //protected long SettingsVersion { get; private set; } = 0;
 
         #region "Public runtime settings"
         /// <summary>
@@ -187,9 +177,6 @@ namespace Yvand.ClaimsProviders.Config
 
         #region "Public runtime properties"
         private SPTrustedLoginProvider _SPTrust;
-        /// <summary>
-        /// Gets the SharePoint trust that has its property ClaimProviderName equals to <see cref="ClaimsProviderName"/>
-        /// </summary>
         public SPTrustedLoginProvider SPTrust
         {
             get
@@ -203,12 +190,7 @@ namespace Yvand.ClaimsProviders.Config
         }
         #endregion
 
-        #region "Internal runtime settings"
-        protected List<ClaimTypeConfig> RuntimeClaimTypesList { get; private set; }
-        protected IEnumerable<ClaimTypeConfig> RuntimeMetadataConfig { get; private set; }
-        protected IdentityClaimTypeConfig IdentityClaimTypeConfig { get; private set; }
-        protected ClaimTypeConfig MainGroupClaimTypeConfig { get; private set; }
-        #endregion
+       
 
         public EntityProviderConfig() { }
         public EntityProviderConfig(string persistedObjectName, SPPersistedObject parent, string claimsProviderName) : base(persistedObjectName, parent)
@@ -228,146 +210,60 @@ namespace Yvand.ClaimsProviders.Config
             return true;
         }
 
-        /// <summary>
-        /// Returns the up to date settings of the current configuration
-        /// </summary>
-        /// <returns></returns>
-        public TSettings GetSettings()
-        {
-            RefreshSettingsIfNeeded();
-            TSettings settings = GenerateSettingsFromConfiguration();
-            return settings;
-        }
+        ///// <summary>
+        ///// Returns the settings of the current configuration
+        ///// </summary>
+        ///// <returns></returns>
+        //public TSettings GetSettings()
+        //{
+        //    this.Settings = GenerateSettingsFromConfiguration();
+        //    return this.Settings;
+        //}
 
-        /// <summary>
-        /// Sets the internal runtime settings properties
-        /// </summary>
-        /// <returns>True if successful, false if not</returns>
-        protected virtual bool InitializeInternalRuntimeSettings()
-        {
-            if (this.ClaimTypes?.Count <= 0)
-            {
-                Logger.Log($"[{this.ClaimsProviderName}] Cannot continue because configuration '{this.Name}' has 0 claim configured.",
-                    TraceSeverity.Unexpected, EventSeverity.Error, TraceCategory.Core);
-                return false;
-            }
+        
 
-            bool identityClaimTypeFound = false;
-            bool groupClaimTypeFound = false;
-            List<ClaimTypeConfig> claimTypesSetInTrust = new List<ClaimTypeConfig>();
-            // Parse the ClaimTypeInformation collection set in the SPTrustedLoginProvider
-            foreach (SPTrustedClaimTypeInformation claimTypeInformation in this.SPTrust.ClaimTypeInformation)
-            {
-                // Search if current claim type in trust exists in ClaimTypeConfigCollection
-                ClaimTypeConfig claimTypeConfig = this.ClaimTypes.FirstOrDefault(x =>
-                    String.Equals(x.ClaimType, claimTypeInformation.MappedClaimType, StringComparison.InvariantCultureIgnoreCase) &&
-                    !x.UseMainClaimTypeOfDirectoryObject &&
-                    x.EntityProperty != DirectoryObjectProperty.NotSet);
+//        /// <summary>
+//        /// Ensure that property <see cref="Settings"/> is up  to date
+//        /// </summary>
+//        /// <returns>The up to date <see cref="Settings"/></returns>
+//        protected void RefreshSettingsIfNeeded()
+//        {
+//            EntityProviderConfig<TSettings> globalConfiguration = GetGlobalConfiguration(this.Id);
+//            if (globalConfiguration == null)
+//            {
+//                Logger.Log($"[{ClaimsProviderName}] Cannot continue because configuration '{this.Id}' was not found in configuration database, visit AzureCP admin pages in central administration to create it.",
+//                    TraceSeverity.Unexpected, EventSeverity.Error, TraceCategory.Core);
+//                return;
+//            }
 
-                if (claimTypeConfig == null)
-                {
-                    continue;
-                }
-                ClaimTypeConfig localClaimTypeConfig = claimTypeConfig.CopyConfiguration();
-                localClaimTypeConfig.ClaimTypeDisplayName = claimTypeInformation.DisplayName;
-                claimTypesSetInTrust.Add(localClaimTypeConfig);
-                if (String.Equals(this.SPTrust.IdentityClaimTypeInformation.MappedClaimType, localClaimTypeConfig.ClaimType, StringComparison.InvariantCultureIgnoreCase))
-                {
-                    // Identity claim type found, set IdentityClaimTypeConfig property
-                    identityClaimTypeFound = true;
-                    this.IdentityClaimTypeConfig = IdentityClaimTypeConfig.ConvertClaimTypeConfig(localClaimTypeConfig);
-                }
-                else if (!groupClaimTypeFound && localClaimTypeConfig.EntityType == DirectoryObjectType.Group)
-                {
-                    groupClaimTypeFound = true;
-                    this.MainGroupClaimTypeConfig = localClaimTypeConfig;
-                }
-            }
+//            if (this.SettingsVersion == globalConfiguration.Version)
+//            {
+//                Logger.Log($"[{ClaimsProviderName}] Local copy of configuration '{this.Name}' is up to date with version {this.SettingsVersion}.",
+//                    TraceSeverity.VerboseEx, EventSeverity.Information, TraceCategory.Core);
+//                return;
+//            }
 
-            if (!identityClaimTypeFound)
-            {
-                Logger.Log($"[{this.ClaimsProviderName}] Cannot continue because identity claim type '{this.SPTrust.IdentityClaimTypeInformation.MappedClaimType}' set in the SPTrustedIdentityTokenIssuer '{SPTrust.Name}' is missing in the ClaimTypeConfig list.", TraceSeverity.Unexpected, EventSeverity.ErrorCritical, TraceCategory.Core);
-                return false;
-            }
+//            Logger.Log($"[{ClaimsProviderName}] Configuration '{this.Name}' has new version {globalConfiguration.Version}, refreshing local copy",
+//                TraceSeverity.Medium, EventSeverity.Information, TraceCategory.Core);
+//            this.Settings = globalConfiguration.GenerateSettingsFromConfiguration();
+//            this.ApplySettings(this.Settings, false);
+//            // New settings, must reset runtime settings in case InitializeInternalRuntimeSettings() does not set them
+//            this.IdentityClaimTypeConfig = null;
+//            this.MainGroupClaimTypeConfig = null;
+//            this.RuntimeClaimTypesList = null;
+//            this.RuntimeMetadataConfig = null;
+//            this.InitializeInternalRuntimeSettings();
+//#if !DEBUGx
+//            this.SettingsVersion = globalConfiguration.Version;
+//#endif
 
-            // Check if there are additional properties to use in queries (UseMainClaimTypeOfDirectoryObject set to true)
-            List<ClaimTypeConfig> additionalClaimTypeConfigList = new List<ClaimTypeConfig>();
-            foreach (ClaimTypeConfig claimTypeConfig in this.ClaimTypes.Where(x => x.UseMainClaimTypeOfDirectoryObject))
-            {
-                ClaimTypeConfig localClaimTypeConfig = claimTypeConfig.CopyConfiguration();
-                if (localClaimTypeConfig.EntityType == DirectoryObjectType.User)
-                {
-                    localClaimTypeConfig.ClaimType = this.IdentityClaimTypeConfig.ClaimType;
-                    localClaimTypeConfig.EntityPropertyToUseAsDisplayText = this.IdentityClaimTypeConfig.EntityPropertyToUseAsDisplayText;
-                }
-                else
-                {
-                    // If not a user, it must be a group
-                    if (this.MainGroupClaimTypeConfig == null)
-                    {
-                        continue;
-                    }
-                    localClaimTypeConfig.ClaimType = this.MainGroupClaimTypeConfig.ClaimType;
-                    localClaimTypeConfig.EntityPropertyToUseAsDisplayText = this.MainGroupClaimTypeConfig.EntityPropertyToUseAsDisplayText;
-                    localClaimTypeConfig.ClaimTypeDisplayName = this.MainGroupClaimTypeConfig.ClaimTypeDisplayName;
-                }
-                additionalClaimTypeConfigList.Add(localClaimTypeConfig);
-            }
-
-            this.RuntimeClaimTypesList = new List<ClaimTypeConfig>(claimTypesSetInTrust.Count + additionalClaimTypeConfigList.Count);
-            this.RuntimeClaimTypesList.AddRange(claimTypesSetInTrust);
-            this.RuntimeClaimTypesList.AddRange(additionalClaimTypeConfigList);
-
-            // Get all PickerEntity metadata with a DirectoryObjectProperty set
-            this.RuntimeMetadataConfig = this.ClaimTypes.Where(x =>
-                !String.IsNullOrEmpty(x.EntityDataKey) &&
-                x.EntityProperty != DirectoryObjectProperty.NotSet);
-
-            return true;
-        }
-
-        /// <summary>
-        /// Ensure that property <see cref="Settings"/> is up  to date
-        /// </summary>
-        /// <returns>The up to date <see cref="Settings"/></returns>
-        protected void RefreshSettingsIfNeeded()
-        {
-            EntityProviderConfig<TSettings> globalConfiguration = GetGlobalConfiguration(this.Id);
-            if (globalConfiguration == null)
-            {
-                Logger.Log($"[{ClaimsProviderName}] Cannot continue because configuration '{this.Id}' was not found in configuration database, visit AzureCP admin pages in central administration to create it.",
-                    TraceSeverity.Unexpected, EventSeverity.Error, TraceCategory.Core);
-                return;
-            }
-
-            if (this.SettingsVersion == globalConfiguration.Version)
-            {
-                Logger.Log($"[{ClaimsProviderName}] Local copy of configuration '{this.Name}' is up to date with version {this.SettingsVersion}.",
-                    TraceSeverity.VerboseEx, EventSeverity.Information, TraceCategory.Core);
-                return;
-            }
-
-            Logger.Log($"[{ClaimsProviderName}] Configuration '{this.Name}' has new version {globalConfiguration.Version}, refreshing local copy",
-                TraceSeverity.Medium, EventSeverity.Information, TraceCategory.Core);
-            this.Settings = globalConfiguration.GenerateSettingsFromConfiguration();
-            this.ApplySettings(this.Settings, false);
-            // New settings, must reset runtime settings in case InitializeInternalRuntimeSettings() does not set them
-            this.IdentityClaimTypeConfig = null;
-            this.MainGroupClaimTypeConfig = null;
-            this.RuntimeClaimTypesList = null;
-            this.RuntimeMetadataConfig = null;
-            this.InitializeInternalRuntimeSettings();
-#if !DEBUGx
-            this.SettingsVersion = globalConfiguration.Version;
-#endif
-
-            if (this.Settings.ClaimTypes == null || this.Settings.ClaimTypes.Count == 0)
-            {
-                Logger.Log($"[{ClaimsProviderName}] Configuration '{this.Name}' was found but collection ClaimTypes is empty. Visit AzureCP admin pages in central administration to create it.",
-                    TraceSeverity.Unexpected, EventSeverity.Error, TraceCategory.Core);
-            }
-            return;
-        }
+//            if (this.Settings.ClaimTypes == null || this.Settings.ClaimTypes.Count == 0)
+//            {
+//                Logger.Log($"[{ClaimsProviderName}] Configuration '{this.Name}' was found but collection ClaimTypes is empty. Visit AzureCP admin pages in central administration to create it.",
+//                    TraceSeverity.Unexpected, EventSeverity.Error, TraceCategory.Core);
+//            }
+//            return;
+//        }
 
         /// <summary>
         /// Returns a TSettings from the properties of the current persisted object
@@ -375,11 +271,7 @@ namespace Yvand.ClaimsProviders.Config
         /// <returns></returns>
         protected virtual TSettings GenerateSettingsFromConfiguration()
         {
-            IEntityProviderSettings entityProviderSettings = new EntityProviderSettings(
-                this.RuntimeClaimTypesList,
-                this.RuntimeMetadataConfig,
-                this.IdentityClaimTypeConfig,
-                this.MainGroupClaimTypeConfig)
+            IEntityProviderSettings entityProviderSettings = new EntityProviderSettings()
             {
                 AlwaysResolveUserInput = this.AlwaysResolveUserInput,
                 ClaimTypes = this.ClaimTypes,
@@ -388,6 +280,7 @@ namespace Yvand.ClaimsProviders.Config
                 EntityDisplayTextPrefix = this.EntityDisplayTextPrefix,
                 FilterExactMatchOnly = this.FilterExactMatchOnly,
                 Timeout = this.Timeout,
+                Version = this.Version,
             };
             return (TSettings)entityProviderSettings;
         }
@@ -524,10 +417,10 @@ namespace Yvand.ClaimsProviders.Config
                 //Conf<TSettings> settings = (Conf<TSettings>)parent.GetObject(configurationName, parent.Id, T);
                 //Conf<TSettings> settings = (Conf<TSettings>)parent.GetObject(configurationName, parent.Id, typeof(Conf<TSettings>));
                 EntityProviderConfig<TSettings> configuration = (EntityProviderConfig<TSettings>)parent.GetObject(configurationId);
-                if (configuration != null && initializeLocalSettings == true)
-                {
-                    configuration.RefreshSettingsIfNeeded();
-                }
+                //if (configuration != null && initializeLocalSettings == true)
+                //{
+                //    configuration.RefreshSettingsIfNeeded();
+                //}
                 return configuration;
             }
             catch (Exception ex)
@@ -554,6 +447,11 @@ namespace Yvand.ClaimsProviders.Config
             if (String.IsNullOrWhiteSpace(claimsProviderName))
             {
                 throw new ArgumentNullException(nameof(claimsProviderName));
+            }
+
+            if(Utils.GetSPTrustAssociatedWithClaimsProvider(claimsProviderName) == null)
+            {
+                return null;
             }
 
             // Ensure it doesn't already exists and delete it if so
