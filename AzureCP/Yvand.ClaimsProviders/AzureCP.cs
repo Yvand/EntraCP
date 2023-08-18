@@ -32,7 +32,7 @@ namespace Yvand.ClaimsProviders
 
         public IdentityClaimTypeConfig IdentityClaimTypeConfig { get; set; }
 
-        public ClaimTypeConfig MainGroupClaimTypeConfig { get; set; }       
+        public ClaimTypeConfig MainGroupClaimTypeConfig { get; set; }
     }
 
     public class AzureCP : SPClaimProvider
@@ -1069,25 +1069,25 @@ namespace Yvand.ClaimsProviders
         /// <returns></returns>
         public override string GetClaimTypeForUserKey()
         {
-            // Initialization may fail because there is no yet configuration (fresh install)
-            // In this case, AzureCP should not return null because it causes null exceptions in SharePoint when users sign-in
-            bool configIsValid = ValidateSettings(null);
-            if (configIsValid)
+            //// Initialization may fail because there is no yet configuration (fresh install)
+            //// In this case, AzureCP should not return null because it causes null exceptions in SharePoint when users sign-in
+            ///bool configIsValid = ValidateSettings(null);
+            //if (configIsValid)
+            //{
+            //this.Lock_LocalConfigurationRefresh.EnterReadLock();
+            try
             {
-                this.Lock_LocalConfigurationRefresh.EnterReadLock();
-                try
-                {
-                    return this.SPTrust.IdentityClaimTypeInformation.MappedClaimType;
-                }
-                catch (Exception ex)
-                {
-                    Logger.LogException(Name, "in GetClaimTypeForUserKey", TraceCategory.Rehydration, ex);
-                }
-                finally
-                {
-                    this.Lock_LocalConfigurationRefresh.ExitReadLock();
-                }
+                return this.SPTrust.IdentityClaimTypeInformation.MappedClaimType;
             }
+            catch (Exception ex)
+            {
+                Logger.LogException(Name, "in GetClaimTypeForUserKey", TraceCategory.Rehydration, ex);
+            }
+            //finally
+            //{
+            //    this.Lock_LocalConfigurationRefresh.ExitReadLock();
+            //}
+            //}
             return String.Empty;
         }
 
@@ -1100,29 +1100,37 @@ namespace Yvand.ClaimsProviders
         {
             // Initialization may fail because there is no yet configuration (fresh install)
             // In this case, AzureCP should not return null because it causes null exceptions in SharePoint when users sign-in
-            bool initSucceeded = ValidateSettings(null);
+            //bool initSucceeded = ValidateSettings(null);
 
-            this.Lock_LocalConfigurationRefresh.EnterReadLock();
+            //this.Lock_LocalConfigurationRefresh.EnterReadLock();
             try
             {
                 // If initialization failed but SPTrust is not null, rest of the method can be executed normally
                 // Otherwise return the entity
-                if (!initSucceeded && this.SPTrust == null)
+                if (this.SPTrust == null)
                 {
                     return entity;
                 }
 
                 // There are 2 scenarios:
                 // 1: OriginalIssuer is "SecurityTokenService": Value looks like "05.t|contoso.local|yvand@contoso.local", claim type is "http://schemas.microsoft.com/sharepoint/2009/08/claims/userid" and it must be decoded properly
-                // 2: OriginalIssuer is AzureCP: in this case incoming entity is valid and returned as is
-                if (String.Equals(entity.OriginalIssuer, this.SPTrust.Name, StringComparison.InvariantCultureIgnoreCase))
+                // 2: OriginalIssuer is "TrustedProvider:contoso.local": The incoming entity is fine and returned as is
+                if (String.Equals(entity.OriginalIssuer, this.OriginalIssuerName, StringComparison.InvariantCultureIgnoreCase))
                 {
                     return entity;
                 }
 
-                SPClaimProviderManager cpm = SPClaimProviderManager.Local;
-                SPClaim curUser = SPClaimProviderManager.DecodeUserIdentifierClaim(entity);
+                // SPClaimProviderManager.IsUserIdentifierClaim tests if:
+                // ClaimType == SPClaimTypes.UserIdentifier ("http://schemas.microsoft.com/sharepoint/2009/08/claims/userid")
+                // OriginalIssuer type == SPOriginalIssuerType.SecurityTokenService
+                if (!SPClaimProviderManager.IsUserIdentifierClaim(entity))
+                {
+                    // return entity if not true, otherwise SPClaimProviderManager.DecodeUserIdentifierClaim(entity) throws an ArgumentException
+                    return entity;
+                }
 
+                // Since SPClaimProviderManager.IsUserIdentifierClaim() returned true, SPClaimProviderManager.DecodeUserIdentifierClaim() will work
+                SPClaim curUser = SPClaimProviderManager.DecodeUserIdentifierClaim(entity);
                 Logger.Log($"[{Name}] Returning user key for '{entity.Value}'",
                     TraceSeverity.VerboseEx, EventSeverity.Information, TraceCategory.Rehydration);
                 return CreateClaim(this.SPTrust.IdentityClaimTypeInformation.MappedClaimType, curUser.Value, curUser.ValueType);
@@ -1131,10 +1139,10 @@ namespace Yvand.ClaimsProviders
             {
                 Logger.LogException(Name, "in GetUserKeyForEntity", TraceCategory.Rehydration, ex);
             }
-            finally
-            {
-                this.Lock_LocalConfigurationRefresh.ExitReadLock();
-            }
+            //finally
+            //{
+            //    this.Lock_LocalConfigurationRefresh.ExitReadLock();
+            //}
             return null;
         }
     }
