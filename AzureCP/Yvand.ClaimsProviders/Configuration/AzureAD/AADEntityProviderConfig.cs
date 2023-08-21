@@ -27,11 +27,8 @@ namespace Yvand.ClaimsProviders.Config
     public class AADEntityProviderSettings : EntityProviderSettings, IAADSettings
     {
         public List<AzureTenant> AzureTenants { get; set; } = new List<AzureTenant>();
-
         public string ProxyAddress { get; set; }
-
         public bool FilterSecurityEnabledGroupsOnly { get; set; } = false;
-
         public AADEntityProviderSettings() : base() { }
 
         /// <summary>
@@ -132,7 +129,7 @@ namespace Yvand.ClaimsProviders.Config
         //    return success;
         //}
 
-        protected override TSettings GenerateSettingsFromConfiguration()
+        protected override TSettings GenerateSettingsFromCurrentConfiguration()
         {
             IAADSettings entityProviderSettings = new AADEntityProviderSettings()
             {

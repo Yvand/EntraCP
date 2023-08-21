@@ -1,9 +1,7 @@
 ﻿using Microsoft.SharePoint.Administration;
 using Microsoft.SharePoint.Administration.Claims;
 using System;
-using System.Collections.Generic;
 using System.Collections.ObjectModel;
-using System.Linq;
 using System.Reflection;
 
 namespace Yvand.ClaimsProviders.Config
@@ -68,20 +66,20 @@ namespace Yvand.ClaimsProviders.Config
     public class EntityProviderConfig<TSettings> : SPPersistedObject
         where TSettings : IEntityProviderSettings
     {
-        private TSettings _Settings;
         /// <summary>
-        /// Gets the settings, based on the configuration stored in current persisted object
+        /// Gets the settings, based on the configuration stored in this persisted object
         /// </summary>
         public TSettings Settings {
             get
             {
                 if (_Settings == null)
                 {
-                    _Settings = GenerateSettingsFromConfiguration();
+                    _Settings = GenerateSettingsFromCurrentConfiguration();
                 }
                 return _Settings;
             }
         }
+        private TSettings _Settings;
 
         #region "Settings implemented from the interface"
         protected ClaimTypeConfigCollection ClaimTypes
@@ -206,66 +204,11 @@ namespace Yvand.ClaimsProviders.Config
             return true;
         }
 
-        ///// <summary>
-        ///// Returns the settings of the current configuration
-        ///// </summary>
-        ///// <returns></returns>
-        //public TSettings GetSettings()
-        //{
-        //    this.Settings = GenerateSettingsFromConfiguration();
-        //    return this.Settings;
-        //}
-
-        
-
-//        /// <summary>
-//        /// Ensure that property <see cref="Settings"/> is up  to date
-//        /// </summary>
-//        /// <returns>The up to date <see cref="Settings"/></returns>
-//        protected void RefreshSettingsIfNeeded()
-//        {
-//            EntityProviderConfig<TSettings> globalConfiguration = GetGlobalConfiguration(this.Id);
-//            if (globalConfiguration == null)
-//            {
-//                Logger.Log($"[{ClaimsProviderName}] Cannot continue because configuration '{this.Id}' was not found in configuration database, visit AzureCP admin pages in central administration to create it.",
-//                    TraceSeverity.Unexpected, EventSeverity.Error, TraceCategory.Core);
-//                return;
-//            }
-
-//            if (this.SettingsVersion == globalConfiguration.Version)
-//            {
-//                Logger.Log($"[{ClaimsProviderName}] Local copy of configuration '{this.Name}' is up to date with version {this.SettingsVersion}.",
-//                    TraceSeverity.VerboseEx, EventSeverity.Information, TraceCategory.Core);
-//                return;
-//            }
-
-//            Logger.Log($"[{ClaimsProviderName}] Configuration '{this.Name}' has new version {globalConfiguration.Version}, refreshing local copy",
-//                TraceSeverity.Medium, EventSeverity.Information, TraceCategory.Core);
-//            this.Settings = globalConfiguration.GenerateSettingsFromConfiguration();
-//            this.ApplySettings(this.Settings, false);
-//            // New settings, must reset runtime settings in case InitializeInternalRuntimeSettings() does not set them
-//            this.IdentityClaimTypeConfig = null;
-//            this.MainGroupClaimTypeConfig = null;
-//            this.RuntimeClaimTypesList = null;
-//            this.RuntimeMetadataConfig = null;
-//            this.InitializeInternalRuntimeSettings();
-//#if !DEBUGx
-//            this.SettingsVersion = globalConfiguration.Version;
-//#endif
-
-//            if (this.Settings.ClaimTypes == null || this.Settings.ClaimTypes.Count == 0)
-//            {
-//                Logger.Log($"[{ClaimsProviderName}] Configuration '{this.Name}' was found but collection ClaimTypes is empty. Visit AzureCP admin pages in central administration to create it.",
-//                    TraceSeverity.Unexpected, EventSeverity.Error, TraceCategory.Core);
-//            }
-//            return;
-//        }
-
         /// <summary>
         /// Returns a TSettings from the properties of the current persisted object
         /// </summary>
         /// <returns></returns>
-        protected virtual TSettings GenerateSettingsFromConfiguration()
+        protected virtual TSettings GenerateSettingsFromCurrentConfiguration()
         {
             IEntityProviderSettings entityProviderSettings = new EntityProviderSettings()
             {
@@ -344,13 +287,6 @@ namespace Yvand.ClaimsProviders.Config
         {
             return false;
         }
-
-        // This method fires 3 times in a raw just when the configurationis updated, and anyway it bypassws the logic to update only if needed (and safely in regards to thread safety)
-        //protected override void OnDeserialization()
-        //{
-        //    base.OnDeserialization();
-        //    this.InitializeInternalRuntimeSettings();
-        //}
 
         /// <summary>
         /// Applies the settings passed in parameter to the current settings

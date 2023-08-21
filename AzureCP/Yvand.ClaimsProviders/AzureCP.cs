@@ -122,7 +122,7 @@ namespace Yvand.ClaimsProviders
 
                 if (settings.Version == this.SettingsVersion)
                 {
-                    Logger.Log($"[{ClaimsProviderName}] Local copy of configuration '{this.Name}' is up to date with version {this.SettingsVersion}.",
+                    Logger.Log($"[{ClaimsProviderName}] Local copy of settings is up to date with version {this.SettingsVersion}.",
                     TraceSeverity.VerboseEx, EventSeverity.Information, TraceCategory.Core);
                     return true;
                 }
@@ -165,6 +165,10 @@ namespace Yvand.ClaimsProviders
             return success;
         }
 
+        /// <summary>
+        /// Override this methor to return the settings to use
+        /// </summary>
+        /// <returns></returns>
         protected virtual IAADSettings GetSettings()
         {
             IAADSettings settings = null;
@@ -1077,7 +1081,7 @@ namespace Yvand.ClaimsProviders
             //this.Lock_LocalConfigurationRefresh.EnterReadLock();
             try
             {
-                return this.SPTrust.IdentityClaimTypeInformation.MappedClaimType;
+                return this.SPTrust != null ? this.SPTrust.IdentityClaimTypeInformation.MappedClaimType : String.Empty;
             }
             catch (Exception ex)
             {
