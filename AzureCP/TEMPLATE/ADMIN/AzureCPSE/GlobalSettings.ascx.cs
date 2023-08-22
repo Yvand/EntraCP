@@ -12,6 +12,7 @@ using System.Linq;
 using System.Reflection;
 using System.Security.Cryptography;
 using System.Security.Cryptography.X509Certificates;
+using System.Threading.Tasks;
 using System.Web.UI.HtmlControls;
 using System.Web.UI.WebControls;
 using Yvand.ClaimsProviders.Config;
@@ -188,45 +189,51 @@ namespace Yvand.ClaimsProviders.Administration
                 this.LabelErrorTestLdapConnection.Text = TextErrorNewTenantCreds;
                 return;
             }
-
-            string tenantName = this.TxtTenantName.Text;
-            string clientId = this.TxtClientId.Text;
-            string clientSecret = this.TxtClientSecret.Text;
             AzureCloudInstance cloudInstance = (AzureCloudInstance)Enum.Parse(typeof(AzureCloudInstance), this.DDLAzureCloudInstance.SelectedValue);
-            // The whole flow of setting the certificate and testing it in AADAppOnlyAuthenticationProvider needs to be done as app pool account
-            // Otherwise AADAppOnlyAuthenticationProvider throws CryptographicException: Keyset does not exist (which means it could not access the private key) 
-            SPSecurity.RunWithElevatedPrivileges(delegate ()
+            AzureTenant newTenant = new AzureTenant
             {
-                X509Certificate2 cert = null;
-                if (String.IsNullOrWhiteSpace(this.TxtClientSecret.Text))
+                Name = this.TxtTenantName.Text,
+                ClientId = this.TxtClientId.Text,
+                ClientSecret = this.TxtClientSecret.Text,
+                AzureAuthority = ClaimsProviderConstants.AzureCloudEndpoints.FirstOrDefault(item => item.Key == cloudInstance).Value,
+            };
+
+            //SPSecurity.RunWithElevatedPrivileges(delegate ()
+            //{
+            X509Certificate2 cert = null;
+            if (String.IsNullOrWhiteSpace(newTenant.ClientSecret))
+            {
+                if (ValidateUploadedCertFile(InputClientCertFile, this.InputClientCertPassword.Text, out cert) == false)
+                { return; }
+                else
                 {
-                    if (ValidateUploadedCertFile(InputClientCertFile, this.InputClientCertPassword.Text, out cert) == false)
-                    { return; }
+                    newTenant.ClientCertificateWithPrivateKey = cert;
                 }
-                try
+            }
+            try
+            {
+                //Task<bool> taskTestConnection = newTenant.TestConnectionAsync(Settings.ProxyAddress);
+                Task<bool> taskTestConnection = Task.Run(async () => await newTenant.TestConnectionAsync(Settings.ProxyAddress));
+                taskTestConnection.Wait();
+                bool success = taskTestConnection.Result;
+                if (success)
                 {
-                    //AADAppOnlyAuthenticationProvider testConnection;
-                    //if (String.IsNullOrWhiteSpace(this.TxtClientSecret.Text))
-                    //{
-                    //    testConnection = new AADAppOnlyAuthenticationProvider(cloudInstance, tenantName, clientId, cert, String.Empty, ClaimsProviderConstants.DEFAULT_TIMEOUT);
-                    //}
-                    //else
-                    //{
-                    //    testConnection = new AADAppOnlyAuthenticationProvider(cloudInstance, tenantName, clientId, clientSecret, String.Empty, ClaimsProviderConstants.DEFAULT_TIMEOUT);
-                    //}
-                    //Task<bool> testConnectionTask = testConnection.GetAccessToken(true);
-                    //testConnectionTask.Wait();
                     this.LabelTestTenantConnectionOK.Text = TextConnectionSuccessful;
                 }
-                catch (MsalServiceException ex)
+                else
                 {
-                    this.LabelErrorTestLdapConnection.Text = String.Format(TextErrorTestAzureADConnection, tenantName, ex.Message);
+                    this.LabelErrorTestLdapConnection.Text = String.Format(TextErrorTestAzureADConnection, newTenant.Name, String.Empty);
                 }
-                catch (Exception ex)
-                {
-                    this.LabelErrorTestLdapConnection.Text = String.Format(TextErrorTestAzureADConnection, tenantName, ex.Message);
-                }
-            });
+            }
+            catch (AggregateException ex)
+            {
+                this.LabelErrorTestLdapConnection.Text = String.Format(TextErrorTestAzureADConnection, newTenant.Name, ex.InnerException.Message);
+            }
+            catch (Exception ex)
+            {
+                this.LabelErrorTestLdapConnection.Text = String.Format(TextErrorTestAzureADConnection, newTenant.Name, ex.Message);
+            }
+            //});
         }
 
         protected void BtnOK_Click(Object sender, EventArgs e)

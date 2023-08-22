@@ -13,6 +13,7 @@ using System.Net.Http;
 using System.Reflection;
 using System.Security.Cryptography;
 using System.Security.Cryptography.X509Certificates;
+using System.Threading.Tasks;
 
 namespace Yvand.ClaimsProviders.Config
 {
@@ -237,6 +238,33 @@ namespace Yvand.ClaimsProviders.Config
             //{
             //    ClaimsProviderLogging.LogException(AzureCPSE.ClaimsProviderName, $"while setting client context for tenant '{this.Name}'.", TraceCategory.Core, ex);
             //}
+        }
+
+        public async Task<bool> TestConnectionAsync(string proxyAddress)
+        {
+            if (this.GraphService == null)
+            {
+                this.InitializeAuthentication(Int32.MaxValue, proxyAddress);
+            }
+            if (this.GraphService == null)
+            {
+                return false;
+            }
+            bool success = true;
+            try
+            {
+                await GraphService.Users.GetAsync((config) =>
+                {
+                    config.QueryParameters.Select = new[] { "Id" };
+                    config.QueryParameters.Top = 1;
+                }).ConfigureAwait(false);
+            }
+            catch (Exception ex)
+            {
+                success = false;
+                throw ex;
+            }
+            return success;
         }
 
         /// <summary>
