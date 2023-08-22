@@ -190,8 +190,8 @@
 						</table>
 					</li>
                     <li>
-                        <label for="<%= TxtExtensionAttributesApplicationId.ClientID %>">AD Connect Client ID for extension attributes</label>
-			            <wssawc:InputFormTextBox title="AD Connect Client ID" class="ms-input" ID="TxtExtensionAttributesApplicationId" Columns="50" Runat="server" MaxLength="36" />
+                        <label for="<%= TxtExtensionAttributesApplicationId.ClientID %>">Application ID for extension attributes</label>
+			            <wssawc:InputFormTextBox title="Application ID" class="ms-input" ID="TxtExtensionAttributesApplicationId" Columns="50" Runat="server" MaxLength="36" />
                     </li>
 				</ul>
 				<div class="divbuttons">
