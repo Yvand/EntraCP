@@ -27,6 +27,15 @@
   </CustomAction>
 
   <CustomAction
+      Id="AzureCPTestInstall"
+      GroupId="AzureCPSE"
+      Location="Microsoft.SharePoint.Administration.Security"
+      Title="Tests if .NET can load AzureCPSE"
+      Sequence="21">
+    <UrlAction Url="/_admin/AzureCPSE/TestAzureCPInstall.aspx" />
+  </CustomAction>
+
+  <CustomAction
       Id="AzureCPSite"
       GroupId="AzureCPSE"
       Location="Microsoft.SharePoint.Administration.Security"

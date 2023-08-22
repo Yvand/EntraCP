@@ -10,7 +10,7 @@
 <%@ Import Namespace="Yvand.ClaimsProviders.Config" %>
 
 <asp:Content ID="PageTitle" ContentPlaceHolderID="PlaceHolderPageTitle" runat="server">Verifies if AzureCP SE runs</asp:Content>
-<asp:Content ID="PageTitleInTitleArea" ContentPlaceHolderID="PlaceHolderPageTitleInTitleArea" runat="server">Verifies if AzureCP SE runs</asp:Content>
+<asp:Content ID="PageTitleInTitleArea" ContentPlaceHolderID="PlaceHolderPageTitleInTitleArea" runat="server">Verifies if AzureCP SE runs in current site</asp:Content>
 <asp:Content ID="Main" ContentPlaceHolderID="PlaceHolderMain" runat="server">
     <%
         // Variables proxy and tenant below can be replaced with actual values
@@ -53,7 +53,7 @@
                 // Azure.Identity.AuthenticationFailedException is expected if credentials are not valid
                 if (String.Equals(ex.InnerException.GetType().FullName, "Azure.Identity.AuthenticationFailedException", StringComparison.InvariantCultureIgnoreCase))
                 {
-                    LblResult.Text = String.Format("Loading of all dependent assemblies was successful. Authentication to the tenant '{0}' failed: {1}", tenant.Name, ex.InnerException.Message);
+                    LblResult.Text = String.Format("Loading of all dependent assemblies was successful.<br />Authentication to the tenant '{0}' failed: {1}", tenant.Name, ex.InnerException.Message);
                 }
                 else
                 {
