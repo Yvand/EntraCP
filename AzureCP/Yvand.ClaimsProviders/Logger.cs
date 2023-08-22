@@ -3,6 +3,7 @@ using Microsoft.SharePoint.Administration;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.IO;
 using System.Linq;
 using System.Text;
 
@@ -64,14 +65,15 @@ namespace Yvand.ClaimsProviders
             }
         }
 
-        public static void LogException(string ClaimsProviderName, string customMessage, TraceCategory category, Exception ex)
+        public static void LogException(string claimsProviderName, string customMessage, TraceCategory category, Exception ex)
         {
             try
             {
+                string errorNessage = String.Empty;
                 if (ex is AggregateException)
                 {
-                    StringBuilder message = new StringBuilder($"[{ClaimsProviderName}] Unexpected error(s) {customMessage}:");
-                    string excetpionMessage = Environment.NewLine + "[EXCEPTION {0}]: {1}: {2}. Callstack: {3}";
+                    StringBuilder message = new StringBuilder($"[{claimsProviderName}] Unexpected error(s) {customMessage}:");
+                    string excetpionMessage = Environment.NewLine + "[EXCEPTION {0}]: {1}: {2}";
                     var aggEx = ex as AggregateException;
                     int count = 1;
                     foreach (var innerEx in aggEx.InnerExceptions)
@@ -79,29 +81,43 @@ namespace Yvand.ClaimsProviders
                         string currentMessage;
                         if (innerEx.InnerException != null)
                         {
-                            currentMessage = String.Format(excetpionMessage, count++.ToString(), innerEx.InnerException.GetType().FullName, innerEx.InnerException.Message, innerEx.InnerException.StackTrace);
+                            currentMessage = String.Format(excetpionMessage, count++.ToString(), innerEx.InnerException.GetType().FullName, innerEx.InnerException.Message);
                         }
                         else
                         {
-                            currentMessage = String.Format(excetpionMessage, count++.ToString(), innerEx.GetType().FullName, innerEx.Message, innerEx.StackTrace);
+                            currentMessage = String.Format(excetpionMessage, count++.ToString(), innerEx.GetType().FullName, innerEx.Message);
                         }
                         message.Append(currentMessage);
                     }
-                    WriteTrace(category, TraceSeverity.Unexpected, message.ToString());
+                    errorNessage = message.ToString();
+                }
+                else if (ex is FileNotFoundException)
+                {
+                    string stackTrace = String.Empty;
+                    try
+                    {
+                        stackTrace = ex.StackTrace;
+                    }
+                    catch { } // Calling property FileNotFoundException.StackTrace may thrown an exception
+                    errorNessage = $"[{claimsProviderName}] .NET could not load an assembly, please check your assembly bindings in machine.config file, or .config file for current process. Exception details: '{ex.Message}'";
+                    if (!String.IsNullOrWhiteSpace(stackTrace))
+                    {
+                        errorNessage += $"{Environment.NewLine}Callstack: {stackTrace}";
+                    }
                 }
                 else
                 {
-                    string message = "[{0}] Unexpected error {1}: {2}: {3}, Callstack: {4}";
+                    errorNessage = "[{0}] Unexpected error {1}: {2}: {3}, Callstack: {4}";
                     if (ex.InnerException != null)
                     {
-                        message = String.Format(message, ClaimsProviderName, customMessage, ex.InnerException.GetType().FullName, ex.InnerException.Message, ex.InnerException.StackTrace);
+                        errorNessage = String.Format(errorNessage, claimsProviderName, customMessage, ex.InnerException.GetType().FullName, ex.InnerException.Message, ex.InnerException.StackTrace);
                     }
                     else
                     {
-                        message = String.Format(message, ClaimsProviderName, customMessage, ex.GetType().FullName, ex.Message, ex.StackTrace);
+                        errorNessage = String.Format(errorNessage, claimsProviderName, customMessage, ex.GetType().FullName, ex.Message, ex.StackTrace);
                     }
-                    WriteTrace(category, TraceSeverity.Unexpected, message);
                 }
+                WriteTrace(category, TraceSeverity.Unexpected, errorNessage);
             }
             catch
             {   // Don't want to do anything if logging goes wrong, just ignore and continue
@@ -263,7 +279,7 @@ namespace Yvand.ClaimsProviders
         }
         #endregion
 
-        
+
     }
     #region Attributes
     class CategoryNameAttribute : Attribute
