@@ -9,8 +9,8 @@
 <%@ Import Namespace="Yvand.ClaimsProviders" %>
 <%@ Import Namespace="Yvand.ClaimsProviders.Config" %>
 
-<asp:Content ID="PageTitle" ContentPlaceHolderID="PlaceHolderPageTitle" runat="server">Validate the installation of AzureCP SE</asp:Content>
-<asp:Content ID="PageTitleInTitleArea" ContentPlaceHolderID="PlaceHolderPageTitleInTitleArea" runat="server">Verify if AzureCP SE can run</asp:Content>
+<asp:Content ID="PageTitle" ContentPlaceHolderID="PlaceHolderPageTitle" runat="server">Verifies if AzureCP SE runs</asp:Content>
+<asp:Content ID="PageTitleInTitleArea" ContentPlaceHolderID="PlaceHolderPageTitleInTitleArea" runat="server">Verifies if AzureCP SE runs</asp:Content>
 <asp:Content ID="Main" ContentPlaceHolderID="PlaceHolderMain" runat="server">
     <%
         // Variables proxy and tenant below can be replaced with actual values
@@ -67,7 +67,12 @@
             LblResult.Text = ex.GetType().Name;
         }
     %>
-    Result:<br />
+    This page primarily verifies if the assembly bindings are correctly set.<br />
+    It also tries to connect to Azure AD, but it uses hardcoded, fake credentials by default.<br />
+    It has no code behind, it is written entirely using inline code, so you can easily customize it (and set valid credentials).<br />
+    For security reasons, by default it can only be called from the central administration, but you can simply copy it in the LAYOUTS folder, to call it from any SharePoint web application.<br />
+    <br />
+    Result of the tests:<br />
     <asp:Literal ID="LblResult" runat="server" Text="" />
     <%--<asp:TextBox ID="TxtUrl" runat="server" CssClass="ms-inputformcontrols" Text="URL..."></asp:TextBox>--%>
 </asp:Content>
