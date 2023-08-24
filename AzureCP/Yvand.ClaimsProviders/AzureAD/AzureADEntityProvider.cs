@@ -104,7 +104,7 @@ namespace Yvand.ClaimsProviders.AzureAD
                 }
                 catch (Exception ex)
                 {
-                    Logger.LogException(ClaimsProviderName, $"while getting groups for user '{currentContext.IncomingEntity.Value}' in tenant '{tenant.Name}'", TraceCategory.Augmentation, ex);
+                    Logger.LogException(ClaimsProviderName, $"while getting groups for user '{currentContext.IncomingEntity.Value}' from tenant '{tenant.Name}'", TraceCategory.Augmentation, ex);
                 }
                 finally
                 {
@@ -112,11 +112,11 @@ namespace Yvand.ClaimsProviders.AzureAD
                 }
                 if (groupsInTenant != null)
                 {
-                    Logger.Log($"[{ClaimsProviderName}] Got {groupsInTenant.Count} users/groups in {timer.ElapsedMilliseconds.ToString()} ms from '{tenant.Name}' with input '{currentContext.Input}'", TraceSeverity.Medium, EventSeverity.Information, TraceCategory.Augmentation);
+                    Logger.Log($"[{ClaimsProviderName}] Got {groupsInTenant.Count} groups in {timer.ElapsedMilliseconds} ms for user '{currentContext.IncomingEntity.Value}' from tenant '{tenant.Name}'", TraceSeverity.Verbose, EventSeverity.Information, TraceCategory.Augmentation);
                 }
                 else
                 {
-                    Logger.Log($"[{ClaimsProviderName}] Got no group for user '{currentContext.IncomingEntity.Value}' in tenant, search took {timer.ElapsedMilliseconds} ms", TraceSeverity.Medium, EventSeverity.Information, TraceCategory.Augmentation);
+                    Logger.Log($"[{ClaimsProviderName}] Got no group in {timer.ElapsedMilliseconds} ms for user '{currentContext.IncomingEntity.Value}' from tenant '{tenant.Name}'", TraceSeverity.Verbose, EventSeverity.Information, TraceCategory.Augmentation);
                 }
                 return groupsInTenant;
             });

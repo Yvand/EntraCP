@@ -898,12 +898,12 @@ namespace Yvand.ClaimsProviders
                         Logger.Log($"[{Name}] Added group '{group}' to user '{currentContext.IncomingEntity.Value}'",
                             TraceSeverity.Verbose, EventSeverity.Information, TraceCategory.Augmentation);
                     }
-                    Logger.Log($"[{Name}] User '{currentContext.IncomingEntity.Value}' was augmented with {groups.Count} groups in {timer.ElapsedMilliseconds} ms",
+                    Logger.Log($"[{Name}] Augmented user '{currentContext.IncomingEntity.Value}' with {groups.Count} groups in {timer.ElapsedMilliseconds} ms",
                         TraceSeverity.Medium, EventSeverity.Information, TraceCategory.Augmentation);
                 }
                 else
                 {
-                    Logger.Log($"[{Name}] No group found for user '{currentContext.IncomingEntity.Value}', search took {timer.ElapsedMilliseconds.ToString()} ms",
+                    Logger.Log($"[{Name}] Got no group in {timer.ElapsedMilliseconds} ms for user '{currentContext.IncomingEntity.Value}'",
                         TraceSeverity.Medium, EventSeverity.Information, TraceCategory.Augmentation);
                 }
             }
