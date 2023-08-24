@@ -1,173 +1,169 @@
 ﻿<?xml version="1.0" encoding="utf-8"?>
 <Project ToolsVersion="12.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
-  <Import Project="$(MSBuildExtensionsPath)\$(MSBuildToolsVersion)\Microsoft.Common.props" Condition="Exists('$(MSBuildExtensionsPath)\$(MSBuildToolsVersion)\Microsoft.Common.props')" />
-  <!-- Common -->
-  <PropertyGroup>
-    <ProjectGuid>{EEC47949-34B5-4805-A04D-A372BE75D3CB}</ProjectGuid>
-    <OutputType>Library</OutputType>
-    <AppDesignerFolder>Properties</AppDesignerFolder>
-    <RootNamespace>Yvand.ClaimsProviders</RootNamespace>
-    <AssemblyName>AzureCPSE</AssemblyName>
-    <TargetFrameworkVersion>v4.8</TargetFrameworkVersion>
-    <LangVersion>8.0</LangVersion>
-    <TargetOfficeVersion>19.0</TargetOfficeVersion>
-    <FileAlignment>512</FileAlignment>
-    <ProjectTypeGuids>{C1CDDADD-2546-481F-9697-4EA41081F2FC};{14822709-B5A1-4724-98CA-57A101D1B079};{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}</ProjectTypeGuids>
-    <SandboxedSolution>False</SandboxedSolution>
-    <SccProjectName>
-    </SccProjectName>
-    <SccLocalPath>
-    </SccLocalPath>
-    <SccAuxPath>
-    </SccAuxPath>
-    <SccProvider>
-    </SccProvider>
-    <NuGetPackageImportStamp>
-    </NuGetPackageImportStamp>
-    <TargetFrameworkProfile />
-    <SignAssembly>true</SignAssembly>
-    <AssemblyOriginatorKeyFile>AzureCP.snk</AssemblyOriginatorKeyFile>
-    <DependsOnNETStandard>false</DependsOnNETStandard>
-    <ProjectMode>SharePointCustomization</ProjectMode>
-    <MinimumOfficeToolsVersion>14.1</MinimumOfficeToolsVersion>
-    <MinimumVisualStudioVersion>15.0</MinimumVisualStudioVersion>
-    <FileUpgradeFlags>
+    <Import Project="$(MSBuildExtensionsPath)\$(MSBuildToolsVersion)\Microsoft.Common.props" Condition="Exists('$(MSBuildExtensionsPath)\$(MSBuildToolsVersion)\Microsoft.Common.props')"/>
+    <!-- Common -->
+    <PropertyGroup>
+        <ProjectGuid>{EEC47949-34B5-4805-A04D-A372BE75D3CB}</ProjectGuid>
+        <PackageId>Yvand.AzureCP</PackageId>
+        <Authors>Yvan Duhamel</Authors>
+        <OutputType>Library</OutputType>
+        <AppDesignerFolder>Properties</AppDesignerFolder>
+        <RootNamespace>Yvand.ClaimsProviders</RootNamespace>
+        <AssemblyName>AzureCPSE</AssemblyName>
+        <TargetFrameworkVersion>v4.8</TargetFrameworkVersion>
+        <LangVersion>8.0</LangVersion>
+        <TargetOfficeVersion>19.0</TargetOfficeVersion>
+        <FileAlignment>512</FileAlignment>
+        <ProjectTypeGuids>{C1CDDADD-2546-481F-9697-4EA41081F2FC};{14822709-B5A1-4724-98CA-57A101D1B079};{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}</ProjectTypeGuids>
+        <SandboxedSolution>False</SandboxedSolution>
+        <TargetFrameworkProfile/>
+        <SignAssembly>true</SignAssembly>
+        <AssemblyOriginatorKeyFile>AzureCP.snk</AssemblyOriginatorKeyFile>
+        <DependsOnNETStandard>false</DependsOnNETStandard>
+        <ProjectMode>SharePointCustomization</ProjectMode>
+        <MinimumOfficeToolsVersion>14.1</MinimumOfficeToolsVersion>
+        <MinimumVisualStudioVersion>15.0</MinimumVisualStudioVersion>
+        <FileUpgradeFlags>
     </FileUpgradeFlags>
-    <UpgradeBackupLocation>C:\YvanData\dev\AzureCP\Backup1\</UpgradeBackupLocation>
-    <OldToolsVersion>12.0</OldToolsVersion>
-  </PropertyGroup>
-  <!-- Debug configuration -->
-  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
-    <DebugSymbols>true</DebugSymbols>
-    <DebugType>full</DebugType>
-    <Optimize>false</Optimize>
-    <OutputPath>bin\Debug\</OutputPath>
-    <DefineConstants>DEBUG;TRACE</DefineConstants>
-    <ErrorReport>prompt</ErrorReport>
-    <WarningLevel>4</WarningLevel>
-    <UseVSHostingProcess>false</UseVSHostingProcess>
-    <CodeAnalysisRuleSet>MinimumRecommendedRules.ruleset</CodeAnalysisRuleSet>
-  </PropertyGroup>
-  <!-- Release configuration -->
-  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|AnyCPU' ">
-    <DebugType>pdbonly</DebugType>
-    <Optimize>true</Optimize>
-    <OutputPath>bin\Release\</OutputPath>
-    <DefineConstants>TRACE</DefineConstants>
-    <ErrorReport>prompt</ErrorReport>
-    <WarningLevel>4</WarningLevel>
-    <UseVSHostingProcess>false</UseVSHostingProcess>
-    <CodeAnalysisRuleSet>MinimumRecommendedRules.ruleset</CodeAnalysisRuleSet>
-  </PropertyGroup>
-  <PropertyGroup>
-    <AutoGenerateBindingRedirects>true</AutoGenerateBindingRedirects>
-  </PropertyGroup>
-  <!-- Project references -->
-  <ItemGroup>
-    <Reference Include="Microsoft.CSharp" />
-    <Reference Include="Microsoft.SharePoint, Version=16.0.0.0, Culture=neutral, PublicKeyToken=71e9bce111e9429c, processorArchitecture=MSIL">
-      <SpecificVersion>False</SpecificVersion>
-      <HintPath>references\SPSE\Microsoft.SharePoint.dll</HintPath>
-      <Private>False</Private>
-    </Reference>
-    <Reference Include="System" />
-    <Reference Include="System.Core" />
-    <Reference Include="System.Web" />
-  </ItemGroup>
-  <ItemGroup>
-    <Compile Include="Yvand.ClaimsProviders\AzureAD\AzureADEntityProvider.cs" />
-    <Compile Include="Yvand.ClaimsProviders\AzureCP.cs" />
-    <Compile Include="Yvand.ClaimsProviders\Administration\AzureCPUserControl.cs">
-      <SubType>ASPXCodeBehind</SubType>
-    </Compile>
-    <Compile Include="Yvand.ClaimsProviders\Logger.cs" />
-    <Compile Include="Yvand.ClaimsProviders\Configuration\AzureAD\AADEntityProviderConfig.cs" />
-    <Compile Include="Yvand.ClaimsProviders\Configuration\AzureAD\AzureTenant.cs" />
-    <Compile Include="Yvand.ClaimsProviders\Configuration\ClaimsProviderConstants.cs" />
-    <Compile Include="Yvand.ClaimsProviders\Configuration\ClaimTypeConfig.cs" />
-    <Compile Include="Yvand.ClaimsProviders\Configuration\EntityProviderConfig.cs" />
-    <Compile Include="Yvand.ClaimsProviders\EntityProviderBase.cs" />
-    <Compile Include="TEMPLATE\ADMIN\AzureCPSE\ClaimTypesConfig.ascx.cs">
-      <DependentUpon>ClaimTypesConfig.ascx</DependentUpon>
-      <SubType>ASPXCodeBehind</SubType>
-    </Compile>
-    <Compile Include="TEMPLATE\ADMIN\AzureCPSE\ClaimTypesConfig.ascx.designer.cs">
-      <DependentUpon>ClaimTypesConfig.ascx.cs</DependentUpon>
-    </Compile>
-    <Compile Include="TEMPLATE\ADMIN\AzureCPSE\GlobalSettings.ascx.cs">
-      <DependentUpon>GlobalSettings.ascx</DependentUpon>
-      <SubType>ASPXCodeBehind</SubType>
-    </Compile>
-    <Compile Include="TEMPLATE\ADMIN\AzureCPSE\GlobalSettings.ascx.designer.cs">
-      <DependentUpon>GlobalSettings.ascx.cs</DependentUpon>
-    </Compile>
-    <Compile Include="Features\AzureCPSE\AzureCPSE.EventReceiver.cs">
-      <DependentUpon>AzureCPSE.feature</DependentUpon>
-    </Compile>
-    <Compile Include="Properties\AssemblyInfo.cs" />
-    <Compile Include="Yvand.ClaimsProviders\Utils.cs" />
-  </ItemGroup>
-  <ItemGroup>
-    <None Include="AzureCPSE.Administration.Links\SharePointProjectItem.spdata">
-      <SharePointProjectItemId>{c15a0bf3-126a-42e6-af6b-5880f2e9af42}</SharePointProjectItemId>
-    </None>
-    <None Include="AzureCP.snk" />
-    <None Include="Features\AzureCPSE\AzureCPSE.feature">
-      <FeatureId>{70b104e2-19df-4cb1-9802-c98eaf14d84e}</FeatureId>
-    </None>
-    <None Include="Features\AzureCPSE.Administration\AzureCPSE.Administration.feature">
-      <FeatureId>{b82964c9-f57c-4826-b1dd-f03f63c7f197}</FeatureId>
-    </None>
-    <None Include="Package\Package.package">
-      <PackageId>{1db45b9b-2fff-4f07-992b-344dde907316}</PackageId>
-    </None>
-    <None Include="Package\Package.Template.xml">
-      <DependentUpon>Package.package</DependentUpon>
-    </None>
-    <None Include="TEMPLATE\SharePointProjectItem.spdata">
-      <SharePointProjectItemId>{aa00a720-1ea7-47a5-8993-73b778baef87}</SharePointProjectItemId>
-    </None>
-  </ItemGroup>
-  <!-- NuGet packages -->
-  <ItemGroup>
-    <PackageReference Include="Azure.Identity">
-      <Version>1.10.0</Version>
-    </PackageReference>
-    <PackageReference Include="Microsoft.Graph">
-      <Version>5.23.0</Version>
-    </PackageReference>
-    <PackageReference Include="Nito.AsyncEx">
-      <Version>5.1.2</Version>
-    </PackageReference>
-    <PackageReference Include="StrongNamer">
-      <Version>0.2.5</Version>
-    </PackageReference>
-  </ItemGroup>
-  <ItemGroup>
-    <Content Include="AzureCPSE.Administration.Links\Elements.xml" />
-    <Content Include="TEMPLATE\ADMIN\AzureCPSE\ClaimTypesConfig.ascx" />
-    <Content Include="TEMPLATE\ADMIN\AzureCPSE\GlobalSettings.ascx" />
-    <Content Include="Features\AzureCPSE\AzureCPSE.Template.xml">
-      <DependentUpon>AzureCPSE.feature</DependentUpon>
-    </Content>
-    <Content Include="Features\AzureCPSE.Administration\AzureCPSE.Administration.Template.xml">
-      <DependentUpon>AzureCPSE.Administration.feature</DependentUpon>
-    </Content>
-    <Content Include="TEMPLATE\ADMIN\AzureCPSE\GlobalSettings.aspx" />
-    <Content Include="TEMPLATE\ADMIN\AzureCPSE\ClaimTypesConfig.aspx" />
-    <Content Include="TEMPLATE\ADMIN\AzureCPSE\TestAzureCPInstall.aspx" />
-    <Content Include="TEMPLATE\LAYOUTS\AzureCPSE\AzureCP_logo_small.png" />
-    <Content Include="TEMPLATE\LAYOUTS\AzureCPSE\jquery-1.9.1.min.js" />
-  </ItemGroup>
-  <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
-  <PropertyGroup>
-    <VisualStudioVersion Condition="'$(VisualStudioVersion)' == ''">10.0</VisualStudioVersion>
-    <VSToolsPath Condition="'$(VSToolsPath)' == ''">$(MSBuildExtensionsPath32)\Microsoft\VisualStudio\v$(VisualStudioVersion)</VSToolsPath>
-  </PropertyGroup>
-  <Import Project="$(VSToolsPath)\SharePointTools\Microsoft.VisualStudio.SharePoint.targets" Condition="'$(VSToolsPath)' != ''" />
-  <!-- Copy the assemblies that will be added to the WSP package -->
-  <PropertyGroup>
-    <PostBuildEvent>"C:\Program Files (x86)\Microsoft SDKs\Windows\v10.0A\bin\NETFX 4.8 Tools\x64\gacutil.exe" /f /i "$(TargetPath)"
+        <UpgradeBackupLocation>C:\YvanData\dev\AzureCP\Backup1\</UpgradeBackupLocation>
+        <OldToolsVersion>12.0</OldToolsVersion>
+    </PropertyGroup>
+    <!-- Debug configuration -->
+    <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
+        <DebugSymbols>true</DebugSymbols>
+        <DebugType>full</DebugType>
+        <Optimize>false</Optimize>
+        <OutputPath>bin\Debug\</OutputPath>
+        <DefineConstants>DEBUG;TRACE</DefineConstants>
+        <ErrorReport>prompt</ErrorReport>
+        <WarningLevel>4</WarningLevel>
+        <UseVSHostingProcess>false</UseVSHostingProcess>
+        <CodeAnalysisRuleSet>MinimumRecommendedRules.ruleset</CodeAnalysisRuleSet>
+    </PropertyGroup>
+    <!-- Release configuration -->
+    <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|AnyCPU' ">
+        <DebugType>pdbonly</DebugType>
+        <Optimize>true</Optimize>
+        <OutputPath>bin\Release\</OutputPath>
+        <DefineConstants>TRACE</DefineConstants>
+        <ErrorReport>prompt</ErrorReport>
+        <WarningLevel>4</WarningLevel>
+        <UseVSHostingProcess>false</UseVSHostingProcess>
+        <CodeAnalysisRuleSet>MinimumRecommendedRules.ruleset</CodeAnalysisRuleSet>
+    </PropertyGroup>
+    <PropertyGroup>
+        <AutoGenerateBindingRedirects>true</AutoGenerateBindingRedirects>
+    </PropertyGroup>
+    <!-- Project references -->
+    <ItemGroup>
+        <Reference Include="Microsoft.CSharp"/>
+        <Reference Include="Microsoft.SharePoint, Version=16.0.0.0, Culture=neutral, PublicKeyToken=71e9bce111e9429c, processorArchitecture=MSIL">
+            <SpecificVersion>False</SpecificVersion>
+            <HintPath>references\SPSE\Microsoft.SharePoint.dll</HintPath>
+            <Private>False</Private>
+        </Reference>
+        <Reference Include="System"/>
+        <Reference Include="System.Core"/>
+        <Reference Include="System.Web"/>
+    </ItemGroup>
+    <ItemGroup>
+        <Compile Include="Yvand.ClaimsProviders\AzureAD\AzureADEntityProvider.cs"/>
+        <Compile Include="Yvand.ClaimsProviders\AzureCP.cs"/>
+        <Compile Include="Yvand.ClaimsProviders\Administration\AzureCPUserControl.cs">
+            <SubType>ASPXCodeBehind</SubType>
+        </Compile>
+        <Compile Include="Yvand.ClaimsProviders\Logger.cs"/>
+        <Compile Include="Yvand.ClaimsProviders\Configuration\AzureAD\AADEntityProviderConfig.cs"/>
+        <Compile Include="Yvand.ClaimsProviders\Configuration\AzureAD\AzureTenant.cs"/>
+        <Compile Include="Yvand.ClaimsProviders\Configuration\ClaimsProviderConstants.cs"/>
+        <Compile Include="Yvand.ClaimsProviders\Configuration\ClaimTypeConfig.cs"/>
+        <Compile Include="Yvand.ClaimsProviders\Configuration\EntityProviderConfig.cs"/>
+        <Compile Include="Yvand.ClaimsProviders\EntityProviderBase.cs"/>
+        <Compile Include="TEMPLATE\ADMIN\AzureCPSE\ClaimTypesConfig.ascx.cs">
+            <DependentUpon>ClaimTypesConfig.ascx</DependentUpon>
+            <SubType>ASPXCodeBehind</SubType>
+        </Compile>
+        <Compile Include="TEMPLATE\ADMIN\AzureCPSE\ClaimTypesConfig.ascx.designer.cs">
+            <DependentUpon>ClaimTypesConfig.ascx.cs</DependentUpon>
+        </Compile>
+        <Compile Include="TEMPLATE\ADMIN\AzureCPSE\GlobalSettings.ascx.cs">
+            <DependentUpon>GlobalSettings.ascx</DependentUpon>
+            <SubType>ASPXCodeBehind</SubType>
+        </Compile>
+        <Compile Include="TEMPLATE\ADMIN\AzureCPSE\GlobalSettings.ascx.designer.cs">
+            <DependentUpon>GlobalSettings.ascx.cs</DependentUpon>
+        </Compile>
+        <Compile Include="Features\AzureCPSE\AzureCPSE.EventReceiver.cs">
+            <DependentUpon>AzureCPSE.feature</DependentUpon>
+        </Compile>
+        <Compile Include="Properties\AssemblyInfo.cs"/>
+        <Compile Include="Yvand.ClaimsProviders\Utils.cs"/>
+    </ItemGroup>
+    <ItemGroup>
+        <None Include="AzureCPSE.Administration.Links\SharePointProjectItem.spdata">
+            <SharePointProjectItemId>{c15a0bf3-126a-42e6-af6b-5880f2e9af42}</SharePointProjectItemId>
+        </None>
+        <None Include="AzureCP.snk"/>
+        <None Include="Features\AzureCPSE\AzureCPSE.feature">
+            <FeatureId>{70b104e2-19df-4cb1-9802-c98eaf14d84e}</FeatureId>
+        </None>
+        <None Include="Features\AzureCPSE.Administration\AzureCPSE.Administration.feature">
+            <FeatureId>{b82964c9-f57c-4826-b1dd-f03f63c7f197}</FeatureId>
+        </None>
+        <None Include="Package\Package.package">
+            <PackageId>{1db45b9b-2fff-4f07-992b-344dde907316}</PackageId>
+        </None>
+        <None Include="Package\Package.Template.xml">
+            <DependentUpon>Package.package</DependentUpon>
+        </None>
+        <None Include="TEMPLATE\SharePointProjectItem.spdata">
+            <SharePointProjectItemId>{aa00a720-1ea7-47a5-8993-73b778baef87}</SharePointProjectItemId>
+        </None>
+    </ItemGroup>
+    <!-- NuGet packages -->
+    <ItemGroup>
+        <PackageReference Include="Azure.Identity">
+            <Version>1.10.0</Version>
+        </PackageReference>
+        <PackageReference Include="Microsoft.Graph">
+            <Version>5.23.0</Version>
+        </PackageReference>
+        <PackageReference Include="Nito.AsyncEx">
+            <Version>5.1.2</Version>
+        </PackageReference>
+        <PackageReference Include="StrongNamer">
+            <Version>0.2.5</Version>
+        </PackageReference>
+        <PackageReference Include="NuGet.Build.Tasks.Pack" Version="6.7.0">
+            <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
+            <PrivateAssets>all</PrivateAssets>
+        </PackageReference>
+    </ItemGroup>
+    <ItemGroup>
+        <Content Include="AzureCPSE.Administration.Links\Elements.xml"/>
+        <Content Include="TEMPLATE\ADMIN\AzureCPSE\ClaimTypesConfig.ascx"/>
+        <Content Include="TEMPLATE\ADMIN\AzureCPSE\GlobalSettings.ascx"/>
+        <Content Include="Features\AzureCPSE\AzureCPSE.Template.xml">
+            <DependentUpon>AzureCPSE.feature</DependentUpon>
+        </Content>
+        <Content Include="Features\AzureCPSE.Administration\AzureCPSE.Administration.Template.xml">
+            <DependentUpon>AzureCPSE.Administration.feature</DependentUpon>
+        </Content>
+        <Content Include="TEMPLATE\ADMIN\AzureCPSE\GlobalSettings.aspx"/>
+        <Content Include="TEMPLATE\ADMIN\AzureCPSE\ClaimTypesConfig.aspx"/>
+        <Content Include="TEMPLATE\ADMIN\AzureCPSE\TestAzureCPInstall.aspx"/>
+        <Content Include="TEMPLATE\LAYOUTS\AzureCPSE\AzureCP_logo_small.png"/>
+        <Content Include="TEMPLATE\LAYOUTS\AzureCPSE\jquery-1.9.1.min.js"/>
+    </ItemGroup>
+    <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets"/>
+    <PropertyGroup>
+        <VisualStudioVersion Condition="'$(VisualStudioVersion)' == ''">10.0</VisualStudioVersion>
+        <VSToolsPath Condition="'$(VSToolsPath)' == ''">$(MSBuildExtensionsPath32)\Microsoft\VisualStudio\v$(VisualStudioVersion)</VSToolsPath>
+    </PropertyGroup>
+    <Import Project="$(VSToolsPath)\SharePointTools\Microsoft.VisualStudio.SharePoint.targets" Condition="'$(VSToolsPath)' != ''"/>
+    <!-- Copy the assemblies that will be added to the WSP package -->
+    <PropertyGroup>
+        <PostBuildEvent>"C:\Program Files (x86)\Microsoft SDKs\Windows\v10.0A\bin\NETFX 4.8 Tools\x64\gacutil.exe" /f /i "$(TargetPath)"
 copy /Y "$(TargetDir)Azure.Core.dll" $(ProjectDir)\bin
 copy /Y "$(TargetDir)Azure.Identity.dll" $(ProjectDir)\bin
 copy /Y "$(TargetDir)Microsoft.Bcl.AsyncInterfaces.dll" $(ProjectDir)\bin
@@ -211,5 +207,5 @@ copy /Y "$(TargetDir)System.Text.Json.dll" $(ProjectDir)\bin
 copy /Y "$(TargetDir)System.Threading.Tasks.Extensions.dll" $(ProjectDir)\bin
 copy /Y "$(TargetDir)System.ValueTuple.dll" $(ProjectDir)\bin
 copy /Y "$(TargetDir)Tavis.UriTemplates.dll" $(ProjectDir)\bin</PostBuildEvent>
-  </PropertyGroup>
+    </PropertyGroup>
 </Project>
