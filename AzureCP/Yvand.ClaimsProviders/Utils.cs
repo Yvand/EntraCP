@@ -1,12 +1,10 @@
 ﻿using Microsoft.SharePoint.Administration;
 using Microsoft.SharePoint.Administration.Claims;
 using System;
-using System.CodeDom;
 using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
 using Yvand.ClaimsProviders.Config;
-using static Yvand.ClaimsProviders.Logger;
 
 namespace Yvand.ClaimsProviders
 {
@@ -20,6 +18,11 @@ namespace Yvand.ClaimsProviders
         /// <returns></returns>
         public static SPTrustedLoginProvider GetSPTrustAssociatedWithClaimsProvider(string claimProviderName)
         {
+            if (String.IsNullOrWhiteSpace(claimProviderName))
+            {
+                return null;
+            }
+
             var lp = SPSecurityTokenServiceManager.Local.TrustedLoginProviders.Where(x => String.Equals(x.ClaimProviderName, claimProviderName, StringComparison.OrdinalIgnoreCase));
 
             if (lp != null && lp.Count() == 1)
@@ -36,11 +39,12 @@ namespace Yvand.ClaimsProviders
         }
 
         /// <summary>
-        /// Check if AzureCP should process input (and show results) based on current URL (context)
+        /// Checks if the claims provider <paramref name="claimsProviderName"/> should run in the specified <paramref name="context"/>
         /// </summary>
-        /// <param name="context">The context, as a URI</param>
+        /// <param name="context">The URI of the current site, or null</param>
+        /// <param name="claimsProviderName">The name of the claims provider</param>
         /// <returns></returns>
-        public static bool ShouldRun(Uri context, string claimProviderName)
+        public static bool IsClaimsProviderUsedInCurrentContext(Uri context, string claimsProviderName)
         {
             if (context == null) { return true; }
             var webApp = SPWebApplication.Lookup(context);
@@ -65,7 +69,7 @@ namespace Yvand.ClaimsProviders
                     if (prov.GetType() == typeof(SPTrustedAuthenticationProvider))
                     {
                         // Check if the current SPTrustedAuthenticationProvider is associated with the claim provider
-                        if (String.Equals(prov.ClaimProviderName, claimProviderName, StringComparison.OrdinalIgnoreCase))
+                        if (String.Equals(prov.ClaimProviderName, claimsProviderName, StringComparison.OrdinalIgnoreCase))
                         {
                             return true;
                         }

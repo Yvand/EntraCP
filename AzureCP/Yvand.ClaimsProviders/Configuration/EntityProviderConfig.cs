@@ -173,7 +173,7 @@ namespace Yvand.ClaimsProviders.Config
         private string ClaimsProviderVersion;
 
         private SPTrustedLoginProvider _SPTrust;
-        public SPTrustedLoginProvider SPTrust
+        protected SPTrustedLoginProvider SPTrust
         {
             get
             {

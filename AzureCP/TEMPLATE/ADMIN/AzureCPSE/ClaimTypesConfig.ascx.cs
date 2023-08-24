@@ -52,7 +52,7 @@ namespace Yvand.ClaimsProviders.Administration
                 return;
             }
 
-            TrustName = Configuration.SPTrust.Name;
+            TrustName = SPTrust.Name;
             if (!this.IsPostBack)
             {
                 // NEW ITEM FORM
@@ -150,7 +150,7 @@ namespace Yvand.ClaimsProviders.Administration
                     tc.Controls.Add(new LiteralControl(String.Format(HtmlEditLink, attr.Key) + "&nbsp;&nbsp;"));
                 }
                 // But we don't allow to delete identity claim
-                if (!String.Equals(attr.Value.ClaimType, Configuration.SPTrust.IdentityClaimTypeInformation.MappedClaimType, StringComparison.InvariantCultureIgnoreCase))
+                if (!String.Equals(attr.Value.ClaimType, SPTrust.IdentityClaimTypeInformation.MappedClaimType, StringComparison.InvariantCultureIgnoreCase))
                 {
                     LinkButton LnkDeleteItem = new LinkButton();
                     LnkDeleteItem.ID = "DeleteItemLink_" + attr.Key;
@@ -189,12 +189,12 @@ namespace Yvand.ClaimsProviders.Administration
                     {
                         html = String.Format(HtmlCellClaimType, attr.Value.ClaimType, attr.Key);
                         c = GetTableCell(html);
-                        if (String.Equals(Configuration.SPTrust.IdentityClaimTypeInformation.MappedClaimType, attr.Value.ClaimType, StringComparison.InvariantCultureIgnoreCase) && !attr.Value.UseMainClaimTypeOfDirectoryObject)
+                        if (String.Equals(SPTrust.IdentityClaimTypeInformation.MappedClaimType, attr.Value.ClaimType, StringComparison.InvariantCultureIgnoreCase) && !attr.Value.UseMainClaimTypeOfDirectoryObject)
                         {
                             tr.CssClass = "azurecp-rowidentityclaim";
                             identityClaimPresent = true;
                         }
-                        else if (Configuration.SPTrust.ClaimTypeInformation.FirstOrDefault(x => String.Equals(x.MappedClaimType, attr.Value.ClaimType, StringComparison.InvariantCultureIgnoreCase)) == null)
+                        else if (SPTrust.ClaimTypeInformation.FirstOrDefault(x => String.Equals(x.MappedClaimType, attr.Value.ClaimType, StringComparison.InvariantCultureIgnoreCase)) == null)
                         {
                             tr.CssClass = "azurecp-rowClaimTypeNotUsedInTrust";
                         }
@@ -252,7 +252,7 @@ namespace Yvand.ClaimsProviders.Administration
 
             if (!identityClaimPresent && !pendingUpdate)
             {
-                LabelErrorMessage.Text = String.Format(TextErrorNoIdentityClaimType, Configuration.SPTrust.DisplayName, Configuration.SPTrust.IdentityClaimTypeInformation.MappedClaimType);
+                LabelErrorMessage.Text = String.Format(TextErrorNoIdentityClaimType, SPTrust.DisplayName, SPTrust.IdentityClaimTypeInformation.MappedClaimType);
             }
         }
 

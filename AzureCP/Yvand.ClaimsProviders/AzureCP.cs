@@ -103,9 +103,19 @@ namespace Yvand.ClaimsProviders
             }
         }
 
+        /// <summary>
+        /// Verifies if claims provider can run in the specified <paramref name="context"/>, and if it has valid and up to date <see cref="Settings"/>.
+        /// </summary>
+        /// <param name="context">The URI of the current site, or null</param>
+        /// <returns>true if claims provider can run, false if it cannot continue</returns>
         public bool ValidateSettings(Uri context)
         {
-            if (!Utils.ShouldRun(context, Name))
+            if (!Utils.IsClaimsProviderUsedInCurrentContext(context, Name))
+            {
+                return false;
+            }
+
+            if (this.SPTrust == null)
             {
                 return false;
             }
