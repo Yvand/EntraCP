@@ -179,3 +179,11 @@ jobs:
         if-no-files-found: error
       env:
         Configuration: ${{ matrix.configuration }}
+        
+    - name: Upload artifact - assembly-bindings.config if it exists
+      uses: actions/upload-artifact@v3
+      if: matrix.configuration == 'release' # string tests are not case sensitive - https://docs.github.com/en/actions/learn-github-actions/expressions
+      with:
+        name: "assembly-bindings.config"
+        path: "assembly-bindings.config"
+        if-no-files-found: ignore
