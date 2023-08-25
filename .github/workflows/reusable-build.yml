@@ -138,15 +138,9 @@ jobs:
       env:
         Configuration: ${{ matrix.configuration }}
     
-    # - name: Add NuGet cli
-      # uses: nuget/setup-nuget@v1
-      # if: hashFiles('env.Project_Directory/env.project-name.nuspec') != ''
-      # with:
-        # nuget-version: 'latest'
-    
-    - name: Create NuGet package if .nuspec file exists
-      if: ${{ always() && hashFiles('**/*.nuspec') != '' }}
-      run: nuget pack "${{ env.Project_Directory }}/${{ env.project-name }}.csproj" -OutputDirectory "${{ env.Project_Directory }}/bin/${{ matrix.configuration }}" -Properties "Configuration=${{ matrix.configuration }};commit=${{ github.sha }}"
+    - name: Create NuGet package if configuration is release and .nuspec file exists
+      if: ${{ matrix.configuration == 'release' && hashFiles('**/*.nuspec') != '' }}
+      run: nuget pack "${{ env.Project_Directory }}/${{ env.project-name }}.csproj" -OutputDirectory "${{ env.Project_Directory }}/bin/${{ matrix.configuration }}" -Properties "Configuration=${{ matrix.configuration }};commit=${{ github.sha }}" -Symbols -SymbolPackageFormat snupkg
 
     - name: Remove the signing key
       run: Remove-Item -path "${{ env.Project_Directory }}/${{ env.project-name }}.snk"
@@ -202,6 +196,8 @@ jobs:
       uses: actions/upload-artifact@v3
       if: matrix.configuration == 'release' # string tests are not case sensitive - https://docs.github.com/en/actions/learn-github-actions/expressions
       with:
-        name: "NuGet package"
-        path: "${{ env.Project_Directory }}/bin/${{ matrix.configuration }}/*.nupkg"
+        name: "NuGet"
+        path: |
+            ${{ env.Project_Directory }}/bin/${{ matrix.configuration }}/*.nupkg
+            ${{ env.Project_Directory }}/bin/${{ matrix.configuration }}/*.snupkg
         if-no-files-found: ignore
