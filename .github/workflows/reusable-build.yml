@@ -145,7 +145,7 @@ jobs:
         # nuget-version: 'latest'
     
     - name: Create NuGet package
-      if: hashFiles("env.Project_Directory/env.project-name.nuspec") != ''
+      if: ${{ hashFiles('env.Project_Directory/env.project-name.nuspec') != '' }}
       run: nuget pack "${{ env.Project_Directory }}/${{ env.project-name }}.csproj" -OutputDirectory "${{ env.Project_Directory }}/bin/${{ matrix.configuration }}"
 
     - name: Remove the signing key
