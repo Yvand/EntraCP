@@ -137,6 +137,16 @@ jobs:
       run: msbuild $env:Solution_Name /p:Configuration=$env:Configuration /p:IsPackaging=true /p:platform="Any CPU"
       env:
         Configuration: ${{ matrix.configuration }}
+    
+    - name: Add NuGet cli
+      uses: nuget/setup-nuget@v1
+      if: ${{ hashFiles("${{ env.Project_Directory }}/${{ env.project-name }}.nuspec") != '' }}
+      with:
+        nuget-version: 'latest'
+    
+    - name: Create NuGet package
+      if: ${{ hashFiles("${{ env.Project_Directory }}/${{ env.project-name }}.nuspec") != '' }}
+      run: nuget pack "${{ env.Project_Directory }}/${{ env.project-name }}.csproj" -OutputDirectory "${{ env.Project_Directory }}/bin/${{ matrix.configuration }}"
 
     - name: Remove the signing key
       run: Remove-Item -path "${{ env.Project_Directory }}/${{ env.project-name }}.snk"
@@ -186,4 +196,12 @@ jobs:
       with:
         name: "assembly-bindings.config"
         path: "assembly-bindings.config"
+        if-no-files-found: ignore
+    
+    - name: Upload artifact - NuGet package if it exists
+      uses: actions/upload-artifact@v3
+      if: matrix.configuration == 'release' # string tests are not case sensitive - https://docs.github.com/en/actions/learn-github-actions/expressions
+      with:
+        name: "NuGet package"
+        path: "${{ env.Project_Directory }}/bin/${{ matrix.configuration }}/*.nupkg"
         if-no-files-found: ignore
