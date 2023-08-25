@@ -1,7 +1,7 @@
 ﻿using NUnit.Framework;
 using System.Runtime.CompilerServices;
 
-namespace Yvand.ClaimsProviders.Tests
+namespace Yvand.Tests
 {
     [TestFixture]
     [Parallelizable(ParallelScope.Children)]

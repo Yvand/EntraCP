@@ -4,9 +4,9 @@ using Microsoft.SharePoint.Administration.Claims;
 using Microsoft.SharePoint.Utilities;
 using System;
 using System.Web.UI;
-using Yvand.ClaimsProviders.Config;
+using Yvand.Config;
 
-namespace Yvand.ClaimsProviders.Administration
+namespace Yvand.Administration
 {
     // Sadly, using a generic class with a UserControl seems not possible: https://stackoverflow.com/questions/74733106/asp-net-webforms-usercontrol-with-generic-type-parameter
     //public abstract class AzureCPUserControl<TSettings> : UserControl where TSettings : EntityProviderConfiguration

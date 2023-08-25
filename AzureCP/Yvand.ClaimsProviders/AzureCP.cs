@@ -10,11 +10,11 @@ using System.Linq;
 using System.Reflection;
 using System.Threading;
 using System.Threading.Tasks;
-using Yvand.ClaimsProviders.AzureAD;
-using Yvand.ClaimsProviders.Config;
+using Yvand.AzureAD;
+using Yvand.Config;
 using WIF4_5 = System.Security.Claims;
 
-namespace Yvand.ClaimsProviders
+namespace Yvand
 {
     public interface IAzureCPSettings : IAADSettings
     {

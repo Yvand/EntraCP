@@ -7,7 +7,7 @@ using System.Security;
 // set of attributes. Change these azureObject values to modify the information
 // associated with an assembly.
 [assembly: AssemblyTitle("AzureCP Subscription Edition")]
-[assembly: AssemblyDescription("")]
+[assembly: AssemblyDescription("Claims provider to connect SharePoint to Microsoft Entra ID (formerly Azure Active Directory)")]
 [assembly: AssemblyConfiguration("")]
 [assembly: AssemblyCompany("Yvan Duhamel -  yvandev@outlook.fr")]
 [assembly: AssemblyProduct("AzureCP")]

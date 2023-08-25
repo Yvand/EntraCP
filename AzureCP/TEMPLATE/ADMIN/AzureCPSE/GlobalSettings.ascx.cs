@@ -15,9 +15,9 @@ using System.Security.Cryptography.X509Certificates;
 using System.Threading.Tasks;
 using System.Web.UI.HtmlControls;
 using System.Web.UI.WebControls;
-using Yvand.ClaimsProviders.Config;
+using Yvand.Config;
 
-namespace Yvand.ClaimsProviders.Administration
+namespace Yvand.Administration
 {
     public partial class GlobalSettingsUserControl : AzureCPUserControl
     {

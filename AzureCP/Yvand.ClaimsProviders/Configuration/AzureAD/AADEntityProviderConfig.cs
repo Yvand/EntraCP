@@ -4,7 +4,7 @@ using Microsoft.SharePoint.WebControls;
 using System;
 using System.Collections.Generic;
 
-namespace Yvand.ClaimsProviders.Config
+namespace Yvand.Config
 {
     public interface IAADSettings : IEntityProviderSettings
     {

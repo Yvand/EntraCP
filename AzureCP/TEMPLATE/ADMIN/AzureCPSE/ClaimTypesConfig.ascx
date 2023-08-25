@@ -1,6 +1,6 @@
 ﻿<%@ Assembly Name="$SharePoint.Project.AssemblyFullName$" %>
-<%@ Control Language="C#" AutoEventWireup="true" CodeBehind="ClaimTypesConfig.ascx.cs" Inherits="Yvand.ClaimsProviders.Administration.ClaimTypesConfigUserControl" %>
-<%@ Import Namespace="Yvand.ClaimsProviders.Administration" %>
+<%@ Control Language="C#" AutoEventWireup="true" CodeBehind="ClaimTypesConfig.ascx.cs" Inherits="Yvand.Administration.ClaimTypesConfigUserControl" %>
+<%@ Import Namespace="Yvand.Administration" %>
 <%@ Register TagPrefix="asp" Namespace="System.Web.UI" Assembly="System.Web.Extensions, Version=4.0.0.0, Culture=neutral, PublicKeyToken=31bf3856ad364e35" %>
 
 <script type="text/javascript" src="/_layouts/15/azurecp/jquery-1.9.1.min.js"></script>

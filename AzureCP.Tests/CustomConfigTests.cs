@@ -1,10 +1,10 @@
 ﻿using Microsoft.SharePoint.Administration.Claims;
 using NUnit.Framework;
 using System.Security.Claims;
-using Yvand.ClaimsProviders.AzureAD;
-using Yvand.ClaimsProviders.Config;
+using Yvand;
+using Yvand.Config;
 
-namespace Yvand.ClaimsProviders.Tests
+namespace Yvand.Tests
 {
     public class CustomConfigTestsBase : EntityTestsBase
     {

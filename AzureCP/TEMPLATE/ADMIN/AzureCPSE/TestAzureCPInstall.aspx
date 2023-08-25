@@ -6,8 +6,8 @@
 <%@ Import Namespace="System.Net" %>
 <%@ Import Namespace="System.Reflection" %>
 <%@ Import Namespace="System.Threading.Tasks" %>
-<%@ Import Namespace="Yvand.ClaimsProviders" %>
-<%@ Import Namespace="Yvand.ClaimsProviders.Config" %>
+<%@ Import Namespace="Yvand" %>
+<%@ Import Namespace="Yvand.Config" %>
 
 <asp:Content ID="PageTitle" ContentPlaceHolderID="PlaceHolderPageTitle" runat="server">Verifies if AzureCP SE runs</asp:Content>
 <asp:Content ID="PageTitleInTitleArea" ContentPlaceHolderID="PlaceHolderPageTitleInTitleArea" runat="server">Verifies if AzureCP SE runs in current site</asp:Content>

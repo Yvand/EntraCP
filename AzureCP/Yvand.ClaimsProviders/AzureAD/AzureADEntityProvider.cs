@@ -15,9 +15,9 @@ using System.Diagnostics;
 using System.Linq;
 using System.Reflection;
 using System.Threading.Tasks;
-using Yvand.ClaimsProviders.Config;
+using Yvand.Config;
 
-namespace Yvand.ClaimsProviders.AzureAD
+namespace Yvand.AzureAD
 {
     public class AzureADEntityProvider : EntityProviderBase
     {

@@ -4,26 +4,18 @@
   <!-- Common -->
   <PropertyGroup>
     <ProjectGuid>{EEC47949-34B5-4805-A04D-A372BE75D3CB}</ProjectGuid>
+    <PackageId>Yvand.AzureCP</PackageId>
+    <Authors>Yvan Duhamel</Authors>
     <OutputType>Library</OutputType>
     <AppDesignerFolder>Properties</AppDesignerFolder>
-    <RootNamespace>Yvand.ClaimsProviders</RootNamespace>
-    <AssemblyName>AzureCPSE</AssemblyName>
+    <RootNamespace>Yvand</RootNamespace>
+    <AssemblyName>Yvand.AzureCP</AssemblyName>
     <TargetFrameworkVersion>v4.8</TargetFrameworkVersion>
     <LangVersion>8.0</LangVersion>
     <TargetOfficeVersion>19.0</TargetOfficeVersion>
     <FileAlignment>512</FileAlignment>
     <ProjectTypeGuids>{C1CDDADD-2546-481F-9697-4EA41081F2FC};{14822709-B5A1-4724-98CA-57A101D1B079};{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}</ProjectTypeGuids>
     <SandboxedSolution>False</SandboxedSolution>
-    <SccProjectName>
-    </SccProjectName>
-    <SccLocalPath>
-    </SccLocalPath>
-    <SccAuxPath>
-    </SccAuxPath>
-    <SccProvider>
-    </SccProvider>
-    <NuGetPackageImportStamp>
-    </NuGetPackageImportStamp>
     <TargetFrameworkProfile />
     <SignAssembly>true</SignAssembly>
     <AssemblyOriginatorKeyFile>AzureCP.snk</AssemblyOriginatorKeyFile>
@@ -108,6 +100,7 @@
     <Compile Include="Yvand.ClaimsProviders\Utils.cs" />
   </ItemGroup>
   <ItemGroup>
+    <None Include="AzureCP.nuspec" />
     <None Include="AzureCPSE.Administration.Links\SharePointProjectItem.spdata">
       <SharePointProjectItemId>{c15a0bf3-126a-42e6-af6b-5880f2e9af42}</SharePointProjectItemId>
     </None>
@@ -141,6 +134,10 @@
     </PackageReference>
     <PackageReference Include="StrongNamer">
       <Version>0.2.5</Version>
+    </PackageReference>
+    <PackageReference Include="NuGet.Build.Tasks.Pack" Version="6.7.0">
+      <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
+      <PrivateAssets>all</PrivateAssets>
     </PackageReference>
   </ItemGroup>
   <ItemGroup>
