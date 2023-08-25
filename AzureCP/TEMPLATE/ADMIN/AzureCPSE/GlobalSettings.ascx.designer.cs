@@ -7,7 +7,7 @@
 // </auto-generated>
 //------------------------------------------------------------------------------
 
-namespace Yvand.ClaimsProviders.Administration
+namespace Yvand.Administration
 {
 
 

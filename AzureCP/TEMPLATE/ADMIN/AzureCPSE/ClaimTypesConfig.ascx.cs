@@ -8,10 +8,10 @@ using System.Reflection;
 using System.Text;
 using System.Web.UI;
 using System.Web.UI.WebControls;
-using Yvand.ClaimsProviders;
-using Yvand.ClaimsProviders.Config;
+using Yvand;
+using Yvand.Config;
 
-namespace Yvand.ClaimsProviders.Administration
+namespace Yvand.Administration
 {
     public partial class ClaimTypesConfigUserControl : AzureCPUserControl
     {

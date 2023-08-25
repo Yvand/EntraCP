@@ -3,9 +3,9 @@ using Microsoft.SharePoint.Administration;
 using Microsoft.SharePoint.Administration.Claims;
 using System;
 using System.Runtime.InteropServices;
-using Yvand.ClaimsProviders.Config;
+using Yvand.Config;
 
-namespace Yvand.ClaimsProviders
+namespace Yvand
 {
     /// <summary>
     /// This class handles events raised during feature activation, deactivation, installation, uninstallation, and upgrade.

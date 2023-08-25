@@ -1,7 +1,7 @@
 ﻿<%@ Page Language="C#" AutoEventWireup="true" Inherits="Microsoft.SharePoint.WebControls.LayoutsPageBase" MasterPageFile="~/_admin/admin.master" %>
 <%@ Register TagPrefix="AzureCP" TagName="ClaimTypesConfigUC" src="ClaimTypesConfig.ascx" %>
-<%@ Import Namespace="Yvand.ClaimsProviders.Config" %>
-<%@ Import Namespace="Yvand.ClaimsProviders" %>
+<%@ Import Namespace="Yvand.Config" %>
+<%@ Import Namespace="Yvand" %>
 <%@ Import Namespace="System.Diagnostics" %>
 <%@ Import Namespace="System.Reflection" %>
 

@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <package >
   <metadata>
-    <id>Yvand.AzureCP</id>
+    <id>$id$</id>
     <version>$version$</version>
     <authors>$author$</authors>
     <title>$title$</title>
@@ -22,5 +22,6 @@
     </dependencies>
   </metadata>
   <files>
+    <!--<file src="bin\$configuration$\$id$.pdb" target="lib\net48" />-->
   </files>
 </package>

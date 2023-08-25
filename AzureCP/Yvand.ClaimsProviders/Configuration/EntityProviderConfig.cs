@@ -4,7 +4,7 @@ using System;
 using System.Collections.ObjectModel;
 using System.Reflection;
 
-namespace Yvand.ClaimsProviders.Config
+namespace Yvand.Config
 {
     public interface IEntityProviderSettings
     {

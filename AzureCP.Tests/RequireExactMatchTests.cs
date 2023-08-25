@@ -1,6 +1,6 @@
 ﻿using NUnit.Framework;
 
-namespace Yvand.ClaimsProviders.Tests
+namespace Yvand.Tests
 {
     [TestFixture]
     public class RequireExactMatchOnBaseConfigTests : EntityTestsBase

@@ -7,7 +7,7 @@ using System.IO;
 using System.Linq;
 using System.Text;
 
-namespace Yvand.ClaimsProviders
+namespace Yvand
 {
     public enum TraceCategory
     {

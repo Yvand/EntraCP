@@ -8,8 +8,8 @@
     <Authors>Yvan Duhamel</Authors>
     <OutputType>Library</OutputType>
     <AppDesignerFolder>Properties</AppDesignerFolder>
-    <RootNamespace>Yvand.ClaimsProviders</RootNamespace>
-    <AssemblyName>AzureCPSE</AssemblyName>
+    <RootNamespace>Yvand</RootNamespace>
+    <AssemblyName>Yvand.AzureCP</AssemblyName>
     <TargetFrameworkVersion>v4.8</TargetFrameworkVersion>
     <LangVersion>8.0</LangVersion>
     <TargetOfficeVersion>19.0</TargetOfficeVersion>
