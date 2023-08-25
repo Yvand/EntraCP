@@ -11,7 +11,8 @@
     <projectUrl>https://github.com/Yvand/AzureCP</projectUrl>
     <copyright>$copyright$</copyright>
     <tags>SharePoint ClaimsProvider</tags>
-    <releaseNotes>Package created using the version $version$ of $id$.</releaseNotes>
+    <releaseNotes>https://github.com/Yvand/AzureCP/blob/master/CHANGELOG.md</releaseNotes>
+    <repository type="git" url="https://github.com/Yvand/AzureCP" commit="$commit$" />
     <dependencies>
       <group targetFramework=".NETFramework4.8">
         <dependency id="Azure.Identity" version="1.10.0" exclude="Build,Analyzers" />
