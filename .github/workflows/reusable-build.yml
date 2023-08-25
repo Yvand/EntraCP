@@ -146,7 +146,7 @@ jobs:
     
     - name: Create NuGet package if .nuspec file exists
       if: ${{ always() && hashFiles('**/*.nuspec') != '' }}
-      run: nuget pack "${{ env.Project_Directory }}/${{ env.project-name }}.csproj" -OutputDirectory "${{ env.Project_Directory }}/bin/${{ matrix.configuration }}" -Properties "Configuration=${{ matrix.configuration }};commit=${{ GITHUB_SHA }}"
+      run: nuget pack "${{ env.Project_Directory }}/${{ env.project-name }}.csproj" -OutputDirectory "${{ env.Project_Directory }}/bin/${{ matrix.configuration }}" -Properties "Configuration=${{ matrix.configuration }};commit=${{ github.sha }}"
 
     - name: Remove the signing key
       run: Remove-Item -path "${{ env.Project_Directory }}/${{ env.project-name }}.snk"
