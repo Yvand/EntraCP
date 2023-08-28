@@ -9,6 +9,9 @@ on:
       version-major-minor:
         required: true
         type: string
+      version-suffix:
+        required: false
+        type: string
       tag-commit:
         default: false
         type: boolean
@@ -34,7 +37,11 @@ jobs:
       run: |
         echo "date=$(date +'%Y%m%d')" >> $GITHUB_OUTPUT
         echo "year=$(date +'%Y')" >> $GITHUB_OUTPUT
-        echo "assembly-version=${{ inputs.version-major-minor }}.$(date +'%Y%m%d').${{ github.run_number }}" >> $GITHUB_OUTPUT
+        suffix=""
+        if [ ! -z "${{ inputs.version-suffix }}" -a "${{ inputs.version-suffix }}" != " " ]; then
+            suffix="-${{ inputs.version-suffix }}"
+        fi
+        echo "assembly-version=${{ inputs.version-major-minor }}.$(date +'%Y%m%d').${{ github.run_number }}${{ suffix }}" >> $GITHUB_OUTPUT
         
     - name: Show the version
       run: |
@@ -140,7 +147,7 @@ jobs:
     
     - name: Create NuGet package if configuration is release and .nuspec file exists
       if: ${{ matrix.configuration == 'release' && hashFiles('**/*.nuspec') != '' }}
-      run: nuget pack "${{ env.Project_Directory }}/${{ env.project-name }}.csproj" -OutputDirectory "${{ env.Project_Directory }}/bin/${{ matrix.configuration }}" -Properties "Configuration=${{ matrix.configuration }};commit=${{ github.sha }}" -Symbols -SymbolPackageFormat snupkg
+      run: nuget pack "${{ env.Project_Directory }}/${{ env.project-name }}.csproj" -OutputDirectory "${{ env.Project_Directory }}/bin/${{ matrix.configuration }}" -Properties "Configuration=${{ matrix.configuration }};commit=${{ github.sha }};version=${{ needs.calculate-version.outputs.assembly-version }}" -Symbols -SymbolPackageFormat snupkg
 
     - name: Remove the signing key
       run: Remove-Item -path "${{ env.Project_Directory }}/${{ env.project-name }}.snk"
