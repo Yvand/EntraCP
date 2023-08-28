@@ -16,17 +16,19 @@
     <FileAlignment>512</FileAlignment>
     <ProjectTypeGuids>{C1CDDADD-2546-481F-9697-4EA41081F2FC};{14822709-B5A1-4724-98CA-57A101D1B079};{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}</ProjectTypeGuids>
     <SandboxedSolution>False</SandboxedSolution>
-    <TargetFrameworkProfile />
     <SignAssembly>true</SignAssembly>
     <AssemblyOriginatorKeyFile>AzureCP.snk</AssemblyOriginatorKeyFile>
     <DependsOnNETStandard>false</DependsOnNETStandard>
     <ProjectMode>SharePointCustomization</ProjectMode>
     <MinimumOfficeToolsVersion>14.1</MinimumOfficeToolsVersion>
     <MinimumVisualStudioVersion>15.0</MinimumVisualStudioVersion>
-    <FileUpgradeFlags>
-    </FileUpgradeFlags>
-    <UpgradeBackupLocation>C:\YvanData\dev\AzureCP\Backup1\</UpgradeBackupLocation>
-    <OldToolsVersion>12.0</OldToolsVersion>
+    <AutoGenerateBindingRedirects>false</AutoGenerateBindingRedirects>
+    <!-- Publish the repository URL in the built .nupkg (in the NuSpec <Repository> element) -->
+    <PublishRepositoryUrl>true</PublishRepositoryUrl>
+    <!-- Embed source files that are not tracked by the source control manager in the PDB -->
+    <EmbedUntrackedSources>true</EmbedUntrackedSources>
+    <!-- Recommended: Embed symbols containing Source Link in the main file (exe/dll) -->
+    <DebugType>embedded</DebugType>
   </PropertyGroup>
   <!-- Debug configuration -->
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
@@ -51,14 +53,11 @@
     <UseVSHostingProcess>false</UseVSHostingProcess>
     <CodeAnalysisRuleSet>MinimumRecommendedRules.ruleset</CodeAnalysisRuleSet>
   </PropertyGroup>
-  <PropertyGroup>
-    <AutoGenerateBindingRedirects>true</AutoGenerateBindingRedirects>
-  </PropertyGroup>
   <PropertyGroup Condition="'$(GITHUB_ACTIONS)' == 'true'">
     <ContinuousIntegrationBuild>true</ContinuousIntegrationBuild>
   </PropertyGroup>
   <ItemGroup>
-    <PackageReference Include="Microsoft.SourceLink.GitHub" Version="1.0.0" PrivateAssets="All"/>
+    <PackageReference Include="Microsoft.SourceLink.GitHub" Version="1.1.1" PrivateAssets="all" />
   </ItemGroup>
   <!-- Project references -->
   <ItemGroup>
@@ -69,7 +68,6 @@
       <Private>False</Private>
     </Reference>
     <Reference Include="System" />
-    <Reference Include="System.Core" />
     <Reference Include="System.Web" />
   </ItemGroup>
   <ItemGroup>
