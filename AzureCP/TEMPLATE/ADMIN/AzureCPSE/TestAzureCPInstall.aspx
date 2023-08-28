@@ -42,6 +42,7 @@
         {
             LblResult.Text = String.Format(".NET could not load an assembly, please check your assembly bindings in machine.config file, or .config file for current process. Exception details: {0}", ex.Message);
         }
+        // An exception in an async task is always wrapped and returned in an AggregateException
         catch (AggregateException ex)
         {
             if (ex.InnerException is FileNotFoundException)
