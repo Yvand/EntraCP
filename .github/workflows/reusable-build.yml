@@ -9,10 +9,7 @@ on:
       version-major-minor:
         required: true
         type: string
-      version-suffix:
-        required: false
-        type: string
-      tag-commit:
+      is-production-release:
         default: false
         type: boolean
     secrets:
@@ -24,7 +21,7 @@ on:
         value: ${{ jobs.calculate-version.outputs.assembly-version }}
       tag-name:
         description: "The name of the tag, if it was set"
-        value: ${{ jobs.tag-if-needed.outputs.tag-name }}
+        value: ${{ jobs.tag-with-version.outputs.tag-name }}
 jobs:
   calculate-version:
     runs-on: ubuntu-latest
@@ -38,8 +35,8 @@ jobs:
         echo "date=$(date +'%Y%m%d')" >> $GITHUB_OUTPUT
         echo "year=$(date +'%Y')" >> $GITHUB_OUTPUT
         suffix=""
-        if [ ! -z "${{ inputs.version-suffix }}" -a "${{ inputs.version-suffix }}" != " " ]; then
-            suffix="-${{ inputs.version-suffix }}"
+        if ! ${{ inputs.is-production-release }}; then
+            suffix="-nightly"
         fi
         echo "assembly-version=${{ inputs.version-major-minor }}.$(date +'%Y%m%d').${{ github.run_number }}$suffix" >> $GITHUB_OUTPUT
         
@@ -49,9 +46,9 @@ jobs:
         echo "date: ${{steps.set-version.outputs.date}}"
         echo "year: ${{steps.set-version.outputs.year}}"
 
-  tag-if-needed:
+  tag-with-version:
     runs-on: ubuntu-latest
-    if: inputs.tag-commit == true
+    if: inputs.is-production-release == true
     needs: calculate-version
     outputs:
       tag-name: ${{ steps.tag-commit.outputs.tagName }}
@@ -147,7 +144,15 @@ jobs:
     
     - name: Create NuGet package if configuration is release and .nuspec file exists
       if: ${{ matrix.configuration == 'release' && hashFiles('**/*.nuspec') != '' }}
-      run: nuget pack "${{ env.Project_Directory }}/${{ env.project-name }}.csproj" -OutputDirectory "${{ env.Project_Directory }}/bin/${{ matrix.configuration }}" -Properties "Configuration=${{ matrix.configuration }};commit=${{ github.sha }};version=${{ needs.calculate-version.outputs.assembly-version }}" -Symbols -SymbolPackageFormat snupkg
+      shell: pwsh
+      run: |
+        # Expected format of the version is either "1.0.0.0" or "1.0.0.0-nightly"
+        $version = ${{ needs.calculate-version.outputs.assembly-version }}
+        if ($version.Contains('-')) {
+            $suffix = $version.Split('-')[1]
+            $version = $version.Split('-')[0]
+        }
+        nuget pack "${{ env.Project_Directory }}/${{ env.project-name }}.csproj" -OutputDirectory "${{ env.Project_Directory }}/bin/${{ matrix.configuration }}" -Properties "Configuration=${{ matrix.configuration }};commit=${{ github.sha }};version=$version" -Symbols -SymbolPackageFormat snupkg -Suffix $suffix
 
     - name: Remove the signing key
       run: Remove-Item -path "${{ env.Project_Directory }}/${{ env.project-name }}.snk"

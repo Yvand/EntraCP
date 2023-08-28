@@ -21,7 +21,7 @@ jobs:
     with:
       project-name: ${{ inputs.project-name }}
       version-major-minor: ${{ inputs.version-major-minor }}
-      tag-commit: ${{ inputs.is-production-release }}
+      is-production-release: ${{ inputs.is-production-release }}
     secrets:
       base64-encoded-signingkey: ${{ secrets.base64-encoded-signingkey }}
 
