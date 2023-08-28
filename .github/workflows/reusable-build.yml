@@ -34,8 +34,10 @@ jobs:
       run: |
         echo "date=$(date +'%Y%m%d')" >> $GITHUB_OUTPUT
         echo "year=$(date +'%Y')" >> $GITHUB_OUTPUT
+        isprod=${{ fromJSON(inputs.is-production-release) }}
+        echo "isprod: $isprod"
         suffix=""
-        if ! ${{ inputs.is-production-release }}; then
+        if [ "$isprod" = "false" ]; then
             suffix="-nightly"
         fi
         echo "assembly-version=${{ inputs.version-major-minor }}.$(date +'%Y%m%d').${{ github.run_number }}$suffix" >> $GITHUB_OUTPUT
@@ -116,7 +118,7 @@ jobs:
         directory: "${{ env.Project_Directory }}/Properties"
         filename: 'AssemblyInfo.cs'
         recursive: false
-        copyright: "Copyright © Yvan Duhamel $${{ needs.calculate-version.outputs.year }}"
+        copyright: "Copyright © Yvan Duhamel ${{ needs.calculate-version.outputs.year }}"
 
       
     # Add MSBuild to the PATH: https://github.com/microsoft/setup-msbuild
