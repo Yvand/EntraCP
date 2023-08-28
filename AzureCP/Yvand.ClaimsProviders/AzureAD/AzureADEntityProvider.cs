@@ -383,7 +383,7 @@ namespace Yvand.AzureAD
                     };
 
                     // Build the batch
-                    BatchRequestContent batchRequestContent = new BatchRequestContent(tenant.GraphService);
+                    BatchRequestContentCollection batchRequestContent = new BatchRequestContentCollection(tenant.GraphService);
                     string usersRequestId = String.Empty;
                     if (!String.IsNullOrWhiteSpace(tenant.UserFilter))
                     {
@@ -440,7 +440,7 @@ namespace Yvand.AzureAD
                         groupsRequestId = await batchRequestContent.AddBatchRequestStepAsync(groupRequest).ConfigureAwait(false);
                     }
 
-                    BatchResponseContent returnedResponse = await tenant.GraphService.Batch.PostAsync(batchRequestContent).ConfigureAwait(false);
+                    BatchResponseContentCollection returnedResponse = await tenant.GraphService.Batch.PostAsync(batchRequestContent).ConfigureAwait(false);
                     UserCollectionResponse userCollectionResult = await returnedResponse.GetResponseByIdAsync<UserCollectionResponse>(usersRequestId).ConfigureAwait(false);
                     GroupCollectionResponse groupCollectionResult = await returnedResponse.GetResponseByIdAsync<GroupCollectionResponse>(groupsRequestId).ConfigureAwait(false);
 
