@@ -22,7 +22,7 @@
     <ProjectMode>SharePointCustomization</ProjectMode>
     <MinimumOfficeToolsVersion>14.1</MinimumOfficeToolsVersion>
     <MinimumVisualStudioVersion>15.0</MinimumVisualStudioVersion>
-	<AutoGenerateBindingRedirects>false</AutoGenerateBindingRedirects>
+    <AutoGenerateBindingRedirects>false</AutoGenerateBindingRedirects>
     <!-- Publish the repository URL in the built .nupkg (in the NuSpec <Repository> element) -->
     <PublishRepositoryUrl>true</PublishRepositoryUrl>
     <!-- Embed source files that are not tracked by the source control manager in the PDB -->
