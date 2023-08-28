@@ -9,8 +9,8 @@
 <%@ Import Namespace="Yvand" %>
 <%@ Import Namespace="Yvand.Config" %>
 
-<asp:Content ID="PageTitle" ContentPlaceHolderID="PlaceHolderPageTitle" runat="server">Verifies if AzureCP SE runs</asp:Content>
-<asp:Content ID="PageTitleInTitleArea" ContentPlaceHolderID="PlaceHolderPageTitleInTitleArea" runat="server">Verifies if AzureCP SE runs in current site</asp:Content>
+<asp:Content ID="PageTitle" ContentPlaceHolderID="PlaceHolderPageTitle" runat="server">Troubleshoot AzureCP SE</asp:Content>
+<asp:Content ID="PageTitleInTitleArea" ContentPlaceHolderID="PlaceHolderPageTitleInTitleArea" runat="server">Troubleshoot AzureCP SE in the context of current site</asp:Content>
 <asp:Content ID="Main" ContentPlaceHolderID="PlaceHolderMain" runat="server">
     <script runat="server">
         protected override void OnLoad(EventArgs e)
@@ -71,7 +71,7 @@
             }
         }
     </script>
-    This page primarily verifies if the assembly bindings are correctly set.<br />
+    This page primarily verifies if the .NET assembly bindings are correctly set.<br />
     It also tries to connect to Azure AD, but it uses hardcoded, fake credentials by default.<br />
     It has no code behind, it is written entirely using inline code, so you can easily customize it (and set valid credentials).<br />
     For security reasons, by default it can only be called from the central administration, but you can simply copy it in the LAYOUTS folder, to call it from any SharePoint web application.<br />

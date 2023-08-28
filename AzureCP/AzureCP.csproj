@@ -152,7 +152,7 @@
     </Content>
     <Content Include="TEMPLATE\ADMIN\AzureCPSE\GlobalSettings.aspx" />
     <Content Include="TEMPLATE\ADMIN\AzureCPSE\ClaimTypesConfig.aspx" />
-    <Content Include="TEMPLATE\ADMIN\AzureCPSE\TestAzureCPInstall.aspx" />
+    <Content Include="TEMPLATE\ADMIN\AzureCPSE\TroubleshootAzureCP.aspx" />
     <Content Include="TEMPLATE\LAYOUTS\AzureCPSE\AzureCP_logo_small.png" />
     <Content Include="TEMPLATE\LAYOUTS\AzureCPSE\jquery-1.9.1.min.js" />
   </ItemGroup>
