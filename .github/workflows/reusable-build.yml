@@ -41,7 +41,7 @@ jobs:
         if [ ! -z "${{ inputs.version-suffix }}" -a "${{ inputs.version-suffix }}" != " " ]; then
             suffix="-${{ inputs.version-suffix }}"
         fi
-        echo "assembly-version=${{ inputs.version-major-minor }}.$(date +'%Y%m%d').${{ github.run_number }}${{ suffix }}" >> $GITHUB_OUTPUT
+        echo "assembly-version=${{ inputs.version-major-minor }}.$(date +'%Y%m%d').${{ github.run_number }}$suffix" >> $GITHUB_OUTPUT
         
     - name: Show the version
       run: |
