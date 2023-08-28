@@ -28,6 +28,7 @@
     <EmbedUntrackedSources>true</EmbedUntrackedSources>
     <!-- Recommended: Embed symbols containing Source Link in the main file (exe/dll) -->
     <DebugType>embedded</DebugType>
+	<ContinuousIntegrationBuild>true</ContinuousIntegrationBuild>
   </PropertyGroup>
   <!-- Debug configuration -->
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
