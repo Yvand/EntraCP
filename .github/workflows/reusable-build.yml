@@ -148,11 +148,12 @@ jobs:
       shell: pwsh
       run: |
         # Expected format of the version is either "1.0.0.0" or "1.0.0.0-nightly"
-        $version = ${{ needs.calculate-version.outputs.assembly-version }}
+        $version = "${{ needs.calculate-version.outputs.assembly-version }}"
         if ($version.Contains('-')) {
             $suffix = $version.Split('-')[1]
             $version = $version.Split('-')[0]
         }
+        "version: " + $version
         nuget pack "${{ env.Project_Directory }}/${{ env.project-name }}.csproj" -OutputDirectory "${{ env.Project_Directory }}/bin/${{ matrix.configuration }}" -Properties "Configuration=${{ matrix.configuration }};commit=${{ github.sha }};version=$version" -Symbols -SymbolPackageFormat snupkg -Suffix $suffix
 
     - name: Remove the signing key
