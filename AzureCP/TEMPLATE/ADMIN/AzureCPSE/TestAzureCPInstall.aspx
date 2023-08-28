@@ -63,8 +63,7 @@
         }
         catch (Exception ex)
         {
-            LblResult.Text = ex.Message;
-            LblResult.Text = ex.GetType().Name;
+            LblResult.Text = String.Format("Unexpected exception {0}: {1}", ex.GetType().Name, ex.Message);
         }
     %>
     This page primarily verifies if the assembly bindings are correctly set.<br />
