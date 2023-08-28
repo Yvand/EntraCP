@@ -154,7 +154,7 @@ jobs:
             $version = $version.Split('-')[0]
         }
         "version: " + $version
-        nuget pack "${{ env.Project_Directory }}/${{ env.project-name }}.csproj" -OutputDirectory "${{ env.Project_Directory }}/bin/${{ matrix.configuration }}" -Properties "Configuration=${{ matrix.configuration }};commit=${{ github.sha }};version=$version" -Symbols -SymbolPackageFormat snupkg -Suffix $suffix
+        nuget pack "${{ env.Project_Directory }}/${{ env.project-name }}.csproj" -OutputDirectory "${{ env.Project_Directory }}/bin/${{ matrix.configuration }}" -Properties "Configuration=${{ matrix.configuration }};commit=${{ github.sha }};fileversion=$version" -Symbols -SymbolPackageFormat snupkg -Suffix $suffix
 
     - name: Remove the signing key
       run: Remove-Item -path "${{ env.Project_Directory }}/${{ env.project-name }}.snk"
