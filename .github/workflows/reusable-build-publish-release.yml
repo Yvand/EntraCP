@@ -65,6 +65,7 @@ jobs:
           cd ${{ env.project-name }}-unit-tests
           zip -r ../${{ env.project-name }}-unit-tests.zip ./*
           cd ..
+          ls -al
 
       - name: Publish production release
         uses: softprops/action-gh-release@v1
@@ -80,6 +81,9 @@ jobs:
             ./${{ env.project-name }}-Release-wsp/*.wsp
             ./${{ env.project-name }}-${{ env.assembly-version }}-symbols.zip
             ./${{ env.project-name }}-${{ env.assembly-version }}-dependencies.zip
+            ./assembly-bindings.config
+            ./idonotexist.test
+            ./NuGet.zip
 
       - name: Publish nightly release
         uses: andelf/nightly-release@v1
