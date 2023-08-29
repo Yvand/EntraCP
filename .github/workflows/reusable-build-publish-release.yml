@@ -65,6 +65,12 @@ jobs:
           cd ${{ env.project-name }}-unit-tests
           zip -r ../${{ env.project-name }}-unit-tests.zip ./*
           cd ..
+          echo "Generate NuGet zip file if NuGet directory exists"
+          if [ -d "NuGet" ]; then
+            cd NuGet
+            zip -r ../NuGet.zip ./*
+            cd..
+          fi
           ls -al
 
       - name: Publish production release
