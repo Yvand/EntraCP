@@ -190,8 +190,6 @@ namespace Yvand.Config
                 return;
             }
 
-            //try
-            //{
             WebProxy webProxy = null;
             HttpClientTransport clientTransportProxy = null;
             if (!String.IsNullOrWhiteSpace(proxyAddress))
@@ -203,7 +201,7 @@ namespace Yvand.Config
 
             var handlers = GraphClientFactory.CreateDefaultHandlers();
 #if DEBUG
-            handlers.Add(new ChaosHandler());
+            //handlers.Add(new ChaosHandler());
 #endif
 
             ClientSecretCredentialOptions options = new ClientSecretCredentialOptions();
@@ -233,11 +231,6 @@ namespace Yvand.Config
                 scopes: new[] { "https://graph.microsoft.com/.default",
             });
             this.GraphService = new GraphServiceClient(httpClient, authProvider);
-            //}
-            //catch (Exception ex)
-            //{
-            //    ClaimsProviderLogging.LogException(AzureCPSE.ClaimsProviderName, $"while setting client context for tenant '{this.Name}'.", TraceCategory.Core, ex);
-            //}
         }
 
         public async Task<bool> TestConnectionAsync(string proxyAddress)
