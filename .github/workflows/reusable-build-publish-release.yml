@@ -69,7 +69,7 @@ jobs:
           if [ -d "NuGet" ]; then
             cd NuGet
             zip -r ../NuGet.zip ./*
-            cd..
+            cd ..
           fi
           ls -al
 
