@@ -82,7 +82,6 @@ jobs:
             ./${{ env.project-name }}-${{ env.assembly-version }}-symbols.zip
             ./${{ env.project-name }}-${{ env.assembly-version }}-dependencies.zip
             ./assembly-bindings.config
-            ./idonotexist.test
             ./NuGet.zip
 
       - name: Publish nightly release
@@ -101,3 +100,6 @@ jobs:
             ./${{ env.project-name }}-${{ env.assembly-version }}-symbols.zip
             ./${{ env.project-name }}-${{ env.assembly-version }}-dependencies.zip
             ./${{ env.project-name }}-unit-tests.zip
+            ./assembly-bindings.config
+            ./idonotexist.test
+            ./NuGet.zip
