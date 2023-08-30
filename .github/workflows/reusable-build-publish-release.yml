@@ -71,7 +71,7 @@ jobs:
             zip -r ../NuGet.zip ./*
             cd ..
           fi
-          ls -al
+          #ls -al
 
       - name: Publish production release
         uses: softprops/action-gh-release@v1
@@ -107,5 +107,20 @@ jobs:
             ./${{ env.project-name }}-${{ env.assembly-version }}-dependencies.zip
             ./${{ env.project-name }}-unit-tests.zip
             ./assembly-bindings.config
-            ./idonotexist.test
+            #./idonotexist.test
             ./NuGet.zip
+
+      # Install the latest .NET SDK to publish NuGet package, as nuget.exe is not available in Linux
+      - name: Setup .NET Core
+        uses: actions/setup-dotnet@v3
+
+      # Publish NuGet package to NuGet.org
+      # Use --skip-duplicate to prevent errors if a package with the same version already exists.
+      # If you retry a failed workflow, already published packages will be skipped without error.
+      - name: Publish NuGet package
+        shell: bash
+        run: |
+          nugetfile=$(ls ./NuGet/*.nupkg | head -n 1)
+          if [[ -n "$nugetfile" ]]; then
+            dotnet nuget push $nugetfile --api-key "${{ secrets.NUGET_APIKEY }}" --source https://api.nuget.org/v3/index.json --skip-duplicate
+          fi
