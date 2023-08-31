@@ -12,6 +12,7 @@
     <copyright>$copyright$</copyright>
     <tags>SharePoint ClaimsProvider</tags>
     <releaseNotes>https://github.com/Yvand/AzureCP/blob/master/CHANGELOG.md</releaseNotes>
+    <readme>README_NuGet.md</readme>
     <repository type="git" url="https://github.com/Yvand/AzureCP" commit="$commit$" />
     <dependencies>
       <group targetFramework=".NETFramework4.8">
@@ -22,5 +23,6 @@
     </dependencies>
   </metadata>
   <files>
+    <!--<file src="README_NuGet.md" target="" />-->
   </files>
 </package>
