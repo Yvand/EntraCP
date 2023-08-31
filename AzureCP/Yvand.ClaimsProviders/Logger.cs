@@ -51,7 +51,7 @@ namespace Yvand
     [System.Runtime.InteropServices.GuidAttribute("3DD2C709-C860-4A20-8AF2-0FDDAA9C406B")]
     public class Logger : SPDiagnosticsServiceBase
     {
-        public readonly static string DiagnosticsAreaName = "AzureCP";
+        public readonly static string DiagnosticsAreaName = "AzureCPSE";
 
         public static void Log(string message, TraceSeverity traceSeverity, EventSeverity eventSeverity, TraceCategory category)
         {
