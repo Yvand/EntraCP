@@ -139,7 +139,7 @@ jobs:
 
     # Build the application
     - name: Build the application and create the solution package
-      run: msbuild $env:Solution_Name /p:Configuration=$env:Configuration /p:IsPackaging=true /p:platform="Any CPU"
+      run: msbuild $env:Solution_Name /p:Configuration=$env:Configuration /p:IsPackaging=true /p:platform="Any CPU" /p:ContinuousIntegrationBuild=true
       env:
         Configuration: ${{ matrix.configuration }}
     
