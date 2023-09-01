@@ -45,7 +45,6 @@
   <!-- Release configuration -->
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|AnyCPU' ">
     <DebugType>portable</DebugType>
-	<ContinuousIntegrationBuild>true</ContinuousIntegrationBuild>
     <Optimize>true</Optimize>
     <OutputPath>bin\Release\</OutputPath>
     <DefineConstants>TRACE</DefineConstants>
