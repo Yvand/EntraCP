@@ -374,6 +374,15 @@ namespace Yvand.Config
             Logger.Log($"Configuration ID '{configurationId}' was successfully deleted from configuration database", TraceSeverity.High, EventSeverity.Information, TraceCategory.Core);
         }
 
+        /// <summary>
+        /// Creates a configuration. This will delete any existing configuration which may already exist
+        /// </summary>
+        /// <param name="configurationID">ID of the new configuration</param>
+        /// <param name="configurationName">Name of the new configuration</param>
+        /// <param name="claimsProviderName">Clais provider associated with this new configuration</param>
+        /// <param name="T">Type of the new configuration</param>
+        /// <returns></returns>
+        /// <exception cref="ArgumentNullException"></exception>
         public static EntityProviderConfig<TSettings> CreateGlobalConfiguration(Guid configurationID, string configurationName, string claimsProviderName, Type T)
         {
             if (String.IsNullOrWhiteSpace(claimsProviderName))

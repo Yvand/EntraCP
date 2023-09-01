@@ -8,8 +8,6 @@ using Yvand.Config;
 
 namespace Yvand.Administration
 {
-    // Sadly, using a generic class with a UserControl seems not possible: https://stackoverflow.com/questions/74733106/asp-net-webforms-usercontrol-with-generic-type-parameter
-    //public abstract class AzureCPUserControl<TSettings> : UserControl where TSettings : EntityProviderConfiguration
     public abstract class AzureCPUserControl : UserControl
     {
         /// <summary>
@@ -25,12 +23,13 @@ namespace Yvand.Administration
         public Guid ConfigurationID { get; set; } = Guid.Empty;
 
         private AADEntityProviderConfig<IAADSettings> _Configuration;
+        /// <summary>
+        /// Gets the persisted object which contains the configuration for AzureDCP
+        /// </summary>
         protected AADEntityProviderConfig<IAADSettings> Configuration
         {
             get
             {
-                //SPSecurity.RunWithElevatedPrivileges(delegate ()
-                //{
                 if (_Configuration == null)
                 {
                     var configuration = (AADEntityProviderConfig<IAADSettings>)AADEntityProviderConfig<IAADSettings>.GetGlobalConfiguration(this.ConfigurationID, true);
@@ -51,11 +50,13 @@ namespace Yvand.Administration
                         Settings = (AADEntityProviderSettings)configuration.Settings;
                     }
                 }
-                //});
                 return _Configuration;
             }
         }
 
+        /// <summary>
+        /// Gets or sets the settings used by AzureCP to run
+        /// </summary>
         protected AADEntityProviderSettings Settings { get; set; }
         private IdentityClaimTypeConfig _IdentityCTConfig;
         protected IdentityClaimTypeConfig IdentityCTConfig
