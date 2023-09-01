@@ -28,12 +28,12 @@
     <!-- Embed source files that are not tracked by the source control manager in the PDB -->
     <EmbedUntrackedSources>true</EmbedUntrackedSources>
     <!-- Recommended: Embed symbols containing Source Link in the main file (exe/dll) -->
-    <DebugType>embedded</DebugType>
+    <!-- <DebugType>embedded</DebugType> -->
   </PropertyGroup>
   <!-- Debug configuration -->
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
+    <DebugType>embedded</DebugType>
     <DebugSymbols>true</DebugSymbols>
-    <DebugType>full</DebugType>
     <Optimize>false</Optimize>
     <OutputPath>bin\Debug\</OutputPath>
     <DefineConstants>DEBUG;TRACE</DefineConstants>
@@ -44,7 +44,7 @@
   </PropertyGroup>
   <!-- Release configuration -->
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|AnyCPU' ">
-    <DebugType>pdbonly</DebugType>
+    <DebugType>portable</DebugType>
     <Optimize>true</Optimize>
     <OutputPath>bin\Release\</OutputPath>
     <DefineConstants>TRACE</DefineConstants>
