@@ -12,7 +12,7 @@
 <asp:Content ID="PageTitle" ContentPlaceHolderID="PlaceHolderPageTitle" runat="server">Troubleshoot AzureCP SE</asp:Content>
 <asp:Content ID="PageTitleInTitleArea" ContentPlaceHolderID="PlaceHolderPageTitleInTitleArea" runat="server">Troubleshoot AzureCP SE in the context of current site</asp:Content>
 <asp:Content ID="Main" ContentPlaceHolderID="PlaceHolderMain" runat="server">
-    <script runat="server">
+    <script runat="server" language="C#">
         protected override void OnLoad(EventArgs e)
         {
             base.OnLoad(e);
