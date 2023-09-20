@@ -22,32 +22,32 @@ namespace Yvand.Administration
 
         public Guid ConfigurationID { get; set; } = Guid.Empty;
 
-        private EntraProviderConfig<IEntraSettings> _Configuration;
+        private EntraIDProviderConfiguration _Configuration;
         /// <summary>
         /// Gets the persisted object which contains the configuration for AzureDCP
         /// </summary>
-        protected EntraProviderConfig<IEntraSettings> Configuration
+        protected EntraIDProviderConfiguration Configuration
         {
             get
             {
                 if (_Configuration == null)
                 {
-                    var configuration = (EntraProviderConfig<IEntraSettings>)EntraProviderConfig<IEntraSettings>.GetGlobalConfiguration(this.ConfigurationID, true);
+                    var configuration = EntraIDProviderConfiguration.GetGlobalConfiguration(this.ConfigurationID, true);
                     if (configuration != null)
                     {
                         _Configuration = configuration;
-                        Settings = (EntraProviderSettings)configuration.Settings;
+                        Settings = (EntraIDProviderSettings)configuration.Settings;
                     }
                 }
                 if (_Configuration == null)
                 {
                     SPContext.Current.Web.AllowUnsafeUpdates = true;
-                    var configuration = (EntraProviderConfig<IEntraSettings>)EntraProviderConfig<IEntraSettings>.CreateGlobalConfiguration(this.ConfigurationID, this.ConfigurationName, this.ClaimsProviderName, typeof(EntraProviderConfig<IEntraSettings>));
+                    var configuration = EntraIDProviderConfiguration.CreateGlobalConfiguration(this.ConfigurationID, this.ConfigurationName, this.ClaimsProviderName);
                     SPContext.Current.Web.AllowUnsafeUpdates = false;
                     if (configuration != null)
                     {
                         _Configuration = configuration;
-                        Settings = (EntraProviderSettings)configuration.Settings;
+                        Settings = (EntraIDProviderSettings)configuration.Settings;
                     }
                 }
                 return _Configuration;
@@ -57,7 +57,7 @@ namespace Yvand.Administration
         /// <summary>
         /// Gets or sets the settings used by EntraCP to run
         /// </summary>
-        protected EntraProviderSettings Settings { get; set; }
+        protected EntraIDProviderSettings Settings { get; set; }
         private IdentityClaimTypeConfig _IdentityCTConfig;
         protected IdentityClaimTypeConfig IdentityCTConfig
         {

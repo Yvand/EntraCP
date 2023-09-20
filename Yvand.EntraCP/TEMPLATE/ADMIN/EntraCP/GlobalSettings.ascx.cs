@@ -255,7 +255,7 @@ namespace Yvand.Administration
 
         protected void BtnResetConfig_Click(Object sender, EventArgs e)
         {
-            EntraProviderConfig<IEntraSettings>.DeleteGlobalConfiguration(ConfigurationID);
+            EntraIDProviderConfiguration.DeleteGlobalConfiguration(ConfigurationID);
             Response.Redirect(Request.RawUrl, false);
         }
 

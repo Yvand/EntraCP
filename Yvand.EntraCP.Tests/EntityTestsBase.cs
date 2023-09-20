@@ -45,9 +45,9 @@ namespace Yvand.Tests
         /// </summary>
         public virtual bool ConfigurationIsValid => true;
 
-        protected EntraProviderConfig<IEntraSettings> GlobalConfiguration;
-        protected EntraProviderSettings Settings = new EntraProviderSettings();
-        private static IEntraSettings OriginalSettings;
+        protected EntraIDProviderConfiguration GlobalConfiguration;
+        protected EntraIDProviderSettings Settings = new EntraIDProviderSettings();
+        private static IEntraIDProviderSettings OriginalSettings;
 
         [OneTimeSetUp]
         public void Init()
@@ -60,7 +60,7 @@ namespace Yvand.Tests
             else
             {
                 OriginalSettings = GlobalConfiguration.Settings;
-                Settings = (EntraProviderSettings)GlobalConfiguration.Settings;
+                Settings = (EntraIDProviderSettings)GlobalConfiguration.Settings;
                 Trace.TraceInformation($"{DateTime.Now.ToString("s")} Took a backup of the original settings");
             }
             InitializeConfiguration(true);
@@ -71,8 +71,8 @@ namespace Yvand.Tests
         /// </summary>
         public virtual void InitializeConfiguration(bool applyChanges)
         {
-            Settings = new EntraProviderSettings();
-            Settings.ClaimTypes = EntraProviderSettings.ReturnDefaultClaimTypesConfig(UnitTestsHelper.ClaimsProvider.Name);
+            Settings = new EntraIDProviderSettings();
+            Settings.ClaimTypes = EntraIDProviderSettings.ReturnDefaultClaimTypesConfig(UnitTestsHelper.ClaimsProvider.Name);
             Settings.ProxyAddress = TestContext.Parameters["ProxyAddress"];
 
 #if DEBUG
