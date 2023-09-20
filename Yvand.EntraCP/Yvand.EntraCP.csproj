@@ -1,0 +1,200 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="12.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <Import Project="$(MSBuildExtensionsPath)\$(MSBuildToolsVersion)\Microsoft.Common.props" Condition="Exists('$(MSBuildExtensionsPath)\$(MSBuildToolsVersion)\Microsoft.Common.props')" />
+  <!-- Common -->
+  <PropertyGroup>
+    <ProjectGuid>{EEC47949-34B5-4805-A04D-A372BE75D3CB}</ProjectGuid>
+    <PackageId>Yvand.EntraCP</PackageId>
+    <Authors>Yvan Duhamel</Authors>
+    <OutputType>Library</OutputType>
+    <AppDesignerFolder>Properties</AppDesignerFolder>
+    <RootNamespace>Yvand</RootNamespace>
+    <AssemblyName>Yvand.EntraCP</AssemblyName>
+    <TargetFrameworkVersion>v4.8</TargetFrameworkVersion>
+    <LangVersion>8.0</LangVersion>
+    <TargetOfficeVersion>19.0</TargetOfficeVersion>
+    <FileAlignment>512</FileAlignment>
+    <ProjectTypeGuids>{C1CDDADD-2546-481F-9697-4EA41081F2FC};{14822709-B5A1-4724-98CA-57A101D1B079};{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}</ProjectTypeGuids>
+    <SandboxedSolution>False</SandboxedSolution>
+    <SignAssembly>true</SignAssembly>
+    <AssemblyOriginatorKeyFile>EntraCP.snk</AssemblyOriginatorKeyFile>
+    <DependsOnNETStandard>false</DependsOnNETStandard>
+    <ProjectMode>SharePointCustomization</ProjectMode>
+    <MinimumOfficeToolsVersion>14.1</MinimumOfficeToolsVersion>
+    <MinimumVisualStudioVersion>15.0</MinimumVisualStudioVersion>
+    <AutoGenerateBindingRedirects>false</AutoGenerateBindingRedirects>
+    <!-- Publish the repository URL in the built .nupkg (in the NuSpec <Repository> element) -->
+    <PublishRepositoryUrl>true</PublishRepositoryUrl>
+    <!-- compiler-generated source, like AssemblyInfo, are included in the PDB -->
+    <EmbedUntrackedSources>true</EmbedUntrackedSources>
+    <!-- Recommended: Embed symbols containing Source Link in the main file (exe/dll) -->
+    <!-- <DebugType>embedded</DebugType> -->
+  </PropertyGroup>
+  <!-- Debug configuration -->
+  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
+    <DebugType>embedded</DebugType>
+    <DebugSymbols>true</DebugSymbols>
+    <Optimize>false</Optimize>
+    <OutputPath>bin\Debug\</OutputPath>
+    <DefineConstants>DEBUG;TRACE</DefineConstants>
+    <ErrorReport>prompt</ErrorReport>
+    <WarningLevel>4</WarningLevel>
+    <UseVSHostingProcess>false</UseVSHostingProcess>
+    <CodeAnalysisRuleSet>MinimumRecommendedRules.ruleset</CodeAnalysisRuleSet>
+  </PropertyGroup>
+  <!-- Release configuration -->
+  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|AnyCPU' ">
+    <DebugType>portable</DebugType>
+    <Optimize>true</Optimize>
+    <OutputPath>bin\Release\</OutputPath>
+    <DefineConstants>TRACE</DefineConstants>
+    <ErrorReport>prompt</ErrorReport>
+    <WarningLevel>4</WarningLevel>
+    <UseVSHostingProcess>false</UseVSHostingProcess>
+    <CodeAnalysisRuleSet>MinimumRecommendedRules.ruleset</CodeAnalysisRuleSet>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(GITHUB_ACTIONS)' == 'true'">
+    <ContinuousIntegrationBuild>true</ContinuousIntegrationBuild>
+  </PropertyGroup>
+  <ItemGroup>
+    <PackageReference Include="Microsoft.SourceLink.GitHub" Version="1.1.1" PrivateAssets="all" />
+  </ItemGroup>
+  <!-- Project references -->
+  <ItemGroup>
+    <Reference Include="Microsoft.CSharp" />
+    <Reference Include="Microsoft.SharePoint, Version=16.0.0.0, Culture=neutral, PublicKeyToken=71e9bce111e9429c, processorArchitecture=MSIL">
+      <SpecificVersion>False</SpecificVersion>
+      <HintPath>references\SPSE\Microsoft.SharePoint.dll</HintPath>
+      <Private>False</Private>
+    </Reference>
+    <Reference Include="System" />
+    <Reference Include="System.Web" />
+  </ItemGroup>
+  <ItemGroup>
+    <Compile Include="Yvand\EntraID\EntraIDEntityProvider.cs" />
+    <Compile Include="Yvand\EntraCP.cs" />
+    <Compile Include="Yvand\Administration\EntraCPUserControl.cs">
+      <SubType>ASPXCodeBehind</SubType>
+    </Compile>
+    <Compile Include="Yvand\Logger.cs" />
+    <Compile Include="Yvand\Configuration\EntraID\EntraProviderConfig.cs" />
+    <Compile Include="Yvand\Configuration\EntraID\EntraIDTenant.cs" />
+    <Compile Include="Yvand\Configuration\ClaimsProviderConstants.cs" />
+    <Compile Include="Yvand\Configuration\ClaimTypeConfig.cs" />
+    <Compile Include="Yvand\Configuration\EntityProviderConfig.cs" />
+    <Compile Include="Yvand\EntityProviderBase.cs" />
+    <Compile Include="TEMPLATE\ADMIN\EntraCP\ClaimTypesConfig.ascx.cs">
+      <DependentUpon>ClaimTypesConfig.ascx</DependentUpon>
+      <SubType>ASPXCodeBehind</SubType>
+    </Compile>
+    <Compile Include="TEMPLATE\ADMIN\EntraCP\ClaimTypesConfig.ascx.designer.cs">
+      <DependentUpon>ClaimTypesConfig.ascx.cs</DependentUpon>
+    </Compile>
+    <Compile Include="TEMPLATE\ADMIN\EntraCP\GlobalSettings.ascx.cs">
+      <DependentUpon>GlobalSettings.ascx</DependentUpon>
+      <SubType>ASPXCodeBehind</SubType>
+    </Compile>
+    <Compile Include="TEMPLATE\ADMIN\EntraCP\GlobalSettings.ascx.designer.cs">
+      <DependentUpon>GlobalSettings.ascx.cs</DependentUpon>
+    </Compile>
+    <Compile Include="Features\EntraCP\EntraCP.EventReceiver.cs">
+      <DependentUpon>EntraCP.feature</DependentUpon>
+    </Compile>
+    <Compile Include="Properties\AssemblyInfo.cs" />
+    <Compile Include="Yvand\Utils.cs" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="EntraCP.nuspec" />
+    <None Include="EntraCP.Administration.Links\SharePointProjectItem.spdata">
+      <SharePointProjectItemId>{c15a0bf3-126a-42e6-af6b-5880f2e9af42}</SharePointProjectItemId>
+    </None>
+    <None Include="EntraCP.snk" />
+    <None Include="Features\EntraCP\EntraCP.feature">
+      <FeatureId>{70b104e2-19df-4cb1-9802-c98eaf14d84e}</FeatureId>
+    </None>
+    <None Include="Features\EntraCP.Administration\EntraCP.Administration.feature">
+      <FeatureId>{b82964c9-f57c-4826-b1dd-f03f63c7f197}</FeatureId>
+    </None>
+    <None Include="Package\Package.package">
+      <PackageId>{1db45b9b-2fff-4f07-992b-344dde907316}</PackageId>
+    </None>
+    <None Include="Package\Package.Template.xml">
+      <DependentUpon>Package.package</DependentUpon>
+    </None>
+    <None Include="TEMPLATE\SharePointProjectItem.spdata">
+      <SharePointProjectItemId>{aa00a720-1ea7-47a5-8993-73b778baef87}</SharePointProjectItemId>
+    </None>
+  </ItemGroup>
+  <!-- NuGet packages -->
+  <ItemGroup>
+    <PackageReference Include="Azure.Identity">
+      <Version>1.10.0</Version>
+    </PackageReference>
+    <PackageReference Include="Microsoft.Graph">
+      <Version>5.26.0</Version>
+    </PackageReference>
+    <PackageReference Include="StrongNamer">
+      <Version>0.2.5</Version>
+    </PackageReference>
+  </ItemGroup>
+  <ItemGroup>
+    <Content Include="EntraCP.Administration.Links\Elements.xml" />
+    <Content Include="TEMPLATE\ADMIN\EntraCP\ClaimTypesConfig.ascx" />
+    <Content Include="TEMPLATE\ADMIN\EntraCP\GlobalSettings.ascx" />
+    <Content Include="Features\EntraCP\EntraCP.Template.xml">
+      <DependentUpon>EntraCP.feature</DependentUpon>
+    </Content>
+    <Content Include="Features\EntraCP.Administration\EntraCP.Administration.Template.xml">
+      <DependentUpon>EntraCP.Administration.feature</DependentUpon>
+    </Content>
+    <Content Include="TEMPLATE\ADMIN\EntraCP\GlobalSettings.aspx" />
+    <Content Include="TEMPLATE\ADMIN\EntraCP\ClaimTypesConfig.aspx" />
+    <Content Include="TEMPLATE\ADMIN\EntraCP\TroubleshootEntraCP.aspx" />
+    <Content Include="TEMPLATE\LAYOUTS\EntraCP\EntraCP_logo_small.png" />
+    <Content Include="TEMPLATE\LAYOUTS\EntraCP\jquery-1.9.1.min.js" />
+  </ItemGroup>
+  <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
+  <PropertyGroup>
+    <VisualStudioVersion Condition="'$(VisualStudioVersion)' == ''">10.0</VisualStudioVersion>
+    <VSToolsPath Condition="'$(VSToolsPath)' == ''">$(MSBuildExtensionsPath32)\Microsoft\VisualStudio\v$(VisualStudioVersion)</VSToolsPath>
+  </PropertyGroup>
+  <Import Project="$(VSToolsPath)\SharePointTools\Microsoft.VisualStudio.SharePoint.targets" Condition="'$(VSToolsPath)' != ''" />
+  <!-- Copy the assemblies that will be added to the WSP package -->
+  <PropertyGroup>
+    <PostBuildEvent>"C:\Program Files (x86)\Microsoft SDKs\Windows\v10.0A\bin\NETFX 4.8 Tools\x64\gacutil.exe" /f /i "$(TargetPath)"
+copy /Y "$(TargetDir)Azure.Core.dll" $(ProjectDir)\bin
+copy /Y "$(TargetDir)Azure.Identity.dll" $(ProjectDir)\bin
+copy /Y "$(TargetDir)Microsoft.Bcl.AsyncInterfaces.dll" $(ProjectDir)\bin
+copy /Y "$(TargetDir)Microsoft.Graph.Core.dll" $(ProjectDir)\bin
+copy /Y "$(TargetDir)Microsoft.Graph.dll" $(ProjectDir)\bin
+copy /Y "$(TargetDir)Microsoft.Identity.Client.dll" $(ProjectDir)\bin
+copy /Y "$(TargetDir)Microsoft.Identity.Client.Extensions.Msal.dll" $(ProjectDir)\bin
+copy /Y "$(TargetDir)Microsoft.IdentityModel.Abstractions.dll" $(ProjectDir)\bin
+copy /Y "$(TargetDir)Microsoft.IdentityModel.JsonWebTokens.dll" $(ProjectDir)\bin
+copy /Y "$(TargetDir)Microsoft.IdentityModel.Logging.dll" $(ProjectDir)\bin
+copy /Y "$(TargetDir)Microsoft.IdentityModel.Protocols.dll" $(ProjectDir)\bin
+copy /Y "$(TargetDir)Microsoft.IdentityModel.Protocols.OpenIdConnect.dll" $(ProjectDir)\bin
+copy /Y "$(TargetDir)Microsoft.IdentityModel.Tokens.dll" $(ProjectDir)\bin
+copy /Y "$(TargetDir)Microsoft.Kiota.Abstractions.dll" $(ProjectDir)\bin
+copy /Y "$(TargetDir)Microsoft.Kiota.Authentication.Azure.dll" $(ProjectDir)\bin
+copy /Y "$(TargetDir)Microsoft.Kiota.Http.HttpClientLibrary.dll" $(ProjectDir)\bin
+copy /Y "$(TargetDir)Microsoft.Kiota.Serialization.Form.dll" $(ProjectDir)\bin
+copy /Y "$(TargetDir)Microsoft.Kiota.Serialization.Json.dll" $(ProjectDir)\bin
+copy /Y "$(TargetDir)Microsoft.Kiota.Serialization.Multipart.dll" $(ProjectDir)\bin
+copy /Y "$(TargetDir)Microsoft.Kiota.Serialization.Text.dll" $(ProjectDir)\bin
+copy /Y "$(TargetDir)System.Buffers.dll" $(ProjectDir)\bin
+copy /Y "$(TargetDir)System.Diagnostics.DiagnosticSource.dll" $(ProjectDir)\bin
+copy /Y "$(TargetDir)System.IdentityModel.Tokens.Jwt.dll" $(ProjectDir)\bin
+copy /Y "$(TargetDir)System.Memory.Data.dll" $(ProjectDir)\bin
+copy /Y "$(TargetDir)System.Memory.dll" $(ProjectDir)\bin
+copy /Y "$(TargetDir)System.Net.Http.WinHttpHandler.dll" $(ProjectDir)\bin
+copy /Y "$(TargetDir)System.Numerics.Vectors.dll" $(ProjectDir)\bin
+copy /Y "$(TargetDir)System.Runtime.CompilerServices.Unsafe.dll" $(ProjectDir)\bin
+copy /Y "$(TargetDir)System.Security.Cryptography.ProtectedData.dll" $(ProjectDir)\bin
+copy /Y "$(TargetDir)System.Text.Encodings.Web.dll" $(ProjectDir)\bin
+copy /Y "$(TargetDir)System.Text.Json.dll" $(ProjectDir)\bin
+copy /Y "$(TargetDir)System.Threading.Tasks.Extensions.dll" $(ProjectDir)\bin
+copy /Y "$(TargetDir)System.ValueTuple.dll" $(ProjectDir)\bin
+copy /Y "$(TargetDir)Tavis.UriTemplates.dll" $(ProjectDir)\bin</PostBuildEvent>
+  </PropertyGroup>
+</Project>

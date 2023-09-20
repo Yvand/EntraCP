@@ -1,0 +1,46 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Elements xmlns="http://schemas.microsoft.com/sharepoint/">
+  <CustomActionGroup
+    Id = "EntraCP"
+    Location = "Microsoft.SharePoint.Administration.Security"
+    Sequence = "600"
+    Title = "EntraCP - Claims provider for Microsoft Entra ID"
+    ImageUrl="/_layouts/15/EntraCP/EntraCP_logo_small.png">
+  </CustomActionGroup>
+
+  <CustomAction
+      Id="EntraCPSettings"
+      GroupId="EntraCP"
+      Location="Microsoft.SharePoint.Administration.Security"
+      Title="Global configuration"
+      Sequence="10">
+    <UrlAction Url="/_admin/EntraCP/GlobalSettings.aspx" />
+  </CustomAction>
+
+  <CustomAction
+      Id="EntraCPClaimsMappings"
+      GroupId="EntraCP"
+      Location="Microsoft.SharePoint.Administration.Security"
+      Title="Claim types configuration"
+      Sequence="20">
+    <UrlAction Url="/_admin/EntraCP/ClaimTypesConfig.aspx" />
+  </CustomAction>
+
+  <CustomAction
+      Id="TroubleshootEntraCP"
+      GroupId="EntraCP"
+      Location="Microsoft.SharePoint.Administration.Security"
+      Title="Troubleshoot EntraCP"
+      Sequence="21">
+    <UrlAction Url="/_admin/EntraCP/TroubleshootEntraCP.aspx" />
+  </CustomAction>
+
+  <CustomAction
+      Id="EntraCPSite"
+      GroupId="EntraCP"
+      Location="Microsoft.SharePoint.Administration.Security"
+      Title="Updates and documentation"
+      Sequence="30">
+    <UrlAction Url="https://azurecp.yvand.net/" />
+  </CustomAction>
+</Elements>
