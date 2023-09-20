@@ -9,7 +9,7 @@ using System.IO;
 using System.Linq;
 using System.Security.Claims;
 using System.Text;
-using Yvand.EntraClaimsProvider.Config;
+using Yvand.EntraClaimsProvider.Configuration;
 
 namespace Yvand.EntraClaimsProvider.Tests
 {

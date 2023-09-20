@@ -1,7 +1,7 @@
 ﻿using Microsoft.Graph.Models;
 using System.Collections.Generic;
 using System.Threading.Tasks;
-using Yvand.EntraClaimsProvider.Config;
+using Yvand.EntraClaimsProvider.Configuration;
 
 namespace Yvand.EntraClaimsProvider
 {

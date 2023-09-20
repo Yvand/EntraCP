@@ -4,7 +4,7 @@ using Microsoft.SharePoint.Administration.Claims;
 using Microsoft.SharePoint.Utilities;
 using System;
 using System.Web.UI;
-using Yvand.EntraClaimsProvider.Config;
+using Yvand.EntraClaimsProvider.Configuration;
 
 namespace Yvand.EntraClaimsProvider.Administration
 {

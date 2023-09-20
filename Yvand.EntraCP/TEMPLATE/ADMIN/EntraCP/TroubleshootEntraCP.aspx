@@ -7,7 +7,7 @@
 <%@ Import Namespace="System.Reflection" %>
 <%@ Import Namespace="System.Threading.Tasks" %>
 <%@ Import Namespace="Yvand.EntraClaimsProvider" %>
-<%@ Import Namespace="Yvand.EntraClaimsProvider.Config" %>
+<%@ Import Namespace="Yvand.EntraClaimsProvider.Configuration" %>
 
 <asp:Content ID="PageTitle" ContentPlaceHolderID="PlaceHolderPageTitle" runat="server">Troubleshoot EntraCP</asp:Content>
 <asp:Content ID="PageTitleInTitleArea" ContentPlaceHolderID="PlaceHolderPageTitleInTitleArea" runat="server">Troubleshoot EntraCP in the context of current site</asp:Content>

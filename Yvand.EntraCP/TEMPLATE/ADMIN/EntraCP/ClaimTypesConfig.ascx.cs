@@ -9,7 +9,7 @@ using System.Text;
 using System.Web.UI;
 using System.Web.UI.WebControls;
 using Yvand.EntraClaimsProvider;
-using Yvand.EntraClaimsProvider.Config;
+using Yvand.EntraClaimsProvider.Configuration;
 
 namespace Yvand.EntraClaimsProvider.Administration
 {

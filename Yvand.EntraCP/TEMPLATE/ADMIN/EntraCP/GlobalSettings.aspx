@@ -1,7 +1,7 @@
 ﻿<%@ Assembly Name="$SharePoint.Project.AssemblyFullName$" %>
 <%@ Page Language="C#" AutoEventWireup="true" Inherits="Microsoft.SharePoint.WebControls.LayoutsPageBase" MasterPageFile="~/_admin/admin.master" %>
 <%@ Register TagPrefix="EntraCP" TagName="GlobalSettings" src="GlobalSettings.ascx" %>
-<%@ Import Namespace="Yvand.EntraClaimsProvider.Config" %>
+<%@ Import Namespace="Yvand.EntraClaimsProvider.Configuration" %>
 <%@ Import Namespace="Yvand.EntraClaimsProvider" %>
 <%@ Import Namespace="System.Diagnostics" %>
 <%@ Import Namespace="System.Reflection" %>
