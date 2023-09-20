@@ -10,7 +10,6 @@ using System.Linq;
 using System.Reflection;
 using System.Threading;
 using System.Threading.Tasks;
-using Yvand.EntraClaimsProvider.EntraID;
 using Yvand.EntraClaimsProvider.Configuration;
 using WIF4_5 = System.Security.Claims;
 

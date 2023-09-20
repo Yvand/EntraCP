@@ -71,14 +71,13 @@
     <Reference Include="System.Web" />
   </ItemGroup>
   <ItemGroup>
-    <Compile Include="Yvand\EntraID\EntraIDEntityProvider.cs" />
+    <Compile Include="Yvand\EntraIDEntityProvider.cs" />
     <Compile Include="Yvand\EntraCP.cs" />
     <Compile Include="Yvand\Administration\EntraCPUserControl.cs">
       <SubType>ASPXCodeBehind</SubType>
     </Compile>
     <Compile Include="Yvand\Logger.cs" />
-    <Compile Include="Yvand\Configuration\EntraID\EntraProviderConfig.cs" />
-    <Compile Include="Yvand\Configuration\EntraID\EntraIDTenant.cs" />
+    <Compile Include="Yvand\Configuration\EntraIDTenant.cs" />
     <Compile Include="Yvand\Configuration\ClaimsProviderConstants.cs" />
     <Compile Include="Yvand\Configuration\ClaimTypeConfig.cs" />
     <Compile Include="Yvand\Configuration\EntraIDProviderConfiguration.cs" />

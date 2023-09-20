@@ -17,7 +17,7 @@ using System.Reflection;
 using System.Threading.Tasks;
 using Yvand.EntraClaimsProvider.Configuration;
 
-namespace Yvand.EntraClaimsProvider.EntraID
+namespace Yvand.EntraClaimsProvider
 {
     public class EntraIDEntityProvider : EntityProviderBase
     {
