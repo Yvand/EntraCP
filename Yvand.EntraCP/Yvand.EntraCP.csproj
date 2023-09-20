@@ -17,7 +17,7 @@
     <ProjectTypeGuids>{C1CDDADD-2546-481F-9697-4EA41081F2FC};{14822709-B5A1-4724-98CA-57A101D1B079};{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}</ProjectTypeGuids>
     <SandboxedSolution>False</SandboxedSolution>
     <SignAssembly>true</SignAssembly>
-    <AssemblyOriginatorKeyFile>EntraCP.snk</AssemblyOriginatorKeyFile>
+    <AssemblyOriginatorKeyFile>Yvand.EntraCP.snk</AssemblyOriginatorKeyFile>
     <DependsOnNETStandard>false</DependsOnNETStandard>
     <ProjectMode>SharePointCustomization</ProjectMode>
     <MinimumOfficeToolsVersion>14.1</MinimumOfficeToolsVersion>
@@ -104,11 +104,11 @@
     <Compile Include="Yvand\Utils.cs" />
   </ItemGroup>
   <ItemGroup>
-    <None Include="EntraCP.nuspec" />
+    <None Include="Yvand.EntraCP.nuspec" />
     <None Include="EntraCP.Administration.Links\SharePointProjectItem.spdata">
       <SharePointProjectItemId>{c15a0bf3-126a-42e6-af6b-5880f2e9af42}</SharePointProjectItemId>
     </None>
-    <None Include="EntraCP.snk" />
+    <None Include="Yvand.EntraCP.snk" />
     <None Include="Features\EntraCP\EntraCP.feature">
       <FeatureId>{70b104e2-19df-4cb1-9802-c98eaf14d84e}</FeatureId>
     </None>
