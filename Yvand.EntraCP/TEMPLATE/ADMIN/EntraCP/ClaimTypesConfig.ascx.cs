@@ -8,10 +8,10 @@ using System.Reflection;
 using System.Text;
 using System.Web.UI;
 using System.Web.UI.WebControls;
-using Yvand;
-using Yvand.Config;
+using Yvand.EntraClaimsProvider;
+using Yvand.EntraClaimsProvider.Config;
 
-namespace Yvand.Administration
+namespace Yvand.EntraClaimsProvider.Administration
 {
     public partial class ClaimTypesConfigUserControl : EntraCPUserControl
     {

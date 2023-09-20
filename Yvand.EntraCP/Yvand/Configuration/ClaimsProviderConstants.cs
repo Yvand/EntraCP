@@ -10,7 +10,7 @@ using System.Reflection;
 using System.Web;
 using WIF4_5 = System.Security.Claims;
 
-namespace Yvand.Config
+namespace Yvand.EntraClaimsProvider.Config
 {
     public static class ClaimsProviderConstants
     {

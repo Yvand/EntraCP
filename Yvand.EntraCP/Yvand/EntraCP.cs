@@ -10,11 +10,11 @@ using System.Linq;
 using System.Reflection;
 using System.Threading;
 using System.Threading.Tasks;
-using Yvand.EntraID;
-using Yvand.Config;
+using Yvand.EntraClaimsProvider.EntraID;
+using Yvand.EntraClaimsProvider.Config;
 using WIF4_5 = System.Security.Claims;
 
-namespace Yvand
+namespace Yvand.EntraClaimsProvider
 {
     public interface IEntraCPSettings : IEntraIDProviderSettings
     {

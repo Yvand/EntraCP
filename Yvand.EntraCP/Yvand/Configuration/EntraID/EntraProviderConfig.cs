@@ -4,7 +4,7 @@ using Microsoft.SharePoint.WebControls;
 using System;
 using System.Collections.Generic;
 
-namespace Yvand.Config
+namespace Yvand.EntraClaimsProvider.Config
 {
     //public interface IEntraSettings : IEntraIDProviderSettings
     //{

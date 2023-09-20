@@ -9,9 +9,9 @@ using System.Diagnostics;
 using System.Linq;
 using System.Reflection;
 using System.Security.Claims;
-using Yvand.Config;
+using Yvand.EntraClaimsProvider.Config;
 
-namespace Yvand.Tests
+namespace Yvand.EntraClaimsProvider.Tests
 {
     [SetUpFixture]
     public class UnitTestsHelper

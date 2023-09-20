@@ -1,9 +1,9 @@
 ﻿using Microsoft.Graph.Models;
 using System.Collections.Generic;
 using System.Threading.Tasks;
-using Yvand.Config;
+using Yvand.EntraClaimsProvider.Config;
 
-namespace Yvand
+namespace Yvand.EntraClaimsProvider
 {
     public abstract class EntityProviderBase
     {

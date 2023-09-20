@@ -5,7 +5,7 @@ using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
 
-namespace Yvand.Config
+namespace Yvand.EntraClaimsProvider.Config
 {
     public interface IEntraIDProviderSettings
     {

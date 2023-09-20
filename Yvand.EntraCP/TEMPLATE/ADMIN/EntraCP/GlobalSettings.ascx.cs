@@ -15,9 +15,9 @@ using System.Security.Cryptography.X509Certificates;
 using System.Threading.Tasks;
 using System.Web.UI.HtmlControls;
 using System.Web.UI.WebControls;
-using Yvand.Config;
+using Yvand.EntraClaimsProvider.Config;
 
-namespace Yvand.Administration
+namespace Yvand.EntraClaimsProvider.Administration
 {
     public partial class GlobalSettingsUserControl : EntraCPUserControl
     {

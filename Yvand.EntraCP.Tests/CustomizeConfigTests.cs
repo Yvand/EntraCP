@@ -1,9 +1,9 @@
 ﻿using NUnit.Framework;
 using System;
 using System.Linq;
-using Yvand.Config;
+using Yvand.EntraClaimsProvider.Config;
 
-namespace Yvand.Tests
+namespace Yvand.EntraClaimsProvider.Tests
 {
     [TestFixture]
     [NonParallelizable]

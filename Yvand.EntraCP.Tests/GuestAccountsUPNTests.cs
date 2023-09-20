@@ -1,7 +1,7 @@
 ﻿using NUnit.Framework;
-using Yvand.Config;
+using Yvand.EntraClaimsProvider.Config;
 
-namespace Yvand.Tests
+namespace Yvand.EntraClaimsProvider.Tests
 {
     /// <summary>
     /// Test guest accounts when their identity claim is the UserPrincipalName

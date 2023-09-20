@@ -1,7 +1,7 @@
 ﻿<%@ Page Language="C#" AutoEventWireup="true" Inherits="Microsoft.SharePoint.WebControls.LayoutsPageBase" MasterPageFile="~/_admin/admin.master" %>
 <%@ Register TagPrefix="EntraCP" TagName="ClaimTypesConfigUC" src="ClaimTypesConfig.ascx" %>
-<%@ Import Namespace="Yvand.Config" %>
-<%@ Import Namespace="Yvand" %>
+<%@ Import Namespace="Yvand.EntraClaimsProvider.Config" %>
+<%@ Import Namespace="Yvand.EntraClaimsProvider" %>
 <%@ Import Namespace="System.Diagnostics" %>
 <%@ Import Namespace="System.Reflection" %>
 

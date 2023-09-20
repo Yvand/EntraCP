@@ -8,7 +8,7 @@
     <Authors>Yvan Duhamel</Authors>
     <OutputType>Library</OutputType>
     <AppDesignerFolder>Properties</AppDesignerFolder>
-    <RootNamespace>Yvand</RootNamespace>
+    <RootNamespace>Yvand.EntraClaimsProvider</RootNamespace>
     <AssemblyName>Yvand.EntraCP</AssemblyName>
     <TargetFrameworkVersion>v4.8</TargetFrameworkVersion>
     <LangVersion>8.0</LangVersion>

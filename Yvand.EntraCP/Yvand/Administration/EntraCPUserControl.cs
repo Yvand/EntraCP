@@ -4,9 +4,9 @@ using Microsoft.SharePoint.Administration.Claims;
 using Microsoft.SharePoint.Utilities;
 using System;
 using System.Web.UI;
-using Yvand.Config;
+using Yvand.EntraClaimsProvider.Config;
 
-namespace Yvand.Administration
+namespace Yvand.EntraClaimsProvider.Administration
 {
     public abstract class EntraCPUserControl : UserControl
     {

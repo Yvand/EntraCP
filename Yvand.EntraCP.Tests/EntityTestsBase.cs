@@ -9,9 +9,9 @@ using System.IO;
 using System.Linq;
 using System.Security.Claims;
 using System.Text;
-using Yvand.Config;
+using Yvand.EntraClaimsProvider.Config;
 
-namespace Yvand.Tests
+namespace Yvand.EntraClaimsProvider.Tests
 {
     public class EntityTestsBase
     {
