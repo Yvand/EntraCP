@@ -98,10 +98,7 @@ jobs:
     outputs:
       assembly-version: ${{ needs.calculate-version.outputs.assembly-version }}
     env:
-      Solution_Name: ${{ inputs.project-name }}.sln
       project-name: ${{ inputs.project-name }}
-      Project_Directory: ${{ inputs.project-name }}
-      Project_File_Path: ${{ inputs.project-name }}/${{ inputs.project-name }}.csproj
 
     steps:
     - name: Checkout
@@ -114,7 +111,7 @@ jobs:
       uses: Yvand/assemblyinfo-update@main
       with:
         version: "${{ needs.calculate-version.outputs.assembly-version }}" #"${{ inputs.version-major-minor }}.${{ steps.date.outputs.date }}"
-        directory: "${{ env.Project_Directory }}/Properties"
+        directory: "${{ env.project-name }}/Properties"
         filename: 'AssemblyInfo.cs'
         recursive: false
         copyright: "Copyright © Yvan Duhamel ${{ needs.calculate-version.outputs.year }}"
@@ -125,7 +122,7 @@ jobs:
       uses: microsoft/setup-msbuild@v1.3.1
     
     - name: Restore Packages
-      run: nuget restore $env:Solution_Name
+      run: nuget restore "$($env:project-name).sln"
 
     # Decode the base 64 encoded signing key
     # Key encoded using PowerShell Core:
@@ -134,12 +131,12 @@ jobs:
     - name: Decode the signing key
       run: |
         $data = [System.Convert]::FromBase64String("${{ secrets.base64-encoded-signingkey }}")
-        $certificatePath = Join-Path -Path $env:Project_Directory -ChildPath "${{ env.project-name }}.snk"
+        $certificatePath = Join-Path -Path $env:project-name -ChildPath "${{ env.project-name }}.snk"
         [IO.File]::WriteAllBytes($certificatePath, $data)
 
     # Build the application
     - name: Build the application and create the solution package
-      run: msbuild $env:Solution_Name /p:Configuration=$env:Configuration /p:IsPackaging=true /p:platform="Any CPU" /p:ContinuousIntegrationBuild=true
+      run: msbuild "$($env:project-name).sln" /p:Configuration=$env:Configuration /p:IsPackaging=true /p:platform="Any CPU" /p:ContinuousIntegrationBuild=true
       env:
         Configuration: ${{ matrix.configuration }}
     
@@ -154,16 +151,16 @@ jobs:
             $version = $version.Split('-')[0]
         }
         "version: " + $version
-        nuget pack "${{ env.Project_Directory }}/${{ env.project-name }}.csproj" -OutputDirectory "${{ env.Project_Directory }}/bin/${{ matrix.configuration }}" -Properties "Configuration=${{ matrix.configuration }};commit=${{ github.sha }};fileversion=$version" -Symbols -SymbolPackageFormat snupkg -Suffix $suffix
+        nuget pack "${{ env.project-name }}/${{ env.project-name }}.csproj" -OutputDirectory "${{ env.project-name }}/bin/${{ matrix.configuration }}" -Properties "Configuration=${{ matrix.configuration }};commit=${{ github.sha }};fileversion=$version" -Symbols -SymbolPackageFormat snupkg -Suffix $suffix
 
     - name: Remove the signing key
-      run: Remove-Item -path "${{ env.Project_Directory }}/${{ env.project-name }}.snk"
+      run: Remove-Item -path "${{ env.project-name }}/${{ env.project-name }}.snk"
 
     - name: Upload artifact - wsp solution
       uses: actions/upload-artifact@v3
       with:
         name: "${{ env.project-name }}-${{ env.Configuration }}-wsp"
-        path: "${{ env.Project_Directory }}/bin/${{ env.Configuration }}/*.wsp"
+        path: "${{ env.project-name }}/bin/${{ env.Configuration }}/*.wsp"
         if-no-files-found: error
       env:
         Configuration: ${{ matrix.configuration }}
@@ -172,7 +169,7 @@ jobs:
       uses: actions/upload-artifact@v3
       with:
         name: "${{ env.project-name }}-${{ env.Configuration }}-dependencies"
-        path: "${{ env.Project_Directory }}/bin/${{ env.Configuration }}/*.dll"
+        path: "${{ env.project-name }}/bin/${{ env.Configuration }}/*.dll"
         if-no-files-found: error
       env:
         Configuration: ${{ matrix.configuration }}
@@ -182,9 +179,9 @@ jobs:
       with:
         name: "${{ env.project-name }}-${{ env.Configuration }}-symbols"
         path: |
-            ${{ env.Project_Directory }}/bin/${{ env.Configuration }}/${{ env.project-name }}.dll
-            ${{ env.Project_Directory }}/bin/${{ env.Configuration }}/${{ env.project-name }}.pdb
-            ${{ env.Project_Directory }}/bin/${{ env.Configuration }}/*.wsp
+            ${{ env.project-name }}/bin/${{ env.Configuration }}/${{ env.project-name }}.dll
+            ${{ env.project-name }}/bin/${{ env.Configuration }}/${{ env.project-name }}.pdb
+            ${{ env.project-name }}/bin/${{ env.Configuration }}/*.wsp
         if-no-files-found: error
       env:
         Configuration: ${{ matrix.configuration }}
@@ -193,7 +190,7 @@ jobs:
       uses: actions/upload-artifact@v3
       with:
         name: "${{ env.project-name }}-${{ env.Configuration }}-unit-tests"
-        path: "${{ env.Project_Directory }}.Tests/bin/${{ env.Configuration }}/*.dll"
+        path: "${{ env.project-name }}.Tests/bin/${{ env.Configuration }}/*.dll"
         if-no-files-found: error
       env:
         Configuration: ${{ matrix.configuration }}
@@ -212,6 +209,6 @@ jobs:
       with:
         name: "NuGet"
         path: |
-            ${{ env.Project_Directory }}/bin/${{ matrix.configuration }}/*.nupkg
-            ${{ env.Project_Directory }}/bin/${{ matrix.configuration }}/*.snupkg
+            ${{ env.project-name }}/bin/${{ matrix.configuration }}/*.nupkg
+            ${{ env.project-name }}/bin/${{ matrix.configuration }}/*.snupkg
         if-no-files-found: ignore
