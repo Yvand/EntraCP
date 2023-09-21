@@ -3,6 +3,7 @@
 ## Unreleased
 
 * Rewrite AzureCP from scratch with many breaking changes
+* Rename AzureCP to EntraCP
 * Update Microsoft.Graph to 5.22
 * Update .NET Framework dependency to .NET 4.8 (https://github.com/Yvand/AzureCP/pull/184)
 * Update reference on Microsoft.SharePoint.dll to use the one published with SharePoint Subscription RTM (https://github.com/Yvand/AzureCP/pull/184)
