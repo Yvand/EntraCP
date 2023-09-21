@@ -46,9 +46,9 @@ namespace Yvand.EntraClaimsProvider
     }
 
     /// <summary>
-    /// Implemented as documented in http://www.sbrickey.com/Tech/Blog/Post/Custom_Logging_in_SharePoint_2010
+    /// Handles logging to SharePoint
     /// </summary>
-    [System.Runtime.InteropServices.GuidAttribute("3DD2C709-C860-4A20-8AF2-0FDDAA9C406B")]
+    [System.Runtime.InteropServices.GuidAttribute("F38C33C5-ACBC-4974-82D6-E6427E245406")]
     public class Logger : SPDiagnosticsServiceBase
     {
         public readonly static string DiagnosticsAreaName = EntraCP.ClaimsProviderName;
@@ -58,7 +58,6 @@ namespace Yvand.EntraClaimsProvider
             try
             {
                 WriteTrace(category, traceSeverity, message);
-                //LdapcpLoggingService.WriteEvent(LdapcpLoggingService.Categories.LDAPCP, eventSeverity, message);
             }
             catch
             {   // Don't want to do anything if logging goes wrong, just ignore and continue
