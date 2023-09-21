@@ -2,9 +2,9 @@
 using NUnit.Framework;
 using System.Security.Claims;
 using Yvand;
-using Yvand.Config;
+using Yvand.EntraClaimsProvider.Configuration;
 
-namespace Yvand.Tests
+namespace Yvand.EntraClaimsProvider.Tests
 {
     public class CustomConfigTestsBase : EntityTestsBase
     {

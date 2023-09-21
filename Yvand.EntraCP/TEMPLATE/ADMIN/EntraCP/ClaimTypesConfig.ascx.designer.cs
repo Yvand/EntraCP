@@ -7,7 +7,7 @@
 // </auto-generated>
 //------------------------------------------------------------------------------
 
-namespace Yvand.Administration
+namespace Yvand.EntraClaimsProvider.Administration
 {
 
 

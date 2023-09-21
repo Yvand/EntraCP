@@ -3,7 +3,6 @@ using Azure.Core.Pipeline;
 using Azure.Identity;
 using Microsoft.Graph;
 using Microsoft.Identity.Client;
-using Microsoft.Kiota.Http.HttpClientLibrary.Middleware;
 using Microsoft.SharePoint.Administration;
 using System;
 using System.Collections.Generic;
@@ -15,7 +14,7 @@ using System.Security.Cryptography;
 using System.Security.Cryptography.X509Certificates;
 using System.Threading.Tasks;
 
-namespace Yvand.Config
+namespace Yvand.EntraClaimsProvider.Configuration
 {
     public class EntraIDTenant : SPAutoSerializingObject
     {

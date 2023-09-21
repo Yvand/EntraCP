@@ -1,6 +1,6 @@
 ﻿using NUnit.Framework;
 
-namespace Yvand.Tests
+namespace Yvand.EntraClaimsProvider.Tests
 {
     [TestFixture]
     [Parallelizable(ParallelScope.Children)]

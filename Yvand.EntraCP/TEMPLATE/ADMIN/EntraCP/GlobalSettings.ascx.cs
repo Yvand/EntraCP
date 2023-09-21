@@ -15,9 +15,9 @@ using System.Security.Cryptography.X509Certificates;
 using System.Threading.Tasks;
 using System.Web.UI.HtmlControls;
 using System.Web.UI.WebControls;
-using Yvand.Config;
+using Yvand.EntraClaimsProvider.Configuration;
 
-namespace Yvand.Administration
+namespace Yvand.EntraClaimsProvider.Administration
 {
     public partial class GlobalSettingsUserControl : EntraCPUserControl
     {
@@ -255,7 +255,7 @@ namespace Yvand.Administration
 
         protected void BtnResetConfig_Click(Object sender, EventArgs e)
         {
-            EntraProviderConfig<IEntraSettings>.DeleteGlobalConfiguration(ConfigurationID);
+            EntraIDProviderConfiguration.DeleteGlobalConfiguration(ConfigurationID);
             Response.Redirect(Request.RawUrl, false);
         }
 

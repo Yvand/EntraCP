@@ -4,9 +4,9 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
-using Yvand.Config;
+using Yvand.EntraClaimsProvider.Configuration;
 
-namespace Yvand
+namespace Yvand.EntraClaimsProvider
 {
     public static class Utils
     {

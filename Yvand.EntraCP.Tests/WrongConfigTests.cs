@@ -6,9 +6,9 @@ using System.Linq;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
-using Yvand.Config;
+using Yvand.EntraClaimsProvider.Configuration;
 
-namespace Yvand.Tests
+namespace Yvand.EntraClaimsProvider.Tests
 {
     [TestFixture]
     public class WrongConfigBadClaimTypeTests : EntityTestsBase

@@ -1,23 +1,25 @@
 ﻿using Microsoft.SharePoint.Administration;
 using Microsoft.SharePoint.Administration.Claims;
+using Microsoft.SharePoint.WebControls;
 using System;
+using System.Collections.Generic;
 using System.Collections.ObjectModel;
-using System.Reflection;
 
-namespace Yvand.Config
+namespace Yvand.EntraClaimsProvider.Configuration
 {
-    public interface IEntityProviderSettings
+    public interface IEntraIDProviderSettings
     {
+        #region Base settings
         /// <summary>
         /// Gets the version of the settings
         /// </summary>
         long Version { get; }
-        
+
         /// <summary>
         /// Gets the claim types and their mapping with a DirectoryObject property
         /// </summary>
         ClaimTypeConfigCollection ClaimTypes { get; }
-        
+
         /// <summary>
         /// Gets or sets whether to skip Microsoft Entra ID lookup and consider any input as valid.
         /// This can be useful to keep people picker working even if connectivity with the Azure tenant is lost.
@@ -48,10 +50,29 @@ namespace Yvand.Config
         /// This property is not used by EntraCP and is available to developers for their own needs
         /// </summary>
         string CustomData { get; }
+        #endregion
+
+        #region EntraID specific settings
+        /// <summary>
+        /// Gets the list of Azure tenants to use to get entities
+        /// </summary>
+        List<EntraIDTenant> EntraIDTenantList { get; }
+
+        /// <summary>
+        /// Gets the proxy address used by AzureCP to connect to Azure AD
+        /// </summary>
+        string ProxyAddress { get; }
+
+        /// <summary>
+        /// Gets if only security-enabled groups should be returned
+        /// </summary>
+        bool FilterSecurityEnabledGroupsOnly { get; }
+        #endregion
     }
 
-    public class EntityProviderSettings : IEntityProviderSettings
+    public class EntraIDProviderSettings : IEntraIDProviderSettings
     {
+        #region Base settings
         public long Version { get; set; }
         public ClaimTypeConfigCollection ClaimTypes { get; set; }
         public bool AlwaysResolveUserInput { get; set; } = false;
@@ -60,16 +81,68 @@ namespace Yvand.Config
         public string EntityDisplayTextPrefix { get; set; }
         public int Timeout { get; set; } = ClaimsProviderConstants.DEFAULT_TIMEOUT;
         public string CustomData { get; set; }
-        public EntityProviderSettings() { }
+        #endregion
+
+        #region EntraID specific settings
+        public List<EntraIDTenant> EntraIDTenantList { get; set; } = new List<EntraIDTenant>();
+        public string ProxyAddress { get; set; }
+        public bool FilterSecurityEnabledGroupsOnly { get; set; } = false;
+        #endregion
+
+        public EntraIDProviderSettings() { }
+
+        /// <summary>
+        /// Returns the default claim types configuration list, based on the identity claim type set in the TrustedLoginProvider associated with <paramref name="claimProviderName"/>
+        /// </summary>
+        /// <returns></returns>
+        public static ClaimTypeConfigCollection ReturnDefaultClaimTypesConfig(string claimsProviderName)
+        {
+            if (String.IsNullOrWhiteSpace(claimsProviderName))
+            {
+                throw new ArgumentNullException(nameof(claimsProviderName));
+            }
+
+            SPTrustedLoginProvider spTrust = Utils.GetSPTrustAssociatedWithClaimsProvider(claimsProviderName);
+            if (spTrust == null)
+            {
+                Logger.Log($"No SPTrustedLoginProvider associated with claims provider '{claimsProviderName}' was found.", TraceSeverity.Unexpected, EventSeverity.Error, TraceCategory.Core);
+                return null;
+            }
+
+            ClaimTypeConfigCollection newCTConfigCollection = new ClaimTypeConfigCollection(spTrust)
+            {
+                // Identity claim type. "Name" (http://schemas.xmlsoap.org/ws/2005/05/identity/claims/name) is a reserved claim type in SharePoint that cannot be used in the SPTrust.
+                //new ClaimTypeConfig{EntityType = DirectoryObjectType.User, DirectoryObjectProperty = AzureADObjectProperty.UserPrincipalName, ClaimType = WIF4_5.ClaimTypes.Upn},
+                new IdentityClaimTypeConfig{EntityType = DirectoryObjectType.User, EntityProperty = DirectoryObjectProperty.UserPrincipalName, ClaimType = spTrust.IdentityClaimTypeInformation.MappedClaimType},
+
+                // Additional properties to find user and create entity with the identity claim type (UseMainClaimTypeOfDirectoryObject=true)
+                new ClaimTypeConfig{EntityType = DirectoryObjectType.User, EntityProperty = DirectoryObjectProperty.DisplayName, UseMainClaimTypeOfDirectoryObject = true, EntityDataKey = PeopleEditorEntityDataKeys.DisplayName},
+                new ClaimTypeConfig{EntityType = DirectoryObjectType.User, EntityProperty = DirectoryObjectProperty.GivenName, UseMainClaimTypeOfDirectoryObject = true}, //Yvan
+                new ClaimTypeConfig{EntityType = DirectoryObjectType.User, EntityProperty = DirectoryObjectProperty.Surname, UseMainClaimTypeOfDirectoryObject = true},   //Duhamel
+                new ClaimTypeConfig{EntityType = DirectoryObjectType.User, EntityProperty = DirectoryObjectProperty.Mail, EntityDataKey = PeopleEditorEntityDataKeys.Email, UseMainClaimTypeOfDirectoryObject = true},
+
+                // Additional properties to populate metadata of entity created: no claim type set, EntityDataKey is set and UseMainClaimTypeOfDirectoryObject = false (default value)
+                new ClaimTypeConfig{EntityType = DirectoryObjectType.User, EntityProperty = DirectoryObjectProperty.MobilePhone, EntityDataKey = PeopleEditorEntityDataKeys.MobilePhone},
+                new ClaimTypeConfig{EntityType = DirectoryObjectType.User, EntityProperty = DirectoryObjectProperty.JobTitle, EntityDataKey = PeopleEditorEntityDataKeys.JobTitle},
+                new ClaimTypeConfig{EntityType = DirectoryObjectType.User, EntityProperty = DirectoryObjectProperty.Department, EntityDataKey = PeopleEditorEntityDataKeys.Department},
+                new ClaimTypeConfig{EntityType = DirectoryObjectType.User, EntityProperty = DirectoryObjectProperty.OfficeLocation, EntityDataKey = PeopleEditorEntityDataKeys.Location},
+
+                // Group
+                new ClaimTypeConfig{EntityType = DirectoryObjectType.Group, EntityProperty = DirectoryObjectProperty.Id, ClaimType = ClaimsProviderConstants.DefaultMainGroupClaimType, EntityPropertyToUseAsDisplayText = DirectoryObjectProperty.DisplayName},
+                new ClaimTypeConfig{EntityType = DirectoryObjectType.Group, EntityProperty = DirectoryObjectProperty.DisplayName, UseMainClaimTypeOfDirectoryObject = true, EntityDataKey = PeopleEditorEntityDataKeys.DisplayName},
+                new ClaimTypeConfig{EntityType = DirectoryObjectType.Group, EntityProperty = DirectoryObjectProperty.Mail, EntityDataKey = PeopleEditorEntityDataKeys.Email},
+            };
+            return newCTConfigCollection;
+        }
     }
 
-    public class EntityProviderConfig<TSettings> : SPPersistedObject
-        where TSettings : IEntityProviderSettings
+    public class EntraIDProviderConfiguration : SPPersistedObject, IEntraIDProviderSettings
     {
         /// <summary>
         /// Gets the settings, based on the configuration stored in this persisted object
         /// </summary>
-        public TSettings Settings {
+        public IEntraIDProviderSettings Settings
+        {
             get
             {
                 if (_Settings == null)
@@ -79,10 +152,10 @@ namespace Yvand.Config
                 return _Settings;
             }
         }
-        private TSettings _Settings;
+        private IEntraIDProviderSettings _Settings;
 
-        #region "Settings implemented from the interface"
-        protected ClaimTypeConfigCollection ClaimTypes
+        #region "Base settings implemented from IEntraIDEntityProviderSettings"
+        public ClaimTypeConfigCollection ClaimTypes
         {
             get
             {
@@ -92,7 +165,7 @@ namespace Yvand.Config
                 }
                 return _ClaimTypes;
             }
-            set
+            private set
             {
                 _ClaimTypes = value;
                 _ClaimTypesCollection = value == null ? null : value.innerCol;
@@ -102,39 +175,39 @@ namespace Yvand.Config
         private Collection<ClaimTypeConfig> _ClaimTypesCollection;
         private ClaimTypeConfigCollection _ClaimTypes;
 
-        protected bool AlwaysResolveUserInput
+        public bool AlwaysResolveUserInput
         {
             get => _AlwaysResolveUserInput;
-            set => _AlwaysResolveUserInput = value;
+            private set => _AlwaysResolveUserInput = value;
         }
         [Persisted]
         private bool _AlwaysResolveUserInput;
 
-        protected bool FilterExactMatchOnly
+        public bool FilterExactMatchOnly
         {
             get => _FilterExactMatchOnly;
-            set => _FilterExactMatchOnly = value;
+            private set => _FilterExactMatchOnly = value;
         }
         [Persisted]
         private bool _FilterExactMatchOnly;
 
-        protected bool EnableAugmentation
+        public bool EnableAugmentation
         {
             get => _EnableAugmentation;
-            set => _EnableAugmentation = value;
+            private set => _EnableAugmentation = value;
         }
         [Persisted]
         private bool _EnableAugmentation = true;
 
-        protected string EntityDisplayTextPrefix
+        public string EntityDisplayTextPrefix
         {
             get => _EntityDisplayTextPrefix;
-            set => _EntityDisplayTextPrefix = value;
+            private set => _EntityDisplayTextPrefix = value;
         }
         [Persisted]
         private string _EntityDisplayTextPrefix;
 
-        protected int Timeout
+        public int Timeout
         {
             get
             {
@@ -143,18 +216,48 @@ namespace Yvand.Config
 #endif
                 return _Timeout;
             }
-            set => _Timeout = value;
+            private set => _Timeout = value;
         }
         [Persisted]
         private int _Timeout = ClaimsProviderConstants.DEFAULT_TIMEOUT;
 
-        protected string CustomData
+        public string CustomData
         {
             get => _CustomData;
-            set => _CustomData = value;
+            private set => _CustomData = value;
         }
         [Persisted]
         private string _CustomData;
+        #endregion
+
+
+        #region "EntraID settings implemented from IEntraIDEntityProviderSettings"
+        public List<EntraIDTenant> EntraIDTenantList
+        {
+            get => _EntraIDTenantList;
+            private set => _EntraIDTenantList = value;
+        }
+        [Persisted]
+        private List<EntraIDTenant> _EntraIDTenantList = new List<EntraIDTenant>();
+
+        public string ProxyAddress
+        {
+            get => _ProxyAddress;
+            private set => _ProxyAddress = value;
+        }
+        [Persisted]
+        private string _ProxyAddress;
+
+        /// <summary>
+        /// Set if only AAD groups with securityEnabled = true should be returned - https://docs.microsoft.com/en-us/graph/api/resources/groups-overview?view=graph-rest-1.0
+        /// </summary>
+        public bool FilterSecurityEnabledGroupsOnly
+        {
+            get => _FilterSecurityEnabledGroupsOnly;
+            private set => _FilterSecurityEnabledGroupsOnly = value;
+        }
+        [Persisted]
+        private bool _FilterSecurityEnabledGroupsOnly = false;
         #endregion
 
         #region "Other properties"
@@ -186,8 +289,8 @@ namespace Yvand.Config
         }
         #endregion       
 
-        public EntityProviderConfig() { }
-        public EntityProviderConfig(string persistedObjectName, SPPersistedObject parent, string claimsProviderName) : base(persistedObjectName, parent)
+        public EntraIDProviderConfiguration() { }
+        public EntraIDProviderConfiguration(string persistedObjectName, SPPersistedObject parent, string claimsProviderName) : base(persistedObjectName, parent)
         {
             this.ClaimsProviderName = claimsProviderName;
             this.Initialize();
@@ -208,9 +311,9 @@ namespace Yvand.Config
         /// Returns a TSettings from the properties of the current persisted object
         /// </summary>
         /// <returns></returns>
-        protected virtual TSettings GenerateSettingsFromCurrentConfiguration()
+        protected virtual IEntraIDProviderSettings GenerateSettingsFromCurrentConfiguration()
         {
-            IEntityProviderSettings entityProviderSettings = new EntityProviderSettings()
+            IEntraIDProviderSettings entityProviderSettings = new EntraIDProviderSettings()
             {
                 AlwaysResolveUserInput = this.AlwaysResolveUserInput,
                 ClaimTypes = this.ClaimTypes,
@@ -220,8 +323,13 @@ namespace Yvand.Config
                 FilterExactMatchOnly = this.FilterExactMatchOnly,
                 Timeout = this.Timeout,
                 Version = this.Version,
+
+                // Properties specific to type IEntraSettings
+                EntraIDTenantList = this.EntraIDTenantList,
+                ProxyAddress = this.ProxyAddress,
+                FilterSecurityEnabledGroupsOnly = this.FilterSecurityEnabledGroupsOnly,
             };
-            return (TSettings)entityProviderSettings;
+            return (IEntraIDProviderSettings)entityProviderSettings;
         }
 
         /// <summary>
@@ -268,6 +376,24 @@ namespace Yvand.Config
             {
                 throw new InvalidOperationException("Some changes made to list ClaimTypes are invalid and cannot be committed to configuration database. Inspect inner exception for more details about the error.", ex);
             }
+
+            foreach (EntraIDTenant tenant in this.EntraIDTenantList)
+            {
+                if (tenant == null)
+                {
+                    throw new InvalidOperationException("Configuration is not valid because a tenant is null in EntraIDTenantList");
+                }
+
+                if (String.IsNullOrWhiteSpace(tenant.Name))
+                {
+                    throw new InvalidOperationException("Configuration is not valid because a tenant has its Name property empty");
+                }
+
+                if (String.IsNullOrWhiteSpace(tenant.ClientId))
+                {
+                    throw new InvalidOperationException("Configuration is not valid because a tenant has its ClientId property empty");
+                }
+            }
         }
 
         /// <summary>
@@ -292,12 +418,13 @@ namespace Yvand.Config
         /// Applies the settings passed in parameter to the current settings
         /// </summary>
         /// <param name="settings"></param>
-        public virtual void ApplySettings(TSettings settings, bool commitIfValid)
+        public virtual void ApplySettings(IEntraIDProviderSettings settings, bool commitIfValid)
         {
-            if(settings == null)
+            if (settings == null)
             {
                 return;
             }
+
             if (settings.ClaimTypes == null)
             {
                 this.ClaimTypes = null;
@@ -317,21 +444,48 @@ namespace Yvand.Config
             this.Timeout = settings.Timeout;
             this.CustomData = settings.CustomData;
 
-            if(commitIfValid)
+            this.EntraIDTenantList = settings.EntraIDTenantList;
+            this.FilterSecurityEnabledGroupsOnly = settings.FilterSecurityEnabledGroupsOnly;
+            this.ProxyAddress = settings.ProxyAddress;
+
+            if (commitIfValid)
             {
                 this.Update();
             }
         }
 
-        public virtual TSettings GetDefaultSettings()
+        public virtual IEntraIDProviderSettings GetDefaultSettings()
         {
-            IEntityProviderSettings entityProviderSettings = new EntityProviderSettings();
-            return (TSettings)entityProviderSettings;
+            IEntraIDProviderSettings entityProviderSettings = new EntraIDProviderSettings
+            {
+                ClaimTypes = EntraIDProviderSettings.ReturnDefaultClaimTypesConfig(this.ClaimsProviderName),
+            };
+            return (IEntraIDProviderSettings)entityProviderSettings;
+        }
+
+        /// <summary>
+        /// Generate and return default configuration
+        /// </summary>
+        /// <returns></returns>
+        public static EntraIDProviderConfiguration ReturnDefaultConfiguration(string claimsProviderName)
+        {
+            EntraIDProviderConfiguration defaultConfig = new EntraIDProviderConfiguration();
+            defaultConfig.ClaimsProviderName = claimsProviderName;
+            defaultConfig.ClaimTypes = EntraIDProviderSettings.ReturnDefaultClaimTypesConfig(claimsProviderName);
+            return defaultConfig;
         }
 
         public virtual ClaimTypeConfigCollection ReturnDefaultClaimTypesConfig()
         {
-            throw new NotImplementedException();
+            return EntraIDProviderSettings.ReturnDefaultClaimTypesConfig(this.ClaimsProviderName);
+        }
+
+        public void ResetClaimTypesList()
+        {
+            ClaimTypes.Clear();
+            ClaimTypes = ReturnDefaultClaimTypesConfig();
+            Logger.Log($"Claim types list of configuration '{Name}' was successfully reset to default configuration",
+                TraceSeverity.High, EventSeverity.Information, TraceCategory.Core);
         }
 
         /// <summary>
@@ -340,15 +494,15 @@ namespace Yvand.Config
         /// <param name="configurationId">The ID of the configuration</param>
         /// <param name="initializeLocalSettings">Set to true to initialize the property <see cref="Settings"/></param>
         /// <returns></returns>
-        public static EntityProviderConfig<TSettings> GetGlobalConfiguration(Guid configurationId, bool initializeLocalSettings = false)
+        public static EntraIDProviderConfiguration GetGlobalConfiguration(Guid configurationId, bool initializeLocalSettings = false)
         {
             SPFarm parent = SPFarm.Local;
             try
             {
-                //IEntityProviderSettings settings = (IEntityProviderSettings)parent.GetObject(configurationName, parent.Id, typeof(EntityProviderConfiguration));
+                //IEntraIDProviderSettings settings = (IEntraIDProviderSettings)parent.GetObject(configurationName, parent.Id, typeof(EntityProviderConfiguration));
                 //Conf<TSettings> settings = (Conf<TSettings>)parent.GetObject(configurationName, parent.Id, T);
                 //Conf<TSettings> settings = (Conf<TSettings>)parent.GetObject(configurationName, parent.Id, typeof(Conf<TSettings>));
-                EntityProviderConfig<TSettings> configuration = (EntityProviderConfig<TSettings>)parent.GetObject(configurationId);
+                EntraIDProviderConfiguration configuration = (EntraIDProviderConfiguration)parent.GetObject(configurationId);
                 //if (configuration != null && initializeLocalSettings == true)
                 //{
                 //    configuration.RefreshSettingsIfNeeded();
@@ -364,7 +518,7 @@ namespace Yvand.Config
 
         public static void DeleteGlobalConfiguration(Guid configurationId)
         {
-            EntityProviderConfig<TSettings> configuration = (EntityProviderConfig<TSettings>)GetGlobalConfiguration(configurationId);
+            EntraIDProviderConfiguration configuration = GetGlobalConfiguration(configurationId);
             if (configuration == null)
             {
                 Logger.Log($"Configuration ID '{configurationId}' was not found in configuration database", TraceSeverity.Medium, EventSeverity.Error, TraceCategory.Core);
@@ -383,29 +537,31 @@ namespace Yvand.Config
         /// <param name="T">Type of the new configuration</param>
         /// <returns></returns>
         /// <exception cref="ArgumentNullException"></exception>
-        public static EntityProviderConfig<TSettings> CreateGlobalConfiguration(Guid configurationID, string configurationName, string claimsProviderName, Type T)
+        public static EntraIDProviderConfiguration CreateGlobalConfiguration(Guid configurationID, string configurationName, string claimsProviderName)
         {
             if (String.IsNullOrWhiteSpace(claimsProviderName))
             {
                 throw new ArgumentNullException(nameof(claimsProviderName));
             }
 
-            if(Utils.GetSPTrustAssociatedWithClaimsProvider(claimsProviderName) == null)
+            if (Utils.GetSPTrustAssociatedWithClaimsProvider(claimsProviderName) == null)
             {
                 return null;
             }
 
             // Ensure it doesn't already exists and delete it if so
-            EntityProviderConfig<TSettings> existingConfig = GetGlobalConfiguration(configurationID);
+            EntraIDProviderConfiguration existingConfig = GetGlobalConfiguration(configurationID);
             if (existingConfig != null)
             {
                 DeleteGlobalConfiguration(configurationID);
             }
 
             Logger.Log($"Creating configuration '{configurationName}' with Id {configurationID}...", TraceSeverity.VerboseEx, EventSeverity.Error, TraceCategory.Core);
-            ConstructorInfo ctorWithParameters = T.GetConstructor(new[] { typeof(string), typeof(SPFarm), typeof(string) });
-            EntityProviderConfig<TSettings> globalConfiguration = (EntityProviderConfig<TSettings>)ctorWithParameters.Invoke(new object[] { configurationName, SPFarm.Local, claimsProviderName });
-            TSettings defaultSettings = globalConfiguration.GetDefaultSettings();
+            //ConstructorInfo ctorWithParameters = T.GetConstructor(new[] { typeof(string), typeof(SPFarm), typeof(string) });
+            //EntraIDProviderConfiguration globalConfiguration = (EntraIDProviderConfiguration)ctorWithParameters.Invoke(new object[] { configurationName, SPFarm.Local, claimsProviderName });
+            //TSettings defaultSettings = globalConfiguration.GetDefaultSettings();
+            EntraIDProviderConfiguration globalConfiguration = new EntraIDProviderConfiguration(configurationName, SPFarm.Local, claimsProviderName);
+            IEntraIDProviderSettings defaultSettings = globalConfiguration.GetDefaultSettings();
             globalConfiguration.ApplySettings(defaultSettings, false);
             globalConfiguration.Id = configurationID;
             globalConfiguration.Update(true);

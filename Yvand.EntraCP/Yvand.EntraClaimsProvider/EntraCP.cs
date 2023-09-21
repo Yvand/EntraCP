@@ -10,13 +10,12 @@ using System.Linq;
 using System.Reflection;
 using System.Threading;
 using System.Threading.Tasks;
-using Yvand.EntraID;
-using Yvand.Config;
+using Yvand.EntraClaimsProvider.Configuration;
 using WIF4_5 = System.Security.Claims;
 
-namespace Yvand
+namespace Yvand.EntraClaimsProvider
 {
-    public interface IEntraCPSettings : IEntraSettings
+    public interface IEntraCPSettings : IEntraIDProviderSettings
     {
         List<ClaimTypeConfig> RuntimeClaimTypesList { get; }
         IEnumerable<ClaimTypeConfig> RuntimeMetadataConfig { get; }
@@ -24,7 +23,7 @@ namespace Yvand
         ClaimTypeConfig MainGroupClaimTypeConfig { get; }
     }
 
-    public class EntraCPSettings : EntraProviderSettings, IEntraCPSettings
+    public class EntraCPSettings : EntraIDProviderSettings, IEntraCPSettings
     {
         public List<ClaimTypeConfig> RuntimeClaimTypesList { get; set; }
 
@@ -82,9 +81,9 @@ namespace Yvand
             this.EntityProvider = new EntraIDEntityProvider(Name);
         }
 
-        public static EntraProviderConfig<IEntraSettings> GetConfiguration(bool initializeLocalConfiguration = false)
+        public static EntraIDProviderConfiguration GetConfiguration(bool initializeLocalConfiguration = false)
         {
-            EntraProviderConfig<IEntraSettings> configuration = (EntraProviderConfig<IEntraSettings>)EntraProviderConfig<IEntraSettings>.GetGlobalConfiguration(new Guid(ClaimsProviderConstants.CONFIGURATION_ID), initializeLocalConfiguration);
+            EntraIDProviderConfiguration configuration = EntraIDProviderConfiguration.GetGlobalConfiguration(new Guid(ClaimsProviderConstants.CONFIGURATION_ID), initializeLocalConfiguration);
             return configuration;
         }
 
@@ -92,9 +91,9 @@ namespace Yvand
         /// Creates a configuration for EntraCP. This will delete any existing configuration which may already exist
         /// </summary>
         /// <returns></returns>
-        public static EntraProviderConfig<IEntraSettings> CreateConfiguration()
+        public static EntraIDProviderConfiguration CreateConfiguration()
         {
-            EntraProviderConfig<IEntraSettings> configuration = (EntraProviderConfig<IEntraSettings>)EntraProviderConfig<IEntraSettings>.CreateGlobalConfiguration(new Guid(ClaimsProviderConstants.CONFIGURATION_ID), ClaimsProviderConstants.CONFIGURATION_NAME, EntraCP.ClaimsProviderName, typeof(EntraProviderConfig<IEntraSettings>));
+            EntraIDProviderConfiguration configuration = EntraIDProviderConfiguration.CreateGlobalConfiguration(new Guid(ClaimsProviderConstants.CONFIGURATION_ID), ClaimsProviderConstants.CONFIGURATION_NAME, EntraCP.ClaimsProviderName);
             return configuration;
         }
 
@@ -103,7 +102,7 @@ namespace Yvand
         /// </summary>
         public static void DeleteConfiguration()
         {
-            EntraProviderConfig<IEntraSettings> configuration = (EntraProviderConfig<IEntraSettings>)EntraProviderConfig<IEntraSettings>.GetGlobalConfiguration(new Guid(ClaimsProviderConstants.CONFIGURATION_ID));
+            EntraIDProviderConfiguration configuration = EntraIDProviderConfiguration.GetGlobalConfiguration(new Guid(ClaimsProviderConstants.CONFIGURATION_ID));
             if (configuration != null)
             {
                 configuration.Delete();
@@ -131,7 +130,7 @@ namespace Yvand
             this.Lock_LocalConfigurationRefresh.EnterWriteLock();
             try
             {
-                IEntraSettings settings = this.GetSettings();
+                IEntraIDProviderSettings settings = this.GetSettings();
                 if (settings == null)
                 {
                     return false;
@@ -186,10 +185,10 @@ namespace Yvand
         /// Override this methor to return the settings to use
         /// </summary>
         /// <returns></returns>
-        protected virtual IEntraSettings GetSettings()
+        protected virtual IEntraIDProviderSettings GetSettings()
         {
-            IEntraSettings settings = null;
-            EntraProviderConfig<IEntraSettings> PersistedConfiguration = (EntraProviderConfig<IEntraSettings>)EntraProviderConfig<IEntraSettings>.GetGlobalConfiguration(new Guid(ClaimsProviderConstants.CONFIGURATION_ID));
+            IEntraIDProviderSettings settings = null;
+            EntraIDProviderConfiguration PersistedConfiguration = EntraIDProviderConfiguration.GetGlobalConfiguration(new Guid(ClaimsProviderConstants.CONFIGURATION_ID));
             if (PersistedConfiguration != null)
             {
                 settings = PersistedConfiguration.Settings;
