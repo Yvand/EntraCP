@@ -213,9 +213,9 @@ namespace Yvand.EntraClaimsProvider.Configuration
             this.HierarchyNodeID = hierarchyNodeID;
             this.MaxCount = maxCount;
 
-            // settings.EntraIDTenantList must be cloned locally to ensure its properties ($select / $filter) won't be updated by multiple threads
-            this.AzureTenants = new List<EntraIDTenant>(settings.EntraIDTenantList.Count);
-            foreach (EntraIDTenant tenant in settings.EntraIDTenantList)
+            // settings.EntraIDTenants must be cloned locally to ensure its properties ($select / $filter) won't be updated by multiple threads
+            this.AzureTenants = new List<EntraIDTenant>(settings.EntraIDTenants.Count);
+            foreach (EntraIDTenant tenant in settings.EntraIDTenants)
             {
                 AzureTenants.Add(tenant.CopyPublicProperties());
             }

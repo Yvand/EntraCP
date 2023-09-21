@@ -44,7 +44,7 @@ namespace Yvand.EntraClaimsProvider.Tests
         public override void InitializeConfiguration(bool applyChanges)
         {
             base.InitializeConfiguration(false);
-            Settings.EntraIDTenantList = new List<EntraIDTenant>();
+            Settings.EntraIDTenants = new List<EntraIDTenant>();
             if (applyChanges)
             {
                 GlobalConfiguration.ApplySettings(Settings, true);

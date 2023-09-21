@@ -146,7 +146,7 @@ namespace Yvand.EntraClaimsProvider
                 IEntraCPSettings claimsProviderSettings = new EntraCPSettings
                 {
                     AlwaysResolveUserInput = settings.AlwaysResolveUserInput,
-                    EntraIDTenantList = settings.EntraIDTenantList,
+                    EntraIDTenants = settings.EntraIDTenants,
                     ClaimTypes = settings.ClaimTypes,
                     CustomData = settings.CustomData,
                     EnableAugmentation = settings.EnableAugmentation,
@@ -281,12 +281,12 @@ namespace Yvand.EntraClaimsProvider
                 !String.IsNullOrEmpty(x.EntityDataKey) &&
                 x.EntityProperty != DirectoryObjectProperty.NotSet);
 
-            if (settings.EntraIDTenantList == null || settings.EntraIDTenantList.Count < 1)
+            if (settings.EntraIDTenants == null || settings.EntraIDTenants.Count < 1)
             {
                 return false;
             }
             // Initialize Graph client on each tenant
-            foreach (var tenant in settings.EntraIDTenantList)
+            foreach (var tenant in settings.EntraIDTenants)
             {
                 tenant.InitializeAuthentication(settings.Timeout, settings.ProxyAddress);
             }

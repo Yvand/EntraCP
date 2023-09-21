@@ -57,10 +57,10 @@ namespace Yvand.EntraClaimsProvider.Administration
 
         void PopulateConnectionsGrid()
         {
-            if (Settings.EntraIDTenantList != null)
+            if (Settings.EntraIDTenants != null)
             {
                 PropertyCollectionBinder pcb = new PropertyCollectionBinder();
-                foreach (EntraIDTenant tenant in Settings.EntraIDTenantList)
+                foreach (EntraIDTenant tenant in Settings.EntraIDTenants)
                 {
                     if (tenant == null)
                     {
@@ -123,14 +123,14 @@ namespace Yvand.EntraClaimsProvider.Administration
         protected void grdAzureTenants_RowDeleting(object sender, GridViewDeleteEventArgs e)
         {
             if (ValidatePrerequisite() != ConfigStatus.AllGood) { return; }
-            if (Settings.EntraIDTenantList == null) { return; }
+            if (Settings.EntraIDTenants == null) { return; }
 
             GridViewRow rowToDelete = grdAzureTenants.Rows[e.RowIndex];
             Guid Id = new Guid(rowToDelete.Cells[0].Text);
-            EntraIDTenant tenantToRemove = Settings.EntraIDTenantList.FirstOrDefault(x => x.Identifier == Id);
+            EntraIDTenant tenantToRemove = Settings.EntraIDTenants.FirstOrDefault(x => x.Identifier == Id);
             if (tenantToRemove != null)
             {
-                Settings.EntraIDTenantList.Remove(tenantToRemove);
+                Settings.EntraIDTenants.Remove(tenantToRemove);
                 CommitChanges();
                 Logger.Log($"Microsoft Entra ID tenant '{tenantToRemove.Name}' was successfully removed from configuration '{ConfigurationName}'", TraceSeverity.Medium, EventSeverity.Information, TraceCategory.Configuration);
                 LabelMessage.Text = String.Format(TextSummaryPersistedObjectInformation, Configuration.Name, Configuration.Version, Configuration.Id);
@@ -310,11 +310,11 @@ namespace Yvand.EntraClaimsProvider.Administration
             Uri cloudInstance = ClaimsProviderConstants.AzureCloudEndpoints.FirstOrDefault(item => item.Key == (AzureCloudInstance)Enum.Parse(typeof(AzureCloudInstance), this.DDLAzureCloudInstance.SelectedValue)).Value;
 
 
-            if (Settings.EntraIDTenantList == null)
+            if (Settings.EntraIDTenants == null)
             {
-                Settings.EntraIDTenantList = new List<EntraIDTenant>();
+                Settings.EntraIDTenants = new List<EntraIDTenant>();
             }
-            this.Settings.EntraIDTenantList.Add(
+            this.Settings.EntraIDTenants.Add(
                 new EntraIDTenant
                 {
                     Name = this.TxtTenantName.Text,

@@ -56,7 +56,7 @@ namespace Yvand.EntraClaimsProvider.Configuration
         /// <summary>
         /// Gets the list of Azure tenants to use to get entities
         /// </summary>
-        List<EntraIDTenant> EntraIDTenantList { get; }
+        List<EntraIDTenant> EntraIDTenants { get; }
 
         /// <summary>
         /// Gets the proxy address used by AzureCP to connect to Azure AD
@@ -84,7 +84,7 @@ namespace Yvand.EntraClaimsProvider.Configuration
         #endregion
 
         #region EntraID specific settings
-        public List<EntraIDTenant> EntraIDTenantList { get; set; } = new List<EntraIDTenant>();
+        public List<EntraIDTenant> EntraIDTenants { get; set; } = new List<EntraIDTenant>();
         public string ProxyAddress { get; set; }
         public bool FilterSecurityEnabledGroupsOnly { get; set; } = false;
         #endregion
@@ -232,13 +232,13 @@ namespace Yvand.EntraClaimsProvider.Configuration
 
 
         #region "EntraID settings implemented from IEntraIDEntityProviderSettings"
-        public List<EntraIDTenant> EntraIDTenantList
+        public List<EntraIDTenant> EntraIDTenants
         {
-            get => _EntraIDTenantList;
-            private set => _EntraIDTenantList = value;
+            get => _EntraIDTenants;
+            private set => _EntraIDTenants = value;
         }
         [Persisted]
-        private List<EntraIDTenant> _EntraIDTenantList = new List<EntraIDTenant>();
+        private List<EntraIDTenant> _EntraIDTenants = new List<EntraIDTenant>();
 
         public string ProxyAddress
         {
@@ -325,7 +325,7 @@ namespace Yvand.EntraClaimsProvider.Configuration
                 Version = this.Version,
 
                 // Properties specific to type IEntraSettings
-                EntraIDTenantList = this.EntraIDTenantList,
+                EntraIDTenants = this.EntraIDTenants,
                 ProxyAddress = this.ProxyAddress,
                 FilterSecurityEnabledGroupsOnly = this.FilterSecurityEnabledGroupsOnly,
             };
@@ -362,7 +362,7 @@ namespace Yvand.EntraClaimsProvider.Configuration
             // In case ClaimTypes collection was modified, test if it is still valid
             if (this.ClaimTypes == null)
             {
-                throw new InvalidOperationException("Configuration is not valid because property ClaimTypes is null");
+                throw new InvalidOperationException($"Configuration is not valid because collection {nameof(ClaimTypes)} is null");
             }
             try
             {
@@ -374,24 +374,34 @@ namespace Yvand.EntraClaimsProvider.Configuration
             }
             catch (InvalidOperationException ex)
             {
-                throw new InvalidOperationException("Some changes made to list ClaimTypes are invalid and cannot be committed to configuration database. Inspect inner exception for more details about the error.", ex);
+                throw new InvalidOperationException($"Some changes made to collection {nameof(ClaimTypes)} are invalid and cannot be committed to configuration database. Inspect inner exception for more details about the error.", ex);
             }
 
-            foreach (EntraIDTenant tenant in this.EntraIDTenantList)
+            foreach (EntraIDTenant tenant in this.EntraIDTenants)
             {
                 if (tenant == null)
                 {
-                    throw new InvalidOperationException("Configuration is not valid because a tenant is null in EntraIDTenantList");
+                    throw new InvalidOperationException($"Configuration is not valid because a tenant is null in list {nameof(EntraIDTenants)}");
                 }
 
                 if (String.IsNullOrWhiteSpace(tenant.Name))
                 {
-                    throw new InvalidOperationException("Configuration is not valid because a tenant has its Name property empty");
+                    throw new InvalidOperationException($"Configuration is not valid because a tenant has its property {nameof(tenant.Name)} not set in list {nameof(EntraIDTenants)}");
                 }
 
                 if (String.IsNullOrWhiteSpace(tenant.ClientId))
                 {
-                    throw new InvalidOperationException("Configuration is not valid because a tenant has its ClientId property empty");
+                    throw new InvalidOperationException($"Configuration is not valid because tenant \"{tenant.Name}\" has its property {nameof(tenant.ClientId)} not set in list {nameof(EntraIDTenants)}");
+                }
+
+                if (String.IsNullOrWhiteSpace(tenant.ClientSecret) && tenant.ClientCertificateWithPrivateKey == null)
+                {
+                    throw new InvalidOperationException($"Configuration is not valid because tenant \"{tenant.Name}\" has both properties {nameof(tenant.ClientSecret)} and {nameof(tenant.ClientCertificateWithPrivateKey)} not set in list {nameof(EntraIDTenants)}, while one must be set");
+                }
+
+                if (!String.IsNullOrWhiteSpace(tenant.ClientSecret) && tenant.ClientCertificateWithPrivateKey != null)
+                {
+                    throw new InvalidOperationException($"Configuration is not valid because tenant \"{tenant.Name}\" has both properties {nameof(tenant.ClientSecret)} and {nameof(tenant.ClientCertificateWithPrivateKey)} set in list {nameof(EntraIDTenants)}, while only one must be set");
                 }
             }
         }
@@ -444,7 +454,7 @@ namespace Yvand.EntraClaimsProvider.Configuration
             this.Timeout = settings.Timeout;
             this.CustomData = settings.CustomData;
 
-            this.EntraIDTenantList = settings.EntraIDTenantList;
+            this.EntraIDTenants = settings.EntraIDTenants;
             this.FilterSecurityEnabledGroupsOnly = settings.FilterSecurityEnabledGroupsOnly;
             this.ProxyAddress = settings.ProxyAddress;
 

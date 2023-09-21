@@ -133,9 +133,9 @@ namespace Yvand.EntraClaimsProvider
 
         public async override Task<List<DirectoryObject>> SearchOrValidateEntitiesAsync(OperationContext currentContext)
         {
-            //// this.CurrentConfiguration.EntraIDTenantList must be cloned locally to ensure its properties ($select / $filter) won't be updated by multiple threads
-            //List<EntraIDTenant> azureTenants = new List<EntraIDTenant>(this.Configuration.EntraIDTenantList.Count);
-            //foreach (EntraIDTenant tenant in this.Configuration.EntraIDTenantList)
+            //// this.CurrentConfiguration.EntraIDTenants must be cloned locally to ensure its properties ($select / $filter) won't be updated by multiple threads
+            //List<EntraIDTenant> azureTenants = new List<EntraIDTenant>(this.Configuration.EntraIDTenants.Count);
+            //foreach (EntraIDTenant tenant in this.Configuration.EntraIDTenants)
             //{
             //    azureTenants.Add(tenant.CopyPublicProperties());
             //}

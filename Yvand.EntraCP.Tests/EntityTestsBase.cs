@@ -81,7 +81,7 @@ namespace Yvand.EntraClaimsProvider.Tests
 
             string json = File.ReadAllText(UnitTestsHelper.AzureTenantsJsonFile);
             List<EntraIDTenant> azureTenants = JsonConvert.DeserializeObject<List<EntraIDTenant>>(json);
-            Settings.EntraIDTenantList = azureTenants;
+            Settings.EntraIDTenants = azureTenants;
             foreach (EntraIDTenant tenant in azureTenants)
             {
                 tenant.ExcludeMemberUsers = ExcludeMemberUsers;
