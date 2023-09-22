@@ -191,16 +191,16 @@ namespace Yvand.EntraClaimsProvider.Administration
                         c = GetTableCell(html);
                         if (String.Equals(SPTrust.IdentityClaimTypeInformation.MappedClaimType, attr.Value.ClaimType, StringComparison.InvariantCultureIgnoreCase) && !attr.Value.UseMainClaimTypeOfDirectoryObject)
                         {
-                            tr.CssClass = "azurecp-rowidentityclaim";
+                            tr.CssClass = "entracp-rowidentityclaim";
                             identityClaimPresent = true;
                         }
                         else if (SPTrust.ClaimTypeInformation.FirstOrDefault(x => String.Equals(x.MappedClaimType, attr.Value.ClaimType, StringComparison.InvariantCultureIgnoreCase)) == null)
                         {
-                            tr.CssClass = "azurecp-rowClaimTypeNotUsedInTrust";
+                            tr.CssClass = "entracp-rowClaimTypeNotUsedInTrust";
                         }
                         else if (attr.Value.EntityType == DirectoryObjectType.Group)
                         {
-                            tr.CssClass = "azurecp-rowMainGroupClaimType";
+                            tr.CssClass = "entracp-rowMainGroupClaimType";
                         }
                     }
                     else
@@ -214,11 +214,11 @@ namespace Yvand.EntraClaimsProvider.Administration
                             c = GetTableCell($"Microsoft Entra ID property linked to the main mapping for object {attr.Value.EntityType}");
                             if (attr.Value.EntityType == DirectoryObjectType.User)
                             {
-                                tr.CssClass = "azurecp-rowUserProperty";
+                                tr.CssClass = "entracp-rowUserProperty";
                             }
                             else
                             {
-                                tr.CssClass = "azurecp-rowGroupProperty";
+                                tr.CssClass = "entracp-rowGroupProperty";
                             }
                         }
                     }
