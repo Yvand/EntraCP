@@ -131,7 +131,7 @@ jobs:
     env:
       vm_name: ${{ format('SP{0}', matrix.sharepoint_version) }} #${{ format('SP{0}', matrix.sps_version) }} #SPSE
       dtl_poolName: ${{ format('{0}-Tests-{1}', inputs.project-name, matrix.sharepoint_version) }}
-      project_name: ${{ project-name }}
+      project_name: ${{ inputs.project-name }}
     steps:
     - name: Azure Login
       uses: azure/login@v1
