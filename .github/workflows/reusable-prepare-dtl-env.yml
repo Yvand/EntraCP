@@ -92,7 +92,6 @@ jobs:
       dtl_provisionSharePointSubscription: ${{ contains(inputs.sharepoint-versions, 'SE') && 'Subscription-RTM' || 'No' }}
       dtl_provisionSharePoint2019: ${{ contains(inputs.sharepoint-versions, '2019') }}
       dtl_provisionSharePoint2016: ${{ contains(inputs.sharepoint-versions, '2016') }}
-      dtl_provisionSharePoint2013: ${{ contains(inputs.sharepoint-versions, '2013') }}
     steps:
     - name: Azure Login
       uses: azure/login@v1
@@ -105,7 +104,7 @@ jobs:
         inlineScript: |
           az lab environment create --lab-name ${{ inputs.dtl-serviceName }} --name ${{ inputs.dtl-environmentName }} --resource-group ${{ inputs.dtl-rgName }} --artifact-source-name "Public Repo" \
           --arm-template "/subscriptions/${{ inputs.dtl-subscriptionId }}/resourceGroups/${{ inputs.dtl-rgName }}/providers/Microsoft.DevTestLab/labs/${{ inputs.dtl-serviceName }}/artifactSources/Public Environment Repo/armTemplates/SharePoint-AllVersions" \
-          --parameters "[ { \"name\": \"provisionSharePoint2013\", \"value\": \"${{ env.dtl_provisionSharePoint2013 }}\" }, { \"name\": \"provisionSharePoint2016\", \"value\": \"${{ env.dtl_provisionSharePoint2016 }}\" }, { \"name\": \"provisionSharePoint2019\", \"value\": \"${{ env.dtl_provisionSharePoint2019 }}\" }, { \"name\": \"provisionSharePointSubscription\", \"value\": \"${{ env.dtl_provisionSharePointSubscription }}\" }, { \"name\": \"configureADFS\", \"value\": \"true\" }, { \"name\": \"enableHybridBenefitServerLicenses\", \"value\": \"true\" }, { \"name\": \"enableAutomaticUpdates\", \"value\": \"false\" }, { \"name\": \"adminUserName\", \"value\": \"${{ inputs.dtl-env-adminUserName }}\" }, { \"name\": \"adminPassword\", \"value\": \"${{ secrets.dtl-env-accountsPassword }}\" }, { \"name\": \"serviceAccountsPassword\", \"value\": \"${{ secrets.dtl-env-accountsPassword }}\" }, { \"name\": \"addPublicIPAddress\", \"value\": \"${{ inputs.dtl-env-addPublicIPAddress }}\" }, { \"name\": \"RDPTrafficAllowed\", \"value\": \"${{ inputs.dtl-env-rdpTrafficAllowed }}\" }, { \"name\": \"addAzureBastion\", \"value\": \"${{ inputs.dtl-env-addAzureBastion }}\" } ]"
+          --parameters "[ { \"name\": \"provisionSharePoint2016\", \"value\": \"${{ env.dtl_provisionSharePoint2016 }}\" }, { \"name\": \"provisionSharePoint2019\", \"value\": \"${{ env.dtl_provisionSharePoint2019 }}\" }, { \"name\": \"provisionSharePointSubscription\", \"value\": \"${{ env.dtl_provisionSharePointSubscription }}\" }, { \"name\": \"configureADFS\", \"value\": \"true\" }, { \"name\": \"enableHybridBenefitServerLicenses\", \"value\": \"true\" }, { \"name\": \"enableAutomaticUpdates\", \"value\": \"false\" }, { \"name\": \"adminUserName\", \"value\": \"${{ inputs.dtl-env-adminUserName }}\" }, { \"name\": \"adminPassword\", \"value\": \"${{ secrets.dtl-env-accountsPassword }}\" }, { \"name\": \"serviceAccountsPassword\", \"value\": \"${{ secrets.dtl-env-accountsPassword }}\" }, { \"name\": \"addPublicIPAddress\", \"value\": \"${{ inputs.dtl-env-addPublicIPAddress }}\" }, { \"name\": \"RDPTrafficAllowed\", \"value\": \"${{ inputs.dtl-env-rdpTrafficAllowed }}\" }, { \"name\": \"addAzureBastion\", \"value\": \"${{ inputs.dtl-env-addAzureBastion }}\" } ]"
           
   #apply-artifacts-spse:
   apply-artifacts:
@@ -129,9 +128,6 @@ jobs:
         # - sharepoint_version: 2016
           # sps_version: '2016'
           # dtl_poolName: 'AzureCP-Tests-2016'
-        # - sharepoint_version: 2013
-          # sps_version: '2013'
-          # dtl_poolName: 'AzureCP-Tests-2013'
     env:
       vm_name: ${{ format('SP{0}', matrix.sharepoint_version) }} #${{ format('SP{0}', matrix.sps_version) }} #SPSE
       dtl_poolName: ${{ format('{0}-Tests-{1}', inputs.project-name, matrix.sharepoint_version) }}
