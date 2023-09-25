@@ -131,6 +131,7 @@ jobs:
     env:
       vm_name: ${{ format('SP{0}', matrix.sharepoint_version) }} #${{ format('SP{0}', matrix.sps_version) }} #SPSE
       dtl_poolName: ${{ format('{0}-Tests-{1}', inputs.project-name, matrix.sharepoint_version) }}
+      project_name: ${{ project-name }}
     steps:
     - name: Azure Login
       uses: azure/login@v1
@@ -157,8 +158,13 @@ jobs:
           artifactApplied=$(az lab vm show --lab-name ${{ inputs.dtl-serviceName }} --resource-group ${{ inputs.dtl-rgName }} --name ${{ env.vm_name }} --expand 'properties($expand=artifacts)' --query "artifacts[?artifactId=='$artifactId' && status == 'Succeeded'].status" --output tsv)
           echo $artifactApplied
           if [ -z $artifactApplied ]; then
+            # Typical value for claimsProviderPackageUri: https://github.com/Yvand/AzureCP/releases/download/nightly/EntraCP.wsp
+            # Typical value for unitTestsProjectUri:      https://github.com/Yvand/AzureCP/releases/download/nightly/Yvand.EntraCP-unit-tests.zip
             claimsProviderPackageUri=${{ inputs.test-claimsProviderPackageUri }}
-            unitTestsProjectUri=${claimsProviderPackageUri/.wsp/-unit-tests.zip}
+            projectName=${{ env.project_name }}
+            uriLeafPart=$(echo $claimsProviderPackageUri | grep -o '\w*\.\w*$')
+            unitTestsProjectUri=${claimsProviderPackageUri/$uriLeafPart/$projectName-unit-tests.zip}
+            echo $unitTestsProjectUri
             az lab vm apply-artifacts --lab-name ${{ inputs.dtl-serviceName }} --name ${{ env.vm_name }} --resource-group ${{ inputs.dtl-rgName }} \
             --artifacts "[ { \"artifactId\": \"$artifactId\", \"parameters\": [ { \"name\": \"scriptFileUris\", \"value\": \" ${{ inputs.test-prepareSharePointVmScriptUris }} \" }, { \"name\": \"scriptToRun\", \"value\": \"ConfigureLab.ps1\" }, { \"name\": \"scriptArguments\", \"value\": \"-claimsProviderPackageUri '$claimsProviderPackageUri' -claimsProviderUnitTestsUri '$unitTestsProjectUri' -spTrustName 'contoso.local' -adminUserName '${{ format('contoso\{0}', inputs.dtl-env-adminUserName) }}' -adminPassword '${{ secrets.dtl-env-accountsPassword }}' -storageAccountEndpoint '${{ secrets.unittestfiles-storageAccountEndpoint }}' -storageAccountShareName '${{ secrets.unittestfiles-storageAccountShareName }}' -storageAccountSourceRelativePath '${{ inputs.unittestfiles-storageAccountSourceRelativePath }}'\" } ] } ]"
           fi
