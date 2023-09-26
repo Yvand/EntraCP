@@ -1,7 +1,9 @@
 ﻿using Microsoft.SharePoint;
+using Newtonsoft.Json;
 using NUnit.Framework;
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Linq;
 using System.Text;
 using System.Threading;
@@ -26,6 +28,7 @@ namespace Yvand.EntraClaimsProvider.Tests
             if (applyChanges)
             {
                 GlobalConfiguration.ApplySettings(Settings, true);
+                Trace.TraceInformation($"{DateTime.Now.ToString("s")} [WrongConfigBadClaimTypeTests] Updated configuration: {JsonConvert.SerializeObject(Settings, Formatting.None)}");
             }
         }
 
@@ -48,6 +51,7 @@ namespace Yvand.EntraClaimsProvider.Tests
             if (applyChanges)
             {
                 GlobalConfiguration.ApplySettings(Settings, true);
+                Trace.TraceInformation($"{DateTime.Now.ToString("s")} [WrongConfigNoTenantTests] Updated configuration: {JsonConvert.SerializeObject(Settings, Formatting.None)}");
             }
         }
 

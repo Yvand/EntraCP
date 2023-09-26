@@ -1,4 +1,7 @@
-﻿using NUnit.Framework;
+﻿using Newtonsoft.Json;
+using NUnit.Framework;
+using System.Diagnostics;
+using System;
 using Yvand.EntraClaimsProvider.Configuration;
 
 namespace Yvand.EntraClaimsProvider.Tests
@@ -20,6 +23,7 @@ namespace Yvand.EntraClaimsProvider.Tests
             if (applyChanges)
             {
                 GlobalConfiguration.ApplySettings(Settings, true);
+                Trace.TraceInformation($"{DateTime.Now.ToString("s")} [GuestAccountsUPNTests] Updated configuration: {JsonConvert.SerializeObject(Settings, Formatting.None)}");
             }
         }
 

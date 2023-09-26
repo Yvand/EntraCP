@@ -1,8 +1,11 @@
 ﻿using Microsoft.SharePoint.Administration.Claims;
 using NUnit.Framework;
+using System.Diagnostics;
+using System;
 using System.Security.Claims;
 using Yvand;
 using Yvand.EntraClaimsProvider.Configuration;
+using Newtonsoft.Json;
 
 namespace Yvand.EntraClaimsProvider.Tests
 {
@@ -27,6 +30,7 @@ namespace Yvand.EntraClaimsProvider.Tests
             if (applyChanges)
             {
                 GlobalConfiguration.ApplySettings(Settings, true);
+                Trace.TraceInformation($"{DateTime.Now.ToString("s")} [CustomConfigTestsBase] Updated configuration: {JsonConvert.SerializeObject(Settings, Formatting.None)}");
             }
         }
     }

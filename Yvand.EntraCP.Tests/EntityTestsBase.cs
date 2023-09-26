@@ -91,6 +91,7 @@ namespace Yvand.EntraClaimsProvider.Tests
             if (applyChanges)
             {
                 GlobalConfiguration.ApplySettings(Settings, true);
+                Trace.TraceInformation($"{DateTime.Now.ToString("s")} [EntityTestsBase] Updated configuration: {JsonConvert.SerializeObject(Settings, Formatting.None)}");
             }
         }
 

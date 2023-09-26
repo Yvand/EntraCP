@@ -1,4 +1,7 @@
-﻿using NUnit.Framework;
+﻿using Newtonsoft.Json;
+using NUnit.Framework;
+using System;
+using System.Diagnostics;
 
 namespace Yvand.EntraClaimsProvider.Tests
 {
@@ -12,6 +15,7 @@ namespace Yvand.EntraClaimsProvider.Tests
             if (applyChanges)
             {
                 GlobalConfiguration.ApplySettings(Settings, true);
+                Trace.TraceInformation($"{DateTime.Now.ToString("s")} [RequireExactMatchOnBaseConfigTests] Updated configuration: {JsonConvert.SerializeObject(Settings, Formatting.None)}");
             }
         }
 
@@ -39,6 +43,7 @@ namespace Yvand.EntraClaimsProvider.Tests
             if(applyChanges)
             {
                 GlobalConfiguration.ApplySettings(Settings, true);
+                Trace.TraceInformation($"{DateTime.Now.ToString("s")} [RequireExactMatchOnCustomConfigTests] Updated configuration: {JsonConvert.SerializeObject(Settings, Formatting.None)}");
             }
         }
 
