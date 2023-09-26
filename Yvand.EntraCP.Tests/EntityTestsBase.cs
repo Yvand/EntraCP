@@ -103,12 +103,12 @@ namespace Yvand.EntraClaimsProvider.Tests
                 if (OriginalSettings != null)
                 {
                     GlobalConfiguration.ApplySettings(OriginalSettings, true);
-                    Trace.TraceInformation($"{DateTime.Now.ToString("s")} Restored original settings of AzureCP configuration");
+                    Trace.TraceInformation($"{DateTime.Now.ToString("s")} Restored original settings of EntraCP configuration");
                 }
             }
             catch (Exception ex)
             {
-                Trace.TraceError($"{DateTime.Now.ToString("s")} Unexpected error while restoring the original settings of AzureCP configuration: {ex.Message}");
+                Trace.TraceError($"{DateTime.Now.ToString("s")} Unexpected error while restoring the original settings of EntraCP configuration: {ex.Message}");
             }
         }
 
