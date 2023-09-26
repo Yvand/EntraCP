@@ -70,6 +70,7 @@ namespace Yvand.EntraClaimsProvider.Tests
             GlobalConfiguration.ApplySettings(Settings, true);
             try
             {
+                Trace.TraceInformation($"{DateTime.Now.ToString("s")} [CustomConfigTests.BypassServer] Updated configuration: {JsonConvert.SerializeObject(GlobalConfiguration.Settings.ClaimTypes, Formatting.None)}");
                 TestSearchOperation(UnitTestsHelper.RandomClaimValue, 3, UnitTestsHelper.RandomClaimValue);
 
                 SPClaim inputClaim = new SPClaim(UnitTestsHelper.SPTrust.IdentityClaimTypeInformation.MappedClaimType, UnitTestsHelper.RandomClaimValue, ClaimValueTypes.String, SPOriginalIssuers.Format(SPOriginalIssuerType.TrustedProvider, UnitTestsHelper.SPTrust.Name));
