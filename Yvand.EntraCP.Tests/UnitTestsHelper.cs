@@ -112,8 +112,15 @@ namespace Yvand.EntraClaimsProvider.Tests
 
             if (!SPSite.Exists(TestSiteCollUri))
             {
-                Trace.TraceInformation($"{DateTime.Now.ToString("s")} Creating site collection {TestSiteCollUri.AbsoluteUri}...");
-                SPSite spSite = wa.Sites.Add(TestSiteCollUri.AbsoluteUri, EntraCP.ClaimsProviderName, EntraCP.ClaimsProviderName, 1033, "STS#3", FarmAdmin, String.Empty, String.Empty);
+                FileVersionInfo spAssemblyVersion = FileVersionInfo.GetVersionInfo(Assembly.GetAssembly(typeof(SPSite)).Location);
+                string spSiteTemplate = "STS#3";
+                if (spAssemblyVersion.FileBuildPart < 10000)
+                {
+                    // If SharePoint 2016, must use the classic team site template
+                    spSiteTemplate = "STS#0";
+                }
+                Trace.TraceInformation($"{DateTime.Now.ToString("s")} Creating site collection {TestSiteCollUri.AbsoluteUri} with template '{spSiteTemplate}'...");
+                SPSite spSite = wa.Sites.Add(TestSiteCollUri.AbsoluteUri, EntraCP.ClaimsProviderName, EntraCP.ClaimsProviderName, 1033, spSiteTemplate, FarmAdmin, String.Empty, String.Empty);
                 spSite.RootWeb.CreateDefaultAssociatedGroups(FarmAdmin, FarmAdmin, spSite.RootWeb.Title);
 
                 SPGroup membersGroup = spSite.RootWeb.AssociatedMemberGroup;
