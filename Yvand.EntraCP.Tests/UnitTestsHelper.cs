@@ -98,11 +98,19 @@ namespace Yvand.EntraClaimsProvider.Tests
             string encodedClaim = claimMgr.EncodeClaim(TrustedGroup);
             SPUserInfo userInfo = new SPUserInfo { LoginName = encodedClaim, Name = TrustedGroupToAdd_ClaimValue };
 
+            FileVersionInfo spAssemblyVersion = FileVersionInfo.GetVersionInfo(Assembly.GetAssembly(typeof(SPSite)).Location);
+            string spSiteTemplate = "STS#3"; // modern team site template
+            if (spAssemblyVersion.FileBuildPart < 10000)
+            {
+                // If SharePoint 2016, must use the classic team site template
+                spSiteTemplate = "STS#0";
+            }
+
             // The root site may not exist, but it must be present for tests to run
             if (!SPSite.Exists(waRootAuthority))
             {
                 Trace.TraceInformation($"{DateTime.Now.ToString("s")} Creating root site collection {waRootAuthority.AbsoluteUri}...");
-                SPSite spSite = wa.Sites.Add(waRootAuthority.AbsoluteUri, "root", "root", 1033, "STS#3", FarmAdmin, String.Empty, String.Empty);
+                SPSite spSite = wa.Sites.Add(waRootAuthority.AbsoluteUri, "root", "root", 1033, spSiteTemplate, FarmAdmin, String.Empty, String.Empty);
                 spSite.RootWeb.CreateDefaultAssociatedGroups(FarmAdmin, FarmAdmin, spSite.RootWeb.Title);
 
                 SPGroup membersGroup = spSite.RootWeb.AssociatedMemberGroup;
@@ -112,13 +120,6 @@ namespace Yvand.EntraClaimsProvider.Tests
 
             if (!SPSite.Exists(TestSiteCollUri))
             {
-                FileVersionInfo spAssemblyVersion = FileVersionInfo.GetVersionInfo(Assembly.GetAssembly(typeof(SPSite)).Location);
-                string spSiteTemplate = "STS#3";
-                if (spAssemblyVersion.FileBuildPart < 10000)
-                {
-                    // If SharePoint 2016, must use the classic team site template
-                    spSiteTemplate = "STS#0";
-                }
                 Trace.TraceInformation($"{DateTime.Now.ToString("s")} Creating site collection {TestSiteCollUri.AbsoluteUri} with template '{spSiteTemplate}'...");
                 SPSite spSite = wa.Sites.Add(TestSiteCollUri.AbsoluteUri, EntraCP.ClaimsProviderName, EntraCP.ClaimsProviderName, 1033, spSiteTemplate, FarmAdmin, String.Empty, String.Empty);
                 spSite.RootWeb.CreateDefaultAssociatedGroups(FarmAdmin, FarmAdmin, spSite.RootWeb.Title);
