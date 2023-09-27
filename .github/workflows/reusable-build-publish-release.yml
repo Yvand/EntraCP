@@ -15,6 +15,8 @@ on:
     secrets:
       base64-encoded-signingkey:
         required: true
+      NUGET_APIKEY:
+        required: true
 jobs:
   call-build:
     uses: Yvand/AzureCP/.github/workflows/reusable-build.yml@master
