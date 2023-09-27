@@ -1,0 +1,25 @@
+<?xml version="1.0" encoding="utf-8"?>
+<package >
+  <metadata>
+    <id>$id$</id>
+    <version>$fileversion$</version>
+    <authors>$author$</authors>
+    <title>$title$</title>
+    <description>$description$</description>
+    <requireLicenseAcceptance>true</requireLicenseAcceptance>
+    <license type="expression">Apache-2.0</license>
+    <projectUrl>https://github.com/Yvand/AzureCP</projectUrl>
+    <copyright>$copyright$</copyright>
+    <tags>SharePoint ClaimsProvider</tags>
+    <releaseNotes>https://github.com/Yvand/AzureCP/blob/master/CHANGELOG.md</releaseNotes>
+    <repository type="git" url="https://github.com/Yvand/AzureCP" commit="$commit$" />
+    <dependencies>
+      <group targetFramework=".NETFramework4.8">
+        <dependency id="Azure.Identity" version="1.10.0" exclude="Build,Analyzers" />
+        <dependency id="Microsoft.Graph" version="5.25.0" exclude="Build,Analyzers" />
+      </group>
+    </dependencies>
+  </metadata>
+  <files>
+  </files>
+</package>
