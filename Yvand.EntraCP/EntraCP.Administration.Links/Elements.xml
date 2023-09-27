@@ -41,6 +41,6 @@
       Location="Microsoft.SharePoint.Administration.Security"
       Title="Updates and documentation"
       Sequence="30">
-    <UrlAction Url="https://azurecp.yvand.net/" />
+    <UrlAction Url="https://entracp.yvand.net/" />
   </CustomAction>
 </Elements>

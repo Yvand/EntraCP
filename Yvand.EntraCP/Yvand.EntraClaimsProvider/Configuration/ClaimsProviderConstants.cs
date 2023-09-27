@@ -29,7 +29,7 @@ namespace Yvand.EntraClaimsProvider.Configuration
         public static string GroupClaimEntityType { get; set; } = SPClaimEntityTypes.FormsRole;
         public static bool EnforceOnly1ClaimTypeForGroup => true;     // In EntraCP, only 1 claim type can be used to create group permissions
         public static string DefaultMainGroupClaimType => WIF4_5.ClaimTypes.Role;
-        public static string PUBLICSITEURL => "https://azurecp.yvand.net/";
+        public static string PUBLICSITEURL => "https://entracp.yvand.net/";
         public static string GUEST_USERTYPE => "Guest";
         public static string MEMBER_USERTYPE => "Member";
         public static string ClientCertificatePrivateKeyPassword => "YVANDwRrEHVHQ57ge?uda";
