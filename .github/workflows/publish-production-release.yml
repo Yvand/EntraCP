@@ -9,3 +9,4 @@ jobs:
       is-production-release: true
     secrets:
       base64-encoded-signingkey: ${{ secrets.BASE64_ENCODED_SIGNINGKEY }}
+      NUGET_APIKEY: ${{ secrets.NUGET_APIKEY }}
