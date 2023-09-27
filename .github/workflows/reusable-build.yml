@@ -149,9 +149,12 @@ jobs:
         if ($version.Contains('-')) {
             $suffix = $version.Split('-')[1]
             $version = $version.Split('-')[0]
+            "Final version: " + $version
+            nuget pack "${{ env.project-name }}/${{ env.project-name }}.csproj" -OutputDirectory "${{ env.project-name }}/bin/${{ matrix.configuration }}" -Properties "Configuration=${{ matrix.configuration }};commit=${{ github.sha }};fileversion=$version" -Symbols -SymbolPackageFormat snupkg -Suffix $suffix
+        } else {
+            "Final version: " + $version
+            nuget pack "${{ env.project-name }}/${{ env.project-name }}.csproj" -OutputDirectory "${{ env.project-name }}/bin/${{ matrix.configuration }}" -Properties "Configuration=${{ matrix.configuration }};commit=${{ github.sha }};fileversion=$version" -Symbols -SymbolPackageFormat snupkg
         }
-        "version: " + $version
-        nuget pack "${{ env.project-name }}/${{ env.project-name }}.csproj" -OutputDirectory "${{ env.project-name }}/bin/${{ matrix.configuration }}" -Properties "Configuration=${{ matrix.configuration }};commit=${{ github.sha }};fileversion=$version" -Symbols -SymbolPackageFormat snupkg -Suffix $suffix
 
     - name: Remove the signing key
       run: Remove-Item -path "${{ env.project-name }}/${{ env.project-name }}.snk"
