@@ -1,10 +1,10 @@
-# Change log for AzureCP
+# Change log for ~~AzureCP~~ EntraCP
 
 ## Unreleased
 
-* Rewrite AzureCP from scratch with many breaking changes
-* Rename AzureCP to EntraCP
-* Update Microsoft.Graph to 5.22
+* Rename project AzureCP to EntraCP
+* Rewrite AzureCP from scratch, with many breaking changes and improvements
+* Update dependencies to use latest versions of NuGet packages Microsoft.Graph and Azure.Identity
 * Update .NET Framework dependency to .NET 4.8 (https://github.com/Yvand/AzureCP/pull/184)
 * Update reference on Microsoft.SharePoint.dll to use the one published with SharePoint Subscription RTM (https://github.com/Yvand/AzureCP/pull/184)
 * Update minimum SharePoint Product Version from 15.0 to 16.0 (https://github.com/Yvand/AzureCP/pull/184)
