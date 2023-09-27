@@ -1,6 +1,6 @@
-# AzureCP for SharePoint Subscription / 2019 / 2016
+# EntraCP for SharePoint Subscription / 2019 / 2016
 
-**Please visit [azurecp.yvand.net](https://azurecp.yvand.net/) to download AzureCP and find documentation.**
+**Please visit [entracp.yvand.net](https://entracp.yvand.net/) to download EntraCP and find documentation.**
 
 ## Latest stable release
 
