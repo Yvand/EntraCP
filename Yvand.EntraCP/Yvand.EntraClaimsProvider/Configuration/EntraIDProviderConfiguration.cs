@@ -138,6 +138,7 @@ namespace Yvand.EntraClaimsProvider.Configuration
 
     public class EntraIDProviderConfiguration : SPPersistedObject, IEntraIDProviderSettings
     {
+        public string LocalAssemblyVersion => ClaimsProviderConstants.ClaimsProviderVersion;
         /// <summary>
         /// Gets the settings, based on the configuration stored in this persisted object
         /// </summary>
@@ -155,6 +156,7 @@ namespace Yvand.EntraClaimsProvider.Configuration
         private IEntraIDProviderSettings _Settings;
 
         #region "Base settings implemented from IEntraIDEntityProviderSettings"
+
         public ClaimTypeConfigCollection ClaimTypes
         {
             get
@@ -287,7 +289,7 @@ namespace Yvand.EntraClaimsProvider.Configuration
                 return this._SPTrust;
             }
         }
-        #endregion       
+        #endregion
 
         public EntraIDProviderConfiguration() { }
         public EntraIDProviderConfiguration(string persistedObjectName, SPPersistedObject parent, string claimsProviderName) : base(persistedObjectName, parent)
