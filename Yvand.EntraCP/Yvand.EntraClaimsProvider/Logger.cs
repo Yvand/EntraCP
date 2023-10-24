@@ -5,6 +5,7 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
 using System.Linq;
+using System.Runtime.CompilerServices;
 using System.Text;
 
 namespace Yvand.EntraClaimsProvider
@@ -148,23 +149,41 @@ namespace Yvand.EntraClaimsProvider
         {
             get
             {
-                var LogSvc = SPDiagnosticsServiceBase.GetLocal<Logger>();
-                // if the Logging Service is registered, just return it.
-                if (LogSvc != null)
+                if (_Local != null)
                 {
-                    return LogSvc;
+                    return _Local;
                 }
 
-                Logger svc = null;
                 SPSecurity.RunWithElevatedPrivileges(delegate ()
                 {
+                    try
+                    {
+                        SPContext.Current.Web.AllowUnsafeUpdates = true;
+                        // This call may try to update the persisted object, so AllowUnsafeUpdates must be set before
+                        _Local = SPDiagnosticsServiceBase.GetLocal<Logger>();
+                    }
+                    catch (SPDuplicateObjectException ex)
+                    {
+                        // This exception may happen for no reason that I can understand. Calling Unregister() does cleanly remove the persisted object for class Logger.
+                        // And a new persisted object will be recreated when calling new Logger()
+                        Logger.Unregister();
+                    }
+
+                    // if the Logging Service is registered, just return it.
+                    if (_Local != null)
+                    {
+                        return;
+                    }
+
                     // otherwise instantiate and register the new instance, which requires farm administrator privileges
-                    svc = new Logger();
+                    _Local = new Logger();
                     //svc.Update();
                 });
-                return svc;
+                SPContext.Current.Web.AllowUnsafeUpdates = false;
+                return _Local;
             }
         }
+        private static Logger _Local;
 
         public Logger() : base(DiagnosticsAreaName, SPFarm.Local) { }
         public Logger(string name, SPFarm farm) : base(name, farm) { }
