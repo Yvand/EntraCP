@@ -54,6 +54,8 @@ namespace Yvand.EntraClaimsProvider
     {
         public readonly static string DiagnosticsAreaName = EntraCP.ClaimsProviderName;
 
+        public override string Name => $"{DiagnosticsAreaName}.Logging";
+
         public static void Log(string message, TraceSeverity traceSeverity, EventSeverity eventSeverity, TraceCategory category)
         {
             try

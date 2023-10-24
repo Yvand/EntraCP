@@ -2,7 +2,10 @@
 using Azure.Core.Pipeline;
 using Azure.Identity;
 using Microsoft.Graph;
+using Microsoft.Graph.Authentication;
 using Microsoft.Identity.Client;
+using Microsoft.Kiota.Abstractions.Authentication;
+using Microsoft.Kiota.Authentication.Azure;
 using Microsoft.SharePoint.Administration;
 using System;
 using System.Collections.Generic;
@@ -199,6 +202,7 @@ namespace Yvand.EntraClaimsProvider.Configuration
             }
 
             var handlers = GraphClientFactory.CreateDefaultHandlers();
+            handlers.Add(new GraphRequestsLogging());
 #if DEBUG
             //handlers.Add(new ChaosHandler());
 #endif
@@ -206,6 +210,12 @@ namespace Yvand.EntraClaimsProvider.Configuration
             ClientSecretCredentialOptions options = new ClientSecretCredentialOptions();
             options.AuthorityHost = this.AzureAuthority;
             if (clientTransportProxy != null) { options.Transport = clientTransportProxy; }
+            options.Diagnostics.IsAccountIdentifierLoggingEnabled = true;
+            options.Diagnostics.ApplicationId = "EntraCP";
+            options.Diagnostics.IsDistributedTracingEnabled = true;
+            options.Diagnostics.IsAccountIdentifierLoggingEnabled = true;
+            options.Diagnostics.IsLoggingEnabled = true;
+
 
             TokenCredential tokenCredential;
             if (!String.IsNullOrWhiteSpace(this.ClientSecret))
@@ -224,12 +234,37 @@ namespace Yvand.EntraClaimsProvider.Configuration
                 httpClient.Timeout = TimeSpan.FromMilliseconds(timeout);
             }
 
+            //var kiotaProvider = new Microsoft.Kiota.Authentication.Azure.AzureIdentityAuthenticationProvider(
+            //    credential: tokenCredential,
+            //    //observabilityOptions: 
+            //    scopes: new[] { "https://graph.microsoft.com/.default",
+            //});
+
+            //var test = new ObservabilityOptions();
             // https://learn.microsoft.com/en-us/graph/sdks/customize-client?tabs=csharp
-            var authProvider = new Microsoft.Graph.Authentication.AzureIdentityAuthenticationProvider(
+            Microsoft.Graph.Authentication.AzureIdentityAuthenticationProvider authProvider = new Microsoft.Graph.Authentication.AzureIdentityAuthenticationProvider(
                 credential: tokenCredential,
+                //observabilityOptions: 
                 scopes: new[] { "https://graph.microsoft.com/.default",
             });
             this.GraphService = new GraphServiceClient(httpClient, authProvider);
+
+
+            // ClientCredentialProvider
+//            GraphServiceClient graphServiceClient =
+//new GraphServiceClient(new Microsoft.Graph.Authentication.AzureIdentityAuthenticationProvider(async (requestMessage) =>
+//{
+
+//    // Retrieve an access token for Microsoft Graph (gets a fresh token if needed).
+//    var authResult = await tokenCredential.GetTokenAsync().ConfigureAwait(false);
+
+//    // Add the access token in the Authorization header of the API
+//    requestMessage.Headers.Authorization =
+//    new AuthenticationHeaderValue("Bearer", authResult.AccessToken);
+
+//})
+//);
+
         }
 
         public async Task<bool> TestConnectionAsync(string proxyAddress)
