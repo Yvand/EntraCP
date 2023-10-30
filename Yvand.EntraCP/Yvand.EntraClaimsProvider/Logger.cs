@@ -160,7 +160,11 @@ namespace Yvand.EntraClaimsProvider
                 {
                     try
                     {
-                        SPContext.Current.Web.AllowUnsafeUpdates = true;
+                        // SPContext.Current can be null in some processes like PowerShell.exe
+                        if (SPContext.Current != null)
+                        {
+                            SPContext.Current.Web.AllowUnsafeUpdates = true;
+                        }
                         // This call may try to update the persisted object, so AllowUnsafeUpdates must be set before
                         _Local = SPDiagnosticsServiceBase.GetLocal<Logger>();
                     }
@@ -181,7 +185,11 @@ namespace Yvand.EntraClaimsProvider
                     _Local = new Logger();
                     //svc.Update();
                 });
-                SPContext.Current.Web.AllowUnsafeUpdates = false;
+                // SPContext.Current can be null in some processes like PowerShell.exe
+                if (SPContext.Current != null)
+                {
+                    SPContext.Current.Web.AllowUnsafeUpdates = false;
+                }
                 return _Local;
             }
         }
