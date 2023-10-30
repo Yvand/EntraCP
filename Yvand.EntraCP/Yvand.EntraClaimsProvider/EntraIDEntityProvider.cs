@@ -313,10 +313,10 @@ namespace Yvand.EntraClaimsProvider
                     timer.Start();
                     tenantResults = await QueryEntraIDTenantAsync(currentContext, tenant).ConfigureAwait(false);
                 }
-                catch (Exception ex)
-                {
-                    Logger.LogException(ClaimsProviderName, $"in QueryEntraIDTenantsAsync while querying tenant '{tenant.Name}'", TraceCategory.Lookup, ex);
-                }
+                //catch (Exception ex)
+                //{
+                //    Logger.LogException(ClaimsProviderName, $"in QueryEntraIDTenantsAsync while querying tenant '{tenant.Name}'", TraceCategory.Lookup, ex);
+                //}
                 finally
                 {
                     timer.Stop();
@@ -337,7 +337,11 @@ namespace Yvand.EntraClaimsProvider
             List<DirectoryObject>[] tenantsResults = await Task.WhenAll(tenantQueryTasks).ConfigureAwait(false);
             for (int i = 0; i < tenantsResults.Length; i++)
             {
-                allResults.AddRange(tenantsResults[i]);
+                // If request to Graph failed, tenantsResults[i] is null and that would cause a ThrowArgumentNullException in List<T>.InsertRange()
+                if (tenantsResults[i] != null && tenantsResults[i].Count > 0)
+                {
+                    allResults.AddRange(tenantsResults[i]);
+                }
             }
             return allResults;
         }
@@ -544,6 +548,10 @@ namespace Yvand.EntraClaimsProvider
             {
                 // Task.WaitAll throws an AggregateException, which contains all exceptions thrown by tasks it waited on
                 Logger.LogException(ClaimsProviderName, $"while querying Microsoft Entra ID tenant '{tenant.Name}'", TraceCategory.Lookup, ex);
+            }
+            catch (Exception ex)
+            {
+                Logger.LogException(ClaimsProviderName, $"in QueryEntraIDTenantAsync while querying tenant '{tenant.Name}'", TraceCategory.Lookup, ex);
             }
             finally
             {
