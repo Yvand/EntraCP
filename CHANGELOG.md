@@ -1,5 +1,9 @@
 # Change log for ~~AzureCP~~ EntraCP
 
+## Unreleased
+
+* Improve page TroubleshootEntraCP.aspx
+
 ## EntraCP v22.0.20230927.29 enhancements & bug-fixes - Published in September 27, 2023
 
 * Rename project AzureCP to EntraCP
