@@ -9,6 +9,7 @@
 <%@ Import Namespace="Yvand.EntraClaimsProvider" %>
 <%@ Import Namespace="Yvand.EntraClaimsProvider.Configuration" %>
 <%@ Import Namespace="Microsoft.SharePoint" %>
+<%@ Import Namespace="Microsoft.SharePoint.Administration.Claims" %>
 
 <asp:Content ID="PageTitle" ContentPlaceHolderID="PlaceHolderPageTitle" runat="server">Troubleshoot EntraCP</asp:Content>
 <asp:Content ID="PageTitleInTitleArea" ContentPlaceHolderID="PlaceHolderPageTitleInTitleArea" runat="server">Troubleshoot EntraCP in the context of current site</asp:Content>
@@ -38,11 +39,14 @@
                 return;
             }
 
-            // Creates the settings
-            EntraCPSettings settings = EntraCPSettings.GetDefaultSettings("EntraCP");
+            string claimsProviderName = "EntraCP";
+            EntraCPSettings settings = EntraCPSettings.GetDefaultSettings(claimsProviderName);
             settings.EntraIDTenants.Add(tenant);
             settings.ProxyAddress = proxy;
-            TestClaimsProviderSearch(settings, context, input);
+            EntraCP claimsProvider = new EntraCP(claimsProviderName);
+            claimsProvider.CustomSettings = settings;
+            TestClaimsProviderSearch(claimsProvider, context, input);
+            TestClaimsProviderAugmentation(claimsProvider, context, input);
         }
 
         public bool TestTenantConnectionAndAssemblyBindings(EntraIDTenant tenant, string proxy)
@@ -95,12 +99,10 @@
             return false;
         }
 
-        public void TestClaimsProviderSearch(EntraCPSettings settings, string context, string input)
+        public bool TestClaimsProviderSearch(EntraCP claimsProvider, string context, string input)
         {
             try
             {
-                EntraCP claimsProvider = new EntraCP("EntraCP");
-                claimsProvider.CustomSettings = settings;
                 var searchResult = claimsProvider.Search(new Uri(context), new[] { "User", "Group" }, input, null, 30);
                 int searchResultCount = 0;
                 if (searchResult != null)
@@ -111,11 +113,32 @@
                     }
                 }
                 LblResult.Text += String.Format("<br/>Test search with input '{0}' on '{1}': OK with {2} results returned.", input, context, searchResultCount);
+                return true;
             }
-            catch(Exception ex)
+            catch (Exception ex)
             {
                 LblResult.Text += String.Format("<br/>Test search with input '{0}' on '{1}': Failed: {2}", input, context, ex.Message);
             }
+            return false;
+        }
+
+        public bool TestClaimsProviderAugmentation(EntraCP claimsProvider, string context, string input)
+        {
+            try
+            {
+                IdentityClaimTypeConfig idClaim = claimsProvider.Settings.ClaimTypes.IdentityClaim;
+                string originalIssuer = SPOriginalIssuers.Format(SPOriginalIssuerType.TrustedProvider, Utils.GetSPTrustAssociatedWithClaimsProvider("EntraCP").Name);
+                SPClaim claim = new SPClaim(idClaim.ClaimType, input, idClaim.ClaimValueType, originalIssuer);
+                // TODO: Somehow, from this page claimsProvider.GetClaimsForEntity() causes a hang
+                //SPClaim[] groups = claimsProvider.GetClaimsForEntity(new Uri(context), claim);
+                //LblResult.Text += String.Format("<br/>Test augmentation for user '{0}' on '{1}': OK with {2} groups returned.", input, context, groups == null ? 0 : groups.Length);
+                return true;
+            }
+            catch (Exception ex)
+            {
+                LblResult.Text += String.Format("<br/>Test augmentation for user '{0}' on '{1}': Failed: {2}", input, context, ex.Message);
+            }
+            return false;
         }
     </script>
     This page helps you troubleshoot EntraCP with minimal overhead, directly in the context of SharePoint sites.<br />
