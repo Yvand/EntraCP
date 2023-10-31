@@ -91,6 +91,15 @@ namespace Yvand.EntraClaimsProvider.Configuration
 
         public EntraIDProviderSettings() { }
 
+        public static EntraIDProviderSettings GetDefaultSettings(string claimsProviderName)
+        {
+            EntraIDProviderSettings entityProviderSettings = new EntraIDProviderSettings
+            {
+                ClaimTypes = EntraIDProviderSettings.ReturnDefaultClaimTypesConfig(claimsProviderName),
+            };
+            return entityProviderSettings;
+        }
+
         /// <summary>
         /// Returns the default claim types configuration list, based on the identity claim type set in the TrustedLoginProvider associated with <paramref name="claimProviderName"/>
         /// </summary>
@@ -468,11 +477,7 @@ namespace Yvand.EntraClaimsProvider.Configuration
 
         public virtual IEntraIDProviderSettings GetDefaultSettings()
         {
-            IEntraIDProviderSettings entityProviderSettings = new EntraIDProviderSettings
-            {
-                ClaimTypes = EntraIDProviderSettings.ReturnDefaultClaimTypesConfig(this.ClaimsProviderName),
-            };
-            return (IEntraIDProviderSettings)entityProviderSettings;
+            return EntraIDProviderSettings.GetDefaultSettings(this.ClaimsProviderName);
         }
 
         /// <summary>

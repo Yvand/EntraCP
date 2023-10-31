@@ -25,6 +25,30 @@ namespace Yvand.EntraClaimsProvider
 
     public class EntraCPSettings : EntraIDProviderSettings, IEntraCPSettings
     {
+        public static new EntraCPSettings GetDefaultSettings(string claimsProviderName)
+        {
+            EntraIDProviderSettings entraIDProviderSettings = EntraIDProviderSettings.GetDefaultSettings(claimsProviderName);
+            return GenerateFromEntraIDProviderSettings(entraIDProviderSettings);
+        }
+
+        public static EntraCPSettings GenerateFromEntraIDProviderSettings(IEntraIDProviderSettings settings)
+        {
+            return new EntraCPSettings
+            {
+                AlwaysResolveUserInput = settings.AlwaysResolveUserInput,
+                EntraIDTenants = settings.EntraIDTenants,
+                ClaimTypes = settings.ClaimTypes,
+                CustomData = settings.CustomData,
+                EnableAugmentation = settings.EnableAugmentation,
+                EntityDisplayTextPrefix = settings.EntityDisplayTextPrefix,
+                FilterExactMatchOnly = settings.FilterExactMatchOnly,
+                FilterSecurityEnabledGroupsOnly = settings.FilterSecurityEnabledGroupsOnly,
+                ProxyAddress = settings.ProxyAddress,
+                Timeout = settings.Timeout,
+                Version = settings.Version,
+            };
+        }
+
         public List<ClaimTypeConfig> RuntimeClaimTypesList { get; set; }
 
         public IEnumerable<ClaimTypeConfig> RuntimeMetadataConfig { get; set; }
@@ -48,6 +72,11 @@ namespace Yvand.EntraClaimsProvider
         protected virtual string PickerEntityDisplayText => "({0}) {1}";
         protected virtual string PickerEntityOnMouseOver => "{0}={1}";
         public IEntraCPSettings Settings { get; protected set; }
+        
+        /// <summary>
+        /// Sets custom settings that will completely override the settings from the persisted object
+        /// </summary>
+        public IEntraCPSettings CustomSettings { get; set; }
         public long SettingsVersion { get; private set; } = -1;
         #region "Runtime settings"
         //protected List<ClaimTypeConfig> RuntimeClaimTypesList { get; private set; }
@@ -143,22 +172,7 @@ namespace Yvand.EntraClaimsProvider
                     return true;
                 }
 
-                IEntraCPSettings claimsProviderSettings = new EntraCPSettings
-                {
-                    AlwaysResolveUserInput = settings.AlwaysResolveUserInput,
-                    EntraIDTenants = settings.EntraIDTenants,
-                    ClaimTypes = settings.ClaimTypes,
-                    CustomData = settings.CustomData,
-                    EnableAugmentation = settings.EnableAugmentation,
-                    EntityDisplayTextPrefix = settings.EntityDisplayTextPrefix,
-                    FilterExactMatchOnly = settings.FilterExactMatchOnly,
-                    FilterSecurityEnabledGroupsOnly = settings.FilterSecurityEnabledGroupsOnly,
-                    ProxyAddress = settings.ProxyAddress,
-                    Timeout = settings.Timeout,
-                    Version = settings.Version,
-                };
-                this.Settings = (IEntraCPSettings)claimsProviderSettings;
-
+                this.Settings = EntraCPSettings.GenerateFromEntraIDProviderSettings(settings);
                 Logger.Log($"[{this.Name}] Settings have new version {this.Settings.Version}, refreshing local copy",
                     TraceSeverity.Medium, EventSeverity.Information, TraceCategory.Core);
                 success = this.InitializeInternalRuntimeSettings();
@@ -182,19 +196,24 @@ namespace Yvand.EntraClaimsProvider
         }
 
         /// <summary>
-        /// Override this methor to return the settings to use
+        /// Returns the settings to use
         /// </summary>
         /// <returns></returns>
-        protected virtual IEntraIDProviderSettings GetSettings()
+        public virtual IEntraIDProviderSettings GetSettings()
         {
-            IEntraIDProviderSettings settings = null;
+            if (this.CustomSettings != null)
+            {
+                return this.CustomSettings;
+            }
+
+            IEntraIDProviderSettings persistedSettings = null;
             EntraIDProviderConfiguration PersistedConfiguration = EntraIDProviderConfiguration.GetGlobalConfiguration(new Guid(ClaimsProviderConstants.CONFIGURATION_ID));
             if (PersistedConfiguration != null)
             {
-                settings = PersistedConfiguration.Settings;
+                persistedSettings = PersistedConfiguration.Settings;
             }
-            return settings;
-        }
+            return persistedSettings;
+        }        
 
         /// <summary>
         /// Sets the internal runtime settings properties
