@@ -6,6 +6,8 @@ using System.Threading.Tasks;
 namespace Yvand.EntraClaimsProvider
 {
     /// <summary>
+    /// Capture unsuccessful requests to Graph to record them in the SharePoint logs.
+    /// This does not capture the authentication traffic.
     /// Doc: https://github.com/microsoftgraph/msgraph-sdk-dotnet-core/blob/dev/docs/logging-requests.md
     /// </summary>
     public class GraphRequestsLogging : DelegatingHandler

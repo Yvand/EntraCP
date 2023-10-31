@@ -1,4 +1,6 @@
-﻿using Azure.Core;
+﻿using Azure;
+using Azure.Core;
+using Azure.Core.Diagnostics;
 using Azure.Core.Pipeline;
 using Azure.Identity;
 using Microsoft.Graph;
@@ -11,13 +13,16 @@ using Microsoft.Kiota.Http.HttpClientLibrary.Middleware.Options;
 using Microsoft.SharePoint.Administration;
 using System;
 using System.Collections.Generic;
+using System.Diagnostics.Tracing;
 using System.Linq;
 using System.Net;
 using System.Net.Http;
 using System.Reflection;
 using System.Security.Cryptography;
 using System.Security.Cryptography.X509Certificates;
+using System.Threading;
 using System.Threading.Tasks;
+using System.Web;
 
 namespace Yvand.EntraClaimsProvider.Configuration
 {
@@ -220,37 +225,51 @@ namespace Yvand.EntraClaimsProvider.Configuration
 #endif
 
 
-            TokenCredentialOptions options = new TokenCredentialOptions
+
+            using (var listener = new AzureEventSourceListener(
+                (e, message) =>
+                {
+                    // Only log messages from "Azure-Core" event source
+                    if (e.EventSource.Name == "Azure-Identity")
+                    {
+                        Logger.Log($"[{EntraCP.ClaimsProviderName}] AzureEventSourceListener {message}", TraceSeverity.High, EventSeverity.Error, TraceCategory.Core);
+                    }
+                    Logger.Log($"[{EntraCP.ClaimsProviderName}] AzureEventSourceListener {message}", TraceSeverity.High, EventSeverity.Error, TraceCategory.Core);
+                },
+                level: EventLevel.LogAlways))
             {
-                AuthorityHost = this.AzureAuthority,
-                Retry =
+                TokenCredentialOptions options = new TokenCredentialOptions
+                {
+                    AuthorityHost = this.AzureAuthority,
+                    Retry =
                 {
                     NetworkTimeout = TimeSpan.FromMilliseconds(requestsTimeout),
                     MaxRetries = 4,
                 },
-                Diagnostics =
+                    Diagnostics =
                 {
                     IsLoggingEnabled = true,
                     IsDistributedTracingEnabled = true,
                     IsAccountIdentifierLoggingEnabled = true,
+                },
+                };
+                if (clientTransportProxy != null) { options.Transport = clientTransportProxy; }
+
+                TokenCredential tokenCredential;
+                if (!String.IsNullOrWhiteSpace(this.ClientSecret))
+                {
+                    tokenCredential = new ClientSecretCredential(this.Name, this.ClientId, this.ClientSecret, options);
                 }
+                else
+                {
+                    tokenCredential = new ClientCertificateCredential(this.Name, this.ClientId, this.ClientCertificateWithPrivateKey, options);
+                }
+
+                HttpClient httpClient = GraphClientFactory.Create(handlers: handlers, proxy: webProxy);
+                httpClient.Timeout = TimeSpan.FromMilliseconds(requestsTimeout);
+                var scopes = new[] { "https://graph.microsoft.com/.default" };
+                this.GraphService = new GraphServiceClient(httpClient, tokenCredential, scopes);
             };
-            if (clientTransportProxy != null) { options.Transport = clientTransportProxy; }
-
-            TokenCredential tokenCredential;
-            if (!String.IsNullOrWhiteSpace(this.ClientSecret))
-            {
-                tokenCredential = new ClientSecretCredential(this.Name, this.ClientId, this.ClientSecret, options);
-            }
-            else
-            {
-                tokenCredential = new ClientCertificateCredential(this.Name, this.ClientId, this.ClientCertificateWithPrivateKey, options);
-            }
-
-            HttpClient httpClient = GraphClientFactory.Create(handlers: handlers, proxy: webProxy);
-            httpClient.Timeout = TimeSpan.FromMilliseconds(requestsTimeout);
-            var scopes = new[] { "https://graph.microsoft.com/.default" };
-            this.GraphService = new GraphServiceClient(httpClient, tokenCredential, scopes);
         }
 
         public async Task<bool> TestConnectionAsync(string proxyAddress)
