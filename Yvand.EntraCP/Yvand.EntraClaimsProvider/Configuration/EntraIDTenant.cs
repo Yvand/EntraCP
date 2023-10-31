@@ -224,52 +224,38 @@ namespace Yvand.EntraClaimsProvider.Configuration
             handlers.Remove(retryHandler);
 #endif
 
-
-
-            using (var listener = new AzureEventSourceListener(
-                (e, message) =>
-                {
-                    // Only log messages from "Azure-Core" event source
-                    if (e.EventSource.Name == "Azure-Identity")
-                    {
-                        Logger.Log($"[{EntraCP.ClaimsProviderName}] AzureEventSourceListener {message}", TraceSeverity.High, EventSeverity.Error, TraceCategory.Core);
-                    }
-                    Logger.Log($"[{EntraCP.ClaimsProviderName}] AzureEventSourceListener {message}", TraceSeverity.High, EventSeverity.Error, TraceCategory.Core);
-                },
-                level: EventLevel.LogAlways))
+            TokenCredentialOptions options = new TokenCredentialOptions
             {
-                TokenCredentialOptions options = new TokenCredentialOptions
-                {
-                    AuthorityHost = this.AzureAuthority,
-                    Retry =
+                AuthorityHost = this.AzureAuthority,
+                Retry =
                 {
                     NetworkTimeout = TimeSpan.FromMilliseconds(requestsTimeout),
                     MaxRetries = 4,
                 },
-                    Diagnostics =
+                Diagnostics =
                 {
                     IsLoggingEnabled = true,
-                    IsDistributedTracingEnabled = true,
+                    IsDistributedTracingEnabled = false,
                     IsAccountIdentifierLoggingEnabled = true,
+                    ApplicationId = "entracp",
                 },
-                };
-                if (clientTransportProxy != null) { options.Transport = clientTransportProxy; }
-
-                TokenCredential tokenCredential;
-                if (!String.IsNullOrWhiteSpace(this.ClientSecret))
-                {
-                    tokenCredential = new ClientSecretCredential(this.Name, this.ClientId, this.ClientSecret, options);
-                }
-                else
-                {
-                    tokenCredential = new ClientCertificateCredential(this.Name, this.ClientId, this.ClientCertificateWithPrivateKey, options);
-                }
-
-                HttpClient httpClient = GraphClientFactory.Create(handlers: handlers, proxy: webProxy);
-                httpClient.Timeout = TimeSpan.FromMilliseconds(requestsTimeout);
-                var scopes = new[] { "https://graph.microsoft.com/.default" };
-                this.GraphService = new GraphServiceClient(httpClient, tokenCredential, scopes);
             };
+            if (clientTransportProxy != null) { options.Transport = clientTransportProxy; }
+
+            TokenCredential tokenCredential;
+            if (!String.IsNullOrWhiteSpace(this.ClientSecret))
+            {
+                tokenCredential = new ClientSecretCredential(this.Name, this.ClientId, this.ClientSecret, options);
+            }
+            else
+            {
+                tokenCredential = new ClientCertificateCredential(this.Name, this.ClientId, this.ClientCertificateWithPrivateKey, options);
+            }
+
+            HttpClient httpClient = GraphClientFactory.Create(handlers: handlers, proxy: webProxy);
+            httpClient.Timeout = TimeSpan.FromMilliseconds(requestsTimeout);
+            var scopes = new[] { "https://graph.microsoft.com/.default" };
+            this.GraphService = new GraphServiceClient(httpClient, tokenCredential, scopes);
         }
 
         public async Task<bool> TestConnectionAsync(string proxyAddress)
