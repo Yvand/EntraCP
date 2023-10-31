@@ -918,7 +918,8 @@ namespace Yvand.EntraClaimsProvider
                 Stopwatch timer = new Stopwatch();
                 timer.Start();
                 Task<List<string>> groupsTask = this.EntityProvider.GetEntityGroupsAsync(currentContext, groupClaimTypeSettings.EntityProperty);
-                groupsTask.Wait();
+                groupsTask.ConfigureAwait(false);
+                groupsTask.Wait(this.Settings.Timeout);
                 List<string> groups = groupsTask.Result;
                 timer.Stop();
                 if (groups?.Count > 0)
