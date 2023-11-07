@@ -13,6 +13,7 @@ using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
+using System.Net;
 using System.Reflection;
 using System.Threading.Tasks;
 using Yvand.EntraClaimsProvider.Configuration;
@@ -444,9 +445,25 @@ namespace Yvand.EntraClaimsProvider
                         groupsRequestId = await batchRequestContent.AddBatchRequestStepAsync(groupRequest).ConfigureAwait(false);
                     }
 
-                    BatchResponseContentCollection returnedResponse = await tenant.GraphService.Batch.PostAsync(batchRequestContent).ConfigureAwait(false);
-                    UserCollectionResponse userCollectionResult = await returnedResponse.GetResponseByIdAsync<UserCollectionResponse>(usersRequestId).ConfigureAwait(false);
-                    GroupCollectionResponse groupCollectionResult = await returnedResponse.GetResponseByIdAsync<GroupCollectionResponse>(groupsRequestId).ConfigureAwait(false);
+                    // Run the batch request
+                    BatchResponseContentCollection response = await tenant.GraphService.Batch.PostAsync(batchRequestContent).ConfigureAwait(false);
+                    Dictionary<string, HttpStatusCode> responseWithStatusCode = await response.GetResponsesStatusCodesAsync().ConfigureAwait(false);
+
+                    // Check if the users' request in the batch request was successful. If so, get the users that were returned by Graph
+                    HttpStatusCode usersRequestStatus;
+                    UserCollectionResponse userCollectionResult = null;
+                    if (responseWithStatusCode.TryGetValue(usersRequestId, out usersRequestStatus) && usersRequestStatus == HttpStatusCode.OK)
+                    {
+                        userCollectionResult = await response.GetResponseByIdAsync<UserCollectionResponse>(usersRequestId).ConfigureAwait(false);
+                    }
+
+                    // Check if the groups' request in the batch request was successful. If so, get the users that were returned by Graph
+                    HttpStatusCode groupRequestStatus;
+                    GroupCollectionResponse groupCollectionResult = null;
+                    if (responseWithStatusCode.TryGetValue(usersRequestId, out groupRequestStatus) && groupRequestStatus == HttpStatusCode.OK)
+                    {
+                        groupCollectionResult = await response.GetResponseByIdAsync<GroupCollectionResponse>(groupsRequestId).ConfigureAwait(false);
+                    }
 
                     Logger.Log($"[{ClaimsProviderName}] Query to tenant '{tenant.Name}' returned {(userCollectionResult?.Value == null ? 0 : userCollectionResult.Value.Count)} user(s) with filter \"{tenant.UserFilter}\"", TraceSeverity.VerboseEx, EventSeverity.Information, TraceCategory.Lookup);
                     // Process users result
