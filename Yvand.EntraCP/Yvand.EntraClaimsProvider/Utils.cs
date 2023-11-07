@@ -2,6 +2,7 @@
 using Microsoft.SharePoint.Administration.Claims;
 using System;
 using System.Collections.Generic;
+using System.Diagnostics.Tracing;
 using System.Linq;
 using System.Reflection;
 using Yvand.EntraClaimsProvider.Configuration;
@@ -112,6 +113,64 @@ namespace Yvand.EntraClaimsProvider
                 field.SetValue(target, field.GetValue(source));
             }
             return target;
+        }
+
+        public static EventLevel TraceSeverityToEventLevel(TraceSeverity level)
+        {
+            EventLevel retLevel;
+            switch (level)
+            {
+                case TraceSeverity.Unexpected:
+                    retLevel = EventLevel.Critical;
+                    break;
+
+                case TraceSeverity.High:
+                    retLevel = EventLevel.Error;
+                    break;
+
+                case TraceSeverity.Medium:
+                    retLevel = EventLevel.Warning;
+                    break;
+
+                case TraceSeverity.VerboseEx:
+                case TraceSeverity.Verbose:
+                    retLevel = EventLevel.Informational;
+                    break;
+
+                default:
+                    retLevel = EventLevel.Warning;
+                    break;
+            }
+            return retLevel;
+        }
+
+        public static TraceSeverity EventLogToTraceSeverity(EventLevel level)
+        {
+            TraceSeverity retLevel;
+            switch (level)
+            {
+                case EventLevel.Critical:
+                    retLevel = TraceSeverity.Unexpected;
+                    break;
+
+                case EventLevel.Error:
+                    retLevel = TraceSeverity.High;
+                    break;
+
+                case EventLevel.Warning:
+                    retLevel = TraceSeverity.Medium;
+                    break;
+
+                case EventLevel.Informational:
+                case EventLevel.Verbose:
+                    retLevel = TraceSeverity.Verbose;
+                    break;
+
+                default:
+                    retLevel = TraceSeverity.High;
+                    break;
+            }
+            return retLevel;
         }
     }
 }

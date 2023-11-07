@@ -44,6 +44,10 @@ namespace Yvand.EntraClaimsProvider
          DefaultTraceSeverity(TraceSeverity.Medium),
          DefaultEventSeverity(EventSeverity.Error)]
         Custom,
+        [CategoryName("Azure Identity"),
+         DefaultTraceSeverity(TraceSeverity.Medium),
+         DefaultEventSeverity(EventSeverity.Error)]
+        AzureIdentity,
     }
 
     /// <summary>
@@ -83,11 +87,11 @@ namespace Yvand.EntraClaimsProvider
                         string currentMessage;
                         if (innerEx.InnerException != null)
                         {
-                            currentMessage = String.Format(excetpionMessage, count++.ToString(), innerEx.InnerException.GetType().FullName, innerEx.InnerException.Message);
+                            currentMessage = String.Format(excetpionMessage, count++.ToString(), innerEx.InnerException.GetType().Name, innerEx.InnerException.Message);
                         }
                         else
                         {
-                            currentMessage = String.Format(excetpionMessage, count++.ToString(), innerEx.GetType().FullName, innerEx.Message);
+                            currentMessage = String.Format(excetpionMessage, count++.ToString(), innerEx.GetType().Name, innerEx.Message);
                         }
                         message.Append(currentMessage);
                     }
@@ -109,14 +113,14 @@ namespace Yvand.EntraClaimsProvider
                 }
                 else
                 {
-                    errorNessage = "[{0}] Unexpected error {1}: {2}: {3}, Callstack: {4}";
-                    if (ex.InnerException != null)
+                    errorNessage = "[{0}] Unexpected error {1}: {2}: {3}";
+                    if (ex.InnerException != null && !(ex.InnerException is AggregateException))
                     {
-                        errorNessage = String.Format(errorNessage, claimsProviderName, customMessage, ex.InnerException.GetType().FullName, ex.InnerException.Message, ex.InnerException.StackTrace);
+                        errorNessage = String.Format(errorNessage, claimsProviderName, customMessage, ex.InnerException.GetType().Name, ex.InnerException.Message);
                     }
                     else
                     {
-                        errorNessage = String.Format(errorNessage, claimsProviderName, customMessage, ex.GetType().FullName, ex.Message, ex.StackTrace);
+                        errorNessage = String.Format(errorNessage, claimsProviderName, customMessage, ex.GetType().Name, ex.Message);
                     }
                 }
                 WriteTrace(category, TraceSeverity.Unexpected, errorNessage);
@@ -251,6 +255,7 @@ namespace Yvand.EntraClaimsProvider
                         CreateCategory(TraceCategory.Rehydration),
                         CreateCategory(TraceCategory.Debug),
                         CreateCategory(TraceCategory.Custom),
+                        CreateCategory(TraceCategory.AzureIdentity),
                     }
                 );
             }

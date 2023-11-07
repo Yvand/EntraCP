@@ -230,7 +230,7 @@ namespace Yvand.EntraClaimsProvider.Configuration
                 Retry =
                 {
                     NetworkTimeout = TimeSpan.FromMilliseconds(requestsTimeout),
-                    MaxRetries = 4,
+                    MaxRetries = 2,
                 },
                 Diagnostics =
                 {
