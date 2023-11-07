@@ -176,11 +176,15 @@ namespace Yvand.EntraClaimsProvider
                         // This call may try to update the persisted object, so AllowUnsafeUpdates must be set before
                         _Local = SPDiagnosticsServiceBase.GetLocal<Logger>();
                     }
-                    catch (SPDuplicateObjectException ex)
+                    catch (SPDuplicateObjectException)
                     {
                         // This exception may happen for no reason that I can understand. Calling Unregister() does cleanly remove the persisted object for class Logger.
                         // And a new persisted object will be recreated when calling new Logger()
                         Logger.Unregister();
+                    }
+                    catch(System.Security.SecurityException)
+                    {
+                        // Even the application pool account may get an access denied while calling SPDiagnosticsServiceBase.GetLocal<Logger>();
                     }
 
                     // if the Logging Service is registered, just return it.
@@ -189,7 +193,7 @@ namespace Yvand.EntraClaimsProvider
                         return;
                     }
 
-                    // otherwise instantiate and register the new instance, which requires farm administrator privileges
+                    // otherwise instantiate the new instance, which the application pool account can do
                     _Local = new Logger();
                     //svc.Update();
                 });
