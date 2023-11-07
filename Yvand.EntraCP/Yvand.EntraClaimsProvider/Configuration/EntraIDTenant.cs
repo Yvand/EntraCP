@@ -1,28 +1,20 @@
-﻿using Azure;
-using Azure.Core;
-using Azure.Core.Diagnostics;
+﻿using Azure.Core;
 using Azure.Core.Pipeline;
 using Azure.Identity;
 using Microsoft.Graph;
-using Microsoft.Graph.Authentication;
 using Microsoft.Identity.Client;
-using Microsoft.Kiota.Abstractions.Authentication;
-using Microsoft.Kiota.Authentication.Azure;
 using Microsoft.Kiota.Http.HttpClientLibrary.Middleware;
 using Microsoft.Kiota.Http.HttpClientLibrary.Middleware.Options;
 using Microsoft.SharePoint.Administration;
 using System;
 using System.Collections.Generic;
-using System.Diagnostics.Tracing;
 using System.Linq;
 using System.Net;
 using System.Net.Http;
 using System.Reflection;
 using System.Security.Cryptography;
 using System.Security.Cryptography.X509Certificates;
-using System.Threading;
 using System.Threading.Tasks;
-using System.Web;
 
 namespace Yvand.EntraClaimsProvider.Configuration
 {
