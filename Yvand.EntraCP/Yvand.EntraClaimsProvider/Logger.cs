@@ -48,6 +48,10 @@ namespace Yvand.EntraClaimsProvider
          DefaultTraceSeverity(TraceSeverity.Medium),
          DefaultEventSeverity(EventSeverity.Error)]
         AzureIdentity,
+        [CategoryName("Graph Requests"),
+         DefaultTraceSeverity(TraceSeverity.Medium),
+         DefaultEventSeverity(EventSeverity.Error)]
+        GraphRequests,
     }
 
     /// <summary>
@@ -256,6 +260,7 @@ namespace Yvand.EntraClaimsProvider
                         CreateCategory(TraceCategory.Debug),
                         CreateCategory(TraceCategory.Custom),
                         CreateCategory(TraceCategory.AzureIdentity),
+                        CreateCategory(TraceCategory.GraphRequests),
                     }
                 );
             }

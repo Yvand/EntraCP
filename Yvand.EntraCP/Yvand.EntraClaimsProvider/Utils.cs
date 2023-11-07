@@ -163,7 +163,8 @@ namespace Yvand.EntraClaimsProvider
 
                 case EventLevel.Informational:
                 case EventLevel.Verbose:
-                    retLevel = TraceSeverity.Verbose;
+                    // Set to VerboseEx instead of Verbose, because it generates very noisy messages
+                    retLevel = TraceSeverity.VerboseEx;
                     break;
 
                 default:
