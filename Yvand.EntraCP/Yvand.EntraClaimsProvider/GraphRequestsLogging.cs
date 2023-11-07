@@ -28,7 +28,8 @@ namespace Yvand.EntraClaimsProvider
             HttpResponseMessage response = await base.SendAsync(httpRequest, cancellationToken).ConfigureAwait(false);
             if (response.IsSuccessStatusCode == false)
             {
-                string requestBody = await httpRequest.Content.ReadAsStringAsync().ConfigureAwait(false);
+                // httpRequest.Content is null if httpRequest is a GET (e.g. during augmentation)
+                string requestBody = httpRequest.Content == null ? string.Empty : await httpRequest.Content.ReadAsStringAsync().ConfigureAwait(false);
                 Logger.Log($"[{EntraCP.ClaimsProviderName}] Graph returned error {response.StatusCode} {response.ReasonPhrase} on request '{httpRequest.RequestUri}' with JSON payload \"{requestBody}\"", TraceSeverity.Unexpected, EventSeverity.Error, TraceCategory.GraphRequests);
             }
             else
