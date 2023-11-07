@@ -308,20 +308,9 @@ namespace Yvand.EntraClaimsProvider
             var tenantQueryTasks = azureTenants.Select(async tenant =>
             {
                 Stopwatch timer = new Stopwatch();
-                List<DirectoryObject> tenantResults = null;
-                try
-                {
-                    timer.Start();
-                    tenantResults = await QueryEntraIDTenantAsync(currentContext, tenant).ConfigureAwait(false);
-                }
-                //catch (Exception ex)
-                //{
-                //    Logger.LogException(ClaimsProviderName, $"in QueryEntraIDTenantsAsync while querying tenant '{tenant.Name}'", TraceCategory.Lookup, ex);
-                //}
-                finally
-                {
-                    timer.Stop();
-                }
+                timer.Start();
+                List<DirectoryObject> tenantResults = await QueryEntraIDTenantAsync(currentContext, tenant).ConfigureAwait(false);
+                timer.Stop();
                 if (tenantResults != null)
                 {
                     Logger.Log($"[{ClaimsProviderName}] Got {tenantResults.Count} users/groups in {timer.ElapsedMilliseconds.ToString()} ms from '{tenant.Name}' with input '{currentContext.Input}'", TraceSeverity.Medium, EventSeverity.Information, TraceCategory.Lookup);
