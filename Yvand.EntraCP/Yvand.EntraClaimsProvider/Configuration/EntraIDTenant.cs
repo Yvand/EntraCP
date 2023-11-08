@@ -3,6 +3,8 @@ using Azure.Core.Pipeline;
 using Azure.Identity;
 using Microsoft.Graph;
 using Microsoft.Identity.Client;
+using Microsoft.Kiota.Http.HttpClientLibrary.Middleware;
+using Microsoft.Kiota.Http.HttpClientLibrary.Middleware.Options;
 using Microsoft.SharePoint.Administration;
 using System;
 using System.Collections.Generic;
@@ -189,22 +191,47 @@ namespace Yvand.EntraClaimsProvider.Configuration
                 return;
             }
 
+            int requestsTimeout = timeout;
+            if (requestsTimeout <= 0 || requestsTimeout == Int32.MaxValue)
+            {
+                requestsTimeout = ClaimsProviderConstants.DEFAULT_TIMEOUT;
+            }
+
             WebProxy webProxy = null;
             HttpClientTransport clientTransportProxy = null;
             if (!String.IsNullOrWhiteSpace(proxyAddress))
             {
                 webProxy = new WebProxy(new Uri(proxyAddress));
-                HttpClientHandler clientProxy = new HttpClientHandler { Proxy = webProxy };
-                clientTransportProxy = new HttpClientTransport(clientProxy);
+                clientTransportProxy = new HttpClientTransport(new HttpClientHandler { Proxy = webProxy });
             }
 
-            var handlers = GraphClientFactory.CreateDefaultHandlers();
+            var handlers = GraphClientFactory.CreateDefaultHandlers(new GraphClientOptions { GraphProductPrefix = "EntraCP" });
+            handlers.Add(new GraphRequestsLogging());
 #if DEBUG
-            //handlers.Add(new ChaosHandler());
+            handlers.Add(new ChaosHandler(new ChaosHandlerOption()
+            {
+                ChaosPercentLevel = 50
+            }));
+            var retryHandler = handlers.Where(h => h is RetryHandler).FirstOrDefault();
+            handlers.Remove(retryHandler);
 #endif
 
-            ClientSecretCredentialOptions options = new ClientSecretCredentialOptions();
-            options.AuthorityHost = this.AzureAuthority;
+            TokenCredentialOptions options = new TokenCredentialOptions
+            {
+                AuthorityHost = this.AzureAuthority,
+                Retry =
+                {
+                    NetworkTimeout = TimeSpan.FromMilliseconds(requestsTimeout),
+                    MaxRetries = 2,
+                },
+                Diagnostics =
+                {
+                    IsLoggingEnabled = true,
+                    IsDistributedTracingEnabled = false,
+                    IsAccountIdentifierLoggingEnabled = true,
+                    ApplicationId = "entracp",
+                },
+            };
             if (clientTransportProxy != null) { options.Transport = clientTransportProxy; }
 
             TokenCredential tokenCredential;
@@ -217,19 +244,10 @@ namespace Yvand.EntraClaimsProvider.Configuration
                 tokenCredential = new ClientCertificateCredential(this.Name, this.ClientId, this.ClientCertificateWithPrivateKey, options);
             }
 
-            var scopes = new[] { "https://graph.microsoft.com/.default" };
             HttpClient httpClient = GraphClientFactory.Create(handlers: handlers, proxy: webProxy);
-            if (timeout > 0 && timeout < Int32.MaxValue)
-            {
-                httpClient.Timeout = TimeSpan.FromMilliseconds(timeout);
-            }
-
-            // https://learn.microsoft.com/en-us/graph/sdks/customize-client?tabs=csharp
-            var authProvider = new Microsoft.Graph.Authentication.AzureIdentityAuthenticationProvider(
-                credential: tokenCredential,
-                scopes: new[] { "https://graph.microsoft.com/.default",
-            });
-            this.GraphService = new GraphServiceClient(httpClient, authProvider);
+            httpClient.Timeout = TimeSpan.FromMilliseconds(requestsTimeout);
+            var scopes = new[] { "https://graph.microsoft.com/.default" };
+            this.GraphService = new GraphServiceClient(httpClient, tokenCredential, scopes);
         }
 
         public async Task<bool> TestConnectionAsync(string proxyAddress)

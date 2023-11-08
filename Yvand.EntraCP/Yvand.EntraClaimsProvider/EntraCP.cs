@@ -1,4 +1,5 @@
-﻿using Microsoft.Graph.Models;
+﻿using Azure.Core.Diagnostics;
+using Microsoft.Graph.Models;
 using Microsoft.SharePoint.Administration;
 using Microsoft.SharePoint.Administration.Claims;
 using Microsoft.SharePoint.Utilities;
@@ -6,6 +7,7 @@ using Microsoft.SharePoint.WebControls;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Diagnostics.Tracing;
 using System.Linq;
 using System.Reflection;
 using System.Threading;
@@ -86,6 +88,7 @@ namespace Yvand.EntraClaimsProvider
         /// Gets the version of the settings, used to refresh the settings if the persisted object is updated
         /// </summary>
         public long SettingsVersion { get; private set; } = -1;
+        AzureEventSourceListener listener;
         #region "Runtime settings"
         //protected List<ClaimTypeConfig> RuntimeClaimTypesList { get; private set; }
         //protected IEnumerable<ClaimTypeConfig> RuntimeMetadataConfig { get; private set; }
@@ -116,6 +119,13 @@ namespace Yvand.EntraClaimsProvider
         public EntraCP(string displayName) : base(displayName)
         {
             this.EntityProvider = new EntraIDEntityProvider(Name);
+            this.listener = new AzureEventSourceListener((args, message) =>
+            {
+                if (args.EventSource.Name == "Azure-Identity")
+                {
+                    Logger.Log($"[{EntraCP.ClaimsProviderName}] {args.EventName} {message}", Utils.EventLogToTraceSeverity(args.Level), EventSeverity.Error, TraceCategory.AzureIdentity);
+                }
+            }, EventLevel.Informational);
         }
 
         public EntraCP(string displayName, IEntraCPSettings customSettings) : base(displayName)

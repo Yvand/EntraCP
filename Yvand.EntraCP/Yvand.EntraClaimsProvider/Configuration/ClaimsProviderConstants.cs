@@ -68,9 +68,9 @@ namespace Yvand.EntraClaimsProvider.Configuration
         }
 
 #if DEBUG
-        public static int DEFAULT_TIMEOUT => 10000;
+        public static int DEFAULT_TIMEOUT = 10 * 1000;
 #else
-        public static int DEFAULT_TIMEOUT => 4000;    // 4 secs
+        public static int DEFAULT_TIMEOUT = 40 * 1000;    // 40 secs
 #endif
     }
 

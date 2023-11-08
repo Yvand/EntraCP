@@ -13,6 +13,7 @@ using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
+using System.Net;
 using System.Reflection;
 using System.Threading.Tasks;
 using Yvand.EntraClaimsProvider.Configuration;
@@ -307,20 +308,9 @@ namespace Yvand.EntraClaimsProvider
             var tenantQueryTasks = azureTenants.Select(async tenant =>
             {
                 Stopwatch timer = new Stopwatch();
-                List<DirectoryObject> tenantResults = null;
-                try
-                {
-                    timer.Start();
-                    tenantResults = await QueryEntraIDTenantAsync(currentContext, tenant).ConfigureAwait(false);
-                }
-                catch (Exception ex)
-                {
-                    Logger.LogException(ClaimsProviderName, $"in QueryEntraIDTenantsAsync while querying tenant '{tenant.Name}'", TraceCategory.Lookup, ex);
-                }
-                finally
-                {
-                    timer.Stop();
-                }
+                timer.Start();
+                List<DirectoryObject> tenantResults = await QueryEntraIDTenantAsync(currentContext, tenant).ConfigureAwait(false);
+                timer.Stop();
                 if (tenantResults != null)
                 {
                     Logger.Log($"[{ClaimsProviderName}] Got {tenantResults.Count} users/groups in {timer.ElapsedMilliseconds.ToString()} ms from '{tenant.Name}' with input '{currentContext.Input}'", TraceSeverity.Medium, EventSeverity.Information, TraceCategory.Lookup);
@@ -337,7 +327,11 @@ namespace Yvand.EntraClaimsProvider
             List<DirectoryObject>[] tenantsResults = await Task.WhenAll(tenantQueryTasks).ConfigureAwait(false);
             for (int i = 0; i < tenantsResults.Length; i++)
             {
-                allResults.AddRange(tenantsResults[i]);
+                // If request to Graph failed, tenantsResults[i] is null and that would cause a ThrowArgumentNullException in List<T>.InsertRange()
+                if (tenantsResults[i] != null && tenantsResults[i].Count > 0)
+                {
+                    allResults.AddRange(tenantsResults[i]);
+                }
             }
             return allResults;
         }
@@ -440,9 +434,25 @@ namespace Yvand.EntraClaimsProvider
                         groupsRequestId = await batchRequestContent.AddBatchRequestStepAsync(groupRequest).ConfigureAwait(false);
                     }
 
-                    BatchResponseContentCollection returnedResponse = await tenant.GraphService.Batch.PostAsync(batchRequestContent).ConfigureAwait(false);
-                    UserCollectionResponse userCollectionResult = await returnedResponse.GetResponseByIdAsync<UserCollectionResponse>(usersRequestId).ConfigureAwait(false);
-                    GroupCollectionResponse groupCollectionResult = await returnedResponse.GetResponseByIdAsync<GroupCollectionResponse>(groupsRequestId).ConfigureAwait(false);
+                    // Run the batch request and get the HTTP status code of each request inside the batch
+                    BatchResponseContentCollection batchResponse = await tenant.GraphService.Batch.PostAsync(batchRequestContent).ConfigureAwait(false);
+                    Dictionary<string, HttpStatusCode> requestsStatusInBatchResponse = await batchResponse.GetResponsesStatusCodesAsync().ConfigureAwait(false);
+
+                    // Check if the users' request in the batch request was successful. If so, get the users that were returned by Graph
+                    HttpStatusCode usersRequestStatus;
+                    UserCollectionResponse userCollectionResult = null;
+                    if (requestsStatusInBatchResponse.TryGetValue(usersRequestId, out usersRequestStatus) && usersRequestStatus == HttpStatusCode.OK)
+                    {
+                        userCollectionResult = await batchResponse.GetResponseByIdAsync<UserCollectionResponse>(usersRequestId).ConfigureAwait(false);
+                    }
+
+                    // Check if the groups' request in the batch request was successful. If so, get the users that were returned by Graph
+                    HttpStatusCode groupRequestStatus;
+                    GroupCollectionResponse groupCollectionResult = null;
+                    if (requestsStatusInBatchResponse.TryGetValue(usersRequestId, out groupRequestStatus) && groupRequestStatus == HttpStatusCode.OK)
+                    {
+                        groupCollectionResult = await batchResponse.GetResponseByIdAsync<GroupCollectionResponse>(groupsRequestId).ConfigureAwait(false);
+                    }
 
                     Logger.Log($"[{ClaimsProviderName}] Query to tenant '{tenant.Name}' returned {(userCollectionResult?.Value == null ? 0 : userCollectionResult.Value.Count)} user(s) with filter \"{tenant.UserFilter}\"", TraceSeverity.VerboseEx, EventSeverity.Information, TraceCategory.Lookup);
                     // Process users result
@@ -544,6 +554,10 @@ namespace Yvand.EntraClaimsProvider
             {
                 // Task.WaitAll throws an AggregateException, which contains all exceptions thrown by tasks it waited on
                 Logger.LogException(ClaimsProviderName, $"while querying Microsoft Entra ID tenant '{tenant.Name}'", TraceCategory.Lookup, ex);
+            }
+            catch (Exception ex)
+            {
+                Logger.LogException(ClaimsProviderName, $"in QueryEntraIDTenantAsync while querying tenant '{tenant.Name}'", TraceCategory.Lookup, ex);
             }
             finally
             {
