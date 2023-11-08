@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+* Improveed page TroubleshootEntraCP.aspx
+* Added a mechanism to use custom settings instead of settings from the persisted objects
 * Fixed issues causing logging to not be actually written in SharePoint logs
 * Added logging categories "Azure Identity" and "Graph Requests"
 * Improved the readability of the errors recorded in the log
