@@ -3,6 +3,7 @@
 ## Unreleased
 
 * Improve page TroubleshootEntraCP.aspx
+* Add a mechanism to use custom settings instead of settings from the persisted objects
 
 ## EntraCP v22.0.20230927.29 enhancements & bug-fixes - Published in September 27, 2023
 

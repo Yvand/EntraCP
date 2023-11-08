@@ -71,12 +71,20 @@ namespace Yvand.EntraClaimsProvider
         private ReaderWriterLockSlim Lock_LocalConfigurationRefresh = new ReaderWriterLockSlim();
         protected virtual string PickerEntityDisplayText => "({0}) {1}";
         protected virtual string PickerEntityOnMouseOver => "{0}={1}";
+
+        /// <summary>
+        /// Gets the settings that contain the configuration for EntraCP
+        /// </summary>
         public IEntraCPSettings Settings { get; protected set; }
         
         /// <summary>
-        /// Sets custom settings that will completely override the settings from the persisted object
+        /// Gets custom settings that will be used instead of the settings from the persisted object
         /// </summary>
-        public IEntraCPSettings CustomSettings { get; set; }
+        private IEntraCPSettings CustomSettings { get; }
+
+        /// <summary>
+        /// Gets the version of the settings, used to refresh the settings if the persisted object is updated
+        /// </summary>
         public long SettingsVersion { get; private set; } = -1;
         #region "Runtime settings"
         //protected List<ClaimTypeConfig> RuntimeClaimTypesList { get; private set; }
@@ -108,6 +116,12 @@ namespace Yvand.EntraClaimsProvider
         public EntraCP(string displayName) : base(displayName)
         {
             this.EntityProvider = new EntraIDEntityProvider(Name);
+        }
+
+        public EntraCP(string displayName, IEntraCPSettings customSettings) : base(displayName)
+        {
+            this.EntityProvider = new EntraIDEntityProvider(Name);
+            this.CustomSettings = customSettings;
         }
 
         public static EntraIDProviderConfiguration GetConfiguration(bool initializeLocalConfiguration = false)

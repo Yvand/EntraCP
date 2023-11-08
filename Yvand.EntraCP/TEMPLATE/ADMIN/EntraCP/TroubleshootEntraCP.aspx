@@ -43,8 +43,7 @@
             EntraCPSettings settings = EntraCPSettings.GetDefaultSettings(claimsProviderName);
             settings.EntraIDTenants.Add(tenant);
             settings.ProxyAddress = proxy;
-            EntraCP claimsProvider = new EntraCP(claimsProviderName);
-            claimsProvider.CustomSettings = settings;
+            EntraCP claimsProvider = new EntraCP(claimsProviderName, settings);
             TestClaimsProviderSearch(claimsProvider, context, input);
             TestClaimsProviderAugmentation(claimsProvider, context, input);
         }
