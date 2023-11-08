@@ -468,7 +468,7 @@ namespace Yvand.EntraClaimsProvider
                         }
                     }
 
-                    Logger.Log($"[{ClaimsProviderName}] Query to tenant '{tenant.Name}' returned {(userCollectionResult?.Value == null ? 0 : userCollectionResult.Value.Count)} user(s) with filter \"{tenant.UserFilter}\"", TraceSeverity.VerboseEx, EventSeverity.Information, TraceCategory.Lookup);
+                    Logger.Log($"[{ClaimsProviderName}] Query to tenant '{tenant.Name}' returned {(userCollectionResult?.Value == null ? 0 : userCollectionResult.Value.Count)} user(s) with filter \"{tenant.UserFilter}\" and {(groupCollectionResult?.Value == null ? 0 : groupCollectionResult.Value.Count)} group(s) with filter \"{tenant.GroupFilter}\"", TraceSeverity.VerboseEx, EventSeverity.Information, TraceCategory.Lookup);
                     // Process users result
                     if (userCollectionResult?.Value != null)
                     {
