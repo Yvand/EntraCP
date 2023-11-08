@@ -129,7 +129,8 @@ namespace Yvand.EntraClaimsProvider.Configuration
         extensionAttribute12,
         extensionAttribute13,
         extensionAttribute14,
-        extensionAttribute15
+        extensionAttribute15,
+        BusinessPhones,
     }
 
     public enum DirectoryObjectType
