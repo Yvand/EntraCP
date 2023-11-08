@@ -76,6 +76,7 @@
     <Compile Include="Yvand.EntraClaimsProvider\Administration\EntraCPUserControl.cs">
       <SubType>ASPXCodeBehind</SubType>
     </Compile>
+    <Compile Include="Yvand.EntraClaimsProvider\GraphRequestsLogging.cs" />
     <Compile Include="Yvand.EntraClaimsProvider\Logger.cs" />
     <Compile Include="Yvand.EntraClaimsProvider\Configuration\EntraIDTenant.cs" />
     <Compile Include="Yvand.EntraClaimsProvider\Configuration\ClaimsProviderConstants.cs" />
