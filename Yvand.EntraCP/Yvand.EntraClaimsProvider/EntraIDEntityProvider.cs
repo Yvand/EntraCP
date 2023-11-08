@@ -441,17 +441,31 @@ namespace Yvand.EntraClaimsProvider
                     // Check if the users' request in the batch request was successful. If so, get the users that were returned by Graph
                     HttpStatusCode usersRequestStatus;
                     UserCollectionResponse userCollectionResult = null;
-                    if (requestsStatusInBatchResponse.TryGetValue(usersRequestId, out usersRequestStatus) && usersRequestStatus == HttpStatusCode.OK)
+                    if (requestsStatusInBatchResponse.TryGetValue(usersRequestId, out usersRequestStatus))
                     {
-                        userCollectionResult = await batchResponse.GetResponseByIdAsync<UserCollectionResponse>(usersRequestId).ConfigureAwait(false);
+                        if (usersRequestStatus == HttpStatusCode.OK)
+                        {
+                            userCollectionResult = await batchResponse.GetResponseByIdAsync<UserCollectionResponse>(usersRequestId).ConfigureAwait(false);
+                        }
+                        else
+                        {
+                            Logger.Log($"[{ClaimsProviderName}] Query to tenant '{tenant.Name}' returned unexpected status '{usersRequestStatus}' for users request with filter \"{tenant.UserFilter}\"", TraceSeverity.Unexpected, EventSeverity.Error, TraceCategory.Lookup);
+                        }
                     }
 
                     // Check if the groups' request in the batch request was successful. If so, get the users that were returned by Graph
                     HttpStatusCode groupRequestStatus;
                     GroupCollectionResponse groupCollectionResult = null;
-                    if (requestsStatusInBatchResponse.TryGetValue(usersRequestId, out groupRequestStatus) && groupRequestStatus == HttpStatusCode.OK)
+                    if (requestsStatusInBatchResponse.TryGetValue(groupsRequestId, out groupRequestStatus))
                     {
-                        groupCollectionResult = await batchResponse.GetResponseByIdAsync<GroupCollectionResponse>(groupsRequestId).ConfigureAwait(false);
+                        if (groupRequestStatus == HttpStatusCode.OK)
+                        {
+                            groupCollectionResult = await batchResponse.GetResponseByIdAsync<GroupCollectionResponse>(groupsRequestId).ConfigureAwait(false);
+                        }
+                        else
+                        {
+                            Logger.Log($"[{ClaimsProviderName}] Query to tenant '{tenant.Name}' returned unexpected status '{groupRequestStatus}' for groups request with filter \"{tenant.GroupFilter}\"", TraceSeverity.Unexpected, EventSeverity.Error, TraceCategory.Lookup);
+                        }
                     }
 
                     Logger.Log($"[{ClaimsProviderName}] Query to tenant '{tenant.Name}' returned {(userCollectionResult?.Value == null ? 0 : userCollectionResult.Value.Count)} user(s) with filter \"{tenant.UserFilter}\"", TraceSeverity.VerboseEx, EventSeverity.Information, TraceCategory.Lookup);
