@@ -59,10 +59,11 @@
                 {
                     Stopwatch timer = new Stopwatch();
                     timer.Start();
+                    // One difference VS EntraCP is that WebClient follows HTTP redirects, which, from URLs above, will take it to https://www.office.com/login and https://developer.microsoft.com/graph.
                     client.DownloadData(url);
                     //client.DownloadString(url);
                     timer.Stop();
-                    LblResult.Text += String.Format("<br/>Test connection to '{0}' through proxy '{1}' took {2} ms.", url, proxyAddress, timer.ElapsedMilliseconds);
+                    LblResult.Text += String.Format("<br/>Test connection to '{0}' through proxy '{1}': OK, took {2} ms.", url, proxyAddress, timer.ElapsedMilliseconds);
                 }
                 catch (Exception ex)
                 {
@@ -120,7 +121,7 @@
                     }
                     else
                     {
-                        LblResult.Text += String.Format("<br/>Test connection to tenant '{0}' failed for an unknown reason: {1}", tenant.Name, ex.InnerException.Message);
+                        LblResult.Text += String.Format("<br/>Test connection to tenant '{0}' failed for an unknown reason: {1}", tenant.Name, ex.InnerException.GetType().Name + " - " + ex.InnerException.Message);
                     }
                 }
             }
