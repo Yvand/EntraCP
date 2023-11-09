@@ -55,10 +55,10 @@
             string[] urls = new string[] { "https://login.microsoftonline.com", "https://graph.microsoft.com" };
             foreach (string url in urls)
             {
+                Stopwatch timer = new Stopwatch();
+                timer.Start();
                 try
                 {
-                    Stopwatch timer = new Stopwatch();
-                    timer.Start();
                     // One difference VS EntraCP is that WebClient follows HTTP redirects, which, from URLs above, will take it to https://www.office.com/login and https://developer.microsoft.com/graph.
                     client.DownloadData(url);
                     //client.DownloadString(url);
@@ -67,7 +67,8 @@
                 }
                 catch (Exception ex)
                 {
-                    LblResult.Text += String.Format("<br/>Test connection to '{0}' through proxy '{1}' failed: {2}", url, proxyAddress, ex.GetType().Name + " - " + ex.Message);
+                    timer.Stop();
+                    LblResult.Text += String.Format("<br/>Test connection to '{0}' through proxy '{1}' failed after {2} ms: {3}", url, proxyAddress, timer.ElapsedMilliseconds, ex.GetType().Name + " - " + ex.Message);
                 }
             }
             return true;
