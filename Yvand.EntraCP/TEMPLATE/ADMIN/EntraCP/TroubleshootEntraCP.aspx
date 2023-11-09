@@ -5,6 +5,7 @@
 <%@ Import Namespace="System.IO" %>
 <%@ Import Namespace="System.Net" %>
 <%@ Import Namespace="System.Reflection" %>
+<%@ Import Namespace="System.Diagnostics" %>
 <%@ Import Namespace="System.Threading.Tasks" %>
 <%@ Import Namespace="Yvand.EntraClaimsProvider" %>
 <%@ Import Namespace="Yvand.EntraClaimsProvider.Configuration" %>
@@ -27,14 +28,10 @@
             string input = "yvand";
             string context = SPContext.Current.Web.Url;
 
-            EntraIDTenant tenant = new EntraIDTenant
-            {
-                Name = tenantName,
-                ClientId = tenantClientId,
-                ClientSecret = tenantClientSecret,
-            };
-            bool success = TestTenantConnectionAndAssemblyBindings(tenant, proxy);
-            if (success == false)
+            TestConnectionToEntraId(proxy);
+
+            EntraIDTenant tenant = TestTenantConnectionAndAssemblyBindings(tenantName, tenantClientId, tenantClientSecret, proxy);
+            if (tenant == null)
             {
                 return;
             }
@@ -48,10 +45,47 @@
             TestClaimsProviderAugmentation(claimsProvider, context, input);
         }
 
-        public bool TestTenantConnectionAndAssemblyBindings(EntraIDTenant tenant, string proxy)
+        public bool TestConnectionToEntraId(string proxyAddress)
         {
+            WebProxy proxy = String.IsNullOrWhiteSpace(proxyAddress) ? new WebProxy() : new WebProxy(proxyAddress, true);
+            WebClient client = new WebClient
+            {
+                Proxy = proxy,
+            };
+            string[] urls = new string[] { "https://login.microsoftonline.com", "https://graph.microsoft.com" };
+            foreach (string url in urls)
+            {
+                try
+                {
+                    Stopwatch timer = new Stopwatch();
+                    timer.Start();
+                    client.DownloadData(url);
+                    //client.DownloadString(url);
+                    timer.Stop();
+                    LblResult.Text += String.Format("<br/>Test connection to '{0}' through proxy '{1}' took {2} ms.", url, proxyAddress, timer.ElapsedMilliseconds);
+                }
+                catch (Exception ex)
+                {
+                    LblResult.Text += String.Format("<br/>Test connection to '{0}' through proxy '{1}' failed: {2}", url, proxyAddress, ex.GetType().Name + " - " + ex.Message);
+                }
+            }
+            return true;
+        }
+
+        public EntraIDTenant TestTenantConnectionAndAssemblyBindings(string tenantName, string tenantClientId, string tenantClientSecret, string proxy)
+        {
+            EntraIDTenant tenant = null;
+            bool success = false;
             try
             {
+                // Calling constructor of EntraIDTenant may throw FileNotFoundException on Azure.Identity
+                tenant = new EntraIDTenant
+                {
+                    Name = tenantName,
+                    ClientId = tenantClientId,
+                    ClientSecret = tenantClientSecret,
+                };
+
                 // EntraIDTenant.InitializeAuthentication() will throw an exception if .NET cannot load one of the following assemblies:
                 // Azure.Core.dll, System.Diagnostics.DiagnosticSource.dll, Microsoft.IdentityModel.Abstractions.dll, System.Memory.dll, System.Runtime.CompilerServices.Unsafe.dll
                 tenant.InitializeAuthentication(ClaimsProviderConstants.DEFAULT_TIMEOUT, proxy);
@@ -61,21 +95,20 @@
                 // Azure.Identity.AuthenticationFailedException if invalid credentials 
                 Task<bool> taskTestConnection = Task.Run(async () => await tenant.TestConnectionAsync(proxy));
                 taskTestConnection.Wait();
-                bool success = taskTestConnection.Result;
+                success = taskTestConnection.Result;
                 LblResult.Text += String.Format("<br/>Test loading of dependencies: OK");
                 LblResult.Text += String.Format("<br/>Test connection to tenant '{0}': {1}", tenant.Name, success ? "OK" : "Failed");
-                return true;
             }
-            //catch (FileNotFoundException ex)
-            //{
-            //    LblResult.Text += String.Format("Test loading of dependencies: Failed. Check your assembly bindings in the machine.config file. Exception: '[0]'", ex.Message);
-            //}
+            catch (FileNotFoundException ex)
+            {
+                LblResult.Text += String.Format("<br/>Test loading of dependencies: Failed. Check your assembly bindings in the machine.config file. Exception: '{0}'", ex.Message);
+            }
             // An exception in an async task is always wrapped and returned in an AggregateException
             catch (AggregateException ex)
             {
                 if (ex.InnerException is FileNotFoundException)
                 {
-                    LblResult.Text += String.Format("Test loading of dependencies: Failed. Check your assembly bindings in the machine.config file. Exception: '[0]'", ex.InnerException.Message);
+                    LblResult.Text += String.Format("<br/>Test loading of dependencies: Failed. Check your assembly bindings in the machine.config file. Exception: '{0}'", ex.InnerException.Message);
                 }
                 else
                 {
@@ -93,9 +126,9 @@
             }
             catch (Exception ex)
             {
-                LblResult.Text += String.Format("Unexpected error {0}: {1}", ex.GetType().Name, ex.Message);
+                LblResult.Text += String.Format("<br/>Unexpected error {0}: {1}", ex.GetType().Name, ex.Message);
             }
-            return false;
+            return success ? tenant : null;
         }
 
         public bool TestClaimsProviderSearch(EntraCP claimsProvider, string context, string input)

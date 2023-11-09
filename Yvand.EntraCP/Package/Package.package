@@ -21,20 +21,23 @@
     <customAssembly location="Microsoft.Kiota.Serialization.Json.dll" deploymentTarget="GlobalAssemblyCache" sourcePath="bin\Microsoft.Kiota.Serialization.Json.dll" />
     <customAssembly location="Microsoft.Kiota.Serialization.Multipart.dll" deploymentTarget="GlobalAssemblyCache" sourcePath="bin\Microsoft.Kiota.Serialization.Multipart.dll" />
     <customAssembly location="Microsoft.Kiota.Serialization.Text.dll" deploymentTarget="GlobalAssemblyCache" sourcePath="bin\Microsoft.Kiota.Serialization.Text.dll" />
-    <customAssembly location="System.Buffers.dll" deploymentTarget="GlobalAssemblyCache" sourcePath="bin\System.Buffers.dll" />
+	<customAssembly location="Std.UriTemplate.dll" deploymentTarget="GlobalAssemblyCache" sourcePath="bin\Std.UriTemplate.dll" />	
+    <customAssembly location="System.Buffers.dll" deploymentTarget="GlobalAssemblyCache" sourcePath="bin\System.Buffers.dll" />	
     <customAssembly location="System.Diagnostics.DiagnosticSource.dll" deploymentTarget="GlobalAssemblyCache" sourcePath="bin\System.Diagnostics.DiagnosticSource.dll" />
     <customAssembly location="System.IdentityModel.Tokens.Jwt.dll" deploymentTarget="GlobalAssemblyCache" sourcePath="bin\System.IdentityModel.Tokens.Jwt.dll" />
-    <customAssembly location="System.Memory.Data.dll" deploymentTarget="GlobalAssemblyCache" sourcePath="bin\System.Memory.Data.dll" />
+    <customAssembly location="System.IO.FileSystem.AccessControl.dll" deploymentTarget="GlobalAssemblyCache" sourcePath="bin\System.IO.FileSystem.AccessControl.dll" />
+	<customAssembly location="System.Memory.Data.dll" deploymentTarget="GlobalAssemblyCache" sourcePath="bin\System.Memory.Data.dll" />
     <customAssembly location="System.Memory.dll" deploymentTarget="GlobalAssemblyCache" sourcePath="bin\System.Memory.dll" />
     <customAssembly location="System.Net.Http.WinHttpHandler.dll" deploymentTarget="GlobalAssemblyCache" sourcePath="bin\System.Net.Http.WinHttpHandler.dll" />
     <customAssembly location="System.Numerics.Vectors.dll" deploymentTarget="GlobalAssemblyCache" sourcePath="bin\System.Numerics.Vectors.dll" />
     <customAssembly location="System.Runtime.CompilerServices.Unsafe.dll" deploymentTarget="GlobalAssemblyCache" sourcePath="bin\System.Runtime.CompilerServices.Unsafe.dll" />
+	<customAssembly location="System.Security.AccessControl.dll" deploymentTarget="GlobalAssemblyCache" sourcePath="bin\System.Security.AccessControl.dll" />
     <customAssembly location="System.Security.Cryptography.ProtectedData.dll" deploymentTarget="GlobalAssemblyCache" sourcePath="bin\System.Security.Cryptography.ProtectedData.dll" />
+	<customAssembly location="System.Security.Principal.Windows.dll" deploymentTarget="GlobalAssemblyCache" sourcePath="bin\System.Security.Principal.Windows.dll" />
     <customAssembly location="System.Text.Encodings.Web.dll" deploymentTarget="GlobalAssemblyCache" sourcePath="bin\System.Text.Encodings.Web.dll" />
     <customAssembly location="System.Text.Json.dll" deploymentTarget="GlobalAssemblyCache" sourcePath="bin\System.Text.Json.dll" />
     <customAssembly location="System.Threading.Tasks.Extensions.dll" deploymentTarget="GlobalAssemblyCache" sourcePath="bin\System.Threading.Tasks.Extensions.dll" />
     <customAssembly location="System.ValueTuple.dll" deploymentTarget="GlobalAssemblyCache" sourcePath="bin\System.ValueTuple.dll" />
-    <customAssembly location="Tavis.UriTemplates.dll" deploymentTarget="GlobalAssemblyCache" sourcePath="bin\Tavis.UriTemplates.dll" />
   </assemblies>
   <features>
     <featureReference itemId="70b104e2-19df-4cb1-9802-c98eaf14d84e" />

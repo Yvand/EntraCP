@@ -2,12 +2,13 @@
 
 ## Unreleased
 
-* Improveed page TroubleshootEntraCP.aspx
-* Added a mechanism to use custom settings instead of settings from the persisted objects
-* Fixed issues causing logging to not be actually written in SharePoint logs
-* Added logging categories "Azure Identity" and "Graph Requests"
-* Improved the readability of the errors recorded in the log
-* Better verify the responses from Graph, to avoid generating more exceptions if an error already happened
+* Improve page TroubleshootEntraCP.aspx
+* Add a mechanism to use custom settings instead of settings from the persisted objects
+* Fix issues causing logging to not be actually written in SharePoint logs
+* Add logging categories "Azure Identity" and "Graph Requests"
+* Improve the readability of the errors recorded in the log
+* Better verify the responses from Graph, to avoid causing additional exceptions if an error already happened
+* Bump dependencies
 
 ## EntraCP v22.0.20230927.29 enhancements & bug-fixes - Published in September 27, 2023
 
