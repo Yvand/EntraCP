@@ -15,6 +15,7 @@ using System.Diagnostics;
 using System.Linq;
 using System.Net;
 using System.Reflection;
+using System.Threading;
 using System.Threading.Tasks;
 using Yvand.EntraClaimsProvider.Configuration;
 
@@ -102,6 +103,10 @@ namespace Yvand.EntraClaimsProvider
                             await memberGroupsPageIterator.IterateAsync().ConfigureAwait(false);
                         }
                     }
+                }
+                catch (TaskCanceledException ex)
+                {
+                    Logger.LogException(ClaimsProviderName, $"while getting groups for user '{currentContext.IncomingEntity.Value}' from tenant '{tenant.Name}': The task likely exceeded the timeout of {currentContext.Settings.Timeout} ms and was canceled", TraceCategory.Augmentation, ex);
                 }
                 catch (Exception ex)
                 {
@@ -550,7 +555,7 @@ namespace Yvand.EntraClaimsProvider
             }
             catch (OperationCanceledException)
             {
-                Logger.Log($"[{ClaimsProviderName}] Queries on Microsoft Entra ID tenant '{tenant.Name}' exceeded timeout of {timeout} ms and were cancelled.", TraceSeverity.Unexpected, EventSeverity.Error, TraceCategory.Lookup);
+                Logger.Log($"[{ClaimsProviderName}] Operation on Entra ID for tenant '{tenant.Name}' exceeded the timeout of {timeout} ms and was cancelled.", TraceSeverity.Unexpected, EventSeverity.Error, TraceCategory.Lookup);
             }
             catch (AuthenticationFailedException ex)
             {
