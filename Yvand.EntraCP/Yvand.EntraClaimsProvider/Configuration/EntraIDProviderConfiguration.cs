@@ -42,7 +42,7 @@ namespace Yvand.EntraClaimsProvider.Configuration
         string EntityDisplayTextPrefix { get; }
 
         /// <summary>
-        /// Gets or sets the timeout before giving up the query to Microsoft Entra ID.
+        /// Gets or sets the timeout in milliseconds before an operation to Microsoft Entra ID is canceled.
         /// </summary>
         int Timeout { get; }
 
@@ -222,9 +222,6 @@ namespace Yvand.EntraClaimsProvider.Configuration
         {
             get
             {
-#if DEBUG
-                return _Timeout * 100;
-#endif
                 return _Timeout;
             }
             private set => _Timeout = value;
