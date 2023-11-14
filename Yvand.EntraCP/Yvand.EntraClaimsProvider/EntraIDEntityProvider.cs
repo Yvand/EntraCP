@@ -71,10 +71,10 @@ namespace Yvand.EntraClaimsProvider
                         // But it returns only the group IDs so it can be used only if groupClaimTypeConfig.DirectoryObjectProperty == AzureADObjectProperty.Id
                         // For Guest users, it must be the id: POST to /v1.0/users/18ff6ae9-dd01-4008-a786-aabf71f1492a/microsoft.graph.getMemberGroups
                         GetMemberGroupsPostRequestBody getGroupsOptions = new GetMemberGroupsPostRequestBody { SecurityEnabledOnly = currentContext.Settings.FilterSecurityEnabledGroupsOnly };
-                        GetMemberGroupsResponse memberGroupsResponse = await Task.Run(() => tenant.GraphService.Users[user.Id].GetMemberGroups.PostAsync(getGroupsOptions)).ConfigureAwait(false);
+                        GetMemberGroupsPostResponse memberGroupsResponse = await Task.Run(() => tenant.GraphService.Users[user.Id].GetMemberGroups.PostAsGetMemberGroupsPostResponseAsync(getGroupsOptions)).ConfigureAwait(false);
                         if (memberGroupsResponse?.Value != null)
                         {
-                            PageIterator<string, GetMemberGroupsResponse> memberGroupsPageIterator = PageIterator<string, GetMemberGroupsResponse>.CreatePageIterator(
+                            PageIterator<string, GetMemberGroupsPostResponse> memberGroupsPageIterator = PageIterator<string, GetMemberGroupsPostResponse>.CreatePageIterator(
                             tenant.GraphService,
                             memberGroupsResponse,
                             (groupId) =>
