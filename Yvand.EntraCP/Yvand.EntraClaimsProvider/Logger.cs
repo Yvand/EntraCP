@@ -62,7 +62,8 @@ namespace Yvand.EntraClaimsProvider
     {
         public readonly static string DiagnosticsAreaName = EntraCP.ClaimsProviderName;
 
-        public override string Name => $"{DiagnosticsAreaName}.Logging";
+        // This property causes a TypeLoadException in SharePoint 2016 (not tested with 2019) because: Cannot override inherited member 'SPPersistedObject.Name' because it is not marked virtual, abstract, or override
+        //public override string Name => $"{DiagnosticsAreaName}.Logging";
 
         public static void Log(string message, TraceSeverity traceSeverity, EventSeverity eventSeverity, TraceCategory category)
         {
