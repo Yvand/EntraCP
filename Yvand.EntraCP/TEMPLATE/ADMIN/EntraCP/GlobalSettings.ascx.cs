@@ -374,7 +374,7 @@ namespace Yvand.EntraClaimsProvider.Administration
                 byte[] buffer = new byte[inputFile.PostedFile.ContentLength];
                 inputFile.PostedFile.InputStream.Read(buffer, 0, buffer.Length);
                 // The certificate must be exportable so it can be saved in the persisted object
-                cert = EntraIDTenant.ImportPfxCertificateBlob(buffer, certificatePassword, X509KeyStorageFlags.Exportable);
+                cert = EntraIDTenant.ImportPfxCertificate(buffer, certificatePassword);
                 if (cert == null)
                 {
                     this.LabelErrorTestLdapConnection.Text = $"Certificate does not contain the private key.";

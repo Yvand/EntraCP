@@ -8,10 +8,12 @@ using Microsoft.Kiota.Http.HttpClientLibrary.Middleware.Options;
 using Microsoft.SharePoint.Administration;
 using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Linq;
 using System.Net;
 using System.Net.Http;
 using System.Reflection;
+using System.Runtime.ConstrainedExecution;
 using System.Security.Cryptography;
 using System.Security.Cryptography.X509Certificates;
 using System.Threading.Tasks;
@@ -160,7 +162,7 @@ namespace Yvand.EntraClaimsProvider.Configuration
                 {
                     // Sets the local X509Certificate2 object from the persisted raw data stored in the configuration database
                     // EphemeralKeySet: Keep the private key in-memory, it won't be written to disk - https://www.pkisolutions.com/handling-x509keystorageflags-in-applications/
-                    _ClientCertificateWithPrivateKey = ImportPfxCertificateBlob(_ClientCertificateWithPrivateKeyRawData, ClaimsProviderConstants.ClientCertificatePrivateKeyPassword, X509KeyStorageFlags.EphemeralKeySet);
+                    _ClientCertificateWithPrivateKey = ImportPfxCertificate(_ClientCertificateWithPrivateKeyRawData, ClaimsProviderConstants.ClientCertificatePrivateKeyPassword);
                 }
                 catch (CryptographicException ex)
                 {
@@ -331,16 +333,24 @@ namespace Yvand.EntraClaimsProvider.Configuration
             this.ClientCertificateWithPrivateKey = clientCertificateWithPrivateKey;
         }
 
-        /// <summary>
-        /// Imports the input blob into a pfx X509Certificate2 object with its private key
-        /// </summary>
-        /// <param name="blob"></param>
-        /// <param name="certificatePassword"></param>
-        /// <param name="keyStorageFlags"></param>
-        /// <returns></returns>
-        public static X509Certificate2 ImportPfxCertificateBlob(byte[] blob, string certificatePassword, X509KeyStorageFlags keyStorageFlags)
+        public void SetCredentials(string clientId, string clientCertificatePfxFilePath, string clientCertificatePfxPassword)
         {
-            if (X509Certificate2.GetCertContentType(blob) != X509ContentType.Pfx)
+            this.ClientId = clientId;
+            this.ClientSecret = String.Empty;
+            X509Certificate2 cert = EntraIDTenant.ImportPfxCertificate(clientCertificatePfxFilePath, clientCertificatePfxPassword);
+            this.ClientCertificateWithPrivateKey = cert;
+        }
+
+        /// <summary>
+        /// Imports the raw certificate into an exportable X509Certificate2 object with its private key
+        /// </summary>
+        /// <param name="rawData"></param>
+        /// <param name="certificatePassword"></param>
+        /// <returns></returns>
+        public static X509Certificate2 ImportPfxCertificate(byte[] rawData, string certificatePassword)
+        {
+            X509KeyStorageFlags certificateFlags = X509KeyStorageFlags.Exportable | X509KeyStorageFlags.EphemeralKeySet;
+            if (X509Certificate2.GetCertContentType(rawData) != X509ContentType.Pfx)
             {
                 return null;
             }
@@ -348,11 +358,30 @@ namespace Yvand.EntraClaimsProvider.Configuration
             if (String.IsNullOrWhiteSpace(certificatePassword))
             {
                 // If passwordless, import the private key as documented in https://support.microsoft.com/en-us/topic/kb5025823-change-in-how-net-applications-import-x-509-certificates-bf81c936-af2b-446e-9f7a-016f4713b46b
-                return new X509Certificate2(blob, (string)null, keyStorageFlags);
+                return new X509Certificate2(rawData, (string)null, certificateFlags);
             }
             else
             {
-                return new X509Certificate2(blob, certificatePassword, keyStorageFlags);
+                return new X509Certificate2(rawData, certificatePassword, certificateFlags);
+            }
+        }
+
+        public static X509Certificate2 ImportPfxCertificate(string clientCertificatePfxFilePath, string certificatePassword)
+        {
+            X509KeyStorageFlags certificateFlags = X509KeyStorageFlags.Exportable | X509KeyStorageFlags.EphemeralKeySet;
+            if (File.Exists(clientCertificatePfxFilePath) == false)
+            {
+                return null;
+            }
+
+            if (String.IsNullOrWhiteSpace(certificatePassword))
+            {
+                // If passwordless, import the private key as documented in https://support.microsoft.com/en-us/topic/kb5025823-change-in-how-net-applications-import-x-509-certificates-bf81c936-af2b-446e-9f7a-016f4713b46b
+                return new X509Certificate2(clientCertificatePfxFilePath, (string)null, certificateFlags);
+            }
+            else
+            {
+                return new X509Certificate2(clientCertificatePfxFilePath, certificatePassword, certificateFlags);
             }
         }
     }
