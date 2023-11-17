@@ -81,13 +81,9 @@
             try
             {
                 // Calling constructor of EntraIDTenant may throw FileNotFoundException on Azure.Identity
-                tenant = new EntraIDTenant
-                {
-                    Name = tenantName,
-                    ClientId = tenantClientId,
-                    ClientSecret = tenantClientSecret,
-                };
-
+                tenant = new EntraIDTenant(tenantName);
+                tenant.SetCredentials(tenantClientId, tenantClientSecret);
+                
                 // EntraIDTenant.InitializeAuthentication() will throw an exception if .NET cannot load one of the following assemblies:
                 // Azure.Core.dll, System.Diagnostics.DiagnosticSource.dll, Microsoft.IdentityModel.Abstractions.dll, System.Memory.dll, System.Runtime.CompilerServices.Unsafe.dll
                 tenant.InitializeAuthentication(ClaimsProviderConstants.DEFAULT_TIMEOUT, proxy);
