@@ -343,6 +343,55 @@ namespace Yvand.EntraClaimsProvider.Configuration
         }
 
         /// <summary>
+        /// Updates tenant credentials with a new client secret, and optionnally a new client id
+        /// </summary>
+        /// <param name="tenantName">Name of the tenant to update</param>
+        /// <param name="newClientSecret">New client secret</param>
+        /// <param name="newClientId">New client id, or empty if it does not change</param>
+        /// <returns>True if credentials were successfully updated</returns>
+        /// <exception cref="ArgumentNullException"></exception>
+        public bool UpdateTenantCredentials(string tenantName, string newClientSecret, string newClientId = "")
+        {
+            if (String.IsNullOrWhiteSpace(tenantName))
+            {
+                throw new ArgumentNullException(nameof(tenantName));
+            }
+
+            if (String.IsNullOrWhiteSpace(newClientSecret))
+            {
+                throw new ArgumentNullException(nameof(newClientSecret));
+            }
+
+            EntraIDTenant tenant = this.EntraIDTenants.FirstOrDefault(x => x.Name.Equals(tenantName, StringComparison.InvariantCultureIgnoreCase));
+            if (tenant == null) { return false; }
+            string clientId = String.IsNullOrWhiteSpace(newClientId) ? tenant.ClientId : newClientId;
+            return tenant.SetCredentials(clientId, newClientSecret);
+        }
+
+        /// <summary>
+        /// Updates tenant credentials with a new client certificate, and optionnally a new client id
+        /// </summary>
+        /// <param name="tenantName">Name of the tenant to update</param>
+        /// <param name="newClientCertificatePfxFilePath">File path to the new client certificate</param>
+        /// <param name="newClientCertificatePfxPassword">Optional password of the client certificate</param>
+        /// <param name="newClientId">New client id, or empty if it does not change</param>
+        /// <returns></returns>
+        /// <exception cref="ArgumentNullException"></exception>
+        public bool UpdateTenantCredentials(string tenantName, string newClientCertificatePfxFilePath, string newClientCertificatePfxPassword = "", string newClientId = "")
+        {
+            if (String.IsNullOrWhiteSpace(tenantName))
+            {
+                throw new ArgumentNullException(nameof(tenantName));
+            }
+
+            EntraIDTenant tenant = this.EntraIDTenants.FirstOrDefault(x => x.Name.Equals(tenantName, StringComparison.InvariantCultureIgnoreCase));
+            if (tenant == null) { return false; }
+
+            string clientId = String.IsNullOrWhiteSpace(newClientId) ? tenant.ClientId : newClientId;
+            return tenant.SetCredentials(clientId, newClientCertificatePfxFilePath, newClientCertificatePfxPassword);
+        }
+
+        /// <summary>
         /// If it is valid, commits the current settings to the SharePoint settings database
         /// </summary>
         public override void Update()
@@ -583,57 +632,6 @@ namespace Yvand.EntraClaimsProvider.Configuration
             globalConfiguration.Update(true);
             Logger.Log($"Created configuration '{configurationName}' with Id {globalConfiguration.Id}", TraceSeverity.High, EventSeverity.Information, TraceCategory.Core);
             return globalConfiguration;
-        }
-
-        /// <summary>
-        /// Updates an existing tenant with a new client secret, and optionnally a new client id
-        /// </summary>
-        /// <param name="tenantName">Name of the tenant to update</param>
-        /// <param name="newClientSecret">New client secret</param>
-        /// <param name="newClientId">New client id, or empty if it does not change</param>
-        /// <returns>True if credentials were successfully updated</returns>
-        /// <exception cref="ArgumentNullException"></exception>
-        public bool UpdateTenantCredentials(string tenantName, string newClientSecret, string newClientId = "")
-        {
-            if (String.IsNullOrWhiteSpace(tenantName))
-            {
-                throw new ArgumentNullException(nameof(tenantName));
-            }
-
-            if (String.IsNullOrWhiteSpace(newClientSecret))
-            {
-                throw new ArgumentNullException(nameof(newClientSecret));
-            }
-
-            EntraIDTenant tenant = this.EntraIDTenants.FirstOrDefault(x => x.Name.Equals(tenantName, StringComparison.InvariantCultureIgnoreCase));
-            if (tenant == null) { return false; }
-            string clientId = String.IsNullOrWhiteSpace(newClientId) ? tenant.ClientId : newClientId;
-            tenant.SetCredentials(clientId, newClientSecret);
-            return true;
-        }
-
-        /// <summary>
-        /// Updates an existing tenant with a new client certificate, and optionnally a new client id
-        /// </summary>
-        /// <param name="tenantName">Name of the tenant to update</param>
-        /// <param name="newClientCertificateWithPrivateKey">New client certificate</param>
-        /// <param name="newClientId">New client id, or empty if it does not change</param>
-        /// <returns>True if credentials were successfully updated</returns>
-        /// <exception cref="ArgumentNullException"></exception>
-        public bool UpdateTenantCredentials(string tenantName, string newClientCertificatePfxFilePath, string newClientCertificatePfxPassword = "", string newClientId = "")
-        {
-            if (String.IsNullOrWhiteSpace(tenantName))
-            {
-                throw new ArgumentNullException(nameof(tenantName));
-            }
-
-            EntraIDTenant tenant = this.EntraIDTenants.FirstOrDefault(x => x.Name.Equals(tenantName, StringComparison.InvariantCultureIgnoreCase));
-            if (tenant == null) { return false; }
-
-            X509Certificate2 cert = EntraIDTenant.ImportPfxCertificate(newClientCertificatePfxFilePath, newClientCertificatePfxPassword);
-            string clientId = String.IsNullOrWhiteSpace(newClientId) ? tenant.ClientId : newClientId;
-            tenant.SetCredentials(clientId, cert);
-            return true;
         }
     }
 }
