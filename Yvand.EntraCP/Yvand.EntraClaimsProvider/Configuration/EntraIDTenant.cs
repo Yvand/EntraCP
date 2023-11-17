@@ -109,12 +109,12 @@ namespace Yvand.EntraClaimsProvider.Configuration
         [Persisted]
         private bool _ExcludeGuestUsers = false;
 
-        /// <summary>
-        /// Gets or sets the client ID used for the extension attribues
-        /// </summary>
         [Persisted]
         private Guid _ExtensionAttributesApplicationId;
 
+        /// <summary>
+        /// Gets or sets the client ID used for the extension attribues
+        /// </summary>
         public Guid ExtensionAttributesApplicationId
         {
             get => _ExtensionAttributesApplicationId;
