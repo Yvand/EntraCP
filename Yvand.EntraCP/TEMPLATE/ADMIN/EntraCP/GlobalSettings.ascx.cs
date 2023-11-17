@@ -194,26 +194,27 @@ namespace Yvand.EntraClaimsProvider.Administration
                 return;
             }
             AzureCloudInstance cloudInstance = (AzureCloudInstance)Enum.Parse(typeof(AzureCloudInstance), this.DDLAzureCloudInstance.SelectedValue);
+
             EntraIDTenant newTenant = new EntraIDTenant
             {
                 Name = this.TxtTenantName.Text,
-                ClientId = this.TxtClientId.Text,
-                ClientSecret = this.TxtClientSecret.Text,
                 AzureAuthority = ClaimsProviderConstants.AzureCloudEndpoints.FirstOrDefault(item => item.Key == cloudInstance).Value,
             };
 
-            //SPSecurity.RunWithElevatedPrivileges(delegate ()
-            //{
-            X509Certificate2 cert = null;
-            if (String.IsNullOrWhiteSpace(newTenant.ClientSecret))
+            if (String.IsNullOrWhiteSpace(this.TxtClientSecret.Text))
             {
+                X509Certificate2 cert = null;
                 if (ValidateUploadedCertFile(InputClientCertFile, this.InputClientCertPassword.Text, out cert) == false)
-                { return; }
-                else
                 {
-                    newTenant.ClientCertificateWithPrivateKey = cert;
+                    return;
                 }
+                newTenant.SetCredentials(this.TxtClientId.Text, cert);
             }
+            else
+            {
+                newTenant.SetCredentials(this.TxtClientId.Text, this.TxtClientSecret.Text);
+            }
+
             try
             {
                 //Task<bool> taskTestConnection = newTenant.TestConnectionAsync(Settings.ProxyAddress);
@@ -314,17 +315,24 @@ namespace Yvand.EntraClaimsProvider.Administration
             {
                 Settings.EntraIDTenants = new List<EntraIDTenant>();
             }
-            this.Settings.EntraIDTenants.Add(
-                new EntraIDTenant
-                {
-                    Name = this.TxtTenantName.Text,
-                    ClientId = this.TxtClientId.Text,
-                    ClientSecret = this.TxtClientSecret.Text,
-                    ExcludeGuestUsers = this.ChkMemberUserTypeOnly.Checked,
-                    ClientCertificateWithPrivateKey = cert,
-                    AzureAuthority = cloudInstance,
-                    ExtensionAttributesApplicationId = string.IsNullOrWhiteSpace(this.TxtExtensionAttributesApplicationId.Text) ? Guid.Empty : Guid.Parse(this.TxtExtensionAttributesApplicationId.Text)
-                });
+
+            var newTenant = new EntraIDTenant
+            {
+                Name = this.TxtTenantName.Text,
+                ExcludeGuestUsers = this.ChkMemberUserTypeOnly.Checked,
+                AzureAuthority = cloudInstance,
+                ExtensionAttributesApplicationId = string.IsNullOrWhiteSpace(this.TxtExtensionAttributesApplicationId.Text) ? Guid.Empty : Guid.Parse(this.TxtExtensionAttributesApplicationId.Text)
+            };
+
+            if (String.IsNullOrWhiteSpace(this.TxtClientSecret.Text))
+            {
+                newTenant.SetCredentials(this.TxtClientId.Text, cert);
+            }
+            else
+            {
+                newTenant.SetCredentials(this.TxtClientId.Text, this.TxtClientSecret.Text);
+            }
+            this.Settings.EntraIDTenants.Add(newTenant);
 
             CommitChanges();
             Logger.Log($"Microsoft Entra ID tenant '{this.TxtTenantName.Text}' was successfully added to configuration '{ConfigurationName}'", TraceSeverity.Medium, EventSeverity.Information, TraceCategory.Configuration);
@@ -374,7 +382,7 @@ namespace Yvand.EntraClaimsProvider.Administration
                 byte[] buffer = new byte[inputFile.PostedFile.ContentLength];
                 inputFile.PostedFile.InputStream.Read(buffer, 0, buffer.Length);
                 // The certificate must be exportable so it can be saved in the persisted object
-                cert = EntraIDTenant.ImportPfxCertificateBlob(buffer, certificatePassword, X509KeyStorageFlags.Exportable);
+                cert = EntraIDTenant.ImportPfxCertificate(buffer, certificatePassword);
                 if (cert == null)
                 {
                     this.LabelErrorTestLdapConnection.Text = $"Certificate does not contain the private key.";

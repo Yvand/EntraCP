@@ -2,6 +2,7 @@
 
 ## Unreleased
 
+* Improve the management of tenant credentials, including new helpers to renew the client secret of certificate using PowerShell
 * Improve page TroubleshootEntraCP.aspx
 * Add a mechanism to use custom settings instead of settings from the persisted objects
 * Fix issues causing logging to not be actually written in SharePoint logs

@@ -8,10 +8,12 @@ using Microsoft.Kiota.Http.HttpClientLibrary.Middleware.Options;
 using Microsoft.SharePoint.Administration;
 using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Linq;
 using System.Net;
 using System.Net.Http;
 using System.Reflection;
+using System.Runtime.ConstrainedExecution;
 using System.Security.Cryptography;
 using System.Security.Cryptography.X509Certificates;
 using System.Threading.Tasks;
@@ -29,7 +31,7 @@ namespace Yvand.EntraClaimsProvider.Configuration
         private Guid _Identifier = Guid.NewGuid();
 
         /// <summary>
-        /// Tenant Name or ID
+        /// Gets or sets the tenant name (TENANTNAME.onMicrosoft.com) or ID (GUID)
         /// </summary>
         public string Name
         {
@@ -40,7 +42,7 @@ namespace Yvand.EntraClaimsProvider.Configuration
         private string _Name;
 
         /// <summary>
-        /// Application (client) ID of the app registration created for EntraCP in the Microsoft Entra ID tenant
+        /// Gets or sets the application (client) ID used to authenticate in the Microsoft Entra ID tenant
         /// </summary>
         public string ClientId
         {
@@ -51,46 +53,18 @@ namespace Yvand.EntraClaimsProvider.Configuration
         private string _ClientId;
 
         /// <summary>
-        /// Client secret of the app registration created for EntraCP in the Microsoft Entra ID tenant
+        /// Gets the client secret used to authenticate in the Microsoft Entra ID tenant
         /// </summary>
         public string ClientSecret
         {
             get => _ClientSecret;
-            set => _ClientSecret = value;
+            protected set => _ClientSecret = value;
         }
         [Persisted]
         private string _ClientSecret;
 
-        public bool ExcludeMemberUsers
-        {
-            get => _ExcludeMemberUsers;
-            set => _ExcludeMemberUsers = value;
-        }
-        [Persisted]
-        private bool _ExcludeMemberUsers = false;
-
-        public bool ExcludeGuestUsers
-        {
-            get => _ExcludeGuestUsers;
-            set => _ExcludeGuestUsers = value;
-        }
-        [Persisted]
-        private bool _ExcludeGuestUsers = false;
-
         /// <summary>
-        /// Client ID of AD Connect used in extension attribues
-        /// </summary>
-        [Persisted]
-        private Guid _ExtensionAttributesApplicationId;
-
-        public Guid ExtensionAttributesApplicationId
-        {
-            get => _ExtensionAttributesApplicationId;
-            set => _ExtensionAttributesApplicationId = value;
-        }
-
-        /// <summary>
-        /// Gets or set the client certificate with its private key, configured in the app registration for EntraCP
+        /// Gets the client certificate with its private key, used to authenticate in the Microsoft Entra ID tenant
         /// </summary>
         public X509Certificate2 ClientCertificateWithPrivateKey
         {
@@ -98,7 +72,7 @@ namespace Yvand.EntraClaimsProvider.Configuration
             {
                 return _ClientCertificateWithPrivateKey;
             }
-            set
+            protected set
             {
                 if (value == null) { return; }
                 if (!value.HasPrivateKey) { throw new ArgumentException("The certificate cannot be imported because it does not have a private key"); }
@@ -118,6 +92,34 @@ namespace Yvand.EntraClaimsProvider.Configuration
         private X509Certificate2 _ClientCertificateWithPrivateKey;
         [Persisted]
         private byte[] _ClientCertificateWithPrivateKeyRawData;
+
+        public bool ExcludeMemberUsers
+        {
+            get => _ExcludeMemberUsers;
+            set => _ExcludeMemberUsers = value;
+        }
+        [Persisted]
+        private bool _ExcludeMemberUsers = false;
+
+        public bool ExcludeGuestUsers
+        {
+            get => _ExcludeGuestUsers;
+            set => _ExcludeGuestUsers = value;
+        }
+        [Persisted]
+        private bool _ExcludeGuestUsers = false;
+
+        [Persisted]
+        private Guid _ExtensionAttributesApplicationId;
+
+        /// <summary>
+        /// Gets or sets the client ID used for the extension attribues
+        /// </summary>
+        public Guid ExtensionAttributesApplicationId
+        {
+            get => _ExtensionAttributesApplicationId;
+            set => _ExtensionAttributesApplicationId = value;
+        }
 
         public Uri AzureAuthority
         {
@@ -160,7 +162,7 @@ namespace Yvand.EntraClaimsProvider.Configuration
                 {
                     // Sets the local X509Certificate2 object from the persisted raw data stored in the configuration database
                     // EphemeralKeySet: Keep the private key in-memory, it won't be written to disk - https://www.pkisolutions.com/handling-x509keystorageflags-in-applications/
-                    _ClientCertificateWithPrivateKey = ImportPfxCertificateBlob(_ClientCertificateWithPrivateKeyRawData, ClaimsProviderConstants.ClientCertificatePrivateKeyPassword, X509KeyStorageFlags.EphemeralKeySet);
+                    _ClientCertificateWithPrivateKey = ImportPfxCertificate(_ClientCertificateWithPrivateKeyRawData, ClaimsProviderConstants.ClientCertificatePrivateKeyPassword);
                 }
                 catch (CryptographicException ex)
                 {
@@ -308,51 +310,94 @@ namespace Yvand.EntraClaimsProvider.Configuration
         }
 
         /// <summary>
-        /// Sets the credentials used to connect to the Microsoft Entra ID tenant
+        /// Sets the credentials with a client secret, to connect to the Microsoft Entra ID tenant
         /// </summary>
         /// <param name="clientId">Application (client) ID</param>
         /// <param name="clientSecret">Application (client) secret</param>
-        public void SetCredentials(string clientId, string clientSecret)
+        public bool SetCredentials(string clientId, string clientSecret)
         {
             this.ClientId = clientId;
             this.ClientSecret = clientSecret;
             this.ClientCertificateWithPrivateKey = null;
+            return true;
         }
 
         /// <summary>
-        /// Sets the credentials used to connect to the Microsoft Entra ID tenant
+        /// Sets the credentials with a client certificate, to connect to the Microsoft Entra ID tenant
         /// </summary>
-        /// <param name="clientId">Application (client) secret</param>
+        /// <param name="clientId">Application (client) ID</param>
         /// <param name="clientCertificateWithPrivateKey">Client certificate with its private key</param>
-        public void SetCredentials(string clientId, X509Certificate2 clientCertificateWithPrivateKey)
+        /// <returns></returns>
+        public bool SetCredentials(string clientId, X509Certificate2 clientCertificateWithPrivateKey)
         {
             this.ClientId = clientId;
             this.ClientSecret = String.Empty;
             this.ClientCertificateWithPrivateKey = clientCertificateWithPrivateKey;
+            return true;
         }
 
         /// <summary>
-        /// Imports the input blob into a pfx X509Certificate2 object with its private key
+        /// Sets the credentials with a client certificate, to connect to the Microsoft Entra ID tenant
         /// </summary>
-        /// <param name="blob"></param>
-        /// <param name="certificatePassword"></param>
-        /// <param name="keyStorageFlags"></param>
-        /// <returns></returns>
-        public static X509Certificate2 ImportPfxCertificateBlob(byte[] blob, string certificatePassword, X509KeyStorageFlags keyStorageFlags)
+        /// <param name="clientId">Application (client) ID</param>
+        /// <param name="clientCertificatePfxFilePath">File path to the client certificate</param>
+        /// <param name="clientCertificatePfxPassword">Optional password of the client certificate</param>
+        public bool SetCredentials(string clientId, string clientCertificatePfxFilePath, string clientCertificatePfxPassword)
         {
-            if (X509Certificate2.GetCertContentType(blob) != X509ContentType.Pfx)
+            this.ClientId = clientId;
+            this.ClientSecret = String.Empty;
+            X509Certificate2 cert = EntraIDTenant.ImportPfxCertificate(clientCertificatePfxFilePath, clientCertificatePfxPassword);
+            if (cert == null) { return false; }
+            this.ClientCertificateWithPrivateKey = cert;
+            return true;
+        }
+
+        /// <summary>
+        /// Imports the raw certificate into an exportable X509Certificate2 object with its private key
+        /// </summary>
+        /// <param name="rawData"></param>
+        /// <param name="certificatePassword"></param>
+        /// <returns></returns>
+        public static X509Certificate2 ImportPfxCertificate(byte[] rawData, string certificatePassword)
+        {
+            if (X509Certificate2.GetCertContentType(rawData) != X509ContentType.Pfx)
             {
                 return null;
             }
 
+            X509KeyStorageFlags certificateFlags = X509KeyStorageFlags.Exportable | X509KeyStorageFlags.EphemeralKeySet;
             if (String.IsNullOrWhiteSpace(certificatePassword))
             {
                 // If passwordless, import the private key as documented in https://support.microsoft.com/en-us/topic/kb5025823-change-in-how-net-applications-import-x-509-certificates-bf81c936-af2b-446e-9f7a-016f4713b46b
-                return new X509Certificate2(blob, (string)null, keyStorageFlags);
+                return new X509Certificate2(rawData, (string)null, certificateFlags);
             }
             else
             {
-                return new X509Certificate2(blob, certificatePassword, keyStorageFlags);
+                return new X509Certificate2(rawData, certificatePassword, certificateFlags);
+            }
+        }
+
+        public static X509Certificate2 ImportPfxCertificate(string clientCertificatePfxFilePath, string certificatePassword)
+        {
+            if (File.Exists(clientCertificatePfxFilePath) == false)
+            {
+                return null;
+            }
+
+            if (X509Certificate2.GetCertContentType(clientCertificatePfxFilePath) != X509ContentType.Pfx)
+            {
+                return null;
+            }
+
+            X509KeyStorageFlags certificateFlags = X509KeyStorageFlags.Exportable | X509KeyStorageFlags.EphemeralKeySet;
+            if (String.IsNullOrWhiteSpace(certificatePassword))
+            {
+                // If passwordless, import the private key as documented in https://support.microsoft.com/en-us/topic/kb5025823-change-in-how-net-applications-import-x-509-certificates-bf81c936-af2b-446e-9f7a-016f4713b46b
+                return new X509Certificate2(clientCertificatePfxFilePath, (string)null, certificateFlags);
+            }
+            else
+            {
+                return new X509Certificate2(clientCertificatePfxFilePath, certificatePassword, certificateFlags);
             }
         }
     }
