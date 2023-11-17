@@ -58,7 +58,7 @@ namespace Yvand.EntraClaimsProvider.Configuration
         public string ClientSecret
         {
             get => _ClientSecret;
-            protected set => _ClientSecret = value;
+            set => _ClientSecret = value;
         }
         [Persisted]
         private string _ClientSecret;
@@ -210,12 +210,12 @@ namespace Yvand.EntraClaimsProvider.Configuration
             var handlers = GraphClientFactory.CreateDefaultHandlers(new GraphClientOptions { GraphProductPrefix = "EntraCP" });
             handlers.Add(new GraphRequestsLogging());
 #if DEBUG
-            handlers.Add(new ChaosHandler(new ChaosHandlerOption()
-            {
-                ChaosPercentLevel = 50
-            }));
-            var retryHandler = handlers.Where(h => h is RetryHandler).FirstOrDefault();
-            handlers.Remove(retryHandler);
+            //handlers.Add(new ChaosHandler(new ChaosHandlerOption()
+            //{
+            //    ChaosPercentLevel = 50
+            //}));
+            //var retryHandler = handlers.Where(h => h is RetryHandler).FirstOrDefault();
+            //handlers.Remove(retryHandler);
 #endif
 
             TokenCredentialOptions options = new TokenCredentialOptions
