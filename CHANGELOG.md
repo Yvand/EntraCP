@@ -3,6 +3,7 @@
 ## Unreleased
 
 * Fix a bug causing a hang on the web application, when using the check permissions feature to verify the permissions of a trusted user
+* SharePoint 2016: The new minimum build version required to run EntraCP is 16.0.4483.1001 - January 2017 cumulative update
 * Improve the management of tenant credentials, including new helpers to renew the client secret of certificate using PowerShell
 * Improve page TroubleshootEntraCP.aspx
 * Add a mechanism to use custom settings instead of settings from the persisted objects
