@@ -2,6 +2,7 @@
 
 ## Unreleased
 
+* Fix a bug causing a hang on the web application, when using the check permissions feature to verify the permissions of a trusted user
 * Improve the management of tenant credentials, including new helpers to renew the client secret of certificate using PowerShell
 * Improve page TroubleshootEntraCP.aspx
 * Add a mechanism to use custom settings instead of settings from the persisted objects

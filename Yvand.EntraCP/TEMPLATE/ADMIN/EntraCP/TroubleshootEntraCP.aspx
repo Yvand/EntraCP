@@ -83,7 +83,7 @@
                 // Calling constructor of EntraIDTenant may throw FileNotFoundException on Azure.Identity
                 tenant = new EntraIDTenant(tenantName);
                 tenant.SetCredentials(tenantClientId, tenantClientSecret);
-                
+
                 // EntraIDTenant.InitializeAuthentication() will throw an exception if .NET cannot load one of the following assemblies:
                 // Azure.Core.dll, System.Diagnostics.DiagnosticSource.dll, Microsoft.IdentityModel.Abstractions.dll, System.Memory.dll, System.Runtime.CompilerServices.Unsafe.dll
                 tenant.InitializeAuthentication(ClaimsProviderConstants.DEFAULT_TIMEOUT, proxy);
@@ -159,9 +159,8 @@
                 IdentityClaimTypeConfig idClaim = claimsProvider.Settings.ClaimTypes.IdentityClaim;
                 string originalIssuer = SPOriginalIssuers.Format(SPOriginalIssuerType.TrustedProvider, Utils.GetSPTrustAssociatedWithClaimsProvider("EntraCP").Name);
                 SPClaim claim = new SPClaim(idClaim.ClaimType, input, idClaim.ClaimValueType, originalIssuer);
-                // TODO: Somehow, from this page claimsProvider.GetClaimsForEntity() causes a hang
-                //SPClaim[] groups = claimsProvider.GetClaimsForEntity(new Uri(context), claim);
-                //LblResult.Text += String.Format("<br/>Test augmentation for user '{0}' on '{1}': OK with {2} groups returned.", input, context, groups == null ? 0 : groups.Length);
+                SPClaim[] groups = claimsProvider.GetClaimsForEntity(new Uri(context), claim);
+                LblResult.Text += String.Format("<br/>Test augmentation for user '{0}' on '{1}': OK with {2} groups returned.", input, context, groups == null ? 0 : groups.Length);
                 return true;
             }
             catch (Exception ex)
