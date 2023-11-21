@@ -27,23 +27,22 @@ namespace Yvand.EntraClaimsProvider
 
         public async override Task<List<string>> GetEntityGroupsAsync(OperationContext currentContext, DirectoryObjectProperty groupProperty)
         {
-            List<EntraIDTenant> azureTenants = currentContext.AzureTenants;
-            // Create a task for each tenant to query
-            IEnumerable<Task<List<string>>> tenantTasks = azureTenants.Select(async tenant =>
+            // Create a Task for each tenant to query
+            IEnumerable<Task<List<string>>> tenantTasks = currentContext.AzureTenants.Select(async tenant =>
             {
-                // Wrap the call to GetEntityGroupsFromTenantAsync() in a task to avoid a hang on check permissions feature
+                // Wrap the call to GetEntityGroupsFromTenantAsync() in a Task to avoid a hang when using the "check permissions" dialog
                 List<string> groupsInTenant = await Task.Run(() => GetEntityGroupsFromTenantAsync(currentContext, groupProperty, tenant)).ConfigureAwait(false);
                 return groupsInTenant;
             });
 
-            List<string> groups = new List<string>();
             // Wait for all tenantTasks to complete
-            List<string>[] groupsInAllTenants = await Task.WhenAll(tenantTasks).ConfigureAwait(false);
-            for (int i = 0; i < groupsInAllTenants.Length; i++)
+            List<string>[] listsFromAllTenants = await Task.WhenAll(tenantTasks).ConfigureAwait(false);
+            List<string> allGroups = new List<string>();
+            for (int i = 0; i < listsFromAllTenants.Length; i++)
             {
-                groups.AddRange(groupsInAllTenants[i]);
+                allGroups.AddRange(listsFromAllTenants[i]);
             }
-            return groups;
+            return allGroups;
         }
 
         public async Task<List<string>> GetEntityGroupsFromTenantAsync(OperationContext currentContext, DirectoryObjectProperty groupProperty, EntraIDTenant tenant)
