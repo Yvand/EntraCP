@@ -1,4 +1,5 @@
-﻿using Microsoft.Graph.Models;
+﻿using Azure.Core.Diagnostics;
+using Microsoft.Graph.Models;
 using Microsoft.SharePoint.Administration;
 using Microsoft.SharePoint.Administration.Claims;
 using Microsoft.SharePoint.Utilities;
@@ -6,6 +7,7 @@ using Microsoft.SharePoint.WebControls;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Diagnostics.Tracing;
 using System.Linq;
 using System.Reflection;
 using System.Threading;
@@ -25,6 +27,30 @@ namespace Yvand.EntraClaimsProvider
 
     public class EntraCPSettings : EntraIDProviderSettings, IEntraCPSettings
     {
+        public static new EntraCPSettings GetDefaultSettings(string claimsProviderName)
+        {
+            EntraIDProviderSettings entraIDProviderSettings = EntraIDProviderSettings.GetDefaultSettings(claimsProviderName);
+            return GenerateFromEntraIDProviderSettings(entraIDProviderSettings);
+        }
+
+        public static EntraCPSettings GenerateFromEntraIDProviderSettings(IEntraIDProviderSettings settings)
+        {
+            return new EntraCPSettings
+            {
+                AlwaysResolveUserInput = settings.AlwaysResolveUserInput,
+                EntraIDTenants = settings.EntraIDTenants,
+                ClaimTypes = settings.ClaimTypes,
+                CustomData = settings.CustomData,
+                EnableAugmentation = settings.EnableAugmentation,
+                EntityDisplayTextPrefix = settings.EntityDisplayTextPrefix,
+                FilterExactMatchOnly = settings.FilterExactMatchOnly,
+                FilterSecurityEnabledGroupsOnly = settings.FilterSecurityEnabledGroupsOnly,
+                ProxyAddress = settings.ProxyAddress,
+                Timeout = settings.Timeout,
+                Version = settings.Version,
+            };
+        }
+
         public List<ClaimTypeConfig> RuntimeClaimTypesList { get; set; }
 
         public IEnumerable<ClaimTypeConfig> RuntimeMetadataConfig { get; set; }
@@ -47,8 +73,22 @@ namespace Yvand.EntraClaimsProvider
         private ReaderWriterLockSlim Lock_LocalConfigurationRefresh = new ReaderWriterLockSlim();
         protected virtual string PickerEntityDisplayText => "({0}) {1}";
         protected virtual string PickerEntityOnMouseOver => "{0}={1}";
+
+        /// <summary>
+        /// Gets the settings that contain the configuration for EntraCP
+        /// </summary>
         public IEntraCPSettings Settings { get; protected set; }
+        
+        /// <summary>
+        /// Gets custom settings that will be used instead of the settings from the persisted object
+        /// </summary>
+        private IEntraCPSettings CustomSettings { get; }
+
+        /// <summary>
+        /// Gets the version of the settings, used to refresh the settings if the persisted object is updated
+        /// </summary>
         public long SettingsVersion { get; private set; } = -1;
+        AzureEventSourceListener listener;
         #region "Runtime settings"
         //protected List<ClaimTypeConfig> RuntimeClaimTypesList { get; private set; }
         //protected IEnumerable<ClaimTypeConfig> RuntimeMetadataConfig { get; private set; }
@@ -79,6 +119,19 @@ namespace Yvand.EntraClaimsProvider
         public EntraCP(string displayName) : base(displayName)
         {
             this.EntityProvider = new EntraIDEntityProvider(Name);
+            this.listener = new AzureEventSourceListener((args, message) =>
+            {
+                if (args.EventSource.Name == "Azure-Identity")
+                {
+                    Logger.Log($"[{EntraCP.ClaimsProviderName}] {args.EventName} {message}", Utils.EventLogToTraceSeverity(args.Level), EventSeverity.Error, TraceCategory.AzureIdentity);
+                }
+            }, EventLevel.Informational);
+        }
+
+        public EntraCP(string displayName, IEntraCPSettings customSettings) : base(displayName)
+        {
+            this.EntityProvider = new EntraIDEntityProvider(Name);
+            this.CustomSettings = customSettings;
         }
 
         public static EntraIDProviderConfiguration GetConfiguration(bool initializeLocalConfiguration = false)
@@ -143,22 +196,7 @@ namespace Yvand.EntraClaimsProvider
                     return true;
                 }
 
-                IEntraCPSettings claimsProviderSettings = new EntraCPSettings
-                {
-                    AlwaysResolveUserInput = settings.AlwaysResolveUserInput,
-                    EntraIDTenants = settings.EntraIDTenants,
-                    ClaimTypes = settings.ClaimTypes,
-                    CustomData = settings.CustomData,
-                    EnableAugmentation = settings.EnableAugmentation,
-                    EntityDisplayTextPrefix = settings.EntityDisplayTextPrefix,
-                    FilterExactMatchOnly = settings.FilterExactMatchOnly,
-                    FilterSecurityEnabledGroupsOnly = settings.FilterSecurityEnabledGroupsOnly,
-                    ProxyAddress = settings.ProxyAddress,
-                    Timeout = settings.Timeout,
-                    Version = settings.Version,
-                };
-                this.Settings = (IEntraCPSettings)claimsProviderSettings;
-
+                this.Settings = EntraCPSettings.GenerateFromEntraIDProviderSettings(settings);
                 Logger.Log($"[{this.Name}] Settings have new version {this.Settings.Version}, refreshing local copy",
                     TraceSeverity.Medium, EventSeverity.Information, TraceCategory.Core);
                 success = this.InitializeInternalRuntimeSettings();
@@ -182,19 +220,24 @@ namespace Yvand.EntraClaimsProvider
         }
 
         /// <summary>
-        /// Override this methor to return the settings to use
+        /// Returns the settings to use
         /// </summary>
         /// <returns></returns>
-        protected virtual IEntraIDProviderSettings GetSettings()
+        public virtual IEntraIDProviderSettings GetSettings()
         {
-            IEntraIDProviderSettings settings = null;
+            if (this.CustomSettings != null)
+            {
+                return this.CustomSettings;
+            }
+
+            IEntraIDProviderSettings persistedSettings = null;
             EntraIDProviderConfiguration PersistedConfiguration = EntraIDProviderConfiguration.GetGlobalConfiguration(new Guid(ClaimsProviderConstants.CONFIGURATION_ID));
             if (PersistedConfiguration != null)
             {
-                settings = PersistedConfiguration.Settings;
+                persistedSettings = PersistedConfiguration.Settings;
             }
-            return settings;
-        }
+            return persistedSettings;
+        }        
 
         /// <summary>
         /// Sets the internal runtime settings properties
@@ -899,7 +942,8 @@ namespace Yvand.EntraClaimsProvider
                 Stopwatch timer = new Stopwatch();
                 timer.Start();
                 Task<List<string>> groupsTask = this.EntityProvider.GetEntityGroupsAsync(currentContext, groupClaimTypeSettings.EntityProperty);
-                groupsTask.Wait();
+                groupsTask.ConfigureAwait(false);
+                groupsTask.Wait(this.Settings.Timeout);
                 List<string> groups = groupsTask.Result;
                 timer.Stop();
                 if (groups?.Count > 0)

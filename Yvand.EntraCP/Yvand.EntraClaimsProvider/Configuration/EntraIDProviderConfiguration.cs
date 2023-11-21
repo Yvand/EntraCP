@@ -4,6 +4,8 @@ using Microsoft.SharePoint.WebControls;
 using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
+using System.Linq;
+using System.Security.Cryptography.X509Certificates;
 
 namespace Yvand.EntraClaimsProvider.Configuration
 {
@@ -42,7 +44,7 @@ namespace Yvand.EntraClaimsProvider.Configuration
         string EntityDisplayTextPrefix { get; }
 
         /// <summary>
-        /// Gets or sets the timeout before giving up the query to Microsoft Entra ID.
+        /// Gets or sets the timeout in milliseconds before an operation to Microsoft Entra ID is canceled.
         /// </summary>
         int Timeout { get; }
 
@@ -91,6 +93,15 @@ namespace Yvand.EntraClaimsProvider.Configuration
 
         public EntraIDProviderSettings() { }
 
+        public static EntraIDProviderSettings GetDefaultSettings(string claimsProviderName)
+        {
+            EntraIDProviderSettings entityProviderSettings = new EntraIDProviderSettings
+            {
+                ClaimTypes = EntraIDProviderSettings.ReturnDefaultClaimTypesConfig(claimsProviderName),
+            };
+            return entityProviderSettings;
+        }
+
         /// <summary>
         /// Returns the default claim types configuration list, based on the identity claim type set in the TrustedLoginProvider associated with <paramref name="claimProviderName"/>
         /// </summary>
@@ -138,6 +149,7 @@ namespace Yvand.EntraClaimsProvider.Configuration
 
     public class EntraIDProviderConfiguration : SPPersistedObject, IEntraIDProviderSettings
     {
+        public string LocalAssemblyVersion => ClaimsProviderConstants.ClaimsProviderVersion;
         /// <summary>
         /// Gets the settings, based on the configuration stored in this persisted object
         /// </summary>
@@ -155,6 +167,7 @@ namespace Yvand.EntraClaimsProvider.Configuration
         private IEntraIDProviderSettings _Settings;
 
         #region "Base settings implemented from IEntraIDEntityProviderSettings"
+
         public ClaimTypeConfigCollection ClaimTypes
         {
             get
@@ -211,9 +224,6 @@ namespace Yvand.EntraClaimsProvider.Configuration
         {
             get
             {
-#if DEBUG
-                return _Timeout * 100;
-#endif
                 return _Timeout;
             }
             private set => _Timeout = value;
@@ -287,7 +297,7 @@ namespace Yvand.EntraClaimsProvider.Configuration
                 return this._SPTrust;
             }
         }
-        #endregion       
+        #endregion
 
         public EntraIDProviderConfiguration() { }
         public EntraIDProviderConfiguration(string persistedObjectName, SPPersistedObject parent, string claimsProviderName) : base(persistedObjectName, parent)
@@ -330,6 +340,55 @@ namespace Yvand.EntraClaimsProvider.Configuration
                 FilterSecurityEnabledGroupsOnly = this.FilterSecurityEnabledGroupsOnly,
             };
             return (IEntraIDProviderSettings)entityProviderSettings;
+        }
+
+        /// <summary>
+        /// Updates tenant credentials with a new client secret, and optionnally a new client id
+        /// </summary>
+        /// <param name="tenantName">Name of the tenant to update</param>
+        /// <param name="newClientSecret">New client secret</param>
+        /// <param name="newClientId">New client id, or empty if it does not change</param>
+        /// <returns>True if credentials were successfully updated</returns>
+        /// <exception cref="ArgumentNullException"></exception>
+        public bool UpdateTenantCredentials(string tenantName, string newClientSecret, string newClientId = "")
+        {
+            if (String.IsNullOrWhiteSpace(tenantName))
+            {
+                throw new ArgumentNullException(nameof(tenantName));
+            }
+
+            if (String.IsNullOrWhiteSpace(newClientSecret))
+            {
+                throw new ArgumentNullException(nameof(newClientSecret));
+            }
+
+            EntraIDTenant tenant = this.EntraIDTenants.FirstOrDefault(x => x.Name.Equals(tenantName, StringComparison.InvariantCultureIgnoreCase));
+            if (tenant == null) { return false; }
+            string clientId = String.IsNullOrWhiteSpace(newClientId) ? tenant.ClientId : newClientId;
+            return tenant.SetCredentials(clientId, newClientSecret);
+        }
+
+        /// <summary>
+        /// Updates tenant credentials with a new client certificate, and optionnally a new client id
+        /// </summary>
+        /// <param name="tenantName">Name of the tenant to update</param>
+        /// <param name="newClientCertificatePfxFilePath">File path to the new client certificate</param>
+        /// <param name="newClientCertificatePfxPassword">Optional password of the client certificate</param>
+        /// <param name="newClientId">New client id, or empty if it does not change</param>
+        /// <returns></returns>
+        /// <exception cref="ArgumentNullException"></exception>
+        public bool UpdateTenantCredentials(string tenantName, string newClientCertificatePfxFilePath, string newClientCertificatePfxPassword = "", string newClientId = "")
+        {
+            if (String.IsNullOrWhiteSpace(tenantName))
+            {
+                throw new ArgumentNullException(nameof(tenantName));
+            }
+
+            EntraIDTenant tenant = this.EntraIDTenants.FirstOrDefault(x => x.Name.Equals(tenantName, StringComparison.InvariantCultureIgnoreCase));
+            if (tenant == null) { return false; }
+
+            string clientId = String.IsNullOrWhiteSpace(newClientId) ? tenant.ClientId : newClientId;
+            return tenant.SetCredentials(clientId, newClientCertificatePfxFilePath, newClientCertificatePfxPassword);
         }
 
         /// <summary>
@@ -466,11 +525,7 @@ namespace Yvand.EntraClaimsProvider.Configuration
 
         public virtual IEntraIDProviderSettings GetDefaultSettings()
         {
-            IEntraIDProviderSettings entityProviderSettings = new EntraIDProviderSettings
-            {
-                ClaimTypes = EntraIDProviderSettings.ReturnDefaultClaimTypesConfig(this.ClaimsProviderName),
-            };
-            return (IEntraIDProviderSettings)entityProviderSettings;
+            return EntraIDProviderSettings.GetDefaultSettings(this.ClaimsProviderName);
         }
 
         /// <summary>

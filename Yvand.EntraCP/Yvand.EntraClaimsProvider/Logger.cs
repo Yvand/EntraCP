@@ -5,6 +5,7 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
 using System.Linq;
+using System.Runtime.CompilerServices;
 using System.Text;
 
 namespace Yvand.EntraClaimsProvider
@@ -43,6 +44,14 @@ namespace Yvand.EntraClaimsProvider
          DefaultTraceSeverity(TraceSeverity.Medium),
          DefaultEventSeverity(EventSeverity.Error)]
         Custom,
+        [CategoryName("Azure Identity"),
+         DefaultTraceSeverity(TraceSeverity.Medium),
+         DefaultEventSeverity(EventSeverity.Error)]
+        AzureIdentity,
+        [CategoryName("Graph Requests"),
+         DefaultTraceSeverity(TraceSeverity.Medium),
+         DefaultEventSeverity(EventSeverity.Error)]
+        GraphRequests,
     }
 
     /// <summary>
@@ -52,6 +61,9 @@ namespace Yvand.EntraClaimsProvider
     public class Logger : SPDiagnosticsServiceBase
     {
         public readonly static string DiagnosticsAreaName = EntraCP.ClaimsProviderName;
+
+        // This property causes a TypeLoadException in SharePoint 2016 RTM (not in 2023-11 CU and not in 2019) because: Cannot override inherited member 'SPPersistedObject.Name' because it is not marked virtual, abstract, or override
+        public override string Name => $"{DiagnosticsAreaName}.Logging";
 
         public static void Log(string message, TraceSeverity traceSeverity, EventSeverity eventSeverity, TraceCategory category)
         {
@@ -80,11 +92,11 @@ namespace Yvand.EntraClaimsProvider
                         string currentMessage;
                         if (innerEx.InnerException != null)
                         {
-                            currentMessage = String.Format(excetpionMessage, count++.ToString(), innerEx.InnerException.GetType().FullName, innerEx.InnerException.Message);
+                            currentMessage = String.Format(excetpionMessage, count++.ToString(), innerEx.InnerException.GetType().Name, innerEx.InnerException.Message);
                         }
                         else
                         {
-                            currentMessage = String.Format(excetpionMessage, count++.ToString(), innerEx.GetType().FullName, innerEx.Message);
+                            currentMessage = String.Format(excetpionMessage, count++.ToString(), innerEx.GetType().Name, innerEx.Message);
                         }
                         message.Append(currentMessage);
                     }
@@ -106,14 +118,14 @@ namespace Yvand.EntraClaimsProvider
                 }
                 else
                 {
-                    errorNessage = "[{0}] Unexpected error {1}: {2}: {3}, Callstack: {4}";
-                    if (ex.InnerException != null)
+                    errorNessage = "[{0}] Unexpected error {1}: {2}: {3}";
+                    if (ex.InnerException != null && !(ex.InnerException is AggregateException))
                     {
-                        errorNessage = String.Format(errorNessage, claimsProviderName, customMessage, ex.InnerException.GetType().FullName, ex.InnerException.Message, ex.InnerException.StackTrace);
+                        errorNessage = String.Format(errorNessage, claimsProviderName, customMessage, ex.InnerException.GetType().Name, ex.InnerException.Message);
                     }
                     else
                     {
-                        errorNessage = String.Format(errorNessage, claimsProviderName, customMessage, ex.GetType().FullName, ex.Message, ex.StackTrace);
+                        errorNessage = String.Format(errorNessage, claimsProviderName, customMessage, ex.GetType().Name, ex.Message);
                     }
                 }
                 WriteTrace(category, TraceSeverity.Unexpected, errorNessage);
@@ -148,23 +160,53 @@ namespace Yvand.EntraClaimsProvider
         {
             get
             {
-                var LogSvc = SPDiagnosticsServiceBase.GetLocal<Logger>();
-                // if the Logging Service is registered, just return it.
-                if (LogSvc != null)
+                if (_Local != null)
                 {
-                    return LogSvc;
+                    return _Local;
                 }
 
-                Logger svc = null;
                 SPSecurity.RunWithElevatedPrivileges(delegate ()
                 {
-                    // otherwise instantiate and register the new instance, which requires farm administrator privileges
-                    svc = new Logger();
+                    try
+                    {
+                        // SPContext.Current can be null in some processes like PowerShell.exe
+                        if (SPContext.Current != null)
+                        {
+                            SPContext.Current.Web.AllowUnsafeUpdates = true;
+                        }
+                        // This call may try to update the persisted object, so AllowUnsafeUpdates must be set before
+                        _Local = SPDiagnosticsServiceBase.GetLocal<Logger>();
+                    }
+                    catch (SPDuplicateObjectException)
+                    {
+                        // This exception may happen for no reason that I can understand. Calling Unregister() does cleanly remove the persisted object for class Logger.
+                        // And a new persisted object will be recreated when calling new Logger()
+                        Logger.Unregister();
+                    }
+                    catch(System.Security.SecurityException)
+                    {
+                        // Even the application pool account may get an access denied while calling SPDiagnosticsServiceBase.GetLocal<Logger>();
+                    }
+
+                    // if the Logging Service is registered, just return it.
+                    if (_Local != null)
+                    {
+                        return;
+                    }
+
+                    // otherwise instantiate the new instance, which the application pool account can do
+                    _Local = new Logger();
                     //svc.Update();
                 });
-                return svc;
+                // SPContext.Current can be null in some processes like PowerShell.exe
+                if (SPContext.Current != null)
+                {
+                    SPContext.Current.Web.AllowUnsafeUpdates = false;
+                }
+                return _Local;
             }
         }
+        private static Logger _Local;
 
         public Logger() : base(DiagnosticsAreaName, SPFarm.Local) { }
         public Logger(string name, SPFarm farm) : base(name, farm) { }
@@ -222,6 +264,8 @@ namespace Yvand.EntraClaimsProvider
                         CreateCategory(TraceCategory.Rehydration),
                         CreateCategory(TraceCategory.Debug),
                         CreateCategory(TraceCategory.Custom),
+                        CreateCategory(TraceCategory.AzureIdentity),
+                        CreateCategory(TraceCategory.GraphRequests),
                     }
                 );
             }

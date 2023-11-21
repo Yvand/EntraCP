@@ -13,7 +13,9 @@ using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
+using System.Net;
 using System.Reflection;
+using System.Threading;
 using System.Threading.Tasks;
 using Yvand.EntraClaimsProvider.Configuration;
 
@@ -25,110 +27,120 @@ namespace Yvand.EntraClaimsProvider
 
         public async override Task<List<string>> GetEntityGroupsAsync(OperationContext currentContext, DirectoryObjectProperty groupProperty)
         {
-            List<EntraIDTenant> azureTenants = currentContext.AzureTenants;
+            // Create a Task for each tenant to query
+            IEnumerable<Task<List<string>>> tenantTasks = currentContext.AzureTenants.Select(async tenant =>
+            {
+                // Wrap the call to GetEntityGroupsFromTenantAsync() in a Task to avoid a hang when using the "check permissions" dialog
+                List<string> groupsInTenant = await Task.Run(() => GetEntityGroupsFromTenantAsync(currentContext, groupProperty, tenant)).ConfigureAwait(false);
+                return groupsInTenant;
+            });
+
+            // Wait for all tenantTasks to complete
+            List<string>[] listsFromAllTenants = await Task.WhenAll(tenantTasks).ConfigureAwait(false);
+            List<string> allGroups = new List<string>();
+            for (int i = 0; i < listsFromAllTenants.Length; i++)
+            {
+                allGroups.AddRange(listsFromAllTenants[i]);
+            }
+            return allGroups;
+        }
+
+        public async Task<List<string>> GetEntityGroupsFromTenantAsync(OperationContext currentContext, DirectoryObjectProperty groupProperty, EntraIDTenant tenant)
+        {
             // URL encode the filter to prevent that it gets truncated like this: "UserPrincipalName eq 'guest_contoso.com" instead of "UserPrincipalName eq 'guest_contoso.com#EXT#@TENANT.onmicrosoft.com'"
             string getMemberUserFilter = $"{currentContext.IncomingEntityClaimTypeConfig.EntityProperty} eq '{currentContext.IncomingEntity.Value}'";
             string getGuestUserFilter = $"userType eq 'Guest' and {currentContext.Settings.IdentityClaimTypeConfig.DirectoryObjectPropertyForGuestUsers} eq '{currentContext.IncomingEntity.Value}'";
 
-            // Create a task for each tenant to query
-            IEnumerable<Task<List<string>>> tenantTasks = azureTenants.Select(async tenant =>
+            List<string> groupsInTenant = new List<string>();
+            Stopwatch timer = new Stopwatch();
+            timer.Start();
+            try
             {
-                List<string> groupsInTenant = new List<string>();
-                Stopwatch timer = new Stopwatch();
-                timer.Start();
-                try
+                // Search the user as a member
+                var userCollectionResult = await tenant.GraphService.Users.GetAsync((config) =>
                 {
-                    // Search the user as a member
-                    var userCollectionResult = await tenant.GraphService.Users.GetAsync((config) =>
+                    config.QueryParameters.Filter = getMemberUserFilter;
+                    config.QueryParameters.Select = new[] { "Id" };
+                    config.QueryParameters.Top = 1;
+                }).ConfigureAwait(false);
+
+                User user = userCollectionResult?.Value?.FirstOrDefault();
+                if (user == null)
+                {
+                    // If user was not found, he might be a Guest user. Query to check this: /users?$filter=userType eq 'Guest' and mail eq 'guest@live.com'&$select=userPrincipalName, Id
+                    //string guestFilter = HttpUtility.UrlEncode($"userType eq 'Guest' and {IdentityClaimTypeConfig.DirectoryObjectPropertyForGuestUsers} eq '{currentContext.IncomingEntity.Value}'");
+                    //userResult = await tenant.GraphService.Users.Request().Filter(guestFilter).Select(HttpUtility.UrlEncode("userPrincipalName, Id")).GetAsync().ConfigureAwait(false);
+                    //userResult = await Task.Run(() => tenant.GraphService.Users.Request().Filter(guestFilter).Select(HttpUtility.UrlEncode("userPrincipalName, Id")).GetAsync()).ConfigureAwait(false);
+                    userCollectionResult = await Task.Run(() => tenant.GraphService.Users.GetAsync((config) =>
                     {
-                        config.QueryParameters.Filter = getMemberUserFilter;
+                        config.QueryParameters.Filter = getGuestUserFilter;
                         config.QueryParameters.Select = new[] { "Id" };
                         config.QueryParameters.Top = 1;
-                    }).ConfigureAwait(false);
+                    })).ConfigureAwait(false);
+                    user = userCollectionResult?.Value?.FirstOrDefault();
+                }
+                if (user == null) { return groupsInTenant; }
 
-                    User user = userCollectionResult?.Value?.FirstOrDefault();
-                    if (user == null)
-                    {
-                        // If user was not found, he might be a Guest user. Query to check this: /users?$filter=userType eq 'Guest' and mail eq 'guest@live.com'&$select=userPrincipalName, Id
-                        //string guestFilter = HttpUtility.UrlEncode($"userType eq 'Guest' and {IdentityClaimTypeConfig.DirectoryObjectPropertyForGuestUsers} eq '{currentContext.IncomingEntity.Value}'");
-                        //userResult = await tenant.GraphService.Users.Request().Filter(guestFilter).Select(HttpUtility.UrlEncode("userPrincipalName, Id")).GetAsync().ConfigureAwait(false);
-                        //userResult = await Task.Run(() => tenant.GraphService.Users.Request().Filter(guestFilter).Select(HttpUtility.UrlEncode("userPrincipalName, Id")).GetAsync()).ConfigureAwait(false);
-                        userCollectionResult = await Task.Run(() => tenant.GraphService.Users.GetAsync((config) =>
-                        {
-                            config.QueryParameters.Filter = getGuestUserFilter;
-                            config.QueryParameters.Select = new[] { "Id" };
-                            config.QueryParameters.Top = 1;
-                        })).ConfigureAwait(false);
-                        user = userCollectionResult?.Value?.FirstOrDefault();
-                    }
-                    if (user == null) { return groupsInTenant; }
-
-                    if (groupProperty == DirectoryObjectProperty.Id)
-                    {
-                        // POST to /v1.0/users/user@TENANT.onmicrosoft.com/microsoft.graph.getMemberGroups is the preferred way to return security groups as it includes nested groups
-                        // But it returns only the group IDs so it can be used only if groupClaimTypeConfig.DirectoryObjectProperty == AzureADObjectProperty.Id
-                        // For Guest users, it must be the id: POST to /v1.0/users/18ff6ae9-dd01-4008-a786-aabf71f1492a/microsoft.graph.getMemberGroups
-                        GetMemberGroupsPostRequestBody getGroupsOptions = new GetMemberGroupsPostRequestBody { SecurityEnabledOnly = currentContext.Settings.FilterSecurityEnabledGroupsOnly };
-                        GetMemberGroupsResponse memberGroupsResponse = await Task.Run(() => tenant.GraphService.Users[user.Id].GetMemberGroups.PostAsync(getGroupsOptions)).ConfigureAwait(false);
-                        if (memberGroupsResponse?.Value != null)
-                        {
-                            PageIterator<string, GetMemberGroupsResponse> memberGroupsPageIterator = PageIterator<string, GetMemberGroupsResponse>.CreatePageIterator(
-                            tenant.GraphService,
-                            memberGroupsResponse,
-                            (groupId) =>
-                            {
-                                groupsInTenant.Add(groupId);
-                                return true; // return true to continue the iteration
-                            });
-                            await memberGroupsPageIterator.IterateAsync().ConfigureAwait(false);
-                        }
-                    }
-                    else
-                    {
-                        // Fallback to GET to /v1.0/users/user@TENANT.onmicrosoft.com/memberOf, which returns all group properties but does not return nested groups
-                        DirectoryObjectCollectionResponse memberOfResponse = await Task.Run(() => tenant.GraphService.Users[user.Id].MemberOf.GetAsync()).ConfigureAwait(false);
-                        if (memberOfResponse?.Value != null)
-                        {
-                            PageIterator<Group, DirectoryObjectCollectionResponse> memberGroupsPageIterator = PageIterator<Group, DirectoryObjectCollectionResponse>.CreatePageIterator(
-                            tenant.GraphService,
-                            memberOfResponse,
-                            (group) =>
-                            {
-                                string groupClaimValue = GetPropertyValue(group, groupProperty.ToString());
-                                groupsInTenant.Add(groupClaimValue);
-                                return true; // return true to continue the iteration
-                            });
-                            await memberGroupsPageIterator.IterateAsync().ConfigureAwait(false);
-                        }
-                    }
-                }
-                catch (Exception ex)
+                if (groupProperty == DirectoryObjectProperty.Id)
                 {
-                    Logger.LogException(ClaimsProviderName, $"while getting groups for user '{currentContext.IncomingEntity.Value}' from tenant '{tenant.Name}'", TraceCategory.Augmentation, ex);
-                }
-                finally
-                {
-                    timer.Stop();
-                }
-                if (groupsInTenant != null)
-                {
-                    Logger.Log($"[{ClaimsProviderName}] Got {groupsInTenant.Count} groups in {timer.ElapsedMilliseconds} ms for user '{currentContext.IncomingEntity.Value}' from tenant '{tenant.Name}'", TraceSeverity.Verbose, EventSeverity.Information, TraceCategory.Augmentation);
+                    // POST to /v1.0/users/user@TENANT.onmicrosoft.com/microsoft.graph.getMemberGroups is the preferred way to return security groups as it includes nested groups
+                    // But it returns only the group IDs so it can be used only if groupClaimTypeConfig.DirectoryObjectProperty == AzureADObjectProperty.Id
+                    // For Guest users, it must be the id: POST to /v1.0/users/18ff6ae9-dd01-4008-a786-aabf71f1492a/microsoft.graph.getMemberGroups
+                    GetMemberGroupsPostRequestBody getGroupsOptions = new GetMemberGroupsPostRequestBody { SecurityEnabledOnly = currentContext.Settings.FilterSecurityEnabledGroupsOnly };
+                    GetMemberGroupsPostResponse memberGroupsResponse = await Task.Run(() => tenant.GraphService.Users[user.Id].GetMemberGroups.PostAsGetMemberGroupsPostResponseAsync(getGroupsOptions)).ConfigureAwait(false);
+                    if (memberGroupsResponse?.Value != null)
+                    {
+                        PageIterator<string, GetMemberGroupsPostResponse> memberGroupsPageIterator = PageIterator<string, GetMemberGroupsPostResponse>.CreatePageIterator(
+                        tenant.GraphService,
+                        memberGroupsResponse,
+                        (groupId) =>
+                        {
+                            groupsInTenant.Add(groupId);
+                            return true; // return true to continue the iteration
+                        });
+                        await memberGroupsPageIterator.IterateAsync().ConfigureAwait(false);
+                    }
                 }
                 else
                 {
-                    Logger.Log($"[{ClaimsProviderName}] Got no group in {timer.ElapsedMilliseconds} ms for user '{currentContext.IncomingEntity.Value}' from tenant '{tenant.Name}'", TraceSeverity.Verbose, EventSeverity.Information, TraceCategory.Augmentation);
+                    // Fallback to GET to /v1.0/users/user@TENANT.onmicrosoft.com/memberOf, which returns all group properties but does not return nested groups
+                    DirectoryObjectCollectionResponse memberOfResponse = await Task.Run(() => tenant.GraphService.Users[user.Id].MemberOf.GetAsync()).ConfigureAwait(false);
+                    if (memberOfResponse?.Value != null)
+                    {
+                        PageIterator<Group, DirectoryObjectCollectionResponse> memberGroupsPageIterator = PageIterator<Group, DirectoryObjectCollectionResponse>.CreatePageIterator(
+                        tenant.GraphService,
+                        memberOfResponse,
+                        (group) =>
+                        {
+                            string groupClaimValue = GetPropertyValue(group, groupProperty.ToString());
+                            groupsInTenant.Add(groupClaimValue);
+                            return true; // return true to continue the iteration
+                        });
+                        await memberGroupsPageIterator.IterateAsync().ConfigureAwait(false);
+                    }
                 }
-                return groupsInTenant;
-            });
-
-            List<string> groups = new List<string>();
-            // Wait for all tasks to complete
-            List<string>[] groupsInAllTenants = await Task.WhenAll(tenantTasks).ConfigureAwait(false);
-            for (int i = 0; i < groupsInAllTenants.Length; i++)
-            {
-                groups.AddRange(groupsInAllTenants[i]);
             }
-            return groups;
+            catch (TaskCanceledException ex)
+            {
+                Logger.LogException(ClaimsProviderName, $"while getting groups for user '{currentContext.IncomingEntity.Value}' from tenant '{tenant.Name}': The task likely exceeded the timeout of {currentContext.Settings.Timeout} ms and was canceled", TraceCategory.Augmentation, ex);
+            }
+            catch (Exception ex)
+            {
+                Logger.LogException(ClaimsProviderName, $"while getting groups for user '{currentContext.IncomingEntity.Value}' from tenant '{tenant.Name}'", TraceCategory.Augmentation, ex);
+            }
+            finally
+            {
+                timer.Stop();
+            }
+            if (groupsInTenant != null)
+            {
+                Logger.Log($"[{ClaimsProviderName}] Got {groupsInTenant.Count} groups in {timer.ElapsedMilliseconds} ms for user '{currentContext.IncomingEntity.Value}' from tenant '{tenant.Name}'", TraceSeverity.Verbose, EventSeverity.Information, TraceCategory.Augmentation);
+            }
+            else
+            {
+                Logger.Log($"[{ClaimsProviderName}] Got no group in {timer.ElapsedMilliseconds} ms for user '{currentContext.IncomingEntity.Value}' from tenant '{tenant.Name}'", TraceSeverity.Verbose, EventSeverity.Information, TraceCategory.Augmentation);
+            }
+            return groupsInTenant;
         }
 
         public async override Task<List<DirectoryObject>> SearchOrValidateEntitiesAsync(OperationContext currentContext)
@@ -307,20 +319,9 @@ namespace Yvand.EntraClaimsProvider
             var tenantQueryTasks = azureTenants.Select(async tenant =>
             {
                 Stopwatch timer = new Stopwatch();
-                List<DirectoryObject> tenantResults = null;
-                try
-                {
-                    timer.Start();
-                    tenantResults = await QueryEntraIDTenantAsync(currentContext, tenant).ConfigureAwait(false);
-                }
-                catch (Exception ex)
-                {
-                    Logger.LogException(ClaimsProviderName, $"in QueryEntraIDTenantsAsync while querying tenant '{tenant.Name}'", TraceCategory.Lookup, ex);
-                }
-                finally
-                {
-                    timer.Stop();
-                }
+                timer.Start();
+                List<DirectoryObject> tenantResults = await QueryEntraIDTenantAsync(currentContext, tenant).ConfigureAwait(false);
+                timer.Stop();
                 if (tenantResults != null)
                 {
                     Logger.Log($"[{ClaimsProviderName}] Got {tenantResults.Count} users/groups in {timer.ElapsedMilliseconds.ToString()} ms from '{tenant.Name}' with input '{currentContext.Input}'", TraceSeverity.Medium, EventSeverity.Information, TraceCategory.Lookup);
@@ -337,7 +338,11 @@ namespace Yvand.EntraClaimsProvider
             List<DirectoryObject>[] tenantsResults = await Task.WhenAll(tenantQueryTasks).ConfigureAwait(false);
             for (int i = 0; i < tenantsResults.Length; i++)
             {
-                allResults.AddRange(tenantsResults[i]);
+                // If request to Graph failed, tenantsResults[i] is null and that would cause a ThrowArgumentNullException in List<T>.InsertRange()
+                if (tenantsResults[i] != null && tenantsResults[i].Count > 0)
+                {
+                    allResults.AddRange(tenantsResults[i]);
+                }
             }
             return allResults;
         }
@@ -440,11 +445,41 @@ namespace Yvand.EntraClaimsProvider
                         groupsRequestId = await batchRequestContent.AddBatchRequestStepAsync(groupRequest).ConfigureAwait(false);
                     }
 
-                    BatchResponseContentCollection returnedResponse = await tenant.GraphService.Batch.PostAsync(batchRequestContent).ConfigureAwait(false);
-                    UserCollectionResponse userCollectionResult = await returnedResponse.GetResponseByIdAsync<UserCollectionResponse>(usersRequestId).ConfigureAwait(false);
-                    GroupCollectionResponse groupCollectionResult = await returnedResponse.GetResponseByIdAsync<GroupCollectionResponse>(groupsRequestId).ConfigureAwait(false);
+                    // Run the batch request and get the HTTP status code of each request inside the batch
+                    BatchResponseContentCollection batchResponse = await tenant.GraphService.Batch.PostAsync(batchRequestContent).ConfigureAwait(false);
+                    Dictionary<string, HttpStatusCode> requestsStatusInBatchResponse = await batchResponse.GetResponsesStatusCodesAsync().ConfigureAwait(false);
 
-                    Logger.Log($"[{ClaimsProviderName}] Query to tenant '{tenant.Name}' returned {(userCollectionResult?.Value == null ? 0 : userCollectionResult.Value.Count)} user(s) with filter \"{tenant.UserFilter}\"", TraceSeverity.VerboseEx, EventSeverity.Information, TraceCategory.Lookup);
+                    // Check if the users' request in the batch request was successful. If so, get the users that were returned by Graph
+                    HttpStatusCode usersRequestStatus;
+                    UserCollectionResponse userCollectionResult = null;
+                    if (requestsStatusInBatchResponse.TryGetValue(usersRequestId, out usersRequestStatus))
+                    {
+                        if (usersRequestStatus == HttpStatusCode.OK)
+                        {
+                            userCollectionResult = await batchResponse.GetResponseByIdAsync<UserCollectionResponse>(usersRequestId).ConfigureAwait(false);
+                        }
+                        else
+                        {
+                            Logger.Log($"[{ClaimsProviderName}] Query to tenant '{tenant.Name}' returned unexpected status '{usersRequestStatus}' for users request with filter \"{tenant.UserFilter}\"", TraceSeverity.Unexpected, EventSeverity.Error, TraceCategory.Lookup);
+                        }
+                    }
+
+                    // Check if the groups' request in the batch request was successful. If so, get the users that were returned by Graph
+                    HttpStatusCode groupRequestStatus;
+                    GroupCollectionResponse groupCollectionResult = null;
+                    if (requestsStatusInBatchResponse.TryGetValue(groupsRequestId, out groupRequestStatus))
+                    {
+                        if (groupRequestStatus == HttpStatusCode.OK)
+                        {
+                            groupCollectionResult = await batchResponse.GetResponseByIdAsync<GroupCollectionResponse>(groupsRequestId).ConfigureAwait(false);
+                        }
+                        else
+                        {
+                            Logger.Log($"[{ClaimsProviderName}] Query to tenant '{tenant.Name}' returned unexpected status '{groupRequestStatus}' for groups request with filter \"{tenant.GroupFilter}\"", TraceSeverity.Unexpected, EventSeverity.Error, TraceCategory.Lookup);
+                        }
+                    }
+
+                    Logger.Log($"[{ClaimsProviderName}] Query to tenant '{tenant.Name}' returned {(userCollectionResult?.Value == null ? 0 : userCollectionResult.Value.Count)} user(s) with filter \"{tenant.UserFilter}\" and {(groupCollectionResult?.Value == null ? 0 : groupCollectionResult.Value.Count)} group(s) with filter \"{tenant.GroupFilter}\"", TraceSeverity.VerboseEx, EventSeverity.Information, TraceCategory.Lookup);
                     // Process users result
                     if (userCollectionResult?.Value != null)
                     {
@@ -526,7 +561,7 @@ namespace Yvand.EntraClaimsProvider
             }
             catch (OperationCanceledException)
             {
-                Logger.Log($"[{ClaimsProviderName}] Queries on Microsoft Entra ID tenant '{tenant.Name}' exceeded timeout of {timeout} ms and were cancelled.", TraceSeverity.Unexpected, EventSeverity.Error, TraceCategory.Lookup);
+                Logger.Log($"[{ClaimsProviderName}] Operation on Entra ID for tenant '{tenant.Name}' exceeded the timeout of {timeout} ms and was cancelled.", TraceSeverity.Unexpected, EventSeverity.Error, TraceCategory.Lookup);
             }
             catch (AuthenticationFailedException ex)
             {
@@ -544,6 +579,10 @@ namespace Yvand.EntraClaimsProvider
             {
                 // Task.WaitAll throws an AggregateException, which contains all exceptions thrown by tasks it waited on
                 Logger.LogException(ClaimsProviderName, $"while querying Microsoft Entra ID tenant '{tenant.Name}'", TraceCategory.Lookup, ex);
+            }
+            catch (Exception ex)
+            {
+                Logger.LogException(ClaimsProviderName, $"in QueryEntraIDTenantAsync while querying tenant '{tenant.Name}'", TraceCategory.Lookup, ex);
             }
             finally
             {

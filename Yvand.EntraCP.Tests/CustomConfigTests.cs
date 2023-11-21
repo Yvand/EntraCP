@@ -1,11 +1,10 @@
 ﻿using Microsoft.SharePoint.Administration.Claims;
-using NUnit.Framework;
-using System.Diagnostics;
-using System;
-using System.Security.Claims;
-using Yvand;
-using Yvand.EntraClaimsProvider.Configuration;
 using Newtonsoft.Json;
+using NUnit.Framework;
+using System;
+using System.Diagnostics;
+using System.Security.Claims;
+using Yvand.EntraClaimsProvider.Configuration;
 
 namespace Yvand.EntraClaimsProvider.Tests
 {

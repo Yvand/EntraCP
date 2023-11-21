@@ -1,5 +1,18 @@
 # Change log for ~~AzureCP~~ EntraCP
 
+## Unreleased
+
+* Fix a bug causing a hang on the web application, when using the check permissions feature to verify the permissions of a trusted user
+* SharePoint 2016: The new minimum build version required to run EntraCP is 16.0.4483.1001 - January 2017 cumulative update
+* Improve the management of tenant credentials, including new helpers to renew the client secret of certificate using PowerShell
+* Improve page TroubleshootEntraCP.aspx
+* Add a mechanism to use custom settings instead of settings from the persisted objects
+* Fix issues causing logging to not be actually written in SharePoint logs
+* Add logging categories "Azure Identity" and "Graph Requests"
+* Improve the readability of the errors recorded in the log
+* Better verify the responses from Graph, to avoid causing additional exceptions if an error already happened
+* Bump dependencies
+
 ## EntraCP v22.0.20230927.29 enhancements & bug-fixes - Published in September 27, 2023
 
 * Rename project AzureCP to EntraCP
