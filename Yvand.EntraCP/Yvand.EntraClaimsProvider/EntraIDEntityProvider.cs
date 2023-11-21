@@ -27,114 +27,120 @@ namespace Yvand.EntraClaimsProvider
 
         public async override Task<List<string>> GetEntityGroupsAsync(OperationContext currentContext, DirectoryObjectProperty groupProperty)
         {
-            List<EntraIDTenant> azureTenants = currentContext.AzureTenants;
+            // Create a Task for each tenant to query
+            IEnumerable<Task<List<string>>> tenantTasks = currentContext.AzureTenants.Select(async tenant =>
+            {
+                // Wrap the call to GetEntityGroupsFromTenantAsync() in a Task to avoid a hang when using the "check permissions" dialog
+                List<string> groupsInTenant = await Task.Run(() => GetEntityGroupsFromTenantAsync(currentContext, groupProperty, tenant)).ConfigureAwait(false);
+                return groupsInTenant;
+            });
+
+            // Wait for all tenantTasks to complete
+            List<string>[] listsFromAllTenants = await Task.WhenAll(tenantTasks).ConfigureAwait(false);
+            List<string> allGroups = new List<string>();
+            for (int i = 0; i < listsFromAllTenants.Length; i++)
+            {
+                allGroups.AddRange(listsFromAllTenants[i]);
+            }
+            return allGroups;
+        }
+
+        public async Task<List<string>> GetEntityGroupsFromTenantAsync(OperationContext currentContext, DirectoryObjectProperty groupProperty, EntraIDTenant tenant)
+        {
             // URL encode the filter to prevent that it gets truncated like this: "UserPrincipalName eq 'guest_contoso.com" instead of "UserPrincipalName eq 'guest_contoso.com#EXT#@TENANT.onmicrosoft.com'"
             string getMemberUserFilter = $"{currentContext.IncomingEntityClaimTypeConfig.EntityProperty} eq '{currentContext.IncomingEntity.Value}'";
             string getGuestUserFilter = $"userType eq 'Guest' and {currentContext.Settings.IdentityClaimTypeConfig.DirectoryObjectPropertyForGuestUsers} eq '{currentContext.IncomingEntity.Value}'";
 
-            // Create a task for each tenant to query
-            IEnumerable<Task<List<string>>> tenantTasks = azureTenants.Select(async tenant =>
+            List<string> groupsInTenant = new List<string>();
+            Stopwatch timer = new Stopwatch();
+            timer.Start();
+            try
             {
-                List<string> groupsInTenant = new List<string>();
-                Stopwatch timer = new Stopwatch();
-                timer.Start();
-                try
+                // Search the user as a member
+                var userCollectionResult = await tenant.GraphService.Users.GetAsync((config) =>
                 {
-                    // Search the user as a member
-                    var userCollectionResult = await tenant.GraphService.Users.GetAsync((config) =>
+                    config.QueryParameters.Filter = getMemberUserFilter;
+                    config.QueryParameters.Select = new[] { "Id" };
+                    config.QueryParameters.Top = 1;
+                }).ConfigureAwait(false);
+
+                User user = userCollectionResult?.Value?.FirstOrDefault();
+                if (user == null)
+                {
+                    // If user was not found, he might be a Guest user. Query to check this: /users?$filter=userType eq 'Guest' and mail eq 'guest@live.com'&$select=userPrincipalName, Id
+                    //string guestFilter = HttpUtility.UrlEncode($"userType eq 'Guest' and {IdentityClaimTypeConfig.DirectoryObjectPropertyForGuestUsers} eq '{currentContext.IncomingEntity.Value}'");
+                    //userResult = await tenant.GraphService.Users.Request().Filter(guestFilter).Select(HttpUtility.UrlEncode("userPrincipalName, Id")).GetAsync().ConfigureAwait(false);
+                    //userResult = await Task.Run(() => tenant.GraphService.Users.Request().Filter(guestFilter).Select(HttpUtility.UrlEncode("userPrincipalName, Id")).GetAsync()).ConfigureAwait(false);
+                    userCollectionResult = await Task.Run(() => tenant.GraphService.Users.GetAsync((config) =>
                     {
-                        config.QueryParameters.Filter = getMemberUserFilter;
+                        config.QueryParameters.Filter = getGuestUserFilter;
                         config.QueryParameters.Select = new[] { "Id" };
                         config.QueryParameters.Top = 1;
-                    }).ConfigureAwait(false);
+                    })).ConfigureAwait(false);
+                    user = userCollectionResult?.Value?.FirstOrDefault();
+                }
+                if (user == null) { return groupsInTenant; }
 
-                    User user = userCollectionResult?.Value?.FirstOrDefault();
-                    if (user == null)
+                if (groupProperty == DirectoryObjectProperty.Id)
+                {
+                    // POST to /v1.0/users/user@TENANT.onmicrosoft.com/microsoft.graph.getMemberGroups is the preferred way to return security groups as it includes nested groups
+                    // But it returns only the group IDs so it can be used only if groupClaimTypeConfig.DirectoryObjectProperty == AzureADObjectProperty.Id
+                    // For Guest users, it must be the id: POST to /v1.0/users/18ff6ae9-dd01-4008-a786-aabf71f1492a/microsoft.graph.getMemberGroups
+                    GetMemberGroupsPostRequestBody getGroupsOptions = new GetMemberGroupsPostRequestBody { SecurityEnabledOnly = currentContext.Settings.FilterSecurityEnabledGroupsOnly };
+                    GetMemberGroupsPostResponse memberGroupsResponse = await Task.Run(() => tenant.GraphService.Users[user.Id].GetMemberGroups.PostAsGetMemberGroupsPostResponseAsync(getGroupsOptions)).ConfigureAwait(false);
+                    if (memberGroupsResponse?.Value != null)
                     {
-                        // If user was not found, he might be a Guest user. Query to check this: /users?$filter=userType eq 'Guest' and mail eq 'guest@live.com'&$select=userPrincipalName, Id
-                        //string guestFilter = HttpUtility.UrlEncode($"userType eq 'Guest' and {IdentityClaimTypeConfig.DirectoryObjectPropertyForGuestUsers} eq '{currentContext.IncomingEntity.Value}'");
-                        //userResult = await tenant.GraphService.Users.Request().Filter(guestFilter).Select(HttpUtility.UrlEncode("userPrincipalName, Id")).GetAsync().ConfigureAwait(false);
-                        //userResult = await Task.Run(() => tenant.GraphService.Users.Request().Filter(guestFilter).Select(HttpUtility.UrlEncode("userPrincipalName, Id")).GetAsync()).ConfigureAwait(false);
-                        userCollectionResult = await Task.Run(() => tenant.GraphService.Users.GetAsync((config) =>
+                        PageIterator<string, GetMemberGroupsPostResponse> memberGroupsPageIterator = PageIterator<string, GetMemberGroupsPostResponse>.CreatePageIterator(
+                        tenant.GraphService,
+                        memberGroupsResponse,
+                        (groupId) =>
                         {
-                            config.QueryParameters.Filter = getGuestUserFilter;
-                            config.QueryParameters.Select = new[] { "Id" };
-                            config.QueryParameters.Top = 1;
-                        })).ConfigureAwait(false);
-                        user = userCollectionResult?.Value?.FirstOrDefault();
+                            groupsInTenant.Add(groupId);
+                            return true; // return true to continue the iteration
+                        });
+                        await memberGroupsPageIterator.IterateAsync().ConfigureAwait(false);
                     }
-                    if (user == null) { return groupsInTenant; }
-
-                    if (groupProperty == DirectoryObjectProperty.Id)
-                    {
-                        // POST to /v1.0/users/user@TENANT.onmicrosoft.com/microsoft.graph.getMemberGroups is the preferred way to return security groups as it includes nested groups
-                        // But it returns only the group IDs so it can be used only if groupClaimTypeConfig.DirectoryObjectProperty == AzureADObjectProperty.Id
-                        // For Guest users, it must be the id: POST to /v1.0/users/18ff6ae9-dd01-4008-a786-aabf71f1492a/microsoft.graph.getMemberGroups
-                        GetMemberGroupsPostRequestBody getGroupsOptions = new GetMemberGroupsPostRequestBody { SecurityEnabledOnly = currentContext.Settings.FilterSecurityEnabledGroupsOnly };
-                        GetMemberGroupsPostResponse memberGroupsResponse = await Task.Run(() => tenant.GraphService.Users[user.Id].GetMemberGroups.PostAsGetMemberGroupsPostResponseAsync(getGroupsOptions)).ConfigureAwait(false);
-                        if (memberGroupsResponse?.Value != null)
-                        {
-                            PageIterator<string, GetMemberGroupsPostResponse> memberGroupsPageIterator = PageIterator<string, GetMemberGroupsPostResponse>.CreatePageIterator(
-                            tenant.GraphService,
-                            memberGroupsResponse,
-                            (groupId) =>
-                            {
-                                groupsInTenant.Add(groupId);
-                                return true; // return true to continue the iteration
-                            });
-                            await memberGroupsPageIterator.IterateAsync().ConfigureAwait(false);
-                        }
-                    }
-                    else
-                    {
-                        // Fallback to GET to /v1.0/users/user@TENANT.onmicrosoft.com/memberOf, which returns all group properties but does not return nested groups
-                        DirectoryObjectCollectionResponse memberOfResponse = await Task.Run(() => tenant.GraphService.Users[user.Id].MemberOf.GetAsync()).ConfigureAwait(false);
-                        if (memberOfResponse?.Value != null)
-                        {
-                            PageIterator<Group, DirectoryObjectCollectionResponse> memberGroupsPageIterator = PageIterator<Group, DirectoryObjectCollectionResponse>.CreatePageIterator(
-                            tenant.GraphService,
-                            memberOfResponse,
-                            (group) =>
-                            {
-                                string groupClaimValue = GetPropertyValue(group, groupProperty.ToString());
-                                groupsInTenant.Add(groupClaimValue);
-                                return true; // return true to continue the iteration
-                            });
-                            await memberGroupsPageIterator.IterateAsync().ConfigureAwait(false);
-                        }
-                    }
-                }
-                catch (TaskCanceledException ex)
-                {
-                    Logger.LogException(ClaimsProviderName, $"while getting groups for user '{currentContext.IncomingEntity.Value}' from tenant '{tenant.Name}': The task likely exceeded the timeout of {currentContext.Settings.Timeout} ms and was canceled", TraceCategory.Augmentation, ex);
-                }
-                catch (Exception ex)
-                {
-                    Logger.LogException(ClaimsProviderName, $"while getting groups for user '{currentContext.IncomingEntity.Value}' from tenant '{tenant.Name}'", TraceCategory.Augmentation, ex);
-                }
-                finally
-                {
-                    timer.Stop();
-                }
-                if (groupsInTenant != null)
-                {
-                    Logger.Log($"[{ClaimsProviderName}] Got {groupsInTenant.Count} groups in {timer.ElapsedMilliseconds} ms for user '{currentContext.IncomingEntity.Value}' from tenant '{tenant.Name}'", TraceSeverity.Verbose, EventSeverity.Information, TraceCategory.Augmentation);
                 }
                 else
                 {
-                    Logger.Log($"[{ClaimsProviderName}] Got no group in {timer.ElapsedMilliseconds} ms for user '{currentContext.IncomingEntity.Value}' from tenant '{tenant.Name}'", TraceSeverity.Verbose, EventSeverity.Information, TraceCategory.Augmentation);
+                    // Fallback to GET to /v1.0/users/user@TENANT.onmicrosoft.com/memberOf, which returns all group properties but does not return nested groups
+                    DirectoryObjectCollectionResponse memberOfResponse = await Task.Run(() => tenant.GraphService.Users[user.Id].MemberOf.GetAsync()).ConfigureAwait(false);
+                    if (memberOfResponse?.Value != null)
+                    {
+                        PageIterator<Group, DirectoryObjectCollectionResponse> memberGroupsPageIterator = PageIterator<Group, DirectoryObjectCollectionResponse>.CreatePageIterator(
+                        tenant.GraphService,
+                        memberOfResponse,
+                        (group) =>
+                        {
+                            string groupClaimValue = GetPropertyValue(group, groupProperty.ToString());
+                            groupsInTenant.Add(groupClaimValue);
+                            return true; // return true to continue the iteration
+                        });
+                        await memberGroupsPageIterator.IterateAsync().ConfigureAwait(false);
+                    }
                 }
-                return groupsInTenant;
-            });
-
-            List<string> groups = new List<string>();
-            // Wait for all tasks to complete
-            List<string>[] groupsInAllTenants = await Task.WhenAll(tenantTasks).ConfigureAwait(false);
-            for (int i = 0; i < groupsInAllTenants.Length; i++)
-            {
-                groups.AddRange(groupsInAllTenants[i]);
             }
-            return groups;
+            catch (TaskCanceledException ex)
+            {
+                Logger.LogException(ClaimsProviderName, $"while getting groups for user '{currentContext.IncomingEntity.Value}' from tenant '{tenant.Name}': The task likely exceeded the timeout of {currentContext.Settings.Timeout} ms and was canceled", TraceCategory.Augmentation, ex);
+            }
+            catch (Exception ex)
+            {
+                Logger.LogException(ClaimsProviderName, $"while getting groups for user '{currentContext.IncomingEntity.Value}' from tenant '{tenant.Name}'", TraceCategory.Augmentation, ex);
+            }
+            finally
+            {
+                timer.Stop();
+            }
+            if (groupsInTenant != null)
+            {
+                Logger.Log($"[{ClaimsProviderName}] Got {groupsInTenant.Count} groups in {timer.ElapsedMilliseconds} ms for user '{currentContext.IncomingEntity.Value}' from tenant '{tenant.Name}'", TraceSeverity.Verbose, EventSeverity.Information, TraceCategory.Augmentation);
+            }
+            else
+            {
+                Logger.Log($"[{ClaimsProviderName}] Got no group in {timer.ElapsedMilliseconds} ms for user '{currentContext.IncomingEntity.Value}' from tenant '{tenant.Name}'", TraceSeverity.Verbose, EventSeverity.Information, TraceCategory.Augmentation);
+            }
+            return groupsInTenant;
         }
 
         public async override Task<List<DirectoryObject>> SearchOrValidateEntitiesAsync(OperationContext currentContext)
