@@ -1,6 +1,6 @@
 # Change log for ~~AzureCP~~ EntraCP
 
-## Unreleased
+## EntraCP v23.0.20231121.30 enhancements & bug-fixes - Published in November 21, 2023
 
 * Fix a bug causing a hang on the web application, when using the check permissions feature to verify the permissions of a trusted user
 * SharePoint 2016: The new minimum build version required to run EntraCP is 16.0.4483.1001 - January 2017 cumulative update
