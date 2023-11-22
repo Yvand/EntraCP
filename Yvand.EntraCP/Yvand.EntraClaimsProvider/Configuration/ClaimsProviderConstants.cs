@@ -8,6 +8,8 @@ using System.Diagnostics;
 using System.Linq;
 using System.Reflection;
 using System.Web;
+using Yvand.EntraClaimsProvider.Logging;
+using Logger = Yvand.EntraClaimsProvider.Logging.Logger;
 using WIF4_5 = System.Security.Claims;
 
 namespace Yvand.EntraClaimsProvider.Configuration
@@ -150,7 +152,6 @@ namespace Yvand.EntraClaimsProvider.Configuration
     /// </summary>
     public class OperationContext
     {
-        public IEntraCPSettings Settings { get; private set; }
         /// <summary>
         /// Indicates what kind of operation SharePoint is requesting
         /// </summary>
@@ -192,20 +193,14 @@ namespace Yvand.EntraClaimsProvider.Configuration
         public bool ExactSearch { get; private set; }
 
         /// <summary>
-        /// Set only if request is a validation or an augmentation, to the ClaimTypeConfig that matches the ClaimType of the incoming entity
-        /// </summary>
-        public ClaimTypeConfig IncomingEntityClaimTypeConfig { get; private set; }
-
-        /// <summary>
         /// Contains the relevant list of ClaimTypeConfig for every type of request. In case of validation or augmentation, it will contain only 1 item.
         /// </summary>
         public List<ClaimTypeConfig> CurrentClaimTypeConfigList { get; private set; }
 
         public List<EntraIDTenant> AzureTenants { get; private set; }
 
-        public OperationContext(IEntraCPSettings settings, OperationType currentRequestType, string input, SPClaim incomingEntity, Uri context, string[] entityTypes, string hierarchyNodeID, int maxCount)
+        public OperationContext(ClaimsProviderSettings settings, OperationType currentRequestType, string input, SPClaim incomingEntity, Uri context, string[] entityTypes, string hierarchyNodeID, int maxCount)
         {
-            this.Settings = settings;
             this.OperationType = currentRequestType;
             this.Input = input;
             this.IncomingEntity = incomingEntity;
@@ -217,7 +212,9 @@ namespace Yvand.EntraClaimsProvider.Configuration
             this.AzureTenants = new List<EntraIDTenant>(settings.EntraIDTenants.Count);
             foreach (EntraIDTenant tenant in settings.EntraIDTenants)
             {
-                AzureTenants.Add(tenant.CopyPublicProperties());
+                EntraIDTenant copy = new EntraIDTenant();
+                Utils.CopyPublicProperties(typeof(EntraIDTenant), tenant, copy);
+                AzureTenants.Add(copy);
             }
 
             if (entityTypes != null)
@@ -273,19 +270,19 @@ namespace Yvand.EntraClaimsProvider.Configuration
         protected void InitializeValidation(List<ClaimTypeConfig> runtimeClaimTypesList)
         {
             if (this.IncomingEntity == null) { throw new ArgumentNullException(nameof(this.IncomingEntity)); }
-            this.IncomingEntityClaimTypeConfig = runtimeClaimTypesList.FirstOrDefault(x =>
+            
+            // FirstOrDefault returns null if no result, while First throws an exception
+            ClaimTypeConfig incomingEntityClaimTypeConfig = runtimeClaimTypesList.FirstOrDefault(x =>
                String.Equals(x.ClaimType, this.IncomingEntity.ClaimType, StringComparison.InvariantCultureIgnoreCase) &&
                !x.UseMainClaimTypeOfDirectoryObject);
-
-            if (this.IncomingEntityClaimTypeConfig == null)
+            if (incomingEntityClaimTypeConfig == null)
             {
                 Logger.Log($"[{EntraCP.ClaimsProviderName}] Unable to validate entity \"{this.IncomingEntity.Value}\" because its claim type \"{this.IncomingEntity.ClaimType}\" was not found in the ClaimTypes list of current configuration.", TraceSeverity.Unexpected, EventSeverity.Error, TraceCategory.Configuration);
                 throw new InvalidOperationException($"[{EntraCP.ClaimsProviderName}] Unable validate entity \"{this.IncomingEntity.Value}\" because its claim type \"{this.IncomingEntity.ClaimType}\" was not found in the ClaimTypes list of current configuration.");
             }
-
             this.CurrentClaimTypeConfigList = new List<ClaimTypeConfig>(1)
             {
-                this.IncomingEntityClaimTypeConfig
+                incomingEntityClaimTypeConfig,
             };
             this.ExactSearch = true;
             this.Input = this.IncomingEntity.Value;
@@ -314,16 +311,6 @@ namespace Yvand.EntraClaimsProvider.Configuration
 
         protected void InitializeAugmentation(List<ClaimTypeConfig> runtimeClaimTypesList)
         {
-            if (this.IncomingEntity == null) { throw new ArgumentNullException(nameof(this.IncomingEntity)); }
-            this.IncomingEntityClaimTypeConfig = runtimeClaimTypesList.FirstOrDefault(x =>
-               String.Equals(x.ClaimType, this.IncomingEntity.ClaimType, StringComparison.InvariantCultureIgnoreCase) &&
-               !x.UseMainClaimTypeOfDirectoryObject);
-
-            if (this.IncomingEntityClaimTypeConfig == null)
-            {
-                Logger.Log($"[{EntraCP.ClaimsProviderName}] Unable to augment entity \"{this.IncomingEntity.Value}\" because its claim type \"{this.IncomingEntity.ClaimType}\" was not found in the ClaimTypes list of current configuration.", TraceSeverity.Unexpected, EventSeverity.Error, TraceCategory.Configuration);
-                throw new InvalidOperationException($"[{EntraCP.ClaimsProviderName}] Unable to augment entity \"{this.IncomingEntity.Value}\" because its claim type \"{this.IncomingEntity.ClaimType}\" was not found in the ClaimTypes list of current configuration.");
-            }
         }
     }
 }

@@ -21,7 +21,7 @@
       Id="EntraCPClaimsMappings"
       GroupId="EntraCP"
       Location="Microsoft.SharePoint.Administration.Security"
-      Title="Claim types configuration"
+      Title="Mapping of permissions"
       Sequence="20">
     <UrlAction Url="/_admin/EntraCP/ClaimTypesConfig.aspx" />
   </CustomAction>

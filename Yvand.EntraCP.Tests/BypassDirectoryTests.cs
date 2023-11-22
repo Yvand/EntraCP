@@ -1,17 +1,22 @@
-﻿using NUnit.Framework;
+﻿using Microsoft.SharePoint.Administration.Claims;
+using NUnit.Framework;
+using System.Security.Claims;
+using Yvand.EntraClaimsProvider.Configuration;
 
 namespace Yvand.EntraClaimsProvider.Tests
 {
     [TestFixture]
     [Parallelizable(ParallelScope.Children)]
-    public class ExcludeAllUserAccountsTests : ClaimsProviderTestsBase
+    public class BypassDirectoryOnClaimTypesTests : ClaimsProviderTestsBase
     {
-        public override bool ExcludeGuestUsers => true;
-        public override bool ExcludeMemberUsers => true;
-
+        string PrefixBypassUserSearch = "bypass-user:";
+        string PrefixBypassGroupSearch = "bypass-group:";
         public override void InitializeSettings()
         {
             base.InitializeSettings();
+            Settings.EnableAugmentation = true;
+            Settings.ClaimTypes.UserIdentifierConfig.PrefixToBypassLookup = PrefixBypassUserSearch;
+            Settings.ClaimTypes.GroupIdentifierConfig.PrefixToBypassLookup = PrefixBypassGroupSearch;
             base.ApplySettings();
         }
 
@@ -21,75 +26,48 @@ namespace Yvand.EntraClaimsProvider.Tests
             base.CheckSettingsTest();
         }
 
-        [Test, TestCaseSource(typeof(EntraIdTestGroupsSource), nameof(EntraIdTestGroupsSource.GetTestData), new object[] { true })]
-        public void TestAllEntraIDGroups(EntraIdTestGroup group)
-        {
-            TestSearchAndValidateForEntraIDGroup(group);
-        }
-
         [Test, TestCaseSource(typeof(EntraIdTestUsersSource), nameof(EntraIdTestUsersSource.GetTestData), null)]
         public void TestAllEntraIDUsers(EntraIdTestUser user)
         {
             base.TestSearchAndValidateForEntraIDUser(user);
-        }
-
-        [Test]
-        [Repeat(5)]
-        public override void TestAugmentationForUsersMembersOfAllGroups()
-        {
-            base.TestAugmentationForUsersMembersOfAllGroups();
-        }
-    }
-
-    [TestFixture]
-    [Parallelizable(ParallelScope.Children)]
-    public class ExcludeGuestUserAccountsTests : ClaimsProviderTestsBase
-    {
-        public override bool ExcludeGuestUsers => true;
-        public override bool ExcludeMemberUsers => false;
-
-        public override void InitializeSettings()
-        {
-            base.InitializeSettings();
-            base.ApplySettings();
-        }
-
-        [Test]
-        public override void CheckSettingsTest()
-        {
-            base.CheckSettingsTest();
+            user.UserPrincipalName = user.DisplayName;
+            user.Mail = user.DisplayName;
+            user.DisplayName = $"{PrefixBypassUserSearch}{user.DisplayName}";
+            base.TestSearchAndValidateForEntraIDUser(user);
         }
 
         [Test, TestCaseSource(typeof(EntraIdTestGroupsSource), nameof(EntraIdTestGroupsSource.GetTestData), new object[] { true })]
         public void TestAllEntraIDGroups(EntraIdTestGroup group)
         {
             TestSearchAndValidateForEntraIDGroup(group);
+            group.Id = group.DisplayName;
+            group.DisplayName = $"{PrefixBypassGroupSearch}{group.DisplayName}";
+            TestSearchAndValidateForEntraIDGroup(group);
         }
 
-        [Test, TestCaseSource(typeof(EntraIdTestUsersSource), nameof(EntraIdTestUsersSource.GetTestData), null)]
-        public void TestAllEntraIDUsers(EntraIdTestUser user)
+        [TestCase("bypass-user:externalUser@contoso.com", 1, "externalUser@contoso.com")]
+        [TestCase("bypass-user:", 0, "")]
+        [TestCase("bypass-group:", 0, "")]
+        public void TestBypassDirectoryByClaimType(string inputValue, int expectedCount, string expectedClaimValue)
         {
-            base.TestSearchAndValidateForEntraIDUser(user);
-        }
+            TestSearchOperation(inputValue, expectedCount, expectedClaimValue);
 
-        [Test]
-        [Repeat(5)]
-        public override void TestAugmentationForUsersMembersOfAllGroups()
-        {
-            base.TestAugmentationForUsersMembersOfAllGroups();
+            if (expectedCount > 0)
+            {
+                SPClaim inputClaim = new SPClaim(UnitTestsHelper.SPTrust.IdentityClaimTypeInformation.MappedClaimType, expectedClaimValue, ClaimValueTypes.String, SPOriginalIssuers.Format(SPOriginalIssuerType.TrustedProvider, UnitTestsHelper.SPTrust.Name));
+                TestValidationOperation(inputClaim, true, expectedClaimValue);
+            }
         }
     }
 
     [TestFixture]
     [Parallelizable(ParallelScope.Children)]
-    public class ExcludeMemberUserAccountsTests : ClaimsProviderTestsBase
+    public class BypassDirectoryGloballyTests : ClaimsProviderTestsBase
     {
-        public override bool ExcludeGuestUsers => false;
-        public override bool ExcludeMemberUsers => true;
-
         public override void InitializeSettings()
         {
             base.InitializeSettings();
+            Settings.AlwaysResolveUserInput = true;
             base.ApplySettings();
         }
 

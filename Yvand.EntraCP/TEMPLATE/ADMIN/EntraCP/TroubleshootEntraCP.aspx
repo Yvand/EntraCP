@@ -11,6 +11,8 @@
 <%@ Import Namespace="Yvand.EntraClaimsProvider.Configuration" %>
 <%@ Import Namespace="Microsoft.SharePoint" %>
 <%@ Import Namespace="Microsoft.SharePoint.Administration.Claims" %>
+<%@ Import Namespace="System.Security.Claims" %>
+<%@ Import Namespace="System.IdentityModel.Tokens" %>
 
 <asp:Content ID="PageTitle" ContentPlaceHolderID="PlaceHolderPageTitle" runat="server">Troubleshoot EntraCP</asp:Content>
 <asp:Content ID="PageTitleInTitleArea" ContentPlaceHolderID="PlaceHolderPageTitleInTitleArea" runat="server">Troubleshoot EntraCP in the context of current site</asp:Content>
@@ -31,18 +33,18 @@
             TestConnectionToEntraId(proxy);
 
             EntraIDTenant tenant = TestTenantConnectionAndAssemblyBindings(tenantName, tenantClientId, tenantClientSecret, proxy);
-            if (tenant == null)
+            if (tenant != null)
             {
-                return;
+                string claimsProviderName = "EntraCP";
+                ClaimsProviderSettings settings = ClaimsProviderSettings.GetDefaultSettings(claimsProviderName);
+                settings.EntraIDTenants.Add(tenant);
+                settings.ProxyAddress = proxy;
+                EntraCP claimsProvider = new EntraCP(claimsProviderName, settings);
+                TestClaimsProviderSearch(claimsProvider, context, input);
+                TestClaimsProviderAugmentation(claimsProvider, context, input);
             }
 
-            string claimsProviderName = "EntraCP";
-            EntraCPSettings settings = EntraCPSettings.GetDefaultSettings(claimsProviderName);
-            settings.EntraIDTenants.Add(tenant);
-            settings.ProxyAddress = proxy;
-            EntraCP claimsProvider = new EntraCP(claimsProviderName, settings);
-            TestClaimsProviderSearch(claimsProvider, context, input);
-            TestClaimsProviderAugmentation(claimsProvider, context, input);
+            ShowCurrentUserSessionInfo();
         }
 
         public bool TestConnectionToEntraId(string proxyAddress)
@@ -88,8 +90,8 @@
                 // Azure.Core.dll, System.Diagnostics.DiagnosticSource.dll, Microsoft.IdentityModel.Abstractions.dll, System.Memory.dll, System.Runtime.CompilerServices.Unsafe.dll
                 tenant.InitializeAuthentication(ClaimsProviderConstants.DEFAULT_TIMEOUT, proxy);
 
-                // EntraIDTenant.TestConnectionAsync() will throw exceptions:
-                // if .NET cannot load assembly Microsoft.IdentityModel.Abstractions.dll
+                // EntraIDTenant.TestConnectionAsync() may throw the following exceptions:
+                // System.IO.FileNotFoundException if .NET cannot load assembly Microsoft.IdentityModel.Abstractions.dll
                 // Azure.Identity.AuthenticationFailedException if invalid credentials 
                 Task<bool> taskTestConnection = Task.Run(async () => await tenant.TestConnectionAsync(proxy));
                 taskTestConnection.Wait();
@@ -156,7 +158,7 @@
         {
             try
             {
-                IdentityClaimTypeConfig idClaim = claimsProvider.Settings.ClaimTypes.IdentityClaim;
+                IdentityClaimTypeConfig idClaim = claimsProvider.Settings.ClaimTypes.UserIdentifierConfig;
                 string originalIssuer = SPOriginalIssuers.Format(SPOriginalIssuerType.TrustedProvider, Utils.GetSPTrustAssociatedWithClaimsProvider("EntraCP").Name);
                 SPClaim claim = new SPClaim(idClaim.ClaimType, input, idClaim.ClaimValueType, originalIssuer);
                 SPClaim[] groups = claimsProvider.GetClaimsForEntity(new Uri(context), claim);
@@ -169,11 +171,36 @@
             }
             return false;
         }
+
+        public void ShowCurrentUserSessionInfo()
+        {
+            ClaimsPrincipal claimsPrincipal = Page.User as ClaimsPrincipal;
+            if (claimsPrincipal != null)
+            {
+                ClaimsIdentity claimsIdentity = claimsPrincipal.Identity as ClaimsIdentity;
+                BootstrapContext bootstrapContext = claimsIdentity.BootstrapContext as BootstrapContext;
+                string sessionLifetime = bootstrapContext == null ? String.Empty : String.Format("is valid from \"{0}\" to \"{1}\" and it", bootstrapContext.SecurityToken.ValidFrom, bootstrapContext.SecurityToken.ValidTo);
+                LblResult.Text += String.Format("<br/><br/><br/>Token of current user \"{0}\" {1} contains {2} claims:", claimsIdentity.Name, sessionLifetime, claimsIdentity.Claims.Count());
+                foreach (Claim claim in claimsIdentity.Claims)
+                {
+                    LblResult.Text += String.Format("<br/>Claim type \"{0}\" with value \"{1}\" issued by \"{2}\".", claim.Type, claim.Value, claim.OriginalIssuer);
+                }
+            }
+        }
+
+        protected void BtnAction_Click(object sender, EventArgs e)
+        {
+        }
     </script>
-    This page helps you troubleshoot EntraCP with minimal overhead, directly in the context of SharePoint sites.<br />
-    It is written entirely using inline code, so you can easily customize it (and set valid credentials).<br />
-    For security reasons, by default it can only be called from the central administration, but you can simply copy it in the LAYOUTS folder, to call it from any SharePoint web application.<br />
+    This page is designed to help you troubleshoot common issues with EntraCP.<br />
+    It is located in &quot;16\template\admin\EntraCP\TroubleshootEntraCP.aspx&quot;, and you may copy it anywhere under &quot;16\template\LAYOUTS folder&quot;, to call it from any SharePoint site.<br />
+    This page is standalone and does NOT use the EntraCP configuration<br />
+    It is written with inline code so you can edit it using notepad, to replace the hardcoded value &quot;ReplaceWithYourOwnValue&quot; with your own values.
     <br />
     <asp:Literal ID="LblResult" runat="server" Text="" />
-    <%--<asp:TextBox ID="TxtUrl" runat="server" CssClass="ms-inputformcontrols" Text="URL..."></asp:TextBox>--%>
+    <br />
+    <br />
+    <%--<asp:TextBox ID="TxtUrl" runat="server" CssClass="ms-inputformcontrols" Text="URL..."></asp:TextBox>
+    <br />
+	<asp:Button ID="BtnAction" runat="server" Text="Boom" OnClick="BtnAction_Click" />--%>
 </asp:Content>

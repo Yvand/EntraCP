@@ -120,7 +120,7 @@ namespace Yvand.EntraClaimsProvider.Administration
         /// Auto-generated field.
         /// To modify move field declaration from designer file to code-behind file.
         /// </remarks>
-        protected global::Microsoft.SharePoint.WebControls.InputFormCheckBox ChkMemberUserTypeOnly;
+        protected global::System.Web.UI.WebControls.CheckBox ChkMemberUserTypeOnly;
 
         /// <summary>
         /// TxtExtensionAttributesApplicationId control.
@@ -168,49 +168,85 @@ namespace Yvand.EntraClaimsProvider.Administration
         protected global::System.Web.UI.WebControls.Label LabelTestTenantConnectionOK;
 
         /// <summary>
-        /// DDLDirectoryPropertyMemberUsers control.
+        /// lblUserIdClaimType control.
         /// </summary>
         /// <remarks>
         /// Auto-generated field.
         /// To modify move field declaration from designer file to code-behind file.
         /// </remarks>
-        protected global::System.Web.UI.WebControls.DropDownList DDLDirectoryPropertyMemberUsers;
+        protected global::Microsoft.SharePoint.WebControls.EncodedLiteral lblUserIdClaimType;
 
         /// <summary>
-        /// DDLDirectoryPropertyGuestUsers control.
+        /// DdlUserIdDirectoryPropertyMembers control.
         /// </summary>
         /// <remarks>
         /// Auto-generated field.
         /// To modify move field declaration from designer file to code-behind file.
         /// </remarks>
-        protected global::System.Web.UI.WebControls.DropDownList DDLDirectoryPropertyGuestUsers;
+        protected global::System.Web.UI.WebControls.DropDownList DdlUserIdDirectoryPropertyMembers;
 
         /// <summary>
-        /// RbIdentityDefault control.
+        /// DdlUserIdDirectoryPropertyGuests control.
         /// </summary>
         /// <remarks>
         /// Auto-generated field.
         /// To modify move field declaration from designer file to code-behind file.
         /// </remarks>
-        protected global::Microsoft.SharePoint.WebControls.InputFormRadioButton RbIdentityDefault;
+        protected global::System.Web.UI.WebControls.DropDownList DdlUserIdDirectoryPropertyGuests;
 
         /// <summary>
-        /// RbIdentityCustomGraphProperty control.
+        /// DdlUserGraphPropertyToDisplay control.
         /// </summary>
         /// <remarks>
         /// Auto-generated field.
         /// To modify move field declaration from designer file to code-behind file.
         /// </remarks>
-        protected global::Microsoft.SharePoint.WebControls.InputFormRadioButton RbIdentityCustomGraphProperty;
+        protected global::System.Web.UI.WebControls.DropDownList DdlUserGraphPropertyToDisplay;
 
         /// <summary>
-        /// DDLGraphPropertyToDisplay control.
+        /// DdlGroupClaimType control.
         /// </summary>
         /// <remarks>
         /// Auto-generated field.
         /// To modify move field declaration from designer file to code-behind file.
         /// </remarks>
-        protected global::System.Web.UI.WebControls.DropDownList DDLGraphPropertyToDisplay;
+        protected global::System.Web.UI.WebControls.DropDownList DdlGroupClaimType;
+
+        /// <summary>
+        /// DdlGroupDirectoryProperty control.
+        /// </summary>
+        /// <remarks>
+        /// Auto-generated field.
+        /// To modify move field declaration from designer file to code-behind file.
+        /// </remarks>
+        protected global::System.Web.UI.WebControls.DropDownList DdlGroupDirectoryProperty;
+
+        /// <summary>
+        /// DdlGroupGraphPropertyToDisplay control.
+        /// </summary>
+        /// <remarks>
+        /// Auto-generated field.
+        /// To modify move field declaration from designer file to code-behind file.
+        /// </remarks>
+        protected global::System.Web.UI.WebControls.DropDownList DdlGroupGraphPropertyToDisplay;
+
+        /// <summary>
+        /// ChkAugmentAADRoles control.
+        /// </summary>
+        /// <remarks>
+        /// Auto-generated field.
+        /// To modify move field declaration from designer file to code-behind file.
+        /// </remarks>
+        protected global::System.Web.UI.WebControls.CheckBox ChkAugmentAADRoles;
+
+        /// <summary>
+        /// ChkFilterSecurityEnabledGroupsOnly control.
+        /// </summary>
+        /// <remarks>
+        /// Auto-generated field.
+        /// To modify move field declaration from designer file to code-behind file.
+        /// </remarks>
+        protected global::System.Web.UI.WebControls.CheckBox ChkFilterSecurityEnabledGroupsOnly;
 
         /// <summary>
         /// ChkAlwaysResolveUserInput control.
@@ -231,15 +267,6 @@ namespace Yvand.EntraClaimsProvider.Administration
         protected global::System.Web.UI.WebControls.CheckBox ChkFilterExactMatchOnly;
 
         /// <summary>
-        /// ChkAugmentAADRoles control.
-        /// </summary>
-        /// <remarks>
-        /// Auto-generated field.
-        /// To modify move field declaration from designer file to code-behind file.
-        /// </remarks>
-        protected global::System.Web.UI.WebControls.CheckBox ChkAugmentAADRoles;
-
-        /// <summary>
         /// InputProxyAddress control.
         /// </summary>
         /// <remarks>
@@ -247,15 +274,6 @@ namespace Yvand.EntraClaimsProvider.Administration
         /// To modify move field declaration from designer file to code-behind file.
         /// </remarks>
         protected global::Microsoft.SharePoint.WebControls.InputFormTextBox InputProxyAddress;
-
-        /// <summary>
-        /// ChkFilterSecurityEnabledGroupsOnly control.
-        /// </summary>
-        /// <remarks>
-        /// Auto-generated field.
-        /// To modify move field declaration from designer file to code-behind file.
-        /// </remarks>
-        protected global::System.Web.UI.WebControls.CheckBox ChkFilterSecurityEnabledGroupsOnly;
 
         /// <summary>
         /// BtnResetConfig control.

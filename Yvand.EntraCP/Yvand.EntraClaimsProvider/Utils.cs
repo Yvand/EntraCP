@@ -1,4 +1,5 @@
-﻿using Microsoft.SharePoint.Administration;
+﻿using Microsoft.Graph.Models;
+using Microsoft.SharePoint.Administration;
 using Microsoft.SharePoint.Administration.Claims;
 using System;
 using System.Collections.Generic;
@@ -6,6 +7,7 @@ using System.Diagnostics.Tracing;
 using System.Linq;
 using System.Reflection;
 using Yvand.EntraClaimsProvider.Configuration;
+using Yvand.EntraClaimsProvider.Logging;
 
 namespace Yvand.EntraClaimsProvider
 {
@@ -113,6 +115,110 @@ namespace Yvand.EntraClaimsProvider
                 field.SetValue(target, field.GetValue(source));
             }
             return target;
+        }
+
+        /// <summary>
+        /// Copy the value of all the public properties in object source, which can be set, even if the setter is private, to object target.
+        /// Only the properties declared in the type T are considered, inherited types are ignored.
+        /// </summary>
+        /// <param name="T">Type of the source and target objects</param>
+        /// <param name="source">Object to copy from</param>
+        /// <param name="target">Object to copy to</param>
+        /// <returns></returns>
+        public static object CopyPublicProperties(Type T, object source, object target)
+        {
+            PropertyInfo[] propertiesToCopy = T.GetProperties(BindingFlags.Public | BindingFlags.Instance | BindingFlags.DeclaredOnly);
+
+            foreach (PropertyInfo property in propertiesToCopy)
+            {
+                if (property.CanWrite)
+                {
+                    object value = property.GetValue(source);
+                    if (value != null)
+                    {
+                        property.SetValue(target, value);
+                    }
+                }
+            }
+            return target;
+        }
+
+        public static object CopyAllProperties(Type T, object source, object target)
+        {
+            PropertyInfo[] propertiesToCopy = T.GetProperties(BindingFlags.NonPublic | BindingFlags.Instance);
+
+            foreach (PropertyInfo property in propertiesToCopy)
+            {
+                if (property.CanWrite)
+                {
+                    object value = property.GetValue(source);
+                    if (value != null)
+                    {
+                        property.SetValue(target, value);
+                    }
+                }
+            }
+            return target;
+        }
+
+        /// <summary>
+        /// Uses reflection to return the value of a public property for the given object
+        /// </summary>
+        /// <param name="directoryObject"></param>
+        /// <param name="propertyName"></param>
+        /// <returns>Null if property does not exist, String.Empty if property exists but it has no value, actual value otherwise</returns>
+        public static string GetDirectoryObjectPropertyValue(object directoryObject, string propertyName)
+        {
+            if (directoryObject == null)
+            {
+                return null;
+            }
+
+            if (propertyName.StartsWith("extensionAttribute"))
+            {
+                try
+                {
+                    var returnString = string.Empty;
+                    if (directoryObject is User)
+                    {
+                        var userobject = (User)directoryObject;
+                        if (userobject.AdditionalData != null)
+                        {
+                            var obj = userobject.AdditionalData.FirstOrDefault(s => s.Key.EndsWith(propertyName));
+                            if (obj.Value != null)
+                            {
+                                returnString = obj.Value.ToString();
+                            }
+                        }
+                    }
+                    else if (directoryObject is Group)
+                    {
+                        var groupobject = (Group)directoryObject;
+                        if (groupobject.AdditionalData != null)
+                        {
+                            var obj = groupobject.AdditionalData.FirstOrDefault(s => s.Key.EndsWith(propertyName));
+                            if (obj.Value != null)
+                            {
+                                returnString = obj.Value.ToString();
+                            }
+                        }
+                    }
+                    // Never return null for an extensionAttribute since we know it exists for both User and Group
+                    return returnString == null ? String.Empty : returnString;
+                }
+                catch
+                {
+                    return String.Empty;
+                }
+            }
+
+            PropertyInfo pi = directoryObject.GetType().GetProperty(propertyName);
+            if (pi == null)
+            {
+                return null; // Property does not exist, return null
+            }
+            object propertyValue = pi.GetValue(directoryObject, null);
+            return propertyValue == null ? String.Empty : propertyValue.ToString();
         }
 
         public static EventLevel TraceSeverityToEventLevel(TraceSeverity level)

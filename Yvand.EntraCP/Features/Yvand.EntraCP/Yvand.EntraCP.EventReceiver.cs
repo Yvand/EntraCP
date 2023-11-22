@@ -3,9 +3,9 @@ using Microsoft.SharePoint.Administration;
 using Microsoft.SharePoint.Administration.Claims;
 using System;
 using System.Runtime.InteropServices;
-using Yvand.EntraClaimsProvider.Configuration;
+using Yvand.EntraClaimsProvider.Logging;
 
-namespace Yvand.EntraClaimsProvider
+namespace Yvand.EntraClaimsProvider.Administration
 {
     /// <summary>
     /// This class handles events raised during feature activation, deactivation, installation, uninstallation, and upgrade.
@@ -14,7 +14,7 @@ namespace Yvand.EntraClaimsProvider
     /// The GUID attached to this class may be used during packaging and should not be modified.
     /// </remarks>
     [Guid("39c10d12-2c7f-4148-bd81-2283a5ce4a27")]
-    public class EntraCPEventReceiver : SPClaimProviderFeatureReceiver
+    public class FarmFeatureEventReceiver : SPClaimProviderFeatureReceiver
     {
         public override string ClaimProviderAssembly => typeof(EntraCP).Assembly.FullName;
 
@@ -69,7 +69,7 @@ namespace Yvand.EntraClaimsProvider
                 }
                 catch (Exception ex)
                 {
-                    Logger.LogException((string)EntraCP.ClaimsProviderName, $"deactivating farm-scoped feature for claims provider \"{EntraCP.ClaimsProviderName}\"", TraceCategory.Configuration, ex);
+                    Logger.LogException((string)EntraCP.ClaimsProviderName, $"uninstalling farm-scoped feature for claims provider \"{EntraCP.ClaimsProviderName}\"", TraceCategory.Configuration, ex);
                 }
             });
         }
