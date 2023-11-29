@@ -11,6 +11,7 @@
 <%@ Import Namespace="Yvand.EntraClaimsProvider.Configuration" %>
 <%@ Import Namespace="Microsoft.SharePoint" %>
 <%@ Import Namespace="Microsoft.SharePoint.Administration.Claims" %>
+<%@ Import Namespace="System.Security.Claims" %>
 
 <asp:Content ID="PageTitle" ContentPlaceHolderID="PlaceHolderPageTitle" runat="server">Troubleshoot EntraCP</asp:Content>
 <asp:Content ID="PageTitleInTitleArea" ContentPlaceHolderID="PlaceHolderPageTitleInTitleArea" runat="server">Troubleshoot EntraCP in the context of current site</asp:Content>
@@ -31,18 +32,18 @@
             TestConnectionToEntraId(proxy);
 
             EntraIDTenant tenant = TestTenantConnectionAndAssemblyBindings(tenantName, tenantClientId, tenantClientSecret, proxy);
-            if (tenant == null)
+            if (tenant != null)
             {
-                return;
+                string claimsProviderName = "EntraCP";
+                EntraCPSettings settings = EntraCPSettings.GetDefaultSettings(claimsProviderName);
+                settings.EntraIDTenants.Add(tenant);
+                settings.ProxyAddress = proxy;
+                EntraCP claimsProvider = new EntraCP(claimsProviderName, settings);
+                TestClaimsProviderSearch(claimsProvider, context, input);
+                TestClaimsProviderAugmentation(claimsProvider, context, input);
             }
 
-            string claimsProviderName = "EntraCP";
-            EntraCPSettings settings = EntraCPSettings.GetDefaultSettings(claimsProviderName);
-            settings.EntraIDTenants.Add(tenant);
-            settings.ProxyAddress = proxy;
-            EntraCP claimsProvider = new EntraCP(claimsProviderName, settings);
-            TestClaimsProviderSearch(claimsProvider, context, input);
-            TestClaimsProviderAugmentation(claimsProvider, context, input);
+            DumpCurrentUserClaims();
         }
 
         public bool TestConnectionToEntraId(string proxyAddress)
@@ -168,6 +169,20 @@
                 LblResult.Text += String.Format("<br/>Test augmentation for user '{0}' on '{1}': Failed: {2}", input, context, ex.Message);
             }
             return false;
+        }
+
+        public void DumpCurrentUserClaims()
+        {
+            ClaimsPrincipal claimsPrincipal = Page.User as ClaimsPrincipal;
+            if (claimsPrincipal != null)
+            {
+                ClaimsIdentity claimsIdentity = claimsPrincipal.Identity as ClaimsIdentity;
+                LblResult.Text += String.Format("<br/><br/><br/>Current user \"{0}\" has {1} claims:", claimsIdentity.Name, claimsIdentity.Claims.Count());
+                foreach (Claim claim in claimsIdentity.Claims)
+                {
+                    LblResult.Text += String.Format("<br/>Claim type \"{0}\" with value \"{1}\" issued by \"{2}\".", claim.Type, claim.Value, claim.OriginalIssuer);
+                }
+            }
         }
     </script>
     This page helps you troubleshoot EntraCP with minimal overhead, directly in the context of SharePoint sites.<br />
