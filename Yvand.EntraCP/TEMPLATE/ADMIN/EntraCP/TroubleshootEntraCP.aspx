@@ -12,6 +12,7 @@
 <%@ Import Namespace="Microsoft.SharePoint" %>
 <%@ Import Namespace="Microsoft.SharePoint.Administration.Claims" %>
 <%@ Import Namespace="System.Security.Claims" %>
+<%@ Import Namespace="System.IdentityModel.Tokens" %>
 
 <asp:Content ID="PageTitle" ContentPlaceHolderID="PlaceHolderPageTitle" runat="server">Troubleshoot EntraCP</asp:Content>
 <asp:Content ID="PageTitleInTitleArea" ContentPlaceHolderID="PlaceHolderPageTitleInTitleArea" runat="server">Troubleshoot EntraCP in the context of current site</asp:Content>
@@ -43,7 +44,7 @@
                 TestClaimsProviderAugmentation(claimsProvider, context, input);
             }
 
-            DumpCurrentUserClaims();
+            ShowCurrentUserSessionInfo();
         }
 
         public bool TestConnectionToEntraId(string proxyAddress)
@@ -89,8 +90,8 @@
                 // Azure.Core.dll, System.Diagnostics.DiagnosticSource.dll, Microsoft.IdentityModel.Abstractions.dll, System.Memory.dll, System.Runtime.CompilerServices.Unsafe.dll
                 tenant.InitializeAuthentication(ClaimsProviderConstants.DEFAULT_TIMEOUT, proxy);
 
-                // EntraIDTenant.TestConnectionAsync() will throw exceptions:
-                // if .NET cannot load assembly Microsoft.IdentityModel.Abstractions.dll
+                // EntraIDTenant.TestConnectionAsync() may throw the following exceptions:
+                // System.IO.FileNotFoundException if .NET cannot load assembly Microsoft.IdentityModel.Abstractions.dll
                 // Azure.Identity.AuthenticationFailedException if invalid credentials 
                 Task<bool> taskTestConnection = Task.Run(async () => await tenant.TestConnectionAsync(proxy));
                 taskTestConnection.Wait();
@@ -171,18 +172,24 @@
             return false;
         }
 
-        public void DumpCurrentUserClaims()
+        public void ShowCurrentUserSessionInfo()
         {
             ClaimsPrincipal claimsPrincipal = Page.User as ClaimsPrincipal;
             if (claimsPrincipal != null)
             {
                 ClaimsIdentity claimsIdentity = claimsPrincipal.Identity as ClaimsIdentity;
-                LblResult.Text += String.Format("<br/><br/><br/>Current user \"{0}\" has {1} claims:", claimsIdentity.Name, claimsIdentity.Claims.Count());
+                BootstrapContext bootstrapContext = claimsIdentity.BootstrapContext as BootstrapContext;
+                string sessionLifetime = bootstrapContext == null ? String.Empty : String.Format("is valid from \"{0}\" to \"{1}\" and it", bootstrapContext.SecurityToken.ValidFrom, bootstrapContext.SecurityToken.ValidTo);
+                LblResult.Text += String.Format("<br/><br/><br/>Current token of user \"{0}\" {1} contains {2} claims:", claimsIdentity.Name, sessionLifetime, claimsIdentity.Claims.Count());
                 foreach (Claim claim in claimsIdentity.Claims)
                 {
                     LblResult.Text += String.Format("<br/>Claim type \"{0}\" with value \"{1}\" issued by \"{2}\".", claim.Type, claim.Value, claim.OriginalIssuer);
                 }
             }
+        }
+
+        protected void BtnAction_Click(object sender, EventArgs e)
+        {
         }
     </script>
     This page helps you troubleshoot EntraCP with minimal overhead, directly in the context of SharePoint sites.<br />
@@ -190,5 +197,9 @@
     For security reasons, by default it can only be called from the central administration, but you can simply copy it in the LAYOUTS folder, to call it from any SharePoint web application.<br />
     <br />
     <asp:Literal ID="LblResult" runat="server" Text="" />
-    <%--<asp:TextBox ID="TxtUrl" runat="server" CssClass="ms-inputformcontrols" Text="URL..."></asp:TextBox>--%>
+    <br />
+    <br />
+    <%--<asp:TextBox ID="TxtUrl" runat="server" CssClass="ms-inputformcontrols" Text="URL..."></asp:TextBox>
+    <br />
+	<asp:Button ID="BtnAction" runat="server" Text="Boom" OnClick="BtnAction_Click" />--%>
 </asp:Content>
