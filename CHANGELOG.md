@@ -1,5 +1,9 @@
 # Change log for ~~AzureCP~~ EntraCP
 
+## Unreleased
+
+* Fix "Edit" links fail to work on the "Claim types configuration" page - https://github.com/Yvand/EntraCP/pull/220
+
 ## EntraCP v23.0.20231121.30 enhancements & bug-fixes - Published in November 21, 2023
 
 * Fix a bug causing a hang on the web application, when using the check permissions feature to verify the permissions of a trusted user
