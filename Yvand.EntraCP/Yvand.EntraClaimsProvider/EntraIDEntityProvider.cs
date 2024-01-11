@@ -27,7 +27,7 @@ namespace Yvand.EntraClaimsProvider
 
         public async override Task<List<string>> GetEntityGroupsAsync(OperationContext currentContext, DirectoryObjectProperty groupProperty)
         {
-            // Create a Task for each tenant to query
+            // Create 1 Task for each tenant to query
             IEnumerable<Task<List<string>>> tenantTasks = currentContext.AzureTenants.Select(async tenant =>
             {
                 // Wrap the call to GetEntityGroupsFromTenantAsync() in a Task to avoid a hang when using the "check permissions" dialog
