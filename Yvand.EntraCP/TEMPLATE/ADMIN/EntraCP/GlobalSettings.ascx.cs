@@ -107,7 +107,7 @@ namespace Yvand.EntraClaimsProvider.Administration
             foreach (DirectoryObjectProperty prop in aadPropValuesSorted)
             {
                 // Ensure property exists for the User object type
-                if (EntraCP.GetPropertyValue(new User(), prop.ToString()) == null) { continue; }
+                if (Utils.GetDirectoryObjectPropertyValue(new User(), prop.ToString()) == null) { continue; }
 
                 // Ensure property is of type System.String
                 PropertyInfo pi = typeof(User).GetProperty(prop.ToString());

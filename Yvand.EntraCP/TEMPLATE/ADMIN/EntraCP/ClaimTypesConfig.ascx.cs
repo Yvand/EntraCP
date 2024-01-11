@@ -76,9 +76,9 @@ namespace Yvand.EntraClaimsProvider.Administration
                 foreach (object field in typeof(DirectoryObjectProperty).GetFields())
                 {
                     string prop = ((System.Reflection.FieldInfo)field).Name;
-                    if (EntraCP.GetPropertyValue(new User(), prop) == null) { continue; }
-                    //if (EntraCP.GetGraphPropertyValue(new Group(), prop) == null) continue;
-                    //if (EntraCP.GetGraphPropertyValue(new Role(), prop) == null) continue;
+                    if (Utils.GetDirectoryObjectPropertyValue(new User(), prop) == null) { continue; }
+                    //if (Utils.GetGraphPropertyValue(new Group(), prop) == null) continue;
+                    //if (Utils.GetGraphPropertyValue(new Role(), prop) == null) continue;
 
                     DdlNewGraphProperty.Items.Add(prop);
                     DdlNewGraphPropertyToDisplay.Items.Add(prop);
@@ -311,14 +311,14 @@ namespace Yvand.EntraClaimsProvider.Administration
                 // Ensure property exists for the current object type
                 if (azureObject.Value.EntityType == DirectoryObjectType.User)
                 {
-                    if (EntraCP.GetPropertyValue(new User(), prop.ToString()) == null)
+                    if (Utils.GetDirectoryObjectPropertyValue(new User(), prop.ToString()) == null)
                     {
                         continue;
                     }
                 }
                 else
                 {
-                    if (EntraCP.GetPropertyValue(new Group(), prop.ToString()) == null) 
+                    if (Utils.GetDirectoryObjectPropertyValue(new Group(), prop.ToString()) == null) 
                     { 
                         continue; 
                     }

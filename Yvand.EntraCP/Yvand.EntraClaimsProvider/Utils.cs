@@ -1,4 +1,5 @@
-﻿using Microsoft.SharePoint.Administration;
+﻿using Microsoft.Graph.Models;
+using Microsoft.SharePoint.Administration;
 using Microsoft.SharePoint.Administration.Claims;
 using System;
 using System.Collections.Generic;
@@ -157,6 +158,66 @@ namespace Yvand.EntraClaimsProvider
                 }
             }
             return target;
+        }
+
+        /// <summary>
+        /// Uses reflection to return the value of a public property for the given object
+        /// </summary>
+        /// <param name="directoryObject"></param>
+        /// <param name="propertyName"></param>
+        /// <returns>Null if property does not exist, String.Empty if property exists but it has no value, actual value otherwise</returns>
+        public static string GetDirectoryObjectPropertyValue(object directoryObject, string propertyName)
+        {
+            if (directoryObject == null)
+            {
+                return null;
+            }
+
+            if (propertyName.StartsWith("extensionAttribute"))
+            {
+                try
+                {
+                    var returnString = string.Empty;
+                    if (directoryObject is User)
+                    {
+                        var userobject = (User)directoryObject;
+                        if (userobject.AdditionalData != null)
+                        {
+                            var obj = userobject.AdditionalData.FirstOrDefault(s => s.Key.EndsWith(propertyName));
+                            if (obj.Value != null)
+                            {
+                                returnString = obj.Value.ToString();
+                            }
+                        }
+                    }
+                    else if (directoryObject is Group)
+                    {
+                        var groupobject = (Group)directoryObject;
+                        if (groupobject.AdditionalData != null)
+                        {
+                            var obj = groupobject.AdditionalData.FirstOrDefault(s => s.Key.EndsWith(propertyName));
+                            if (obj.Value != null)
+                            {
+                                returnString = obj.Value.ToString();
+                            }
+                        }
+                    }
+                    // Never return null for an extensionAttribute since we know it exists for both User and Group
+                    return returnString == null ? String.Empty : returnString;
+                }
+                catch
+                {
+                    return String.Empty;
+                }
+            }
+
+            PropertyInfo pi = directoryObject.GetType().GetProperty(propertyName);
+            if (pi == null)
+            {
+                return null; // Property does not exist, return null
+            }
+            object propertyValue = pi.GetValue(directoryObject, null);
+            return propertyValue == null ? String.Empty : propertyValue.ToString();
         }
 
         public static EventLevel TraceSeverityToEventLevel(TraceSeverity level)
