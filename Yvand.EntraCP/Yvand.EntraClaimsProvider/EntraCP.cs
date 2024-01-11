@@ -35,20 +35,9 @@ namespace Yvand.EntraClaimsProvider
 
         public static EntraCPSettings GenerateFromEntraIDProviderSettings(IEntraIDProviderSettings settings)
         {
-            return new EntraCPSettings
-            {
-                AlwaysResolveUserInput = settings.AlwaysResolveUserInput,
-                EntraIDTenants = settings.EntraIDTenants,
-                ClaimTypes = settings.ClaimTypes,
-                CustomData = settings.CustomData,
-                EnableAugmentation = settings.EnableAugmentation,
-                EntityDisplayTextPrefix = settings.EntityDisplayTextPrefix,
-                FilterExactMatchOnly = settings.FilterExactMatchOnly,
-                FilterSecurityEnabledGroupsOnly = settings.FilterSecurityEnabledGroupsOnly,
-                ProxyAddress = settings.ProxyAddress,
-                Timeout = settings.Timeout,
-                Version = settings.Version,
-            };
+            EntraCPSettings copy = new EntraCPSettings();
+            Utils.CopyPublicProperties(typeof(EntraIDProviderSettings), settings, copy);
+            return copy;
         }
 
         public List<ClaimTypeConfig> RuntimeClaimTypesList { get; set; }
@@ -78,7 +67,7 @@ namespace Yvand.EntraClaimsProvider
         /// Gets the settings that contain the configuration for EntraCP
         /// </summary>
         public IEntraCPSettings Settings { get; protected set; }
-        
+
         /// <summary>
         /// Gets custom settings that will be used instead of the settings from the persisted object
         /// </summary>
@@ -88,12 +77,8 @@ namespace Yvand.EntraClaimsProvider
         /// Gets the version of the settings, used to refresh the settings if the persisted object is updated
         /// </summary>
         public long SettingsVersion { get; private set; } = -1;
-        AzureEventSourceListener listener;
-        #region "Runtime settings"
-        //protected List<ClaimTypeConfig> RuntimeClaimTypesList { get; private set; }
-        //protected IEnumerable<ClaimTypeConfig> RuntimeMetadataConfig { get; private set; }
-        //protected IdentityClaimTypeConfig IdentityClaimTypeConfig { get; private set; }
-        //protected ClaimTypeConfig MainGroupClaimTypeConfig { get; private set; }
+        AzureEventSourceListener GraphEventsListener;
+
         private SPTrustedLoginProvider _SPTrust;
         /// <summary>
         /// Gets the SharePoint trust that has its property ClaimProviderName equals to <see cref="Name"/>
@@ -109,7 +94,6 @@ namespace Yvand.EntraClaimsProvider
                 return this._SPTrust;
             }
         }
-        #endregion
 
         /// <summary>
         /// Gets the issuer formatted to be like the property SPClaim.OriginalIssuer: "TrustedProvider:TrustedProviderName"
@@ -119,7 +103,7 @@ namespace Yvand.EntraClaimsProvider
         public EntraCP(string displayName) : base(displayName)
         {
             this.EntityProvider = new EntraIDEntityProvider(Name);
-            this.listener = new AzureEventSourceListener((args, message) =>
+            this.GraphEventsListener = new AzureEventSourceListener((args, message) =>
             {
                 if (args.EventSource.Name == "Azure-Identity")
                 {
@@ -237,7 +221,7 @@ namespace Yvand.EntraClaimsProvider
                 persistedSettings = PersistedConfiguration.Settings;
             }
             return persistedSettings;
-        }        
+        }
 
         /// <summary>
         /// Sets the internal runtime settings properties
@@ -321,7 +305,7 @@ namespace Yvand.EntraClaimsProvider
 
             // Get all PickerEntity metadata with a DirectoryObjectProperty set
             settings.RuntimeMetadataConfig = settings.ClaimTypes.Where(x =>
-                !String.IsNullOrEmpty(x.EntityDataKey) &&
+                !String.IsNullOrWhiteSpace(x.EntityDataKey) &&
                 x.EntityProperty != DirectoryObjectProperty.NotSet);
 
             if (settings.EntraIDTenants == null || settings.EntraIDTenants.Count < 1)
@@ -353,25 +337,26 @@ namespace Yvand.EntraClaimsProvider
                     // Completely bypass query to Microsoft Entra ID
                     pickerEntityList = CreatePickerEntityForSpecificClaimTypes(
                         currentContext.Input,
-                        currentContext.CurrentClaimTypeConfigList.FindAll(x => !x.UseMainClaimTypeOfDirectoryObject),
-                        false);
+                        currentContext.CurrentClaimTypeConfigList.FindAll(x => !x.UseMainClaimTypeOfDirectoryObject));
                     Logger.Log($"[{Name}] Created {pickerEntityList.Count} entity(ies) without contacting Microsoft Entra ID tenant(s) because EntraCP property AlwaysResolveUserInput is set to true.",
                         TraceSeverity.Medium, EventSeverity.Information, TraceCategory.Claims_Picking);
                     return pickerEntityList;
                 }
 
+                // It is either a search or a validation
+                // Call async method in a task to avoid error "Asynchronous operations are not allowed in this context" error when permission is validated (POST from people picker)
+                // More info on the error: https://stackoverflow.com/questions/672237/running-an-asynchronous-operation-triggered-by-an-asp-net-web-page-request
+                Task azureADQueryTask = Task.Run(async () =>
+                {
+                    azureADEntityList = await SearchOrValidateInAzureADAsync(currentContext).ConfigureAwait(false);
+                });
+                azureADQueryTask.Wait();
+
                 if (currentContext.OperationType == OperationType.Search)
                 {
-                    // Call async method in a task to avoid error "Asynchronous operations are not allowed in this context" error when permission is validated (POST from people picker)
-                    // More info on the error: https://stackoverflow.com/questions/672237/running-an-asynchronous-operation-triggered-by-an-asp-net-web-page-request
-                    Task azureADQueryTask = Task.Run(async () =>
-                    {
-                        azureADEntityList = await SearchOrValidateInAzureADAsync(currentContext).ConfigureAwait(false);
-                    });
-                    azureADQueryTask.Wait();
                     pickerEntityList = this.ProcessAzureADResults(currentContext, azureADEntityList);
 
-                    // Check if input starts with a prefix configured on a ClaimTypeConfig. If so an entity should be returned using ClaimTypeConfig found
+                    // Check if value starts with a prefix configured on a ClaimTypeConfig. If so an entity should be returned using ClaimTypeConfig found
                     // ClaimTypeConfigEnsureUniquePrefixToBypassLookup ensures that collection cannot contain duplicates
                     ClaimTypeConfig ctConfigWithInputPrefixMatch = currentContext.CurrentClaimTypeConfigList.FirstOrDefault(x =>
                         !String.IsNullOrEmpty(x.PrefixToBypassLookup) &&
@@ -381,47 +366,36 @@ namespace Yvand.EntraClaimsProvider
                         string inputWithoutPrefix = currentContext.Input.Substring(ctConfigWithInputPrefixMatch.PrefixToBypassLookup.Length);
                         if (String.IsNullOrEmpty(inputWithoutPrefix))
                         {
-                            // No value in the input after the prefix, return
+                            // No value in the value after the prefix, return
                             return pickerEntityList;
                         }
                         PickerEntity entity = CreatePickerEntityForSpecificClaimType(
                             inputWithoutPrefix,
-                            ctConfigWithInputPrefixMatch,
-                            true);
+                            ctConfigWithInputPrefixMatch);
                         if (entity != null)
                         {
                             if (pickerEntityList == null) { pickerEntityList = new List<PickerEntity>(); }
                             pickerEntityList.Add(entity);
-                            Logger.Log($"[{Name}] Created entity without contacting Microsoft Entra ID tenant(s) because input started with prefix '{ctConfigWithInputPrefixMatch.PrefixToBypassLookup}', which is configured for claim type '{ctConfigWithInputPrefixMatch.ClaimType}'. Claim value: '{entity.Claim.Value}', claim type: '{entity.Claim.ClaimType}'",
+                            Logger.Log($"[{Name}] Created entity without contacting Microsoft Entra ID tenant(s) because value started with prefix '{ctConfigWithInputPrefixMatch.PrefixToBypassLookup}', which is configured for claim type '{ctConfigWithInputPrefixMatch.ClaimType}'. Claim value: '{entity.Claim.Value}', claim type: '{entity.Claim.ClaimType}'",
                                 TraceSeverity.VerboseEx, EventSeverity.Information, TraceCategory.Claims_Picking);
-                            //return entities;
                         }
                     }
                 }
                 else if (currentContext.OperationType == OperationType.Validation)
                 {
-                    // Call async method in a task to avoid error "Asynchronous operations are not allowed in this context" error when permission is validated (POST from people picker)
-                    // More info on the error: https://stackoverflow.com/questions/672237/running-an-asynchronous-operation-triggered-by-an-asp-net-web-page-request
-                    Task azureADQueryTask = Task.Run(async () =>
-                    {
-                        azureADEntityList = await SearchOrValidateInAzureADAsync(currentContext).ConfigureAwait(false);
-                    });
-                    azureADQueryTask.Wait();
                     if (azureADEntityList?.Count == 1)
                     {
                         // Got the expected count (1 DirectoryObject)
                         pickerEntityList = this.ProcessAzureADResults(currentContext, azureADEntityList);
                     }
-                    //if (entities?.Count == 1) { return entities; }
 
-                    if (!String.IsNullOrEmpty(currentContext.IncomingEntityClaimTypeConfig.PrefixToBypassLookup))
+                    if (!String.IsNullOrWhiteSpace(currentContext.IncomingEntityClaimTypeConfig.PrefixToBypassLookup))
                     {
                         // At this stage, it is impossible to know if entity was originally created with the keyword that bypass query to Microsoft Entra ID
                         // But it should be always validated since property PrefixToBypassLookup is set for current ClaimTypeConfig, so create entity manually
                         PickerEntity entity = CreatePickerEntityForSpecificClaimType(
                             currentContext.IncomingEntity.Value,
-                            currentContext.IncomingEntityClaimTypeConfig,
-                            currentContext.InputHasKeyword);
+                            currentContext.IncomingEntityClaimTypeConfig);
                         if (entity != null)
                         {
                             pickerEntityList = new List<PickerEntity>(1) { entity };
@@ -522,7 +496,7 @@ namespace Yvand.EntraClaimsProvider
                     // Check if property exists (not null) and has a value (not String.Empty)
                     if (String.IsNullOrEmpty(directoryObjectPropertyValue)) { continue; }
 
-                    // Check if current value mathes input, otherwise go to next GraphProperty to check
+                    // Check if current value mathes value, otherwise go to next GraphProperty to check
                     if (currentContext.ExactSearch)
                     {
                         if (!String.Equals(directoryObjectPropertyValue, currentContext.Input, StringComparison.InvariantCultureIgnoreCase)) { continue; }
@@ -532,7 +506,7 @@ namespace Yvand.EntraClaimsProvider
                         if (!directoryObjectPropertyValue.StartsWith(currentContext.Input, StringComparison.InvariantCultureIgnoreCase)) { continue; }
                     }
 
-                    // Current DirectoryObjectProperty value matches user input. Add current result to search results if it is not already present
+                    // Current DirectoryObjectProperty value matches user value. Add current result to search results if it is not already present
                     string entityClaimValue = directoryObjectPropertyValue;
                     ClaimTypeConfig claimTypeConfigToCompare;
                     if (ctConfig.UseMainClaimTypeOfDirectoryObject)
@@ -672,24 +646,20 @@ namespace Yvand.EntraClaimsProvider
             return entity;
         }
 
-        private PickerEntity CreatePickerEntityForSpecificClaimType(string input, ClaimTypeConfig ctConfig, bool inputHasKeyword)
+        private PickerEntity CreatePickerEntityForSpecificClaimType(string value, ClaimTypeConfig ctConfig)
         {
             List<PickerEntity> entities = CreatePickerEntityForSpecificClaimTypes(
-                input,
-                new List<ClaimTypeConfig>()
-                    {
-                        ctConfig,
-                    },
-                inputHasKeyword);
+                value,
+                new List<ClaimTypeConfig>() { ctConfig });
             return entities == null ? null : entities.First();
         }
 
-        private List<PickerEntity> CreatePickerEntityForSpecificClaimTypes(string input, List<ClaimTypeConfig> ctConfigs, bool inputHasKeyword)
+        private List<PickerEntity> CreatePickerEntityForSpecificClaimTypes(string value, List<ClaimTypeConfig> ctConfigs)
         {
             List<PickerEntity> entities = new List<PickerEntity>();
             foreach (var ctConfig in ctConfigs)
             {
-                SPClaim claim = CreateClaim(ctConfig.ClaimType, input, ctConfig.ClaimValueType);
+                SPClaim claim = CreateClaim(ctConfig.ClaimType, value, ctConfig.ClaimValueType);
                 PickerEntity entity = CreatePickerEntity();
                 entity.Claim = claim;
                 entity.IsResolved = true;
@@ -699,7 +669,7 @@ namespace Yvand.EntraClaimsProvider
                     entity.EntityType = ctConfig.EntityType == DirectoryObjectType.User ? SPClaimEntityTypes.User : ClaimsProviderConstants.GroupClaimEntityType;
                 }
                 //entity.EntityGroupName = "";
-                entity.Description = String.Format(PickerEntityOnMouseOver, ctConfig.EntityProperty.ToString(), input);
+                entity.Description = String.Format(PickerEntityOnMouseOver, ctConfig.EntityProperty.ToString(), value);
 
                 if (!String.IsNullOrEmpty(ctConfig.EntityDataKey))
                 {
@@ -707,7 +677,7 @@ namespace Yvand.EntraClaimsProvider
                     Logger.Log($"[{Name}] Added metadata '{ctConfig.EntityDataKey}' with value '{entity.EntityData[ctConfig.EntityDataKey]}' to new entity", TraceSeverity.VerboseEx, EventSeverity.Information, TraceCategory.Claims_Picking);
                 }
 
-                ClaimsProviderEntityResult result = new ClaimsProviderEntityResult(null, ctConfig, input, input);
+                ClaimsProviderEntityResult result = new ClaimsProviderEntityResult(null, ctConfig, value, value);
                 bool isIdentityClaimType = String.Equals(claim.ClaimType, this.Settings.IdentityClaimTypeConfig.ClaimType, StringComparison.InvariantCultureIgnoreCase);
                 entity.DisplayText = FormatPermissionDisplayText(entity, isIdentityClaimType, result);
 
@@ -1031,7 +1001,7 @@ namespace Yvand.EntraClaimsProvider
                     Logger.Log($"[{Name}] Added entity: display text: '{entity.DisplayText}', claim value: '{entity.Claim.Value}', claim type: '{entity.Claim.ClaimType}'",
                         TraceSeverity.Verbose, EventSeverity.Information, TraceCategory.Claims_Picking);
                 }
-                Logger.Log($"[{Name}] Returned {entities.Count} entities with input '{currentContext.Input}'", TraceSeverity.Medium, EventSeverity.Information, TraceCategory.Claims_Picking);
+                Logger.Log($"[{Name}] Returned {entities.Count} entities with value '{currentContext.Input}'", TraceSeverity.Medium, EventSeverity.Information, TraceCategory.Claims_Picking);
             }
             catch (Exception ex)
             {
@@ -1110,7 +1080,7 @@ namespace Yvand.EntraClaimsProvider
                     Logger.Log($"[{Name}] Added entity: display text: '{entity.DisplayText}', claim value: '{entity.Claim.Value}', claim type: '{entity.Claim.ClaimType}'",
                         TraceSeverity.Verbose, EventSeverity.Information, TraceCategory.Claims_Picking);
                 }
-                Logger.Log($"[{Name}] Returned {entities.Count} entities from input '{currentContext.Input}'",
+                Logger.Log($"[{Name}] Returned {entities.Count} entities from value '{currentContext.Input}'",
                     TraceSeverity.Medium, EventSeverity.Information, TraceCategory.Claims_Picking);
             }
             catch (Exception ex)
