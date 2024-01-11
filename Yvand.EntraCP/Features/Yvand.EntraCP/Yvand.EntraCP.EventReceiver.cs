@@ -69,7 +69,7 @@ namespace Yvand.EntraClaimsProvider
                 }
                 catch (Exception ex)
                 {
-                    Logger.LogException((string)EntraCP.ClaimsProviderName, $"deactivating farm-scoped feature for claims provider \"{EntraCP.ClaimsProviderName}\"", TraceCategory.Configuration, ex);
+                    Logger.LogException((string)EntraCP.ClaimsProviderName, $"uninstalling farm-scoped feature for claims provider \"{EntraCP.ClaimsProviderName}\"", TraceCategory.Configuration, ex);
                 }
             });
         }
