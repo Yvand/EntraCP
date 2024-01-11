@@ -1,4 +1,5 @@
-﻿using Microsoft.SharePoint.Administration.Claims;
+﻿using Microsoft.Graph.Models;
+using Microsoft.SharePoint.Administration.Claims;
 using Newtonsoft.Json;
 using NUnit.Framework;
 using System;
@@ -23,6 +24,7 @@ namespace Yvand.EntraClaimsProvider.Tests
                 ClaimType = TestContext.Parameters["MultiPurposeCustomClaimType"],
                 ClaimTypeDisplayName = "extattr1",
                 EntityProperty = DirectoryObjectProperty.extensionAttribute1,
+                EntityType = DirectoryObjectType.User,
                 SharePointEntityType = "FormsRole",
             };
             Settings.ClaimTypes.Add(ctConfigExtensionAttribute);
