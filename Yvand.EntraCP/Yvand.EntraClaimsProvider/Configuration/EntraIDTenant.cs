@@ -295,25 +295,6 @@ namespace Yvand.EntraClaimsProvider.Configuration
             return copy;
         }
 
-        public EntraIDTenant CopyPublicProperties()
-        {
-            EntraIDTenant copy = new EntraIDTenant();
-            // Copy non-inherited public properties
-            PropertyInfo[] propertiesToCopy = this.GetType().GetProperties(BindingFlags.Public | BindingFlags.Instance | BindingFlags.DeclaredOnly);
-            foreach (PropertyInfo property in propertiesToCopy)
-            {
-                if (property.CanWrite)
-                {
-                    object value = property.GetValue(this);
-                    if (value != null)
-                    {
-                        property.SetValue(copy, value);
-                    }
-                }
-            }
-            return copy;
-        }
-
         /// <summary>
         /// Sets the credentials with a client secret, to connect to the Microsoft Entra ID tenant
         /// </summary>

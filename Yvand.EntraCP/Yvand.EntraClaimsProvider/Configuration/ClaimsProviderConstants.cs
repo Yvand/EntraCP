@@ -217,7 +217,9 @@ namespace Yvand.EntraClaimsProvider.Configuration
             this.AzureTenants = new List<EntraIDTenant>(settings.EntraIDTenants.Count);
             foreach (EntraIDTenant tenant in settings.EntraIDTenants)
             {
-                AzureTenants.Add(tenant.CopyPublicProperties());
+                EntraIDTenant copy = new EntraIDTenant();
+                Utils.CopyPublicProperties(typeof(EntraIDTenant), tenant, copy);
+                AzureTenants.Add(copy);
             }
 
             if (entityTypes != null)
