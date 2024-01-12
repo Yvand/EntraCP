@@ -558,21 +558,18 @@ namespace Yvand.EntraClaimsProvider
                     return pickerEntityList;
                 }
 
-                // It is either a search or a validation
-                // Call async method in a task to avoid error "Asynchronous operations are not allowed in this context" error when permission is validated (POST from people picker)
-                // More info on the error: https://stackoverflow.com/questions/672237/running-an-asynchronous-operation-triggered-by-an-asp-net-web-page-request
-                Task azureADQueryTask = Task.Run(async () =>
+                // Create a task to query Entra ID, but run it later only if needed
+                Func<Task> queryEntraIDFunc = async () =>
                 {
                     using (new SPMonitoredScope($"[{Name}] Total time spent to query Microsoft Entra ID tenant(s)", 1000))
                     {
                         azureADEntityList = await this.EntityProvider.SearchOrValidateEntitiesAsync(currentContext).ConfigureAwait(false);
                     }
-                });
-                azureADQueryTask.Wait();
+                };
 
                 if (currentContext.OperationType == OperationType.Search)
                 {
-                    pickerEntityList = this.ProcessAzureADResults(currentContext, azureADEntityList);
+                    // Between 0 to many PickerEntity is expected by SharePoint
 
                     // Check if value starts with a prefix configured on a ClaimTypeConfig. If so an entity should be returned using ClaimTypeConfig found
                     // ClaimTypeConfigEnsureUniquePrefixToBypassLookup ensures that collection cannot contain duplicates
@@ -587,38 +584,52 @@ namespace Yvand.EntraClaimsProvider
                             // No value in the value after the prefix, return
                             return pickerEntityList;
                         }
-                        PickerEntity entity = CreatePickerEntityForSpecificClaimType(
+                        pickerEntityList = CreatePickerEntityForSpecificClaimTypes(
                             inputWithoutPrefix,
-                            ctConfigWithInputPrefixMatch);
-                        if (entity != null)
+                            new List<ClaimTypeConfig>() { ctConfigWithInputPrefixMatch });
+                        if (pickerEntityList?.Count == 1)
                         {
-                            if (pickerEntityList == null) { pickerEntityList = new List<PickerEntity>(); }
-                            pickerEntityList.Add(entity);
+                            PickerEntity entity = pickerEntityList.FirstOrDefault();
                             Logger.Log($"[{Name}] Created entity without contacting Microsoft Entra ID tenant(s) because value started with prefix '{ctConfigWithInputPrefixMatch.PrefixToBypassLookup}', which is configured for claim type '{ctConfigWithInputPrefixMatch.ClaimType}'. Claim value: '{entity.Claim.Value}', claim type: '{entity.Claim.ClaimType}'",
                                 TraceSeverity.VerboseEx, EventSeverity.Information, TraceCategory.Claims_Picking);
                         }
                     }
+                    else
+                    {
+                        // Call async method in a task to avoid error "Asynchronous operations are not allowed in this context" error when permission is validated (POST from people picker)
+                        // More info on the error: https://stackoverflow.com/questions/672237/running-an-asynchronous-operation-triggered-by-an-asp-net-web-page-request
+                        Task.Run(async () => await queryEntraIDFunc()).Wait();
+                        pickerEntityList = this.ProcessAzureADResults(currentContext, azureADEntityList);
+                    }
                 }
                 else if (currentContext.OperationType == OperationType.Validation)
                 {
-                    if (azureADEntityList?.Count == 1)
-                    {
-                        // Got the expected count (1 DirectoryObject)
-                        pickerEntityList = this.ProcessAzureADResults(currentContext, azureADEntityList);
-                    }
+                    // Exactly 1 PickerEntity is expected by SharePoint
 
+                    // Check if config corresponding to current claim type has a config to bypass Entra ID
                     if (!String.IsNullOrWhiteSpace(currentContext.IncomingEntityClaimTypeConfig.PrefixToBypassLookup))
                     {
                         // At this stage, it is impossible to know if entity was originally created with the keyword that bypass query to Microsoft Entra ID
                         // But it should be always validated since property PrefixToBypassLookup is set for current ClaimTypeConfig, so create entity manually
-                        PickerEntity entity = CreatePickerEntityForSpecificClaimType(
+                        pickerEntityList = CreatePickerEntityForSpecificClaimTypes(
                             currentContext.IncomingEntity.Value,
-                            currentContext.IncomingEntityClaimTypeConfig);
-                        if (entity != null)
+                            new List<ClaimTypeConfig>() { currentContext.IncomingEntityClaimTypeConfig });
+                        if (pickerEntityList?.Count == 1)
                         {
-                            pickerEntityList = new List<PickerEntity>(1) { entity };
+                            PickerEntity entity = pickerEntityList.FirstOrDefault();
                             Logger.Log($"[{Name}] Validated entity without contacting Microsoft Entra ID tenant(s) because its claim type ('{currentContext.IncomingEntityClaimTypeConfig.ClaimType}') has property 'PrefixToBypassLookup' set in EntraCPConfig.ClaimTypes. Claim value: '{entity.Claim.Value}', claim type: '{entity.Claim.ClaimType}'",
                                 TraceSeverity.VerboseEx, EventSeverity.Information, TraceCategory.Claims_Picking);
+                        }
+                    }
+                    else
+                    {
+                        // Call async method in a task to avoid error "Asynchronous operations are not allowed in this context" error when permission is validated (POST from people picker)
+                        // More info on the error: https://stackoverflow.com/questions/672237/running-an-asynchronous-operation-triggered-by-an-asp-net-web-page-request
+                        Task.Run(async () => await queryEntraIDFunc()).Wait();
+                        if (azureADEntityList?.Count == 1)
+                        {
+                            // Got the expected count (1 DirectoryObject)
+                            pickerEntityList = this.ProcessAzureADResults(currentContext, azureADEntityList);
                         }
                     }
                 }
@@ -852,13 +863,13 @@ namespace Yvand.EntraClaimsProvider
             return entity;
         }
 
-        private PickerEntity CreatePickerEntityForSpecificClaimType(string value, ClaimTypeConfig ctConfig)
-        {
-            List<PickerEntity> entities = CreatePickerEntityForSpecificClaimTypes(
-                value,
-                new List<ClaimTypeConfig>() { ctConfig });
-            return entities == null ? null : entities.First();
-        }
+        //private PickerEntity CreatePickerEntityForSpecificClaimType(string value, ClaimTypeConfig ctConfig)
+        //{
+        //    List<PickerEntity> entities = CreatePickerEntityForSpecificClaimTypes(
+        //        value,
+        //        new List<ClaimTypeConfig>() { ctConfig });
+        //    return entities == null ? null : entities.First();
+        //}
 
         private List<PickerEntity> CreatePickerEntityForSpecificClaimTypes(string value, List<ClaimTypeConfig> ctConfigs)
         {
