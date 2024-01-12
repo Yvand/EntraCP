@@ -558,13 +558,16 @@ namespace Yvand.EntraClaimsProvider
                     return pickerEntityList;
                 }
 
-                // Create a task to query Entra ID, but run it later only if needed
-                Func<Task> queryEntraIDFunc = async () =>
+                // Create a delegate to query Entra ID, so it is called only if needed
+                Func<Task> SearchOrValidateInEntraID = delegate ()
                 {
-                    using (new SPMonitoredScope($"[{Name}] Total time spent to query Microsoft Entra ID tenant(s)", 1000))
+                    return Task.Run(async () =>
                     {
-                        azureADEntityList = await this.EntityProvider.SearchOrValidateEntitiesAsync(currentContext).ConfigureAwait(false);
-                    }
+                        using (new SPMonitoredScope($"[{Name}] Total time spent to query Microsoft Entra ID tenant(s)", 1000))
+                        {
+                            azureADEntityList = await this.EntityProvider.SearchOrValidateEntitiesAsync(currentContext).ConfigureAwait(false);
+                        }
+                    });
                 };
 
                 if (currentContext.OperationType == OperationType.Search)
@@ -598,7 +601,7 @@ namespace Yvand.EntraClaimsProvider
                     {
                         // Call async method in a task to avoid error "Asynchronous operations are not allowed in this context" error when permission is validated (POST from people picker)
                         // More info on the error: https://stackoverflow.com/questions/672237/running-an-asynchronous-operation-triggered-by-an-asp-net-web-page-request
-                        Task.Run(async () => await queryEntraIDFunc()).Wait();
+                        Task.Run(async () => await SearchOrValidateInEntraID()).Wait();
                         pickerEntityList = this.ProcessAzureADResults(currentContext, azureADEntityList);
                     }
                 }
@@ -625,7 +628,7 @@ namespace Yvand.EntraClaimsProvider
                     {
                         // Call async method in a task to avoid error "Asynchronous operations are not allowed in this context" error when permission is validated (POST from people picker)
                         // More info on the error: https://stackoverflow.com/questions/672237/running-an-asynchronous-operation-triggered-by-an-asp-net-web-page-request
-                        Task.Run(async () => await queryEntraIDFunc()).Wait();
+                        Task.Run(async () => await SearchOrValidateInEntraID()).Wait();
                         if (azureADEntityList?.Count == 1)
                         {
                             // Got the expected count (1 DirectoryObject)
