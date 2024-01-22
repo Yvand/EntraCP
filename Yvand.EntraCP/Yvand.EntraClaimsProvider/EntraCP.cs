@@ -102,7 +102,6 @@ namespace Yvand.EntraClaimsProvider
 
         public EntraCP(string displayName) : base(displayName)
         {
-            this.EntityProvider = new EntraIDEntityProvider(Name);
             this.GraphEventsListener = new AzureEventSourceListener((args, message) =>
             {
                 if (args.EventSource.Name == "Azure-Identity")
@@ -114,7 +113,6 @@ namespace Yvand.EntraClaimsProvider
 
         public EntraCP(string displayName, IEntraCPSettings customSettings) : base(displayName)
         {
-            this.EntityProvider = new EntraIDEntityProvider(Name);
             this.CustomSettings = customSettings;
         }
 
@@ -192,6 +190,7 @@ namespace Yvand.EntraClaimsProvider
 #if !DEBUGx
                     this.SettingsVersion = this.Settings.Version;
 #endif
+                    this.EntityProvider = new EntraIDEntityProvider(Name, this.Settings);
                 }
             }
             catch (Exception ex)

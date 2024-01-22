@@ -150,7 +150,7 @@ namespace Yvand.EntraClaimsProvider.Configuration
     /// </summary>
     public class OperationContext
     {
-        public IEntraCPSettings Settings { get; private set; }
+        //public IEntraCPSettings Settings { get; private set; }
         /// <summary>
         /// Indicates what kind of operation SharePoint is requesting
         /// </summary>
@@ -205,7 +205,7 @@ namespace Yvand.EntraClaimsProvider.Configuration
 
         public OperationContext(IEntraCPSettings settings, OperationType currentRequestType, string input, SPClaim incomingEntity, Uri context, string[] entityTypes, string hierarchyNodeID, int maxCount)
         {
-            this.Settings = settings;
+            //this.Settings = settings;
             this.OperationType = currentRequestType;
             this.Input = input;
             this.IncomingEntity = incomingEntity;

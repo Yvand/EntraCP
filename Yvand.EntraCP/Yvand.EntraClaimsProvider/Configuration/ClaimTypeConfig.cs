@@ -312,12 +312,12 @@ namespace Yvand.EntraClaimsProvider.Configuration
         {
             get
             {
-                IdentityClaimTypeConfig ctConfig = (IdentityClaimTypeConfig)innerCol.FirstOrDefault(x => x is IdentityClaimTypeConfig);
+                IdentityClaimTypeConfig ctConfig = (IdentityClaimTypeConfig)GetMainConfigurationForDirectoryObjectType(DirectoryObjectType.User);
                 return ctConfig;
             }
             set
             {
-                IdentityClaimTypeConfig ctConfig = (IdentityClaimTypeConfig)innerCol.FirstOrDefault(x => x is IdentityClaimTypeConfig);
+                IdentityClaimTypeConfig ctConfig = (IdentityClaimTypeConfig)GetMainConfigurationForDirectoryObjectType(DirectoryObjectType.User);
                 ctConfig = value;
             }
         }
@@ -332,9 +332,10 @@ namespace Yvand.EntraClaimsProvider.Configuration
             this.SPTrust = spTrust;
         }
 
-        internal ClaimTypeConfigCollection(ref Collection<ClaimTypeConfig> innerCol)
+        internal ClaimTypeConfigCollection(ref Collection<ClaimTypeConfig> innerCol, SPTrustedLoginProvider spTrust)
         {
             this.innerCol = innerCol;
+            this.SPTrust = spTrust;
         }
 
         public ClaimTypeConfig this[int index]
@@ -494,7 +495,7 @@ namespace Yvand.EntraClaimsProvider.Configuration
             if (newIdentifier == DirectoryObjectProperty.NotSet) { throw new ArgumentNullException(nameof(newIdentifier)); }
 
             bool identifierUpdated = false;
-            IdentityClaimTypeConfig identityClaimType = innerCol.FirstOrDefault(x => x is IdentityClaimTypeConfig) as IdentityClaimTypeConfig;
+            IdentityClaimTypeConfig identityClaimType = IdentityClaim;
             if (identityClaimType == null)
             {
                 return identifierUpdated;
@@ -596,6 +597,15 @@ namespace Yvand.EntraClaimsProvider.Configuration
             }
         }
 
+        public void RemoveAll(IEnumerable<ClaimTypeConfig> elementsToRemove)
+        {
+            // ToList() creates a copy and avoids exception "Collection was modified; enumeration operation may not execute"
+            foreach (ClaimTypeConfig ct in elementsToRemove.ToList())
+            {
+                Remove(ct);
+            }
+        }
+
         public bool Remove(ClaimTypeConfig item)
         {
             if (SPTrust != null && String.Equals(item.ClaimType, SPTrust.IdentityClaimTypeInformation.MappedClaimType, StringComparison.InvariantCultureIgnoreCase))
@@ -607,7 +617,7 @@ namespace Yvand.EntraClaimsProvider.Configuration
             for (int i = 0; i < innerCol.Count; i++)
             {
                 ClaimTypeConfig curCT = (ClaimTypeConfig)innerCol[i];
-                if (new ClaimTypeConfigSameConfig().Equals(curCT, item))
+                if (curCT.Equals(item))
                 {
                     innerCol.RemoveAt(i);
                     result = true;
@@ -649,6 +659,14 @@ namespace Yvand.EntraClaimsProvider.Configuration
         IEnumerator IEnumerable.GetEnumerator()
         {
             return new ClaimTypeConfigEnumerator(this);
+        }
+
+        public ClaimTypeConfig GetMainConfigurationForDirectoryObjectType(DirectoryObjectType objectType)
+        {
+            return innerCol
+                .FirstOrDefault(x =>
+                    x.EntityType == objectType &&
+                    x.UseMainClaimTypeOfDirectoryObject == false);
         }
 
         public ClaimTypeConfig GetByClaimType(string claimType)

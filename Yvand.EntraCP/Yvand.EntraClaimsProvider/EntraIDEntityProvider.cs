@@ -23,7 +23,11 @@ namespace Yvand.EntraClaimsProvider
 {
     public class EntraIDEntityProvider : EntityProviderBase
     {
-        public EntraIDEntityProvider(string claimsProviderName) : base(claimsProviderName) { }
+        public IEntraCPSettings Settings { get; }
+        public EntraIDEntityProvider(string claimsProviderName, IEntraCPSettings Settings) : base(claimsProviderName) 
+        {
+            this.Settings = Settings;
+        }
 
         public async override Task<List<string>> GetEntityGroupsAsync(OperationContext currentContext, DirectoryObjectProperty groupProperty)
         {
@@ -49,7 +53,7 @@ namespace Yvand.EntraClaimsProvider
         {
             // URL encode the filter to prevent that it gets truncated like this: "UserPrincipalName eq 'guest_contoso.com" instead of "UserPrincipalName eq 'guest_contoso.com#EXT#@TENANT.onmicrosoft.com'"
             string getMemberUserFilter = $"{currentContext.IncomingEntityClaimTypeConfig.EntityProperty} eq '{currentContext.IncomingEntity.Value}'";
-            string getGuestUserFilter = $"userType eq 'Guest' and {currentContext.Settings.IdentityClaimTypeConfig.DirectoryObjectPropertyForGuestUsers} eq '{currentContext.IncomingEntity.Value}'";
+            string getGuestUserFilter = $"userType eq 'Guest' and {this.Settings.IdentityClaimTypeConfig.DirectoryObjectPropertyForGuestUsers} eq '{currentContext.IncomingEntity.Value}'";
 
             List<string> groupsInTenant = new List<string>();
             Stopwatch timer = new Stopwatch();
@@ -86,7 +90,7 @@ namespace Yvand.EntraClaimsProvider
                     // POST to /v1.0/users/user@TENANT.onmicrosoft.com/microsoft.graph.getMemberGroups is the preferred way to return security groups as it includes nested groups
                     // But it returns only the group IDs so it can be used only if groupClaimTypeConfig.DirectoryObjectProperty == AzureADObjectProperty.Id
                     // For Guest users, it must be the id: POST to /v1.0/users/18ff6ae9-dd01-4008-a786-aabf71f1492a/microsoft.graph.getMemberGroups
-                    GetMemberGroupsPostRequestBody getGroupsOptions = new GetMemberGroupsPostRequestBody { SecurityEnabledOnly = currentContext.Settings.FilterSecurityEnabledGroupsOnly };
+                    GetMemberGroupsPostRequestBody getGroupsOptions = new GetMemberGroupsPostRequestBody { SecurityEnabledOnly = this.Settings.FilterSecurityEnabledGroupsOnly };
                     GetMemberGroupsPostResponse memberGroupsResponse = await Task.Run(() => tenant.GraphService.Users[user.Id].GetMemberGroups.PostAsGetMemberGroupsPostResponseAsync(getGroupsOptions)).ConfigureAwait(false);
                     if (memberGroupsResponse?.Value != null)
                     {
@@ -122,7 +126,7 @@ namespace Yvand.EntraClaimsProvider
             }
             catch (TaskCanceledException ex)
             {
-                Logger.LogException(ClaimsProviderName, $"while getting groups for user '{currentContext.IncomingEntity.Value}' from tenant '{tenant.Name}': The task likely exceeded the timeout of {currentContext.Settings.Timeout} ms and was canceled", TraceCategory.Augmentation, ex);
+                Logger.LogException(ClaimsProviderName, $"while getting groups for user '{currentContext.IncomingEntity.Value}' from tenant '{tenant.Name}': The task likely exceeded the timeout of {this.Settings.Timeout} ms and was canceled", TraceCategory.Augmentation, ex);
             }
             catch (Exception ex)
             {
@@ -252,14 +256,14 @@ namespace Yvand.EntraClaimsProvider
             // Also add metadata properties to $select of corresponding object type
             if (userFilterBuilder.Count > 0)
             {
-                foreach (ClaimTypeConfig ctConfig in currentContext.Settings.RuntimeMetadataConfig.Where(x => x.EntityType == DirectoryObjectType.User))
+                foreach (ClaimTypeConfig ctConfig in this.Settings.RuntimeMetadataConfig.Where(x => x.EntityType == DirectoryObjectType.User))
                 {
                     userSelectBuilder.Add(ctConfig.EntityProperty.ToString());
                 }
             }
             if (groupFilterBuilder.Count > 0)
             {
-                foreach (ClaimTypeConfig ctConfig in currentContext.Settings.RuntimeMetadataConfig.Where(x => x.EntityType == DirectoryObjectType.Group))
+                foreach (ClaimTypeConfig ctConfig in this.Settings.RuntimeMetadataConfig.Where(x => x.EntityType == DirectoryObjectType.Group))
                 {
                     groupSelectBuilder.Add(ctConfig.EntityProperty.ToString());
                 }
@@ -363,7 +367,7 @@ namespace Yvand.EntraClaimsProvider
 
             Logger.Log($"[{ClaimsProviderName}] Querying Microsoft Entra ID tenant '{tenant.Name}' for users and groups, with input '{currentContext.Input}'", TraceSeverity.VerboseEx, EventSeverity.Information, TraceCategory.Lookup);
             object lockAddResultToCollection = new object();
-            int timeout = currentContext.Settings.Timeout;
+            int timeout = this.Settings.Timeout;
             int maxRetry = currentContext.OperationType == OperationType.Validation ? 3 : 2;
             int tenantResultCount = 0;
 
