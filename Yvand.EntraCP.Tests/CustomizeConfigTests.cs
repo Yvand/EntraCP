@@ -67,6 +67,7 @@ namespace Yvand.EntraClaimsProvider.Tests
             // Modify identity ClaimTypeConfig to set its EntityType to Group should throw exception InvalidOperationException
             identityCTConfig.EntityType = DirectoryObjectType.Group;
             Assert.Throws<InvalidOperationException>(() => GlobalConfiguration.ApplySettings(Settings, true), $"Modify identity claim type to set its EntityType to Group should throw exception InvalidOperationException with this message: \"{ConfigUpdateErrorMessage}\"");
+            identityCTConfig.EntityType = DirectoryObjectType.User; // Restore valid value to allow other tests to run
         }
 
         [Test]
