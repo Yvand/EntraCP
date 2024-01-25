@@ -27,21 +27,21 @@ namespace Yvand.EntraClaimsProvider.Tests
             }
         }
 
-        [Test, TestCaseSource(typeof(SearchEntityDataSource), "GetTestData", new object[] { EntityDataSourceType.UPNB2BGuestAccounts })]
+        [Test, TestCaseSource(typeof(SearchEntityDataSource), nameof(SearchEntityDataSource.GetTestData), new object[] { EntityDataSourceType.UPNB2BGuestAccounts })]
         [Repeat(UnitTestsHelper.TestRepeatCount)]
         public override void SearchEntities(SearchEntityData registrationData)
         {
             base.SearchEntities(registrationData);
         }
 
-        [Test, TestCaseSource(typeof(ValidateEntityDataSource), "GetTestData", new object[] { EntityDataSourceType.UPNB2BGuestAccounts })]
+        [Test, TestCaseSource(typeof(ValidateEntityDataSource), nameof(ValidateEntityDataSource.GetTestData), new object[] { EntityDataSourceType.UPNB2BGuestAccounts })]
         [Repeat(UnitTestsHelper.TestRepeatCount)]
         public override void ValidateClaim(ValidateEntityData registrationData)
         {
             base.ValidateClaim(registrationData);
         }
 
-        [Test, TestCaseSource(typeof(ValidateEntityDataSource), "GetTestData", new object[] { EntityDataSourceType.UPNB2BGuestAccounts })]
+        [Test, TestCaseSource(typeof(ValidateEntityDataSource), nameof(ValidateEntityDataSource.GetTestData), new object[] { EntityDataSourceType.UPNB2BGuestAccounts })]
         [Repeat(UnitTestsHelper.TestRepeatCount)]
         public override void AugmentEntity(ValidateEntityData registrationData)
         {

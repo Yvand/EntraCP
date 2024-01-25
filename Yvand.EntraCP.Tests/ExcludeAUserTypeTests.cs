@@ -1,5 +1,4 @@
 ﻿using NUnit.Framework;
-using System.Runtime.CompilerServices;
 
 namespace Yvand.EntraClaimsProvider.Tests
 {
@@ -10,21 +9,21 @@ namespace Yvand.EntraClaimsProvider.Tests
         public override bool ExcludeGuestUsers => true;
         public override bool ExcludeMemberUsers => true;
 
-        [Test, TestCaseSource(typeof(ValidateEntityDataSource), "GetTestData", new object[] { EntityDataSourceType.AllAccounts })]
+        [Test, TestCaseSource(typeof(ValidateEntityDataSource), nameof(ValidateEntityDataSource.GetTestData), new object[] { EntityDataSourceType.AllAccounts })]
         [Repeat(UnitTestsHelper.TestRepeatCount)]
         public override void AugmentEntity(ValidateEntityData registrationData)
         {
             base.AugmentEntity(registrationData);
         }
 
-        [Test, TestCaseSource(typeof(SearchEntityDataSource), "GetTestData", new object[] { EntityDataSourceType.AllAccounts })]
+        [Test, TestCaseSource(typeof(SearchEntityDataSource), nameof(SearchEntityDataSource.GetTestData), new object[] { EntityDataSourceType.AllAccounts })]
         [Repeat(UnitTestsHelper.TestRepeatCount)]
         public override void SearchEntities(SearchEntityData registrationData)
         {
             base.SearchEntities(registrationData);
         }
 
-        [Test, TestCaseSource(typeof(ValidateEntityDataSource), "GetTestData", new object[] { EntityDataSourceType.AllAccounts })]
+        [Test, TestCaseSource(typeof(ValidateEntityDataSource), nameof(ValidateEntityDataSource.GetTestData), new object[] { EntityDataSourceType.AllAccounts })]
         [MaxTime(UnitTestsHelper.MaxTime)]
         [Repeat(UnitTestsHelper.TestRepeatCount)]
         public override void ValidateClaim(ValidateEntityData registrationData)
@@ -40,21 +39,21 @@ namespace Yvand.EntraClaimsProvider.Tests
         public override bool ExcludeGuestUsers => true;
         public override bool ExcludeMemberUsers => false;
 
-        [Test, TestCaseSource(typeof(ValidateEntityDataSource), "GetTestData", new object[] { EntityDataSourceType.AllAccounts })]
+        [Test, TestCaseSource(typeof(ValidateEntityDataSource), nameof(ValidateEntityDataSource.GetTestData), new object[] { EntityDataSourceType.AllAccounts })]
         [Repeat(UnitTestsHelper.TestRepeatCount)]
         public override void AugmentEntity(ValidateEntityData registrationData)
         {
             base.AugmentEntity(registrationData);
         }
 
-        [Test, TestCaseSource(typeof(SearchEntityDataSource), "GetTestData", new object[] { EntityDataSourceType.AllAccounts })]
+        [Test, TestCaseSource(typeof(SearchEntityDataSource), nameof(SearchEntityDataSource.GetTestData), new object[] { EntityDataSourceType.AllAccounts })]
         [Repeat(UnitTestsHelper.TestRepeatCount)]
         public override void SearchEntities(SearchEntityData registrationData)
         {
             base.SearchEntities(registrationData);
         }
 
-        [Test, TestCaseSource(typeof(ValidateEntityDataSource), "GetTestData", new object[] { EntityDataSourceType.AllAccounts })]
+        [Test, TestCaseSource(typeof(ValidateEntityDataSource), nameof(ValidateEntityDataSource.GetTestData), new object[] { EntityDataSourceType.AllAccounts })]
         [MaxTime(UnitTestsHelper.MaxTime)]
         [Repeat(UnitTestsHelper.TestRepeatCount)]
         public override void ValidateClaim(ValidateEntityData registrationData)
@@ -70,21 +69,21 @@ namespace Yvand.EntraClaimsProvider.Tests
         public override bool ExcludeGuestUsers => false;
         public override bool ExcludeMemberUsers => true;
 
-        [Test, TestCaseSource(typeof(ValidateEntityDataSource), "GetTestData", new object[] { EntityDataSourceType.AllAccounts })]
+        [Test, TestCaseSource(typeof(ValidateEntityDataSource), nameof(ValidateEntityDataSource.GetTestData), new object[] { EntityDataSourceType.AllAccounts })]
         [Repeat(UnitTestsHelper.TestRepeatCount)]
         public override void AugmentEntity(ValidateEntityData registrationData)
         {
             base.AugmentEntity(registrationData);
         }
 
-        [Test, TestCaseSource(typeof(SearchEntityDataSource), "GetTestData", new object[] { EntityDataSourceType.AllAccounts })]
+        [Test, TestCaseSource(typeof(SearchEntityDataSource), nameof(SearchEntityDataSource.GetTestData), new object[] { EntityDataSourceType.AllAccounts })]
         [Repeat(UnitTestsHelper.TestRepeatCount)]
         public override void SearchEntities(SearchEntityData registrationData)
         {
             base.SearchEntities(registrationData);
         }
 
-        [Test, TestCaseSource(typeof(ValidateEntityDataSource), "GetTestData", new object[] { EntityDataSourceType.AllAccounts })]
+        [Test, TestCaseSource(typeof(ValidateEntityDataSource), nameof(ValidateEntityDataSource.GetTestData), new object[] { EntityDataSourceType.AllAccounts })]
         [MaxTime(UnitTestsHelper.MaxTime)]
         [Repeat(UnitTestsHelper.TestRepeatCount)]
         public override void ValidateClaim(ValidateEntityData registrationData)

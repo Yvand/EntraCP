@@ -6,14 +6,14 @@ namespace Yvand.EntraClaimsProvider.Tests
     [Parallelizable(ParallelScope.Children)]
     internal class BasicTests : EntityTestsBase
     {
-        [Test, TestCaseSource(typeof(SearchEntityDataSource), "GetTestData", new object[] { EntityDataSourceType.AllAccounts })]
+        [Test, TestCaseSource(typeof(SearchEntityDataSource), nameof(SearchEntityDataSource.GetTestData), new object[] { EntityDataSourceType.AllAccounts })]
         [Repeat(UnitTestsHelper.TestRepeatCount)]
         public override void SearchEntities(SearchEntityData registrationData)
         {
             base.SearchEntities(registrationData);
         }
 
-        [Test, TestCaseSource(typeof(ValidateEntityDataSource), "GetTestData", new object[] { EntityDataSourceType.AllAccounts })]
+        [Test, TestCaseSource(typeof(ValidateEntityDataSource), nameof(ValidateEntityDataSource.GetTestData), new object[] { EntityDataSourceType.AllAccounts })]
         [MaxTime(UnitTestsHelper.MaxTime)]
         [Repeat(UnitTestsHelper.TestRepeatCount)]
         public override void ValidateClaim(ValidateEntityData registrationData)
@@ -21,7 +21,7 @@ namespace Yvand.EntraClaimsProvider.Tests
             base.ValidateClaim(registrationData);
         }
 
-        [Test, TestCaseSource(typeof(ValidateEntityDataSource), "GetTestData", new object[] { EntityDataSourceType.AllAccounts })]
+        [Test, TestCaseSource(typeof(ValidateEntityDataSource), nameof(ValidateEntityDataSource.GetTestData), new object[] { EntityDataSourceType.AllAccounts })]
         [Repeat(UnitTestsHelper.TestRepeatCount)]
         public override void AugmentEntity(ValidateEntityData registrationData)
         {

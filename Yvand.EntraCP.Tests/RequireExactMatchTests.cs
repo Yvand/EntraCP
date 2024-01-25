@@ -19,7 +19,7 @@ namespace Yvand.EntraClaimsProvider.Tests
             }
         }
 
-        [Test, TestCaseSource(typeof(SearchEntityDataSource), "GetTestData", new object[] { EntityDataSourceType.AllAccounts })]
+        [Test, TestCaseSource(typeof(SearchEntityDataSource), nameof(SearchEntityDataSource.GetTestData), new object[] { EntityDataSourceType.AllAccounts })]
         [Repeat(UnitTestsHelper.TestRepeatCount)]
         public override void SearchEntities(SearchEntityData registrationData)
         {
@@ -47,7 +47,7 @@ namespace Yvand.EntraClaimsProvider.Tests
             }
         }
 
-        [Test, TestCaseSource(typeof(SearchEntityDataSource), "GetTestData", new object[] { EntityDataSourceType.AllAccounts })]
+        [Test, TestCaseSource(typeof(SearchEntityDataSource), nameof(SearchEntityDataSource.GetTestData), new object[] { EntityDataSourceType.AllAccounts })]
         [Repeat(UnitTestsHelper.TestRepeatCount)]
         public override void SearchEntities(SearchEntityData registrationData)
         {
