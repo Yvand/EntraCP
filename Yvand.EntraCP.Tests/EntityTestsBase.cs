@@ -61,7 +61,7 @@ namespace Yvand.EntraClaimsProvider.Tests
             {
                 OriginalSettings = GlobalConfiguration.Settings;
                 Settings = (EntraIDProviderSettings)GlobalConfiguration.Settings;
-                Trace.TraceInformation($"{DateTime.Now.ToString("s")} Took a backup of the original settings");
+                Trace.TraceInformation($"{DateTime.Now:s} Took a backup of the original settings");
             }
             InitializeConfiguration(true);
         }
@@ -91,7 +91,7 @@ namespace Yvand.EntraClaimsProvider.Tests
             if (applyChanges)
             {
                 GlobalConfiguration.ApplySettings(Settings, true);
-                Trace.TraceInformation($"{DateTime.Now.ToString("s")} [EntityTestsBase] Updated configuration: {JsonConvert.SerializeObject(Settings, Formatting.None)}");
+                Trace.TraceInformation($"{DateTime.Now:s} [EntityTestsBase] Updated configuration: {JsonConvert.SerializeObject(Settings, Formatting.None)}");
             }
         }
 
@@ -103,12 +103,12 @@ namespace Yvand.EntraClaimsProvider.Tests
                 if (OriginalSettings != null)
                 {
                     GlobalConfiguration.ApplySettings(OriginalSettings, true);
-                    Trace.TraceInformation($"{DateTime.Now.ToString("s")} Restored original settings of EntraCP configuration");
+                    Trace.TraceInformation($"{DateTime.Now:s} Restored original settings of EntraCP configuration");
                 }
             }
             catch (Exception ex)
             {
-                Trace.TraceError($"{DateTime.Now.ToString("s")} Unexpected error while restoring the original settings of EntraCP configuration: {ex.Message}");
+                Trace.TraceError($"{DateTime.Now:s} Unexpected error while restoring the original settings of EntraCP configuration: {ex.Message}");
             }
         }
 
@@ -200,11 +200,11 @@ namespace Yvand.EntraClaimsProvider.Tests
         {
             if (ConfigurationIsValid)
             {
-                Assert.IsTrue(UnitTestsHelper.ClaimsProvider.ValidateSettings(null), "ValidateLocalConfiguration should return true because the configuration is valid");
+                Assert.That(UnitTestsHelper.ClaimsProvider.ValidateSettings(null), Is.True, "ValidateLocalConfiguration should return true because the configuration is valid");
             }
             else
             {
-                Assert.IsFalse(UnitTestsHelper.ClaimsProvider.ValidateSettings(null), "ValidateLocalConfiguration should return false because the configuration is not valid");
+                Assert.That(UnitTestsHelper.ClaimsProvider.ValidateSettings(null), Is.False, "ValidateLocalConfiguration should return false because the configuration is not valid");
             }
         }
 
@@ -233,11 +233,11 @@ namespace Yvand.EntraClaimsProvider.Tests
                 entities = UnitTestsHelper.ClaimsProvider.Resolve(UnitTestsHelper.TestSiteCollUri, entityTypes, inputValue).ToList();
                 VerifySearchTest(entities, inputValue, expectedCount, expectedClaimValue);
                 timer.Stop();
-                Trace.TraceInformation($"{DateTime.Now.ToString("s")} TestSearchOperation finished in {timer.ElapsedMilliseconds} ms. Parameters: inputValue: '{inputValue}', expectedCount: '{expectedCount}', expectedClaimValue: '{expectedClaimValue}'.");
+                Trace.TraceInformation($"{DateTime.Now:s} TestSearchOperation finished in {timer.ElapsedMilliseconds} ms. Parameters: inputValue: '{inputValue}', expectedCount: '{expectedCount}', expectedClaimValue: '{expectedClaimValue}'.");
             }
             catch (Exception ex)
             {
-                Trace.TraceError($"{DateTime.Now.ToString("s")} TestSearchOperation failed with exception '{ex.GetType()}', message '{ex.Message}'. Parameters: inputValue: '{inputValue}', expectedCount: '{expectedCount}', expectedClaimValue: '{expectedClaimValue}'.");
+                Trace.TraceError($"{DateTime.Now:s} TestSearchOperation failed with exception '{ex.GetType()}', message '{ex.Message}'. Parameters: inputValue: '{inputValue}', expectedCount: '{expectedCount}', expectedClaimValue: '{expectedClaimValue}'.");
             }
         }
 
@@ -257,7 +257,7 @@ namespace Yvand.EntraClaimsProvider.Tests
 
             if (!String.IsNullOrWhiteSpace(expectedClaimValue) && !entityValueFound && expectedCount > 0)
             {
-                Assert.Fail($"Input \"{input}\" returned no entity with claim value \"{expectedClaimValue}\". {detailedLog.ToString()}");
+                Assert.Fail($"Input \"{input}\" returned no entity with claim value \"{expectedClaimValue}\". {detailedLog}");
             }
 
             if (expectedCount == Int32.MaxValue)
@@ -265,7 +265,7 @@ namespace Yvand.EntraClaimsProvider.Tests
                 expectedCount = entities.Count;
             }
 
-            Assert.That(entities.Count, Is.EqualTo(expectedCount), $"Input \"{input}\" should have returned {expectedCount} entities, but it returned {entities.Count} instead. {detailedLog.ToString()}");
+            Assert.That(entities.Count, Is.EqualTo(expectedCount), $"Input \"{input}\" should have returned {expectedCount} entities, but it returned {entities.Count} instead. {detailedLog}");
         }
 
         public static void TestValidationOperation(SPClaim inputClaim, bool shouldValidate, string expectedClaimValue)
@@ -285,11 +285,11 @@ namespace Yvand.EntraClaimsProvider.Tests
                     Assert.That(entities[0].Claim.Value, Is.EqualTo(expectedClaimValue).IgnoreCase, $"Validation of entity \"{inputClaim.Value}\" should have returned value \"{expectedClaimValue}\", but it returned \"{entities[0].Claim.Value}\" instead.");
                 }
                 timer.Stop();
-                Trace.TraceInformation($"{DateTime.Now.ToString("s")} TestValidationOperation finished in {timer.ElapsedMilliseconds} ms. Parameters: inputClaim.Value: '{inputClaim.Value}', shouldValidate: '{shouldValidate}', expectedClaimValue: '{expectedClaimValue}'.");
+                Trace.TraceInformation($"{DateTime.Now:s} TestValidationOperation finished in {timer.ElapsedMilliseconds} ms. Parameters: inputClaim.Value: '{inputClaim.Value}', shouldValidate: '{shouldValidate}', expectedClaimValue: '{expectedClaimValue}'.");
             }
             catch (Exception ex)
             {
-                Trace.TraceError($"{DateTime.Now.ToString("s")} TestValidationOperation failed with exception '{ex.GetType()}', message '{ex.Message}'. Parameters: inputClaim.Value: '{inputClaim.Value}', shouldValidate: '{shouldValidate}', expectedClaimValue: '{expectedClaimValue}'.");
+                Trace.TraceError($"{DateTime.Now:s} TestValidationOperation failed with exception '{ex.GetType()}', message '{ex.Message}'. Parameters: inputClaim.Value: '{inputClaim.Value}', shouldValidate: '{shouldValidate}', expectedClaimValue: '{expectedClaimValue}'.");
             }
         }
 
@@ -312,18 +312,18 @@ namespace Yvand.EntraClaimsProvider.Tests
 
                 if (isMemberOfTrustedGroup)
                 {
-                    Assert.IsTrue(groupFound, $"Entity \"{claimValue}\" should be member of group \"{UnitTestsHelper.TrustedGroupToAdd_ClaimValue}\", but this group was not found in the claims returned by the claims provider.");
+                    Assert.That(groupFound, Is.True, $"Entity \"{claimValue}\" should be member of group \"{UnitTestsHelper.TrustedGroupToAdd_ClaimValue}\", but this group was not found in the claims returned by the claims provider.");
                 }
                 else
                 {
-                    Assert.IsFalse(groupFound, $"Entity \"{claimValue}\" should NOT be member of group \"{UnitTestsHelper.TrustedGroupToAdd_ClaimValue}\", but this group was found in the claims returned by the claims provider.");
+                    Assert.That(groupFound, Is.False, $"Entity \"{claimValue}\" should NOT be member of group \"{UnitTestsHelper.TrustedGroupToAdd_ClaimValue}\", but this group was found in the claims returned by the claims provider.");
                 }
                 timer.Stop();
-                Trace.TraceInformation($"{DateTime.Now.ToString("s")} TestAugmentationOperation finished in {timer.ElapsedMilliseconds} ms. Parameters: claimType: '{claimType}', claimValue: '{claimValue}', isMemberOfTrustedGroup: '{isMemberOfTrustedGroup}'.");
+                Trace.TraceInformation($"{DateTime.Now:s} TestAugmentationOperation finished in {timer.ElapsedMilliseconds} ms. Parameters: claimType: '{claimType}', claimValue: '{claimValue}', isMemberOfTrustedGroup: '{isMemberOfTrustedGroup}'.");
             }
             catch (Exception ex)
             {
-                Trace.TraceError($"{DateTime.Now.ToString("s")} TestAugmentationOperation failed with exception '{ex.GetType()}', message '{ex.Message}'. Parameters: claimType: '{claimType}', claimValue: '{claimValue}', isMemberOfTrustedGroup: '{isMemberOfTrustedGroup}'.");
+                Trace.TraceError($"{DateTime.Now:s} TestAugmentationOperation failed with exception '{ex.GetType()}', message '{ex.Message}'. Parameters: claimType: '{claimType}', claimValue: '{claimValue}', isMemberOfTrustedGroup: '{isMemberOfTrustedGroup}'.");
             }
         }
     }

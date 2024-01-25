@@ -49,20 +49,20 @@ namespace Yvand.EntraClaimsProvider.Tests
             Logger = new TextWriterTraceListener(TestContext.Parameters["TestLogFileName"]);
             Trace.Listeners.Add(Logger);
             Trace.AutoFlush = true;
-            Trace.TraceInformation($"{DateTime.Now.ToString("s")} Start integration tests of {EntraCP.ClaimsProviderName} {FileVersionInfo.GetVersionInfo(Assembly.GetAssembly(typeof(EntraCP)).Location).FileVersion}.");
-            Trace.TraceInformation($"{DateTime.Now.ToString("s")} DataFile_AllAccounts_Search: {DataFile_AllAccounts_Search}");
-            Trace.TraceInformation($"{DateTime.Now.ToString("s")} DataFile_AllAccounts_Validate: {DataFile_AllAccounts_Validate}");
-            Trace.TraceInformation($"{DateTime.Now.ToString("s")} DataFile_GuestAccountsUPN_Search: {DataFile_GuestAccountsUPN_Search}");
-            Trace.TraceInformation($"{DateTime.Now.ToString("s")} DataFile_GuestAccountsUPN_Validate: {DataFile_GuestAccountsUPN_Validate}");
-            Trace.TraceInformation($"{DateTime.Now.ToString("s")} TestSiteCollectionName: {TestContext.Parameters["TestSiteCollectionName"]}");
+            Trace.TraceInformation($"{DateTime.Now:s} Start integration tests of {EntraCP.ClaimsProviderName} {FileVersionInfo.GetVersionInfo(Assembly.GetAssembly(typeof(EntraCP)).Location).FileVersion}.");
+            Trace.TraceInformation($"{DateTime.Now:s} DataFile_AllAccounts_Search: {DataFile_AllAccounts_Search}");
+            Trace.TraceInformation($"{DateTime.Now:s} DataFile_AllAccounts_Validate: {DataFile_AllAccounts_Validate}");
+            Trace.TraceInformation($"{DateTime.Now:s} DataFile_GuestAccountsUPN_Search: {DataFile_GuestAccountsUPN_Search}");
+            Trace.TraceInformation($"{DateTime.Now:s} DataFile_GuestAccountsUPN_Validate: {DataFile_GuestAccountsUPN_Validate}");
+            Trace.TraceInformation($"{DateTime.Now:s} TestSiteCollectionName: {TestContext.Parameters["TestSiteCollectionName"]}");
 
             if (SPTrust == null)
             {
-                Trace.TraceError($"{DateTime.Now.ToString("s")} SPTrust: is null");
+                Trace.TraceError($"{DateTime.Now:s} SPTrust: is null");
             }
             else
             {
-                Trace.TraceInformation($"{DateTime.Now.ToString("s")} SPTrust: {SPTrust.Name}");
+                Trace.TraceInformation($"{DateTime.Now:s} SPTrust: {SPTrust.Name}");
             }
 
 #if DEBUG
@@ -87,11 +87,11 @@ namespace Yvand.EntraClaimsProvider.Tests
             });
             if (wa == null)
             {
-                Trace.TraceError($"{DateTime.Now.ToString("s")} Web application was NOT found.");
+                Trace.TraceError($"{DateTime.Now:s} Web application was NOT found.");
                 return;
             }
 
-            Trace.TraceInformation($"{DateTime.Now.ToString("s")} Web application {wa.Name} found.");
+            Trace.TraceInformation($"{DateTime.Now:s} Web application {wa.Name} found.");
             Uri waRootAuthority = wa.AlternateUrls[0].Uri;
             TestSiteCollUri = new Uri($"{waRootAuthority.GetLeftPart(UriPartial.Authority)}{TestSiteRelativePath}");
             SPClaimProviderManager claimMgr = SPClaimProviderManager.Local;
@@ -109,7 +109,7 @@ namespace Yvand.EntraClaimsProvider.Tests
             // The root site may not exist, but it must be present for tests to run
             if (!SPSite.Exists(waRootAuthority))
             {
-                Trace.TraceInformation($"{DateTime.Now.ToString("s")} Creating root site collection {waRootAuthority.AbsoluteUri}...");
+                Trace.TraceInformation($"{DateTime.Now:s} Creating root site collection {waRootAuthority.AbsoluteUri}...");
                 SPSite spSite = wa.Sites.Add(waRootAuthority.AbsoluteUri, "root", "root", 1033, spSiteTemplate, FarmAdmin, String.Empty, String.Empty);
                 spSite.RootWeb.CreateDefaultAssociatedGroups(FarmAdmin, FarmAdmin, spSite.RootWeb.Title);
 
@@ -120,7 +120,7 @@ namespace Yvand.EntraClaimsProvider.Tests
 
             if (!SPSite.Exists(TestSiteCollUri))
             {
-                Trace.TraceInformation($"{DateTime.Now.ToString("s")} Creating site collection {TestSiteCollUri.AbsoluteUri} with template '{spSiteTemplate}'...");
+                Trace.TraceInformation($"{DateTime.Now:s} Creating site collection {TestSiteCollUri.AbsoluteUri} with template '{spSiteTemplate}'...");
                 SPSite spSite = wa.Sites.Add(TestSiteCollUri.AbsoluteUri, EntraCP.ClaimsProviderName, EntraCP.ClaimsProviderName, 1033, spSiteTemplate, FarmAdmin, String.Empty, String.Empty);
                 spSite.RootWeb.CreateDefaultAssociatedGroups(FarmAdmin, FarmAdmin, spSite.RootWeb.Title);
 
@@ -141,7 +141,7 @@ namespace Yvand.EntraClaimsProvider.Tests
         [OneTimeTearDown]
         public static void Cleanup()
         {
-            Trace.TraceInformation($"{DateTime.Now.ToString("s")} Integration tests of {EntraCP.ClaimsProviderName} {FileVersionInfo.GetVersionInfo(Assembly.GetAssembly(typeof(EntraCP)).Location).FileVersion} finished.");
+            Trace.TraceInformation($"{DateTime.Now:s} Integration tests of {EntraCP.ClaimsProviderName} {FileVersionInfo.GetVersionInfo(Assembly.GetAssembly(typeof(EntraCP)).Location).FileVersion} finished.");
             Trace.Flush();
             if (Logger != null)
             {
