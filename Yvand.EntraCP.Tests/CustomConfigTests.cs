@@ -1,5 +1,4 @@
-﻿using Microsoft.Graph.Models;
-using Microsoft.SharePoint.Administration.Claims;
+﻿using Microsoft.SharePoint.Administration.Claims;
 using Newtonsoft.Json;
 using NUnit.Framework;
 using System;

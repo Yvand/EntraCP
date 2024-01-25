@@ -61,13 +61,13 @@ namespace Yvand.EntraClaimsProvider.Tests
             Assert.Throws<InvalidOperationException>(() => Settings.ClaimTypes.Remove(identityClaimType), $"Delete identity claim type from ClaimTypes list should throw exception InvalidOperationException with this message: \"Cannot delete claim type \"{UnitTestsHelper.SPTrust.IdentityClaimTypeInformation.MappedClaimType}\" because it is the identity claim type of \"{UnitTestsHelper.SPTrust.Name}\"\"");
 
             // Delete identity claim type from ClaimTypes list based on its ClaimTypeConfig should throw exception InvalidOperationException
-            ClaimTypeConfig identityCTConfig = Settings.ClaimTypes.FirstOrDefault(x => String.Equals(UnitTestsHelper.SPTrust.IdentityClaimTypeInformation.MappedClaimType, x.ClaimType, StringComparison.InvariantCultureIgnoreCase));
+            ClaimTypeConfig identityCTConfig = Settings.ClaimTypes.GetMainConfigurationForDirectoryObjectType(DirectoryObjectType.User);
             Assert.Throws<InvalidOperationException>(() => Settings.ClaimTypes.Remove(identityClaimType), $"Delete identity claim type from ClaimTypes list should throw exception InvalidOperationException with this message: \"Cannot delete claim type \"{UnitTestsHelper.SPTrust.IdentityClaimTypeInformation.MappedClaimType}\" because it is the identity claim type of \"{UnitTestsHelper.SPTrust.Name}\"\"");
 
             // Modify identity ClaimTypeConfig to set its EntityType to Group should throw exception InvalidOperationException
             identityCTConfig.EntityType = DirectoryObjectType.Group;
             Assert.Throws<InvalidOperationException>(() => GlobalConfiguration.ApplySettings(Settings, true), $"Modify identity claim type to set its EntityType to Group should throw exception InvalidOperationException with this message: \"{ConfigUpdateErrorMessage}\"");
-            identityCTConfig.EntityType = DirectoryObjectType.User; // Restore valid value to allow other tests to run
+            identityCTConfig.EntityType = DirectoryObjectType.User; // Restore valid value in local Settings to allow other tests to run
         }
 
         [Test]
@@ -109,9 +109,9 @@ namespace Yvand.EntraClaimsProvider.Tests
             // Duplicate EntityDataKey on 2 items already existing in the list should throw exception InvalidOperationException
             Settings.ClaimTypes.Where(x => x.EntityType == DirectoryObjectType.User).Take(2).Select(x => x.EntityDataKey = entityDataKey).ToList();
             Assert.Throws<InvalidOperationException>(() => GlobalConfiguration.ApplySettings(Settings, true), $"Duplicate EntityDataKey on 2 items already existing in the list should throw exception InvalidOperationException with this message: \"{ConfigUpdateErrorMessage}\"");
-
-            // Remove one of the duplicated EntityDataKey
+            // Remove one of the duplicated EntityDataKey to allow tests to continue
             Settings.ClaimTypes.FirstOrDefault(x => x.EntityDataKey == entityDataKey).EntityDataKey = String.Empty;
+
             // Set an EntityDataKey on an existing item and add a new item with the same EntityDataKey should throw exception InvalidOperationException
             ClaimTypeConfig ctConfig = new ClaimTypeConfig() { ClaimType = UnitTestsHelper.RandomClaimType, EntityDataKey = entityDataKey, EntityProperty = UnitTestsHelper.RandomObjectProperty };
             Assert.Throws<InvalidOperationException>(() => Settings.ClaimTypes.Add(ctConfig), $"Set an EntityDataKey on an existing item and add a new item with the same EntityDataKey should throw exception InvalidOperationException with this message: \"Entity metadata '{entityDataKey}' already exists in the collection for the directory object User\"");
@@ -141,7 +141,7 @@ namespace Yvand.EntraClaimsProvider.Tests
         [Test]
         public void ModifyUserIdentifier()
         {
-            IdentityClaimTypeConfig backupIdentityCTConfig = Settings.ClaimTypes.FirstOrDefault(x => x is IdentityClaimTypeConfig) as IdentityClaimTypeConfig;
+            IdentityClaimTypeConfig backupIdentityCTConfig = Settings.ClaimTypes.GetMainConfigurationForDirectoryObjectType(DirectoryObjectType.User) as IdentityClaimTypeConfig;
             backupIdentityCTConfig = backupIdentityCTConfig.CopyConfiguration() as IdentityClaimTypeConfig;
 
             // Member UserType
