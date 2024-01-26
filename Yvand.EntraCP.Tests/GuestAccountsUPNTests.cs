@@ -13,16 +13,16 @@ namespace Yvand.EntraClaimsProvider.Tests
     [Parallelizable(ParallelScope.Children)]
     public class GuestAccountsUPNTests : EntityTestsBase
     {
-        public override void InitializeConfiguration(bool applyChanges)
+        public override void InitializeSettings(bool applyChanges)
         {
-            base.InitializeConfiguration(false);
+            base.InitializeSettings(false);
 
             // Extra initialization for current test class
             Settings.ClaimTypes.UpdateIdentifierForGuestUsers(DirectoryObjectProperty.UserPrincipalName);
             Settings.EnableAugmentation = true;
             if (applyChanges)
             {
-                GlobalConfiguration.ApplySettings(Settings, true);
+                TestSettingsAndApplyThemIfValid();
                 Trace.TraceInformation($"{DateTime.Now:s} [GuestAccountsUPNTests] Updated configuration: {JsonConvert.SerializeObject(Settings, Formatting.None)}");
             }
         }
@@ -46,6 +46,6 @@ namespace Yvand.EntraClaimsProvider.Tests
         public override void AugmentEntity(ValidateEntityData registrationData)
         {
             base.AugmentEntity(registrationData);
-        }        
+        }
     }
 }

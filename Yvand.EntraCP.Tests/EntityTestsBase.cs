@@ -43,12 +43,15 @@ namespace Yvand.EntraClaimsProvider.Tests
         /// <summary>
         /// Configures whether the configuration applied is valid, and whether the claims provider should be able to use it
         /// </summary>
-        public virtual bool ConfigurationIsValid => true;
+        public bool ConfigurationShouldBeValid = true;
 
         protected EntraIDProviderConfiguration GlobalConfiguration;
         protected EntraIDProviderSettings Settings = new EntraIDProviderSettings();
         private static IEntraIDProviderSettings OriginalSettings;
 
+        /// <summary>
+        /// This method will be executed by each class which inherits this base class
+        /// </summary>
         [OneTimeSetUp]
         public void Init()
         {
@@ -63,13 +66,30 @@ namespace Yvand.EntraClaimsProvider.Tests
                 Settings = (EntraIDProviderSettings)GlobalConfiguration.Settings;
                 Trace.TraceInformation($"{DateTime.Now:s} Took a backup of the original settings");
             }
-            InitializeConfiguration(true);
+            InitializeSettings(true);
+        }
+
+        [Test]
+        public virtual void TestSettingsAndApplyThemIfValid()
+        {
+            GlobalConfiguration.ApplySettings(Settings, false);
+            if (ConfigurationShouldBeValid)
+            {
+                Assert.DoesNotThrow(() => GlobalConfiguration.ValidateConfiguration(), "ValidateLocalConfiguration should NOT throw a InvalidOperationException because the configuration is valid");
+                GlobalConfiguration.Update();
+                Trace.TraceInformation($"{DateTime.Now:s} [{this.GetType().Name}] Updated configuration: {JsonConvert.SerializeObject(Settings, Formatting.None)}");
+            }
+            else
+            {
+                Assert.Throws<InvalidOperationException>(() => GlobalConfiguration.ValidateConfiguration(), "ValidateLocalConfiguration should throw a InvalidOperationException because the configuration is invalid");
+                Trace.TraceInformation($"{DateTime.Now:s} [{this.GetType().Name}] Invalid configuration: {JsonConvert.SerializeObject(Settings, Formatting.None)}");
+            }
         }
 
         /// <summary>
         /// Initialize configuration
         /// </summary>
-        public virtual void InitializeConfiguration(bool applyChanges)
+        public virtual void InitializeSettings(bool applyChanges)
         {
             Settings = new EntraIDProviderSettings();
             Settings.ClaimTypes = EntraIDProviderSettings.ReturnDefaultClaimTypesConfig(UnitTestsHelper.ClaimsProvider.Name);
@@ -90,7 +110,8 @@ namespace Yvand.EntraClaimsProvider.Tests
 
             if (applyChanges)
             {
-                GlobalConfiguration.ApplySettings(Settings, true);
+                //GlobalConfiguration.ApplySettings(Settings, true);
+                TestSettingsAndApplyThemIfValid();
                 Trace.TraceInformation($"{DateTime.Now:s} [EntityTestsBase] Updated configuration: {JsonConvert.SerializeObject(Settings, Formatting.None)}");
             }
         }
@@ -193,20 +214,6 @@ namespace Yvand.EntraClaimsProvider.Tests
             if (!TestAugmentation) { return; }
 
             TestAugmentationOperation(UnitTestsHelper.SPTrust.IdentityClaimTypeInformation.MappedClaimType, claimValue, shouldHavePermissions);
-        }
-
-        [Test]
-        public virtual void ValidateConfiguration()
-        {
-            GlobalConfiguration.ApplySettings(Settings, false);
-            if (ConfigurationIsValid)
-            {
-                Assert.DoesNotThrow(() => GlobalConfiguration.ValidateConfiguration(), "ValidateLocalConfiguration should NOT throw a InvalidOperationException because the configuration is valid");
-            }
-            else
-            {
-                Assert.Throws<InvalidOperationException>(() => GlobalConfiguration.ValidateConfiguration(), "ValidateLocalConfiguration should throw a InvalidOperationException because the configuration is invalid");
-            }
         }
 
         /// <summary>

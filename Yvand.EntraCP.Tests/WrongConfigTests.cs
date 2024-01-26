@@ -10,17 +10,17 @@ namespace Yvand.EntraClaimsProvider.Tests
     [TestFixture]
     public class WrongConfigBadClaimTypeTests : EntityTestsBase
     {
-        public override bool ConfigurationIsValid => false;
-        public override void InitializeConfiguration(bool applyChanges)
+        public override void InitializeSettings(bool applyChanges)
         {
-            base.InitializeConfiguration(false);
+            base.InitializeSettings(false);
             ClaimTypeConfig randomClaimTypeConfig = new ClaimTypeConfig
             {
                 ClaimType = UnitTestsHelper.RandomClaimType,
                 EntityProperty = UnitTestsHelper.RandomObjectProperty,
             };
             Settings.ClaimTypes = new ClaimTypeConfigCollection(UnitTestsHelper.SPTrust) { randomClaimTypeConfig };
-            base.ValidateConfiguration();
+            ConfigurationShouldBeValid = false;
+            base.TestSettingsAndApplyThemIfValid();
         }
     }
 }

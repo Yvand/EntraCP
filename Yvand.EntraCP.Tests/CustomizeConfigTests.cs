@@ -1,5 +1,6 @@
 ﻿using NUnit.Framework;
 using System;
+using System.IdentityModel.Tokens;
 using System.Linq;
 using Yvand.EntraClaimsProvider.Configuration;
 
@@ -10,6 +11,11 @@ namespace Yvand.EntraClaimsProvider.Tests
     public class CustomizeConfigTests : EntityTestsBase
     {
         const string ConfigUpdateErrorMessage = "Some changes made to list ClaimTypes are invalid and cannot be committed to configuration database. Inspect inner exception for more details about the error.";
+
+        // Skip this test that does not make sense in this class
+        public override void TestSettingsAndApplyThemIfValid()
+        {
+        }
 
         [Test]
         public void AddClaimTypeConfig()

@@ -8,13 +8,14 @@ namespace Yvand.EntraClaimsProvider.Tests
     [TestFixture]
     public class RequireExactMatchOnBaseConfigTests : EntityTestsBase
     {
-        public override void InitializeConfiguration(bool applyChanges)
+        public override void InitializeSettings(bool applyChanges)
         {
-            base.InitializeConfiguration(false);
+            base.InitializeSettings(false);
             Settings.FilterExactMatchOnly = true;
             if (applyChanges)
             {
-                GlobalConfiguration.ApplySettings(Settings, true);
+                //GlobalConfiguration.ApplySettings(Settings, true);
+                TestSettingsAndApplyThemIfValid();
                 Trace.TraceInformation($"{DateTime.Now:s} [RequireExactMatchOnBaseConfigTests] Updated configuration: {JsonConvert.SerializeObject(Settings, Formatting.None)}");
             }
         }
@@ -36,13 +37,13 @@ namespace Yvand.EntraClaimsProvider.Tests
     [TestFixture]
     public class RequireExactMatchOnCustomConfigTests : CustomConfigTestsBase
     {
-        public override void InitializeConfiguration(bool applyChanges)
+        public override void InitializeSettings(bool applyChanges)
         {
-            base.InitializeConfiguration(false);
+            base.InitializeSettings(false);
             Settings.FilterExactMatchOnly = true;
-            if(applyChanges)
+            if (applyChanges)
             {
-                GlobalConfiguration.ApplySettings(Settings, true);
+                TestSettingsAndApplyThemIfValid();
                 Trace.TraceInformation($"{DateTime.Now:s} [RequireExactMatchOnCustomConfigTests] Updated configuration: {JsonConvert.SerializeObject(Settings, Formatting.None)}");
             }
         }

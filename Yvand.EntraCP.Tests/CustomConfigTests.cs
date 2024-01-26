@@ -12,9 +12,9 @@ namespace Yvand.EntraClaimsProvider.Tests
     {
         public static string GroupsClaimType = ClaimsProviderConstants.DefaultMainGroupClaimType;
 
-        public override void InitializeConfiguration(bool applyChanges)
+        public override void InitializeSettings(bool applyChanges)
         {
-            base.InitializeConfiguration(false);
+            base.InitializeSettings(false);
             Settings.EnableAugmentation = true;
             Settings.ClaimTypes.GetByClaimType(UnitTestsHelper.SPTrust.IdentityClaimTypeInformation.MappedClaimType).PrefixToBypassLookup = "bypass-user:";
             Settings.ClaimTypes.GetByClaimType(UnitTestsHelper.TrustedGroupToAdd_ClaimType).PrefixToBypassLookup = "bypass-group:";
@@ -29,7 +29,7 @@ namespace Yvand.EntraClaimsProvider.Tests
             Settings.ClaimTypes.Add(ctConfigExtensionAttribute);
             if (applyChanges)
             {
-                GlobalConfiguration.ApplySettings(Settings, true);
+                TestSettingsAndApplyThemIfValid();
                 Trace.TraceInformation($"{DateTime.Now:s} [CustomConfigTestsBase] Updated configuration: {JsonConvert.SerializeObject(Settings, Formatting.None)}");
             }
         }
