@@ -196,15 +196,16 @@ namespace Yvand.EntraClaimsProvider.Tests
         }
 
         [Test]
-        public virtual void ValidateInitialization()
+        public virtual void ValidateConfiguration()
         {
+            GlobalConfiguration.ApplySettings(Settings, false);
             if (ConfigurationIsValid)
             {
-                Assert.That(UnitTestsHelper.ClaimsProvider.ValidateSettings(null), Is.True, "ValidateLocalConfiguration should return true because the configuration is valid");
+                Assert.DoesNotThrow(() => GlobalConfiguration.ValidateConfiguration(), "ValidateLocalConfiguration should NOT throw a InvalidOperationException because the configuration is valid");
             }
             else
             {
-                Assert.That(UnitTestsHelper.ClaimsProvider.ValidateSettings(null), Is.False, "ValidateLocalConfiguration should return false because the configuration is not valid");
+                Assert.Throws<InvalidOperationException>(() => GlobalConfiguration.ValidateConfiguration(), "ValidateLocalConfiguration should throw a InvalidOperationException because the configuration is invalid");
             }
         }
 
