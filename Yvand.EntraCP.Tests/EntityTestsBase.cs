@@ -28,7 +28,7 @@ namespace Yvand.EntraClaimsProvider.Tests
         /// <summary>
         /// Configures whether to run entity augmentation tests.
         /// </summary>
-        public virtual bool TestAugmentation => true;
+        public bool DoAugmentationTest = true;
 
         /// <summary>
         /// Configures whether to exclude AAD Guest users from search and validation. This does not impact augmentation.
@@ -44,6 +44,22 @@ namespace Yvand.EntraClaimsProvider.Tests
         /// Configures whether the configuration applied is valid, and whether the claims provider should be able to use it
         /// </summary>
         public bool ConfigurationShouldBeValid = true;
+
+        public string UserIdentifierClaimType
+        {
+            get
+            {
+                return Settings.ClaimTypes.GetMainConfigurationForDirectoryObjectType(DirectoryObjectType.User).ClaimType;
+            }
+        }
+
+        public string GroupIdentifierClaimType
+        {
+            get
+            {
+                return Settings.ClaimTypes.GetMainConfigurationForDirectoryObjectType(DirectoryObjectType.Group).ClaimType;
+            }
+        }
 
         protected EntraIDProviderConfiguration GlobalConfiguration;
         protected EntraIDProviderSettings Settings = new EntraIDProviderSettings();
@@ -202,19 +218,19 @@ namespace Yvand.EntraClaimsProvider.Tests
             TestValidationOperation(inputClaim, shouldValidate, claimValue);
         }
 
-        public virtual void AugmentEntity(ValidateEntityData registrationData)
-        {
-            if (!TestAugmentation) { return; }
+        //public virtual void AugmentEntity(ValidateEntityData registrationData)
+        //{
+        //    if (!TestAugmentation) { return; }
 
-            TestAugmentationOperation(UnitTestsHelper.SPTrust.IdentityClaimTypeInformation.MappedClaimType, registrationData.ClaimValue, registrationData.IsMemberOfTrustedGroup);
-        }
+        //    TestAugmentationOperation(UnitTestsHelper.SPTrust.IdentityClaimTypeInformation.MappedClaimType, registrationData.ClaimValue, registrationData.IsMemberOfTrustedGroup);
+        //}
 
-        public virtual void AugmentEntity(string claimValue, bool shouldHavePermissions)
-        {
-            if (!TestAugmentation) { return; }
+        //public virtual void AugmentEntity(string claimValue, bool shouldHavePermissions)
+        //{
+        //    if (!TestAugmentation) { return; }
 
-            TestAugmentationOperation(UnitTestsHelper.SPTrust.IdentityClaimTypeInformation.MappedClaimType, claimValue, shouldHavePermissions);
-        }
+        //    TestAugmentationOperation(UnitTestsHelper.SPTrust.IdentityClaimTypeInformation.MappedClaimType, claimValue, shouldHavePermissions);
+        //}
 
         /// <summary>
         /// Start search operation on a specific claims provider
@@ -301,8 +317,22 @@ namespace Yvand.EntraClaimsProvider.Tests
             }
         }
 
-        public static void TestAugmentationOperation(string claimType, string claimValue, bool isMemberOfTrustedGroup)
+        /// <summary>
+        /// Tests if the augmentation works as expected.
+        /// </summary>
+        /// <param name="registrationData"></param>
+        [Test, TestCaseSource(typeof(ValidateEntityDataSource), nameof(ValidateEntityDataSource.GetTestData), new object[] { EntityDataSourceType.AllAccounts })]
+        [Repeat(UnitTestsHelper.TestRepeatCount)]
+        public virtual void TestAugmentationOperation(ValidateEntityData registrationData)
         {
+            TestAugmentationOperation(registrationData.ClaimValue, registrationData.IsMemberOfTrustedGroup);
+        }
+
+        [TestCase("fake@FAKE.onmicrosoft.com", false)]
+        public virtual void TestAugmentationOperation(string claimValue, bool isMemberOfTrustedGroup)
+        {
+            if (!DoAugmentationTest) { return; }
+            string claimType = UserIdentifierClaimType;
             try
             {
                 Stopwatch timer = new Stopwatch();

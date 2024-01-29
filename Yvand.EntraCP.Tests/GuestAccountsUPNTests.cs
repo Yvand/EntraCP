@@ -40,11 +40,11 @@ namespace Yvand.EntraClaimsProvider.Tests
             base.ValidateClaim(registrationData);
         }
 
-        [Test, TestCaseSource(typeof(ValidateEntityDataSource), nameof(ValidateEntityDataSource.GetTestData), new object[] { EntityDataSourceType.UPNB2BGuestAccounts })]
-        [Repeat(UnitTestsHelper.TestRepeatCount)]
-        public override void AugmentEntity(ValidateEntityData registrationData)
-        {
-            base.AugmentEntity(registrationData);
-        }
+        //[Test, TestCaseSource(typeof(ValidateEntityDataSource), nameof(ValidateEntityDataSource.GetTestData), new object[] { EntityDataSourceType.UPNB2BGuestAccounts })]
+        //[Repeat(UnitTestsHelper.TestRepeatCount)]
+        //public override void AugmentEntity(ValidateEntityData registrationData)
+        //{
+        //    base.AugmentEntity(registrationData);
+        //}
     }
 }

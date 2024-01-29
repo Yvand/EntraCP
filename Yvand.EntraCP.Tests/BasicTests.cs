@@ -21,12 +21,12 @@ namespace Yvand.EntraClaimsProvider.Tests
             base.ValidateClaim(registrationData);
         }
 
-        [Test, TestCaseSource(typeof(ValidateEntityDataSource), nameof(ValidateEntityDataSource.GetTestData), new object[] { EntityDataSourceType.AllAccounts })]
-        [Repeat(UnitTestsHelper.TestRepeatCount)]
-        public override void AugmentEntity(ValidateEntityData registrationData)
-        {
-            base.AugmentEntity(registrationData);
-        }
+        //[Test, TestCaseSource(typeof(ValidateEntityDataSource), nameof(ValidateEntityDataSource.GetTestData), new object[] { EntityDataSourceType.AllAccounts })]
+        //[Repeat(UnitTestsHelper.TestRepeatCount)]
+        //public override void AugmentEntity(ValidateEntityData registrationData)
+        //{
+        //    base.AugmentEntity(registrationData);
+        //}
 
 #if DEBUG
         ////[TestCaseSource(typeof(SearchEntityDataSourceCollection))]
@@ -56,11 +56,11 @@ namespace Yvand.EntraClaimsProvider.Tests
             base.ValidateClaim(claimType, claimValue, shouldValidate);
         }
 
-        [TestCase("xydGUEST@FAKE.onmicrosoft.com", false)]
-        public override void AugmentEntity(string claimValue, bool shouldHavePermissions)
-        {
-            base.AugmentEntity(claimValue, shouldHavePermissions);
-        }
+        //[TestCase("xydGUEST@FAKE.onmicrosoft.com", false)]
+        //public override void AugmentEntity(string claimValue, bool shouldHavePermissions)
+        //{
+        //    base.AugmentEntity(claimValue, shouldHavePermissions);
+        //}
 #endif
     }
 }
