@@ -165,7 +165,7 @@ namespace Yvand.EntraClaimsProvider.Tests
             TestSearchOperation(registrationData.Input, expectedResultCount, registrationData.SearchResultSingleEntityClaimValue);
         }
 
-        public virtual void SearchEntities(string inputValue, int expectedResultCount, string expectedEntityClaimValue)
+        public virtual void TestExtensionAttribute(string inputValue, int expectedResultCount, string expectedEntityClaimValue)
         {
             if (!TestSearch) { return; }
 
@@ -332,6 +332,30 @@ namespace Yvand.EntraClaimsProvider.Tests
             catch (Exception ex)
             {
                 Trace.TraceError($"{DateTime.Now:s} TestAugmentationOperation failed with exception '{ex.GetType()}', message '{ex.Message}'. Parameters: claimType: '{claimType}', claimValue: '{claimValue}', isMemberOfTrustedGroup: '{isMemberOfTrustedGroup}'.");
+            }
+        }
+    }
+
+    public class CustomConfigTestsBase : EntityTestsBase
+    {
+        public override void InitializeSettings(bool applyChanges)
+        {
+            base.InitializeSettings(false);
+            Settings.EnableAugmentation = true;
+            Settings.ClaimTypes.GetMainConfigurationForDirectoryObjectType(DirectoryObjectType.User).PrefixToBypassLookup = "bypass-user:";
+            Settings.ClaimTypes.GetMainConfigurationForDirectoryObjectType(DirectoryObjectType.Group).PrefixToBypassLookup = "bypass-group:";
+            ClaimTypeConfig ctConfigExtensionAttribute = new ClaimTypeConfig
+            {
+                ClaimType = TestContext.Parameters["MultiPurposeCustomClaimType"],
+                ClaimTypeDisplayName = "extattr1",
+                EntityProperty = DirectoryObjectProperty.extensionAttribute1,
+                EntityType = DirectoryObjectType.User,
+                SharePointEntityType = ClaimsProviderConstants.GroupClaimEntityType,
+            };
+            Settings.ClaimTypes.Add(ctConfigExtensionAttribute);
+            if (applyChanges)
+            {
+                TestSettingsAndApplyThemIfValid();
             }
         }
     }

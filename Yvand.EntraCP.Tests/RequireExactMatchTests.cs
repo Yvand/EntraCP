@@ -14,9 +14,7 @@ namespace Yvand.EntraClaimsProvider.Tests
             Settings.FilterExactMatchOnly = true;
             if (applyChanges)
             {
-                //GlobalConfiguration.ApplySettings(Settings, true);
                 TestSettingsAndApplyThemIfValid();
-                Trace.TraceInformation($"{DateTime.Now:s} [RequireExactMatchOnBaseConfigTests] Updated configuration: {JsonConvert.SerializeObject(Settings, Formatting.None)}");
             }
         }
 
@@ -28,9 +26,9 @@ namespace Yvand.EntraClaimsProvider.Tests
         }
 
         [TestCase(@"aadgroup1143", 1, "3f4b724c-125d-47b4-b989-195b29417d6e")]
-        public override void SearchEntities(string inputValue, int expectedResultCount, string expectedEntityClaimValue)
+        public override void TestExtensionAttribute(string inputValue, int expectedResultCount, string expectedEntityClaimValue)
         {
-            base.SearchEntities(inputValue, expectedResultCount, expectedEntityClaimValue);
+            base.TestExtensionAttribute(inputValue, expectedResultCount, expectedEntityClaimValue);
         }
     }
 
@@ -44,7 +42,6 @@ namespace Yvand.EntraClaimsProvider.Tests
             if (applyChanges)
             {
                 TestSettingsAndApplyThemIfValid();
-                Trace.TraceInformation($"{DateTime.Now:s} [RequireExactMatchOnCustomConfigTests] Updated configuration: {JsonConvert.SerializeObject(Settings, Formatting.None)}");
             }
         }
 

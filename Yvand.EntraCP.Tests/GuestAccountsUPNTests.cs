@@ -23,7 +23,6 @@ namespace Yvand.EntraClaimsProvider.Tests
             if (applyChanges)
             {
                 TestSettingsAndApplyThemIfValid();
-                Trace.TraceInformation($"{DateTime.Now:s} [GuestAccountsUPNTests] Updated configuration: {JsonConvert.SerializeObject(Settings, Formatting.None)}");
             }
         }
 

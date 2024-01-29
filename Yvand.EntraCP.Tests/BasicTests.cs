@@ -42,9 +42,9 @@ namespace Yvand.EntraClaimsProvider.Tests
         [TestCase(@"AzureGr}", 1, "ef7d18e6-5c4d-451a-9663-a976be81c91e")]
         [TestCase(@"aad", 30, "")]
         [TestCase(@"AADGroup", 30, "")]
-        public override void SearchEntities(string inputValue, int expectedResultCount, string expectedEntityClaimValue)
+        public override void TestExtensionAttribute(string inputValue, int expectedResultCount, string expectedEntityClaimValue)
         {
-            base.SearchEntities(inputValue, expectedResultCount, expectedEntityClaimValue);
+            base.TestExtensionAttribute(inputValue, expectedResultCount, expectedEntityClaimValue);
         }
 
         [TestCase("http://schemas.microsoft.com/ws/2008/06/identity/claims/role", "ef7d18e6-5c4d-451a-9663-a976be81c91e", true)]

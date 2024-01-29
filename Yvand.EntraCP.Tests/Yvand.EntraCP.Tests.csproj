@@ -53,7 +53,7 @@
     <Compile Include="GuestAccountsUPNTests.cs" />
     <Compile Include="RequireExactMatchTests.cs" />
     <Compile Include="UnitTestsHelper.cs" />
-    <Compile Include="CustomConfigTests.cs" />
+    <Compile Include="BypassDirectoryTests.cs" />
     <Compile Include="CustomizeConfigTests.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="WrongConfigTests.cs" />
