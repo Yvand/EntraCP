@@ -327,28 +327,4 @@ namespace Yvand.EntraClaimsProvider.Tests
             }
         }
     }
-
-    public class CustomConfigTestsBase : ClaimsProviderTestsBase
-    {
-        public override void InitializeSettings(bool applyChanges)
-        {
-            base.InitializeSettings(false);
-            Settings.EnableAugmentation = true;
-            Settings.ClaimTypes.GetMainConfigurationForDirectoryObjectType(DirectoryObjectType.User).PrefixToBypassLookup = "bypass-user:";
-            Settings.ClaimTypes.GetMainConfigurationForDirectoryObjectType(DirectoryObjectType.Group).PrefixToBypassLookup = "bypass-group:";
-            ClaimTypeConfig ctConfigExtensionAttribute = new ClaimTypeConfig
-            {
-                ClaimType = TestContext.Parameters["MultiPurposeCustomClaimType"],
-                ClaimTypeDisplayName = "extattr1",
-                EntityProperty = DirectoryObjectProperty.extensionAttribute1,
-                EntityType = DirectoryObjectType.User,
-                SharePointEntityType = ClaimsProviderConstants.GroupClaimEntityType,
-            };
-            Settings.ClaimTypes.Add(ctConfigExtensionAttribute);
-            if (applyChanges)
-            {
-                TestSettingsAndApplyThemIfValid();
-            }
-        }
-    }
 }

@@ -1,6 +1,5 @@
 ﻿using NUnit.Framework;
 using System;
-using System.IdentityModel.Tokens;
 using System.Linq;
 using Yvand.EntraClaimsProvider.Configuration;
 

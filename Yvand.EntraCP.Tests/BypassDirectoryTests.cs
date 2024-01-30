@@ -1,8 +1,5 @@
 ﻿using Microsoft.SharePoint.Administration.Claims;
-using Newtonsoft.Json;
 using NUnit.Framework;
-using System;
-using System.Diagnostics;
 using System.Security.Claims;
 using Yvand.EntraClaimsProvider.Configuration;
 
@@ -10,8 +7,20 @@ namespace Yvand.EntraClaimsProvider.Tests
 {
     [TestFixture]
     [Parallelizable(ParallelScope.Children)]
-    public class BypassDirectoryTests : CustomConfigTestsBase
+    public class BypassDirectoryOnClaimTypesTests : ClaimsProviderTestsBase
     {
+        public override void InitializeSettings(bool applyChanges)
+        {
+            base.InitializeSettings(false);
+            Settings.EnableAugmentation = true;
+            Settings.ClaimTypes.GetMainConfigurationForDirectoryObjectType(DirectoryObjectType.User).PrefixToBypassLookup = "bypass-user:";
+            Settings.ClaimTypes.GetMainConfigurationForDirectoryObjectType(DirectoryObjectType.Group).PrefixToBypassLookup = "bypass-group:";
+            if (applyChanges)
+            {
+                TestSettingsAndApplyThemIfValid();
+            }
+        }
+
         [TestCase("bypass-user:externalUser@contoso.com", 1, "externalUser@contoso.com")]
         [TestCase("externalUser@contoso.com", 0, "")]
         [TestCase("bypass-user:", 0, "")]
@@ -28,36 +37,27 @@ namespace Yvand.EntraClaimsProvider.Tests
                 TestValidationOperation(inputClaim, true, expectedClaimValue);
             }
         }
-
-        [Test]
-        [NonParallelizable]
-        public void TestBypassDirectoryGlobally()
-        {
-            Settings.AlwaysResolveUserInput = true;
-            GlobalConfiguration.ApplySettings(Settings, true);
-            try
-            {
-                Trace.TraceInformation($"{DateTime.Now:s} [BypassDirectoryTests.TestBypassDirectoryGlobally] Updated configuration: {JsonConvert.SerializeObject(GlobalConfiguration.Settings.ClaimTypes, Formatting.None)}");
-                TestSearchOperation(UnitTestsHelper.RandomClaimValue, 3, UnitTestsHelper.RandomClaimValue);
-
-                SPClaim inputClaim = new SPClaim(UnitTestsHelper.SPTrust.IdentityClaimTypeInformation.MappedClaimType, UnitTestsHelper.RandomClaimValue, ClaimValueTypes.String, SPOriginalIssuers.Format(SPOriginalIssuerType.TrustedProvider, UnitTestsHelper.SPTrust.Name));
-                TestValidationOperation(inputClaim, true, UnitTestsHelper.RandomClaimValue);
-            }
-            finally
-            {
-                Settings.AlwaysResolveUserInput = false;
-                GlobalConfiguration.ApplySettings(Settings, true);
-            }
-        }
     }
 
     [TestFixture]
-    public class ExtensionAttributeTests : CustomConfigTestsBase
+    public class BypassDirectoryGloballyTests : ClaimsProviderTestsBase
     {
-        [TestCase("val", 1, "value1")]  // Extension attribute configuration
-        public void TestSearchManual(string inputValue, int expectedResultCount, string expectedEntityClaimValue)
+        public override void InitializeSettings(bool applyChanges)
         {
-            base.TestSearchOperation(inputValue, expectedResultCount, expectedEntityClaimValue);
+            base.InitializeSettings(false);
+            Settings.AlwaysResolveUserInput = true;
+            if (applyChanges)
+            {
+                TestSettingsAndApplyThemIfValid();
+            }
+        }
+
+        [Test]
+        public void TestBypassDirectoryGlobally()
+        {
+            TestSearchOperation(UnitTestsHelper.RandomClaimValue, 2, UnitTestsHelper.RandomClaimValue);
+            TestValidationOperation(base.UserIdentifierClaimType, UnitTestsHelper.RandomClaimValue, true);
+            TestValidationOperation(base.GroupIdentifierClaimType, UnitTestsHelper.RandomClaimValue, true);
         }
     }
 }

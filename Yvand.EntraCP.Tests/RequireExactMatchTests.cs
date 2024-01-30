@@ -33,7 +33,7 @@ namespace Yvand.EntraClaimsProvider.Tests
     }
 
     [TestFixture]
-    public class RequireExactMatchOnCustomConfigTests : CustomConfigTestsBase
+    public class RequireExactMatchOnCustomConfigTests : ClaimsProviderTestsBase
     {
         public override void InitializeSettings(bool applyChanges)
         {
