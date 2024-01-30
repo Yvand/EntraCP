@@ -1,18 +1,15 @@
-﻿using Newtonsoft.Json;
-using NUnit.Framework;
-using System;
-using System.Collections.Generic;
-using System.Diagnostics;
+﻿using NUnit.Framework;
 using Yvand.EntraClaimsProvider.Configuration;
 
 namespace Yvand.EntraClaimsProvider.Tests
 {
     [TestFixture]
-    public class WrongConfigBadClaimTypeTests : EntityTestsBase
+    public class WrongConfigBadClaimTypeTests : ClaimsProviderTestsBase
     {
+        public override bool DoAugmentationTest => false;
+
         public override void InitializeSettings(bool applyChanges)
         {
-            DoAugmentationTest = false;
             base.InitializeSettings(false);
             ClaimTypeConfig randomClaimTypeConfig = new ClaimTypeConfig
             {

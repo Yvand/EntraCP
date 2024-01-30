@@ -1,7 +1,4 @@
-﻿using Newtonsoft.Json;
-using NUnit.Framework;
-using System.Diagnostics;
-using System;
+﻿using NUnit.Framework;
 using Yvand.EntraClaimsProvider.Configuration;
 
 namespace Yvand.EntraClaimsProvider.Tests
@@ -11,7 +8,7 @@ namespace Yvand.EntraClaimsProvider.Tests
     /// </summary>
     [TestFixture]
     [Parallelizable(ParallelScope.Children)]
-    public class GuestAccountsUPNTests : EntityTestsBase
+    public class GuestAccountsUPNTests : ClaimsProviderTestsBase
     {
         public override void InitializeSettings(bool applyChanges)
         {
@@ -28,16 +25,16 @@ namespace Yvand.EntraClaimsProvider.Tests
 
         [Test, TestCaseSource(typeof(SearchEntityDataSource), nameof(SearchEntityDataSource.GetTestData), new object[] { EntityDataSourceType.UPNB2BGuestAccounts })]
         [Repeat(UnitTestsHelper.TestRepeatCount)]
-        public override void SearchEntities(SearchEntityData registrationData)
+        public void TestSearch(SearchEntityData registrationData)
         {
-            base.SearchEntities(registrationData);
+            base.ProcessAndTestSearchEntityData(registrationData);
         }
 
         [Test, TestCaseSource(typeof(ValidateEntityDataSource), nameof(ValidateEntityDataSource.GetTestData), new object[] { EntityDataSourceType.UPNB2BGuestAccounts })]
         [Repeat(UnitTestsHelper.TestRepeatCount)]
-        public override void ValidateClaim(ValidateEntityData registrationData)
+        public void TestValidateClaim(ValidateEntityData registrationData)
         {
-            base.ValidateClaim(registrationData);
+            base.ProcessAndTestValidateEntityData(registrationData);
         }
 
         //[Test, TestCaseSource(typeof(ValidateEntityDataSource), nameof(ValidateEntityDataSource.GetTestData), new object[] { EntityDataSourceType.UPNB2BGuestAccounts })]

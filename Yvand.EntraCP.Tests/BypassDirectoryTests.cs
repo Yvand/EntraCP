@@ -55,9 +55,9 @@ namespace Yvand.EntraClaimsProvider.Tests
     public class ExtensionAttributeTests : CustomConfigTestsBase
     {
         [TestCase("val", 1, "value1")]  // Extension attribute configuration
-        public override void TestExtensionAttribute(string inputValue, int expectedResultCount, string expectedEntityClaimValue)
+        public void TestSearchManual(string inputValue, int expectedResultCount, string expectedEntityClaimValue)
         {
-            base.TestExtensionAttribute(inputValue, expectedResultCount, expectedEntityClaimValue);
+            base.TestSearchOperation(inputValue, expectedResultCount, expectedEntityClaimValue);
         }
     }
 }

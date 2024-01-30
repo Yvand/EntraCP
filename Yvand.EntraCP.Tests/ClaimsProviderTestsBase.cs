@@ -13,22 +13,12 @@ using Yvand.EntraClaimsProvider.Configuration;
 
 namespace Yvand.EntraClaimsProvider.Tests
 {
-    public class EntityTestsBase
+    public class ClaimsProviderTestsBase
     {
         /// <summary>
-        /// Configures whether to run entity search tests.
+        /// Configures whether to run the entity augmentation tests.
         /// </summary>
-        public virtual bool TestSearch => true;
-
-        /// <summary>
-        /// Configures whether to run entity validation tests.
-        /// </summary>
-        public virtual bool TestValidation => true;
-
-        /// <summary>
-        /// Configures whether to run entity augmentation tests.
-        /// </summary>
-        public bool DoAugmentationTest = true;
+        public virtual bool DoAugmentationTest => true;
 
         /// <summary>
         /// Configures whether to exclude AAD Guest users from search and validation. This does not impact augmentation.
@@ -85,23 +75,6 @@ namespace Yvand.EntraClaimsProvider.Tests
             InitializeSettings(true);
         }
 
-        [Test]
-        public virtual void TestSettingsAndApplyThemIfValid()
-        {
-            GlobalConfiguration.ApplySettings(Settings, false);
-            if (ConfigurationShouldBeValid)
-            {
-                Assert.DoesNotThrow(() => GlobalConfiguration.ValidateConfiguration(), "ValidateLocalConfiguration should NOT throw a InvalidOperationException because the configuration is valid");
-                GlobalConfiguration.Update();
-                Trace.TraceInformation($"{DateTime.Now:s} [{this.GetType().Name}] Updated configuration: {JsonConvert.SerializeObject(Settings, Formatting.None)}");
-            }
-            else
-            {
-                Assert.Throws<InvalidOperationException>(() => GlobalConfiguration.ValidateConfiguration(), "ValidateLocalConfiguration should throw a InvalidOperationException because the configuration is invalid");
-                Trace.TraceInformation($"{DateTime.Now:s} [{this.GetType().Name}] Invalid configuration: {JsonConvert.SerializeObject(Settings, Formatting.None)}");
-            }
-        }
-
         /// <summary>
         /// Initialize configuration
         /// </summary>
@@ -126,9 +99,24 @@ namespace Yvand.EntraClaimsProvider.Tests
 
             if (applyChanges)
             {
-                //GlobalConfiguration.ApplySettings(Settings, true);
                 TestSettingsAndApplyThemIfValid();
-                Trace.TraceInformation($"{DateTime.Now:s} [EntityTestsBase] Updated configuration: {JsonConvert.SerializeObject(Settings, Formatting.None)}");
+            }
+        }
+
+        [Test]
+        public virtual void TestSettingsAndApplyThemIfValid()
+        {
+            GlobalConfiguration.ApplySettings(Settings, false);
+            if (ConfigurationShouldBeValid)
+            {
+                Assert.DoesNotThrow(() => GlobalConfiguration.ValidateConfiguration(), "ValidateLocalConfiguration should NOT throw a InvalidOperationException because the configuration is valid");
+                GlobalConfiguration.Update();
+                Trace.TraceInformation($"{DateTime.Now:s} [{this.GetType().Name}] Updated configuration: {JsonConvert.SerializeObject(Settings, Formatting.None)}");
+            }
+            else
+            {
+                Assert.Throws<InvalidOperationException>(() => GlobalConfiguration.ValidateConfiguration(), "ValidateLocalConfiguration should throw a InvalidOperationException because the configuration is invalid");
+                Trace.TraceInformation($"{DateTime.Now:s} [{this.GetType().Name}] Invalid configuration: {JsonConvert.SerializeObject(Settings, Formatting.None)}");
             }
         }
 
@@ -140,58 +128,17 @@ namespace Yvand.EntraClaimsProvider.Tests
                 if (OriginalSettings != null)
                 {
                     GlobalConfiguration.ApplySettings(OriginalSettings, true);
-                    Trace.TraceInformation($"{DateTime.Now:s} Restored original settings of EntraCP configuration");
+                    Trace.TraceInformation($"{DateTime.Now:s} [{this.GetType().Name}] Restored original settings of EntraCP configuration");
                 }
             }
             catch (Exception ex)
             {
-                Trace.TraceError($"{DateTime.Now:s} Unexpected error while restoring the original settings of EntraCP configuration: {ex.Message}");
+                Trace.TraceError($"{DateTime.Now:s} [{this.GetType().Name}] Unexpected error while restoring the original settings of EntraCP configuration: {ex.Message}");
             }
         }
 
-        public virtual void SearchEntities(SearchEntityData registrationData)
+        public void ProcessAndTestValidateEntityData(ValidateEntityData registrationData)
         {
-            if (!TestSearch)
-            {
-                return;
-            }
-
-            // If current entry does not return only users AND either guests or members are excluded, ExpectedResultCount cannot be determined so test cannot run
-            if (registrationData.SearchResultEntityTypes != ResultEntityType.User &&
-                (ExcludeGuestUsers || ExcludeMemberUsers))
-            {
-                return;
-            }
-
-            int expectedResultCount = registrationData.SearchResultCount;
-            if (ExcludeGuestUsers && registrationData.SearchResultUserTypes == ResultUserType.Guest)
-            {
-                expectedResultCount = 0;
-            }
-            if (ExcludeMemberUsers && registrationData.SearchResultUserTypes == ResultUserType.Member)
-            {
-                expectedResultCount = 0;
-            }
-
-            if (Settings.FilterExactMatchOnly == true)
-            {
-                expectedResultCount = registrationData.ExactMatch ? 1 : 0;
-            }
-
-            TestSearchOperation(registrationData.Input, expectedResultCount, registrationData.SearchResultSingleEntityClaimValue);
-        }
-
-        public virtual void TestExtensionAttribute(string inputValue, int expectedResultCount, string expectedEntityClaimValue)
-        {
-            if (!TestSearch) { return; }
-
-            TestSearchOperation(inputValue, expectedResultCount, expectedEntityClaimValue);
-        }
-
-        public virtual void ValidateClaim(ValidateEntityData registrationData)
-        {
-            if (!TestValidation) { return; }
-
             bool shouldValidate = registrationData.ShouldValidate;
             if (ExcludeGuestUsers && registrationData.UserType == ResultUserType.Guest)
             {
@@ -210,27 +157,31 @@ namespace Yvand.EntraClaimsProvider.Tests
             TestValidationOperation(inputClaim, shouldValidate, registrationData.ClaimValue);
         }
 
-        public virtual void ValidateClaim(string claimType, string claimValue, bool shouldValidate)
+        public void ProcessAndTestSearchEntityData(SearchEntityData registrationData)
         {
-            if (!TestValidation) { return; }
+            // If current entry does not return only users AND either guests or members are excluded, ExpectedResultCount cannot be determined so test cannot run
+            if (registrationData.SearchResultEntityTypes != ResultEntityType.User &&
+                (ExcludeGuestUsers || ExcludeMemberUsers))
+            {
+                return;
+            }
 
-            SPClaim inputClaim = new SPClaim(claimType, claimValue, ClaimValueTypes.String, SPOriginalIssuers.Format(SPOriginalIssuerType.TrustedProvider, UnitTestsHelper.SPTrust.Name));
-            TestValidationOperation(inputClaim, shouldValidate, claimValue);
+            if (ExcludeGuestUsers && registrationData.SearchResultUserTypes == ResultUserType.Guest)
+            {
+                registrationData.SearchResultCount = 0;
+            }
+            if (ExcludeMemberUsers && registrationData.SearchResultUserTypes == ResultUserType.Member)
+            {
+                registrationData.SearchResultCount = 0;
+            }
+
+            if (Settings.FilterExactMatchOnly == true)
+            {
+                registrationData.SearchResultCount = registrationData.ExactMatch ? 1 : 0;
+            }
+
+            TestSearchOperation(registrationData.Input, registrationData.SearchResultCount, registrationData.SearchResultSingleEntityClaimValue);
         }
-
-        //public virtual void AugmentEntity(ValidateEntityData registrationData)
-        //{
-        //    if (!TestAugmentation) { return; }
-
-        //    TestAugmentationOperation(UnitTestsHelper.SPTrust.IdentityClaimTypeInformation.MappedClaimType, registrationData.ClaimValue, registrationData.IsMemberOfTrustedGroup);
-        //}
-
-        //public virtual void AugmentEntity(string claimValue, bool shouldHavePermissions)
-        //{
-        //    if (!TestAugmentation) { return; }
-
-        //    TestAugmentationOperation(UnitTestsHelper.SPTrust.IdentityClaimTypeInformation.MappedClaimType, claimValue, shouldHavePermissions);
-        //}
 
         /// <summary>
         /// Start search operation on a specific claims provider
@@ -238,7 +189,7 @@ namespace Yvand.EntraClaimsProvider.Tests
         /// <param name="inputValue"></param>
         /// <param name="expectedCount">How many entities are expected to be returned. Set to Int32.MaxValue if exact number is unknown but greater than 0</param>
         /// <param name="expectedClaimValue"></param>
-        public static void TestSearchOperation(string inputValue, int expectedCount, string expectedClaimValue)
+        public void TestSearchOperation(string inputValue, int expectedCount, string expectedClaimValue)
         {
             try
             {
@@ -265,7 +216,7 @@ namespace Yvand.EntraClaimsProvider.Tests
             }
         }
 
-        public static void VerifySearchTest(List<PickerEntity> entities, string input, int expectedCount, string expectedClaimValue)
+        private void VerifySearchTest(List<PickerEntity> entities, string input, int expectedCount, string expectedClaimValue)
         {
             bool entityValueFound = false;
             StringBuilder detailedLog = new StringBuilder($"It returned {entities.Count} entities: ");
@@ -292,7 +243,13 @@ namespace Yvand.EntraClaimsProvider.Tests
             Assert.That(entities.Count, Is.EqualTo(expectedCount), $"Input \"{input}\" should have returned {expectedCount} entities, but it returned {entities.Count} instead. {detailedLog}");
         }
 
-        public static void TestValidationOperation(SPClaim inputClaim, bool shouldValidate, string expectedClaimValue)
+        public void TestValidationOperation(string claimType, string claimValue, bool shouldValidate)
+        {
+            SPClaim inputClaim = new SPClaim(claimType, claimValue, ClaimValueTypes.String, SPOriginalIssuers.Format(SPOriginalIssuerType.TrustedProvider, UnitTestsHelper.SPTrust.Name));
+            TestValidationOperation(inputClaim, shouldValidate, claimValue);
+        }
+
+        public void TestValidationOperation(SPClaim inputClaim, bool shouldValidate, string expectedClaimValue)
         {
             try
             {
@@ -318,7 +275,7 @@ namespace Yvand.EntraClaimsProvider.Tests
         }
 
         /// <summary>
-        /// Tests if the augmentation works as expected.
+        /// Tests if the augmentation works as expected. By default this test is executed in every scenario.
         /// </summary>
         /// <param name="registrationData"></param>
         [Test, TestCaseSource(typeof(ValidateEntityDataSource), nameof(ValidateEntityDataSource.GetTestData), new object[] { EntityDataSourceType.AllAccounts })]
@@ -328,6 +285,11 @@ namespace Yvand.EntraClaimsProvider.Tests
             TestAugmentationOperation(registrationData.ClaimValue, registrationData.IsMemberOfTrustedGroup);
         }
 
+        /// <summary>
+        /// Tests if the augmentation works as expected. By default this test is executed in every scenario.
+        /// </summary>
+        /// <param name="claimValue"></param>
+        /// <param name="isMemberOfTrustedGroup"></param>
         [TestCase("fake@FAKE.onmicrosoft.com", false)]
         public virtual void TestAugmentationOperation(string claimValue, bool isMemberOfTrustedGroup)
         {
@@ -366,7 +328,7 @@ namespace Yvand.EntraClaimsProvider.Tests
         }
     }
 
-    public class CustomConfigTestsBase : EntityTestsBase
+    public class CustomConfigTestsBase : ClaimsProviderTestsBase
     {
         public override void InitializeSettings(bool applyChanges)
         {

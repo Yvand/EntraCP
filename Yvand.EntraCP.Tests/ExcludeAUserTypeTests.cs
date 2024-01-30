@@ -4,7 +4,7 @@ namespace Yvand.EntraClaimsProvider.Tests
 {
     [TestFixture]
     [Parallelizable(ParallelScope.Children)]
-    public class ExcludeAllUserAccountsTests : EntityTestsBase
+    public class ExcludeAllUserAccountsTests : ClaimsProviderTestsBase
     {
         public override bool ExcludeGuestUsers => true;
         public override bool ExcludeMemberUsers => true;
@@ -18,23 +18,23 @@ namespace Yvand.EntraClaimsProvider.Tests
 
         [Test, TestCaseSource(typeof(SearchEntityDataSource), nameof(SearchEntityDataSource.GetTestData), new object[] { EntityDataSourceType.AllAccounts })]
         [Repeat(UnitTestsHelper.TestRepeatCount)]
-        public override void SearchEntities(SearchEntityData registrationData)
+        public void TestSearch(SearchEntityData registrationData)
         {
-            base.SearchEntities(registrationData);
+            base.ProcessAndTestSearchEntityData(registrationData);
         }
 
         [Test, TestCaseSource(typeof(ValidateEntityDataSource), nameof(ValidateEntityDataSource.GetTestData), new object[] { EntityDataSourceType.AllAccounts })]
         [MaxTime(UnitTestsHelper.MaxTime)]
         [Repeat(UnitTestsHelper.TestRepeatCount)]
-        public override void ValidateClaim(ValidateEntityData registrationData)
+        public void TestValidateClaim(ValidateEntityData registrationData)
         {
-            base.ValidateClaim(registrationData);
+            base.ProcessAndTestValidateEntityData(registrationData);
         }
     }
 
     [TestFixture]
     [Parallelizable(ParallelScope.Children)]
-    public class ExcludeGuestUserAccountsTests : EntityTestsBase
+    public class ExcludeGuestUserAccountsTests : ClaimsProviderTestsBase
     {
         public override bool ExcludeGuestUsers => true;
         public override bool ExcludeMemberUsers => false;
@@ -48,23 +48,23 @@ namespace Yvand.EntraClaimsProvider.Tests
 
         [Test, TestCaseSource(typeof(SearchEntityDataSource), nameof(SearchEntityDataSource.GetTestData), new object[] { EntityDataSourceType.AllAccounts })]
         [Repeat(UnitTestsHelper.TestRepeatCount)]
-        public override void SearchEntities(SearchEntityData registrationData)
+        public void TestSearch(SearchEntityData registrationData)
         {
-            base.SearchEntities(registrationData);
+            base.ProcessAndTestSearchEntityData(registrationData);
         }
 
         [Test, TestCaseSource(typeof(ValidateEntityDataSource), nameof(ValidateEntityDataSource.GetTestData), new object[] { EntityDataSourceType.AllAccounts })]
         [MaxTime(UnitTestsHelper.MaxTime)]
         [Repeat(UnitTestsHelper.TestRepeatCount)]
-        public override void ValidateClaim(ValidateEntityData registrationData)
+        public void TestValidateClaim(ValidateEntityData registrationData)
         {
-            base.ValidateClaim(registrationData);
+            base.ProcessAndTestValidateEntityData(registrationData);
         }
     }
 
     [TestFixture]
     [Parallelizable(ParallelScope.Children)]
-    public class ExcludeMemberUserAccountsTests : EntityTestsBase
+    public class ExcludeMemberUserAccountsTests : ClaimsProviderTestsBase
     {
         public override bool ExcludeGuestUsers => false;
         public override bool ExcludeMemberUsers => true;
@@ -78,17 +78,17 @@ namespace Yvand.EntraClaimsProvider.Tests
 
         [Test, TestCaseSource(typeof(SearchEntityDataSource), nameof(SearchEntityDataSource.GetTestData), new object[] { EntityDataSourceType.AllAccounts })]
         [Repeat(UnitTestsHelper.TestRepeatCount)]
-        public override void SearchEntities(SearchEntityData registrationData)
+        public void TestSearch(SearchEntityData registrationData)
         {
-            base.SearchEntities(registrationData);
+            base.ProcessAndTestSearchEntityData(registrationData);
         }
 
         [Test, TestCaseSource(typeof(ValidateEntityDataSource), nameof(ValidateEntityDataSource.GetTestData), new object[] { EntityDataSourceType.AllAccounts })]
         [MaxTime(UnitTestsHelper.MaxTime)]
         [Repeat(UnitTestsHelper.TestRepeatCount)]
-        public override void ValidateClaim(ValidateEntityData registrationData)
+        public void TestValidateClaim(ValidateEntityData registrationData)
         {
-            base.ValidateClaim(registrationData);
+            base.ProcessAndTestValidateEntityData(registrationData);
         }
     }
 }

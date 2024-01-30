@@ -47,9 +47,9 @@
     <Reference Include="System.Core" />
   </ItemGroup>
   <ItemGroup>
-    <Compile Include="BasicTests.cs" />
+    <Compile Include="BasicConfigurationTests.cs" />
     <Compile Include="ExcludeAUserTypeTests.cs" />
-    <Compile Include="EntityTestsBase.cs" />
+    <Compile Include="ClaimsProviderTestsBase.cs" />
     <Compile Include="GuestAccountsUPNTests.cs" />
     <Compile Include="RequireExactMatchTests.cs" />
     <Compile Include="UnitTestsHelper.cs" />

@@ -6,7 +6,7 @@ using System.Diagnostics;
 namespace Yvand.EntraClaimsProvider.Tests
 {
     [TestFixture]
-    public class RequireExactMatchOnBaseConfigTests : EntityTestsBase
+    public class RequireExactMatchOnBaseConfigTests : ClaimsProviderTestsBase
     {
         public override void InitializeSettings(bool applyChanges)
         {
@@ -18,17 +18,17 @@ namespace Yvand.EntraClaimsProvider.Tests
             }
         }
 
-        [Test, TestCaseSource(typeof(SearchEntityDataSource), nameof(SearchEntityDataSource.GetTestData), new object[] { EntityDataSourceType.AllAccounts })]
+        [Test, TestCaseSource(typeof(SearchEntityDataSource), nameof(SearchEntityDataSource.GetTestData), new object[] { EntityDataSourceType.UPNB2BGuestAccounts })]
         [Repeat(UnitTestsHelper.TestRepeatCount)]
-        public override void SearchEntities(SearchEntityData registrationData)
+        public void TestSearch(SearchEntityData registrationData)
         {
-            base.SearchEntities(registrationData);
+            base.ProcessAndTestSearchEntityData(registrationData);
         }
 
         [TestCase(@"aadgroup1143", 1, "3f4b724c-125d-47b4-b989-195b29417d6e")]
-        public override void TestExtensionAttribute(string inputValue, int expectedResultCount, string expectedEntityClaimValue)
+        public void TestSearchManual(string inputValue, int expectedResultCount, string expectedEntityClaimValue)
         {
-            base.TestExtensionAttribute(inputValue, expectedResultCount, expectedEntityClaimValue);
+            base.TestSearchOperation(inputValue, expectedResultCount, expectedEntityClaimValue);
         }
     }
 
@@ -45,11 +45,11 @@ namespace Yvand.EntraClaimsProvider.Tests
             }
         }
 
-        [Test, TestCaseSource(typeof(SearchEntityDataSource), nameof(SearchEntityDataSource.GetTestData), new object[] { EntityDataSourceType.AllAccounts })]
+        [Test, TestCaseSource(typeof(SearchEntityDataSource), nameof(SearchEntityDataSource.GetTestData), new object[] { EntityDataSourceType.UPNB2BGuestAccounts })]
         [Repeat(UnitTestsHelper.TestRepeatCount)]
-        public override void SearchEntities(SearchEntityData registrationData)
+        public void TestSearch(SearchEntityData registrationData)
         {
-            base.SearchEntities(registrationData);
+            base.ProcessAndTestSearchEntityData(registrationData);
         }
     }
 }

@@ -4,35 +4,28 @@ namespace Yvand.EntraClaimsProvider.Tests
 {
     [TestFixture]
     [Parallelizable(ParallelScope.Children)]
-    internal class BasicTests : EntityTestsBase
+    internal class BasicConfigurationTests : ClaimsProviderTestsBase
     {
         [Test, TestCaseSource(typeof(SearchEntityDataSource), nameof(SearchEntityDataSource.GetTestData), new object[] { EntityDataSourceType.AllAccounts })]
         [Repeat(UnitTestsHelper.TestRepeatCount)]
-        public override void SearchEntities(SearchEntityData registrationData)
+        public void TestSearchEntities(SearchEntityData registrationData)
         {
-            base.SearchEntities(registrationData);
+            base.ProcessAndTestSearchEntityData(registrationData);
         }
 
         [Test, TestCaseSource(typeof(ValidateEntityDataSource), nameof(ValidateEntityDataSource.GetTestData), new object[] { EntityDataSourceType.AllAccounts })]
         [MaxTime(UnitTestsHelper.MaxTime)]
         [Repeat(UnitTestsHelper.TestRepeatCount)]
-        public override void ValidateClaim(ValidateEntityData registrationData)
+        public void TestValidateClaim(ValidateEntityData registrationData)
         {
-            base.ValidateClaim(registrationData);
+            base.ProcessAndTestValidateEntityData(registrationData);
         }
-
-        //[Test, TestCaseSource(typeof(ValidateEntityDataSource), nameof(ValidateEntityDataSource.GetTestData), new object[] { EntityDataSourceType.AllAccounts })]
-        //[Repeat(UnitTestsHelper.TestRepeatCount)]
-        //public override void AugmentEntity(ValidateEntityData registrationData)
-        //{
-        //    base.AugmentEntity(registrationData);
-        //}
 
 #if DEBUG
         ////[TestCaseSource(typeof(SearchEntityDataSourceCollection))]
         //public void DEBUG_SearchEntitiesFromCollection(string inputValue, string expectedCount, string expectedClaimValue)
         //{
-        //    if (!TestSearch) { return; }
+        //    if (!TestSearchEntities) { return; }
 
         //    TestSearchOperation(inputValue, Convert.ToInt32(expectedCount), expectedClaimValue);
         //}
@@ -42,18 +35,18 @@ namespace Yvand.EntraClaimsProvider.Tests
         [TestCase(@"AzureGr}", 1, "ef7d18e6-5c4d-451a-9663-a976be81c91e")]
         [TestCase(@"aad", 30, "")]
         [TestCase(@"AADGroup", 30, "")]
-        public override void TestExtensionAttribute(string inputValue, int expectedResultCount, string expectedEntityClaimValue)
+        public void TestSearchManual(string inputValue, int expectedResultCount, string expectedEntityClaimValue)
         {
-            base.TestExtensionAttribute(inputValue, expectedResultCount, expectedEntityClaimValue);
+            base.TestSearchOperation(inputValue, expectedResultCount, expectedEntityClaimValue);
         }
 
         [TestCase("http://schemas.microsoft.com/ws/2008/06/identity/claims/role", "ef7d18e6-5c4d-451a-9663-a976be81c91e", true)]
         [TestCase("http://schemas.xmlsoap.org/ws/2005/05/identity/claims/upn", "FakeGuest@contoso.com", false)]
         [TestCase("http://schemas.xmlsoap.org/ws/2005/05/identity/claims/emailaddress", "FakeGuest.com#EXT#@XXX.onmicrosoft.com", false)]
         [TestCase("http://schemas.xmlsoap.org/ws/2005/05/identity/claims/upn", "FakeGuest.com#EXT#@XXX.onmicrosoft.com", false)]
-        public override void ValidateClaim(string claimType, string claimValue, bool shouldValidate)
+        public void TestValidateClaim(string claimType, string claimValue, bool shouldValidate)
         {
-            base.ValidateClaim(claimType, claimValue, shouldValidate);
+            base.TestValidationOperation(claimType, claimValue, shouldValidate);
         }
 
         //[TestCase("xydGUEST@FAKE.onmicrosoft.com", false)]
