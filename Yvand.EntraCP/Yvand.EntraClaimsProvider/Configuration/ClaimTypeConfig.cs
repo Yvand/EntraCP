@@ -136,7 +136,7 @@ namespace Yvand.EntraClaimsProvider.Configuration
         private bool _UseMainClaimTypeOfDirectoryObject = false;
 
         /// <summary>
-        /// Can contain a member of class PeopleEditorEntityDataKey http://msdn.microsoft.com/en-us/library/office/microsoft.sharepoint.webcontrols.peopleeditorentitydatakeys_members(v=office.15).aspx
+        /// Can contain a member of class PeopleEditorEntityDataKey https://learn.microsoft.com/en-us/previous-versions/office/sharepoint-server/ms415673(v=office.15)
         /// to populate additional metadata in permission created
         /// </summary>
         public string EntityDataKey
