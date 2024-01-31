@@ -10,17 +10,18 @@ namespace Yvand.EntraClaimsProvider.Tests
     [Parallelizable(ParallelScope.Children)]
     public class GuestAccountsUPNTests : ClaimsProviderTestsBase
     {
-        public override void InitializeSettings(bool applyChanges)
+        public override void InitializeSettings()
         {
-            base.InitializeSettings(false);
-
-            // Extra initialization for current test class
+            base.InitializeSettings();
             Settings.ClaimTypes.UpdateIdentifierForGuestUsers(DirectoryObjectProperty.UserPrincipalName);
             Settings.EnableAugmentation = true;
-            if (applyChanges)
-            {
-                TestSettingsAndApplyThemIfValid();
-            }
+            base.ApplySettings();
+        }
+
+        [Test]
+        public override void CheckSettingsTest()
+        {
+            base.CheckSettingsTest();
         }
 
         [Test, TestCaseSource(typeof(SearchEntityDataSource), nameof(SearchEntityDataSource.GetTestData), new object[] { EntityDataSourceType.UPNB2BGuestAccounts })]

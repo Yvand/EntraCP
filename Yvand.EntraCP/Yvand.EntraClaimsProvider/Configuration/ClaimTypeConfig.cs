@@ -663,10 +663,23 @@ namespace Yvand.EntraClaimsProvider.Configuration
 
         public ClaimTypeConfig GetMainConfigurationForDirectoryObjectType(DirectoryObjectType objectType)
         {
-            return innerCol
+            if (objectType == DirectoryObjectType.User)
+            {
+                // If user, add a test on the identity claim type
+                return innerCol
                 .FirstOrDefault(x =>
-                    x.EntityType == objectType &&
+                    x.EntityType == DirectoryObjectType.User &&
+                    String.Equals(x.ClaimType, SPTrust.IdentityClaimTypeInformation.MappedClaimType, StringComparison.OrdinalIgnoreCase) &&
                     x.UseMainClaimTypeOfDirectoryObject == false);
+            }
+            else
+            {
+                // There can be only 1 DirectoryObjectType "Group"
+                return innerCol
+                .FirstOrDefault(x =>
+                    x.EntityType == DirectoryObjectType.Group &&
+                    x.UseMainClaimTypeOfDirectoryObject == false);
+            }
         }
 
         public ClaimTypeConfig GetByClaimType(string claimType)

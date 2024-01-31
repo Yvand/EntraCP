@@ -9,16 +9,19 @@ namespace Yvand.EntraClaimsProvider.Tests
     [Parallelizable(ParallelScope.Children)]
     public class BypassDirectoryOnClaimTypesTests : ClaimsProviderTestsBase
     {
-        public override void InitializeSettings(bool applyChanges)
+        public override void InitializeSettings()
         {
-            base.InitializeSettings(false);
+            base.InitializeSettings();
             Settings.EnableAugmentation = true;
             Settings.ClaimTypes.GetMainConfigurationForDirectoryObjectType(DirectoryObjectType.User).PrefixToBypassLookup = "bypass-user:";
             Settings.ClaimTypes.GetMainConfigurationForDirectoryObjectType(DirectoryObjectType.Group).PrefixToBypassLookup = "bypass-group:";
-            if (applyChanges)
-            {
-                TestSettingsAndApplyThemIfValid();
-            }
+            base.ApplySettings();
+        }
+
+        [Test]
+        public override void CheckSettingsTest()
+        {
+            base.CheckSettingsTest();
         }
 
         [TestCase("bypass-user:externalUser@contoso.com", 1, "externalUser@contoso.com")]
@@ -40,16 +43,20 @@ namespace Yvand.EntraClaimsProvider.Tests
     }
 
     [TestFixture]
+    [Parallelizable(ParallelScope.Children)]
     public class BypassDirectoryGloballyTests : ClaimsProviderTestsBase
     {
-        public override void InitializeSettings(bool applyChanges)
+        public override void InitializeSettings()
         {
-            base.InitializeSettings(false);
+            base.InitializeSettings();
             Settings.AlwaysResolveUserInput = true;
-            if (applyChanges)
-            {
-                TestSettingsAndApplyThemIfValid();
-            }
+            base.ApplySettings();
+        }
+
+        [Test]
+        public override void CheckSettingsTest()
+        {
+            base.CheckSettingsTest();
         }
 
         [Test]

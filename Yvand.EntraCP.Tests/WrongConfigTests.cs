@@ -8,9 +8,9 @@ namespace Yvand.EntraClaimsProvider.Tests
     {
         public override bool DoAugmentationTest => false;
 
-        public override void InitializeSettings(bool applyChanges)
+        public override void InitializeSettings()
         {
-            base.InitializeSettings(false);
+            base.InitializeSettings();
             ClaimTypeConfig randomClaimTypeConfig = new ClaimTypeConfig
             {
                 ClaimType = UnitTestsHelper.RandomClaimType,
@@ -18,15 +18,12 @@ namespace Yvand.EntraClaimsProvider.Tests
             };
             Settings.ClaimTypes = new ClaimTypeConfigCollection(UnitTestsHelper.SPTrust) { randomClaimTypeConfig };
             ConfigurationShouldBeValid = false;
-            base.TestSettingsAndApplyThemIfValid();
         }
 
-        ///// <summary>
-        /////  Disable test augmentation with real data in this test class
-        ///// </summary>
-        ///// <param name="registrationData"></param>
-        //public override void TestAugmentationOperation(ValidateEntityData registrationData)
-        //{
-        //}
+        [Test]
+        public override void CheckSettingsTest()
+        {
+            base.CheckSettingsTest();
+        }
     }
 }

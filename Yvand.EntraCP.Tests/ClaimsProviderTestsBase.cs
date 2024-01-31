@@ -51,34 +51,13 @@ namespace Yvand.EntraClaimsProvider.Tests
             }
         }
 
-        protected EntraIDProviderConfiguration GlobalConfiguration;
         protected EntraIDProviderSettings Settings = new EntraIDProviderSettings();
-        private static IEntraIDProviderSettings OriginalSettings;
 
         /// <summary>
-        /// This method will be executed by each class which inherits this base class
+        /// Initialize settings
         /// </summary>
         [OneTimeSetUp]
-        public void Init()
-        {
-            GlobalConfiguration = EntraCP.GetConfiguration(true);
-            if (GlobalConfiguration == null)
-            {
-                GlobalConfiguration = EntraCP.CreateConfiguration();
-            }
-            else
-            {
-                OriginalSettings = GlobalConfiguration.Settings;
-                Settings = (EntraIDProviderSettings)GlobalConfiguration.Settings;
-                Trace.TraceInformation($"{DateTime.Now:s} Took a backup of the original settings");
-            }
-            InitializeSettings(true);
-        }
-
-        /// <summary>
-        /// Initialize configuration
-        /// </summary>
-        public virtual void InitializeSettings(bool applyChanges)
+        public virtual void InitializeSettings()
         {
             Settings = new EntraIDProviderSettings();
             Settings.ClaimTypes = EntraIDProviderSettings.ReturnDefaultClaimTypesConfig(UnitTestsHelper.ClaimsProvider.Name);
@@ -96,45 +75,39 @@ namespace Yvand.EntraClaimsProvider.Tests
                 tenant.ExcludeMemberUsers = ExcludeMemberUsers;
                 tenant.ExcludeGuestUsers = ExcludeGuestUsers;
             }
-
-            if (applyChanges)
-            {
-                TestSettingsAndApplyThemIfValid();
-            }
+            Trace.TraceInformation($"{DateTime.Now:s} [{this.GetType().Name}] Initialized default settings.");
         }
 
-        [Test]
-        public virtual void TestSettingsAndApplyThemIfValid()
+        /// <summary>
+        /// Override this method and decorate it with [Test] if the settings applied in the inherited class should be tested
+        /// </summary>
+        public virtual void CheckSettingsTest()
         {
-            GlobalConfiguration.ApplySettings(Settings, false);
+            UnitTestsHelper.PersistedConfiguration.ApplySettings(Settings, false);
             if (ConfigurationShouldBeValid)
             {
-                Assert.DoesNotThrow(() => GlobalConfiguration.ValidateConfiguration(), "ValidateLocalConfiguration should NOT throw a InvalidOperationException because the configuration is valid");
-                GlobalConfiguration.Update();
-                Trace.TraceInformation($"{DateTime.Now:s} [{this.GetType().Name}] Updated configuration: {JsonConvert.SerializeObject(Settings, Formatting.None)}");
+                Assert.DoesNotThrow(() => UnitTestsHelper.PersistedConfiguration.ValidateConfiguration(), "ValidateLocalConfiguration should NOT throw a InvalidOperationException because the configuration is valid");
             }
             else
             {
-                Assert.Throws<InvalidOperationException>(() => GlobalConfiguration.ValidateConfiguration(), "ValidateLocalConfiguration should throw a InvalidOperationException because the configuration is invalid");
+                Assert.Throws<InvalidOperationException>(() => UnitTestsHelper.PersistedConfiguration.ValidateConfiguration(), "ValidateLocalConfiguration should throw a InvalidOperationException because the configuration is invalid");
                 Trace.TraceInformation($"{DateTime.Now:s} [{this.GetType().Name}] Invalid configuration: {JsonConvert.SerializeObject(Settings, Formatting.None)}");
             }
+        }
+
+        /// <summary>
+        /// Applies the <see cref="Settings"/> to the configuration object and save it in the configuration database
+        /// </summary>
+        public void ApplySettings()
+        {
+            UnitTestsHelper.PersistedConfiguration.ApplySettings(Settings, true);
+            Trace.TraceInformation($"{DateTime.Now:s} [{this.GetType().Name}] Updated configuration: {JsonConvert.SerializeObject(Settings, Formatting.None)}");
         }
 
         [OneTimeTearDown]
         public void Cleanup()
         {
-            try
-            {
-                if (OriginalSettings != null)
-                {
-                    GlobalConfiguration.ApplySettings(OriginalSettings, true);
-                    Trace.TraceInformation($"{DateTime.Now:s} [{this.GetType().Name}] Restored original settings of EntraCP configuration");
-                }
-            }
-            catch (Exception ex)
-            {
-                Trace.TraceError($"{DateTime.Now:s} [{this.GetType().Name}] Unexpected error while restoring the original settings of EntraCP configuration: {ex.Message}");
-            }
+            Trace.TraceInformation($"{DateTime.Now:s} [{this.GetType().Name}] Cleanup.");
         }
 
         public void ProcessAndTestValidateEntityData(ValidateEntityData registrationData)

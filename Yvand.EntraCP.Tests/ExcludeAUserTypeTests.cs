@@ -9,6 +9,18 @@ namespace Yvand.EntraClaimsProvider.Tests
         public override bool ExcludeGuestUsers => true;
         public override bool ExcludeMemberUsers => true;
 
+        public override void InitializeSettings()
+        {
+            base.InitializeSettings();
+            base.ApplySettings();
+        }
+
+        [Test]
+        public override void CheckSettingsTest()
+        {
+            base.CheckSettingsTest();
+        }
+
         //[Test, TestCaseSource(typeof(ValidateEntityDataSource), nameof(ValidateEntityDataSource.GetTestData), new object[] { EntityDataSourceType.AllAccounts })]
         //[Repeat(UnitTestsHelper.TestRepeatCount)]
         //public override void AugmentEntity(ValidateEntityData registrationData)
@@ -39,6 +51,18 @@ namespace Yvand.EntraClaimsProvider.Tests
         public override bool ExcludeGuestUsers => true;
         public override bool ExcludeMemberUsers => false;
 
+        public override void InitializeSettings()
+        {
+            base.InitializeSettings();
+            base.ApplySettings();
+        }
+
+        [Test]
+        public override void CheckSettingsTest()
+        {
+            base.CheckSettingsTest();
+        }
+
         //[Test, TestCaseSource(typeof(ValidateEntityDataSource), nameof(ValidateEntityDataSource.GetTestData), new object[] { EntityDataSourceType.AllAccounts })]
         //[Repeat(UnitTestsHelper.TestRepeatCount)]
         //public override void AugmentEntity(ValidateEntityData registrationData)
@@ -68,6 +92,18 @@ namespace Yvand.EntraClaimsProvider.Tests
     {
         public override bool ExcludeGuestUsers => false;
         public override bool ExcludeMemberUsers => true;
+
+        public override void InitializeSettings()
+        {
+            base.InitializeSettings();
+            base.ApplySettings();
+        }
+
+        [Test]
+        public override void CheckSettingsTest()
+        {
+            base.CheckSettingsTest();
+        }
 
         //[Test, TestCaseSource(typeof(ValidateEntityDataSource), nameof(ValidateEntityDataSource.GetTestData), new object[] { EntityDataSourceType.AllAccounts })]
         //[Repeat(UnitTestsHelper.TestRepeatCount)]

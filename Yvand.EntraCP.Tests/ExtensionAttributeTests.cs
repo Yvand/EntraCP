@@ -4,11 +4,12 @@ using Yvand.EntraClaimsProvider.Configuration;
 namespace Yvand.EntraClaimsProvider.Tests
 {
     [TestFixture]
+    [Parallelizable(ParallelScope.Children)]
     public class ExtensionAttributeTests : ClaimsProviderTestsBase
     {
-        public override void InitializeSettings(bool applyChanges)
+        public override void InitializeSettings()
         {
-            base.InitializeSettings(false);
+            base.InitializeSettings();
             ClaimTypeConfig ctConfigExtensionAttribute = new ClaimTypeConfig
             {
                 ClaimType = TestContext.Parameters["MultiPurposeCustomClaimType"],
@@ -18,10 +19,13 @@ namespace Yvand.EntraClaimsProvider.Tests
                 SharePointEntityType = ClaimsProviderConstants.GroupClaimEntityType,
             };
             Settings.ClaimTypes.Add(ctConfigExtensionAttribute);
-            if (applyChanges)
-            {
-                TestSettingsAndApplyThemIfValid();
-            }
+            base.ApplySettings();
+        }
+
+        [Test]
+        public override void CheckSettingsTest()
+        {
+            base.CheckSettingsTest();
         }
 
         [TestCase("val", 1, "value1")]  // Extension attribute configuration

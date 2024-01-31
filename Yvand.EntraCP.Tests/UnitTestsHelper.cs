@@ -42,6 +42,8 @@ namespace Yvand.EntraClaimsProvider.Tests
         public static string DataFile_AllAccounts_Search => TestContext.Parameters["DataFile_AllAccounts_Search"];
         public static string DataFile_AllAccounts_Validate => TestContext.Parameters["DataFile_AllAccounts_Validate"];
         static TextWriterTraceListener Logger { get; set; }
+        public static EntraIDProviderConfiguration PersistedConfiguration;
+        private static IEntraIDProviderSettings OriginalSettings;
 
         [OneTimeSetUp]
         public static void InitializeSiteCollection()
@@ -136,12 +138,38 @@ namespace Yvand.EntraClaimsProvider.Tests
                     membersGroup.AddUser(userInfo.LoginName, userInfo.Email, userInfo.Name, userInfo.Notes);
                 }
             }
+
+            PersistedConfiguration = EntraCP.GetConfiguration(true);
+            if (PersistedConfiguration != null)
+            {
+                OriginalSettings = PersistedConfiguration.Settings;
+                Trace.TraceInformation($"{DateTime.Now:s} [SETUP] Took a backup of the original settings");
+            }
+            else
+            {
+                PersistedConfiguration = EntraCP.CreateConfiguration();
+                Trace.TraceInformation($"{DateTime.Now:s} [SETUP] Persisted configuration not found, created it");
+            }
         }
 
         [OneTimeTearDown]
         public static void Cleanup()
         {
-            Trace.TraceInformation($"{DateTime.Now:s} Integration tests of {EntraCP.ClaimsProviderName} {FileVersionInfo.GetVersionInfo(Assembly.GetAssembly(typeof(EntraCP)).Location).FileVersion} finished.");
+            Trace.TraceInformation($"{DateTime.Now:s} [SETUP] Cleanup.");
+            try
+            {
+                if (PersistedConfiguration != null && OriginalSettings != null)
+                {
+                    PersistedConfiguration.ApplySettings(OriginalSettings, true);
+                    Trace.TraceInformation($"{DateTime.Now:s} [SETUP] Restored original settings of LDAPCPSE configuration");
+                }
+            }
+            catch (Exception ex)
+            {
+                Trace.TraceError($"{DateTime.Now:s} [SETUP] Unexpected error while restoring the original settings of LDAPCPSE configuration: {ex.Message}");
+            }
+
+            Trace.TraceInformation($"{DateTime.Now:s} [SETUP] Integration tests of {EntraCP.ClaimsProviderName} {FileVersionInfo.GetVersionInfo(Assembly.GetAssembly(typeof(EntraCP)).Location).FileVersion} finished.");
             Trace.Flush();
             if (Logger != null)
             {

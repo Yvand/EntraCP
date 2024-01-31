@@ -11,9 +11,9 @@ namespace Yvand.EntraClaimsProvider.Tests
     {
         const string ConfigUpdateErrorMessage = "Some changes made to list ClaimTypes are invalid and cannot be committed to configuration database. Inspect inner exception for more details about the error.";
 
-        // Skip this test that does not make sense in this class
-        public override void TestSettingsAndApplyThemIfValid()
+        public override void InitializeSettings()
         {
+            base.InitializeSettings();
         }
 
         [Test]
@@ -71,7 +71,7 @@ namespace Yvand.EntraClaimsProvider.Tests
 
             // Modify identity ClaimTypeConfig to set its EntityType to Group should throw exception InvalidOperationException
             identityCTConfig.EntityType = DirectoryObjectType.Group;
-            Assert.Throws<InvalidOperationException>(() => GlobalConfiguration.ApplySettings(Settings, true), $"Modify identity claim type to set its EntityType to Group should throw exception InvalidOperationException with this message: \"{ConfigUpdateErrorMessage}\"");
+            Assert.Throws<InvalidOperationException>(() => UnitTestsHelper.PersistedConfiguration.ApplySettings(Settings, true), $"Modify identity claim type to set its EntityType to Group should throw exception InvalidOperationException with this message: \"{ConfigUpdateErrorMessage}\"");
             identityCTConfig.EntityType = DirectoryObjectType.User; // Restore valid value in local Settings to allow other tests to run
         }
 
@@ -87,7 +87,7 @@ namespace Yvand.EntraClaimsProvider.Tests
             // Modify an existing claim type to set a claim type already defined should throw exception InvalidOperationException
             ClaimTypeConfig anotherCTConfig = Settings.ClaimTypes.FirstOrDefault(x => !String.IsNullOrEmpty(x.ClaimType) && !String.Equals(firstCTConfig.ClaimType, x.ClaimType, StringComparison.InvariantCultureIgnoreCase));
             anotherCTConfig.ClaimType = firstCTConfig.ClaimType;
-            Assert.Throws<InvalidOperationException>(() => GlobalConfiguration.ApplySettings(Settings, true), $"Modify an existing claim type to set a claim type already defined should throw exception InvalidOperationException with this message: \"{ConfigUpdateErrorMessage}\"");
+            Assert.Throws<InvalidOperationException>(() => UnitTestsHelper.PersistedConfiguration.ApplySettings(Settings, true), $"Modify an existing claim type to set a claim type already defined should throw exception InvalidOperationException with this message: \"{ConfigUpdateErrorMessage}\"");
         }
 
         [Test]
@@ -97,13 +97,13 @@ namespace Yvand.EntraClaimsProvider.Tests
 
             // Set a duplicate PrefixToBypassLookup on 2 items already existing in the list should throw exception InvalidOperationException
             Settings.ClaimTypes.Where(x => !String.IsNullOrEmpty(x.ClaimType)).Take(2).Select(x => x.PrefixToBypassLookup = prefixToBypassLookup).ToList();
-            Assert.Throws<InvalidOperationException>(() => GlobalConfiguration.ApplySettings(Settings, true), $"Set a duplicate PrefixToBypassLookup on 2 items already existing in the list should throw exception InvalidOperationException with this message: \"{ConfigUpdateErrorMessage}\"");
+            Assert.Throws<InvalidOperationException>(() => UnitTestsHelper.PersistedConfiguration.ApplySettings(Settings, true), $"Set a duplicate PrefixToBypassLookup on 2 items already existing in the list should throw exception InvalidOperationException with this message: \"{ConfigUpdateErrorMessage}\"");
 
             // Set a PrefixToBypassLookup on an existing item and add a new item with the same PrefixToBypassLookup should throw exception InvalidOperationException
             var firstCTConfig = Settings.ClaimTypes.FirstOrDefault(x => !String.IsNullOrEmpty(x.ClaimType));
             firstCTConfig.PrefixToBypassLookup = prefixToBypassLookup;
             ClaimTypeConfig ctConfig = new ClaimTypeConfig() { ClaimType = UnitTestsHelper.RandomClaimType, PrefixToBypassLookup = prefixToBypassLookup, EntityProperty = UnitTestsHelper.RandomObjectProperty };
-            Assert.Throws<InvalidOperationException>(() => GlobalConfiguration.ApplySettings(Settings, true), $"Set a duplicate PrefixToBypassLookup on an existing item and add a new item with the same PrefixToBypassLookup should throw exception InvalidOperationException with this message: \"{ConfigUpdateErrorMessage}\"");
+            Assert.Throws<InvalidOperationException>(() => UnitTestsHelper.PersistedConfiguration.ApplySettings(Settings, true), $"Set a duplicate PrefixToBypassLookup on an existing item and add a new item with the same PrefixToBypassLookup should throw exception InvalidOperationException with this message: \"{ConfigUpdateErrorMessage}\"");
         }
 
         [Test]
@@ -113,7 +113,7 @@ namespace Yvand.EntraClaimsProvider.Tests
 
             // Duplicate EntityDataKey on 2 items already existing in the list should throw exception InvalidOperationException
             Settings.ClaimTypes.Where(x => x.EntityType == DirectoryObjectType.User).Take(2).Select(x => x.EntityDataKey = entityDataKey).ToList();
-            Assert.Throws<InvalidOperationException>(() => GlobalConfiguration.ApplySettings(Settings, true), $"Duplicate EntityDataKey on 2 items already existing in the list should throw exception InvalidOperationException with this message: \"{ConfigUpdateErrorMessage}\"");
+            Assert.Throws<InvalidOperationException>(() => UnitTestsHelper.PersistedConfiguration.ApplySettings(Settings, true), $"Duplicate EntityDataKey on 2 items already existing in the list should throw exception InvalidOperationException with this message: \"{ConfigUpdateErrorMessage}\"");
             // Remove one of the duplicated EntityDataKey to allow tests to continue
             Settings.ClaimTypes.FirstOrDefault(x => x.EntityDataKey == entityDataKey).EntityDataKey = String.Empty;
 
@@ -137,7 +137,7 @@ namespace Yvand.EntraClaimsProvider.Tests
 
             // Update an existing ClaimTypeConfig with a DirectoryObjectProperty already set should throw exception InvalidOperationException
             ctConfig.EntityProperty = existingCTConfig.EntityProperty;
-            Assert.Throws<InvalidOperationException>(() => GlobalConfiguration.ApplySettings(Settings, true), $"Update an existing ClaimTypeConfig with a DirectoryObjectProperty already set should throw exception InvalidOperationException with this message: \"{ConfigUpdateErrorMessage}\"");
+            Assert.Throws<InvalidOperationException>(() => UnitTestsHelper.PersistedConfiguration.ApplySettings(Settings, true), $"Update an existing ClaimTypeConfig with a DirectoryObjectProperty already set should throw exception InvalidOperationException with this message: \"{ConfigUpdateErrorMessage}\"");
 
             // Delete the ClaimTypeConfig should succeed
             Assert.That(Settings.ClaimTypes.Remove(ctConfig), Is.True, "Delete the ClaimTypeConfig should succeed");

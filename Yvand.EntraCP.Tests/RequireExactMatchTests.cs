@@ -6,16 +6,20 @@ using System.Diagnostics;
 namespace Yvand.EntraClaimsProvider.Tests
 {
     [TestFixture]
+    [Parallelizable(ParallelScope.Children)]
     public class RequireExactMatchOnBaseConfigTests : ClaimsProviderTestsBase
     {
-        public override void InitializeSettings(bool applyChanges)
+        public override void InitializeSettings()
         {
-            base.InitializeSettings(false);
+            base.InitializeSettings();
             Settings.FilterExactMatchOnly = true;
-            if (applyChanges)
-            {
-                TestSettingsAndApplyThemIfValid();
-            }
+            base.ApplySettings();
+        }
+
+        [Test]
+        public override void CheckSettingsTest()
+        {
+            base.CheckSettingsTest();
         }
 
         [Test, TestCaseSource(typeof(SearchEntityDataSource), nameof(SearchEntityDataSource.GetTestData), new object[] { EntityDataSourceType.UPNB2BGuestAccounts })]
@@ -29,27 +33,6 @@ namespace Yvand.EntraClaimsProvider.Tests
         public void TestSearchManual(string inputValue, int expectedResultCount, string expectedEntityClaimValue)
         {
             base.TestSearchOperation(inputValue, expectedResultCount, expectedEntityClaimValue);
-        }
-    }
-
-    [TestFixture]
-    public class RequireExactMatchOnCustomConfigTests : ClaimsProviderTestsBase
-    {
-        public override void InitializeSettings(bool applyChanges)
-        {
-            base.InitializeSettings(false);
-            Settings.FilterExactMatchOnly = true;
-            if (applyChanges)
-            {
-                TestSettingsAndApplyThemIfValid();
-            }
-        }
-
-        [Test, TestCaseSource(typeof(SearchEntityDataSource), nameof(SearchEntityDataSource.GetTestData), new object[] { EntityDataSourceType.UPNB2BGuestAccounts })]
-        [Repeat(UnitTestsHelper.TestRepeatCount)]
-        public void TestSearch(SearchEntityData registrationData)
-        {
-            base.ProcessAndTestSearchEntityData(registrationData);
         }
     }
 }
