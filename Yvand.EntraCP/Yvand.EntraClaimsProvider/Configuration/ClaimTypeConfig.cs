@@ -136,7 +136,7 @@ namespace Yvand.EntraClaimsProvider.Configuration
         private bool _UseMainClaimTypeOfDirectoryObject = false;
 
         /// <summary>
-        /// Can contain a member of class PeopleEditorEntityDataKey http://msdn.microsoft.com/en-us/library/office/microsoft.sharepoint.webcontrols.peopleeditorentitydatakeys_members(v=office.15).aspx
+        /// Can contain a member of class PeopleEditorEntityDataKey https://learn.microsoft.com/en-us/previous-versions/office/sharepoint-server/ms415673(v=office.15)
         /// to populate additional metadata in permission created
         /// </summary>
         public string EntityDataKey
@@ -663,10 +663,23 @@ namespace Yvand.EntraClaimsProvider.Configuration
 
         public ClaimTypeConfig GetMainConfigurationForDirectoryObjectType(DirectoryObjectType objectType)
         {
-            return innerCol
+            if (objectType == DirectoryObjectType.User)
+            {
+                // If user, add a test on the identity claim type
+                return innerCol
                 .FirstOrDefault(x =>
-                    x.EntityType == objectType &&
+                    x.EntityType == DirectoryObjectType.User &&
+                    String.Equals(x.ClaimType, SPTrust.IdentityClaimTypeInformation.MappedClaimType, StringComparison.OrdinalIgnoreCase) &&
                     x.UseMainClaimTypeOfDirectoryObject == false);
+            }
+            else
+            {
+                // There can be only 1 DirectoryObjectType "Group"
+                return innerCol
+                .FirstOrDefault(x =>
+                    x.EntityType == DirectoryObjectType.Group &&
+                    x.UseMainClaimTypeOfDirectoryObject == false);
+            }
         }
 
         public ClaimTypeConfig GetByClaimType(string claimType)
