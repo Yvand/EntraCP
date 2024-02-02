@@ -67,6 +67,18 @@ namespace Yvand.EntraClaimsProvider.Tests
                 Trace.TraceInformation($"{DateTime.Now:s} SPTrust: {SPTrust.Name}");
             }
 
+            PersistedConfiguration = EntraCP.GetConfiguration(true);
+            if (PersistedConfiguration != null)
+            {
+                OriginalSettings = PersistedConfiguration.Settings;
+                Trace.TraceInformation($"{DateTime.Now:s} [SETUP] Took a backup of the original settings");
+            }
+            else
+            {
+                PersistedConfiguration = EntraCP.CreateConfiguration();
+                Trace.TraceInformation($"{DateTime.Now:s} [SETUP] Persisted configuration not found, created it");
+            }
+
 #if DEBUG
             TestSiteCollUri = new Uri($"http://spsites{TestSiteRelativePath}");
             //return; // Uncommented when debugging from unit tests
@@ -137,18 +149,6 @@ namespace Yvand.EntraClaimsProvider.Tests
                     SPGroup membersGroup = spSite.RootWeb.AssociatedMemberGroup;
                     membersGroup.AddUser(userInfo.LoginName, userInfo.Email, userInfo.Name, userInfo.Notes);
                 }
-            }
-
-            PersistedConfiguration = EntraCP.GetConfiguration(true);
-            if (PersistedConfiguration != null)
-            {
-                OriginalSettings = PersistedConfiguration.Settings;
-                Trace.TraceInformation($"{DateTime.Now:s} [SETUP] Took a backup of the original settings");
-            }
-            else
-            {
-                PersistedConfiguration = EntraCP.CreateConfiguration();
-                Trace.TraceInformation($"{DateTime.Now:s} [SETUP] Persisted configuration not found, created it");
             }
         }
 

@@ -772,106 +772,53 @@ namespace Yvand.EntraClaimsProvider
             Logger.Log($"[{Name}] {processedResults.Count} entity(ies) to create after filtering", TraceSeverity.Verbose, EventSeverity.Information, TraceCategory.Lookup);
             foreach (ClaimsProviderEntityResult result in processedResults)
             {
-                entities.Add(CreatePickerEntityHelper(result));
+                entities.Add(CreatePickerEntityHelper(currentContext, result));
             }
             return entities;
         }
         #endregion
 
         #region Helpers
-        private PickerEntity CreatePickerEntityHelper(ClaimsProviderEntityResult result)
+        protected PickerEntity CreatePickerEntityHelper(OperationContext currentContext, ClaimsProviderEntityResult result)
         {
-            PickerEntity entity = CreatePickerEntity();
-            SPClaim claim;
-            string permissionValue = result.PermissionValue;
-            string permissionClaimType = result.ClaimTypeConfig.ClaimType;
-            bool isMappedClaimTypeConfig = false;
-
-            if (String.Equals(result.ClaimTypeConfig.ClaimType, this.Settings.IdentityClaimTypeConfig.ClaimType, StringComparison.InvariantCultureIgnoreCase)
-                || result.ClaimTypeConfig.UseMainClaimTypeOfDirectoryObject)
-            {
-                isMappedClaimTypeConfig = true;
-            }
-
-            entity.EntityType = result.ClaimTypeConfig.SharePointEntityType;
+            ClaimTypeConfig ctConfigToUseForClaimValue = result.ClaimTypeConfig;
             if (result.ClaimTypeConfig.UseMainClaimTypeOfDirectoryObject)
             {
-                string claimValueType;
-                if (result.ClaimTypeConfig.EntityType == DirectoryObjectType.User)
-                {
-                    permissionClaimType = this.Settings.IdentityClaimTypeConfig.ClaimType;
-                    claimValueType = this.Settings.IdentityClaimTypeConfig.ClaimValueType;
-                    if (String.IsNullOrEmpty(entity.EntityType))
-                    {
-                        entity.EntityType = SPClaimEntityTypes.User;
-                    }
-                }
-                else
-                {
-                    permissionClaimType = this.Settings.MainGroupClaimTypeConfig.ClaimType;
-                    claimValueType = this.Settings.MainGroupClaimTypeConfig.ClaimValueType;
-                    if (String.IsNullOrEmpty(entity.EntityType))
-                    {
-                        entity.EntityType = ClaimsProviderConstants.GroupClaimEntityType;
-                    }
-                }
-                permissionValue = FormatPermissionValue(permissionClaimType, permissionValue, isMappedClaimTypeConfig, result);
-                claim = CreateClaim(
-                    permissionClaimType,
-                    permissionValue,
-                    claimValueType);
-            }
-            else
-            {
-                permissionValue = FormatPermissionValue(permissionClaimType, permissionValue, isMappedClaimTypeConfig, result);
-                claim = CreateClaim(
-                    permissionClaimType,
-                    permissionValue,
-                    result.ClaimTypeConfig.ClaimValueType);
-                if (String.IsNullOrEmpty(entity.EntityType))
-                {
-                    entity.EntityType = result.ClaimTypeConfig.EntityType == DirectoryObjectType.User ? SPClaimEntityTypes.User : ClaimsProviderConstants.GroupClaimEntityType;
-                }
+                // Get the config to use to create the actual entity (claim type and its DirectoryObjectAttribute) from current result
+                ctConfigToUseForClaimValue = result.ClaimTypeConfig.EntityType == DirectoryObjectType.User ? this.Settings.IdentityClaimTypeConfig : this.Settings.MainGroupClaimTypeConfig;
             }
 
+            string permissionValue = FormatPermissionValue(result.PermissionValue);
+            SPClaim claim = CreateClaim(ctConfigToUseForClaimValue.ClaimType, permissionValue, ctConfigToUseForClaimValue.ClaimValueType);
+            PickerEntity entity = CreatePickerEntity();
             entity.Claim = claim;
+            entity.EntityType = ctConfigToUseForClaimValue.EntityType == DirectoryObjectType.User ? SPClaimEntityTypes.User : ClaimsProviderConstants.GroupClaimEntityType;
             entity.IsResolved = true;
-            //entity.EntityGroupName = "";
+            entity.EntityGroupName = this.Name;
             entity.Description = String.Format(
                 PickerEntityOnMouseOver,
                 result.ClaimTypeConfig.EntityProperty.ToString(),
                 result.DirectoryObjectPropertyValue);
+            entity.DisplayText = FormatPermissionDisplayText(entity, result.ClaimTypeConfig.UseMainClaimTypeOfDirectoryObject, result);
 
             int nbMetadata = 0;
-            // If current result is a SharePoint group but was found on an AAD User object, then 1 to many User objects could match so no metadata from the current match should be set
-            if (!String.Equals(result.ClaimTypeConfig.SharePointEntityType, ClaimsProviderConstants.GroupClaimEntityType, StringComparison.InvariantCultureIgnoreCase) ||
-                result.ClaimTypeConfig.EntityType != DirectoryObjectType.User)
+            // Populate the metadata for this PickerEntity
+            // Populate metadata of new PickerEntity
+            foreach (ClaimTypeConfig ctConfig in this.Settings.RuntimeMetadataConfig.Where(x => x.EntityType == result.ClaimTypeConfig.EntityType))
             {
-                // Populate metadata of new PickerEntity
-                foreach (ClaimTypeConfig ctConfig in this.Settings.RuntimeMetadataConfig.Where(x => x.EntityType == result.ClaimTypeConfig.EntityType))
+                // if there is actally a value in the GraphObject, then it can be set
+                string entityAttribValue = Utils.GetDirectoryObjectPropertyValue(result.DirectoryEntity, ctConfig.EntityProperty.ToString());
+                if (!String.IsNullOrEmpty(entityAttribValue))
                 {
-                    // if there is actally a value in the GraphObject, then it can be set
-                    string entityAttribValue = Utils.GetDirectoryObjectPropertyValue(result.DirectoryEntity, ctConfig.EntityProperty.ToString());
-                    if (!String.IsNullOrEmpty(entityAttribValue))
-                    {
-                        entity.EntityData[ctConfig.EntityDataKey] = entityAttribValue;
-                        nbMetadata++;
-                        Logger.Log($"[{Name}] Set metadata '{ctConfig.EntityDataKey}' of new entity to '{entityAttribValue}'", TraceSeverity.VerboseEx, EventSeverity.Information, TraceCategory.Claims_Picking);
-                    }
+                    entity.EntityData[ctConfig.EntityDataKey] = entityAttribValue;
+                    nbMetadata++;
+                    Logger.Log($"[{Name}] Set metadata '{ctConfig.EntityDataKey}' of new entity to '{entityAttribValue}'", TraceSeverity.VerboseEx, EventSeverity.Information, TraceCategory.Claims_Picking);
                 }
             }
-            entity.DisplayText = FormatPermissionDisplayText(entity, isMappedClaimTypeConfig, result);
-            Logger.Log($"[{Name}] Created entity: display text: '{entity.DisplayText}', value: '{entity.Claim.Value}', claim type: '{entity.Claim.ClaimType}', and filled with {nbMetadata.ToString()} metadata.", TraceSeverity.VerboseEx, EventSeverity.Information, TraceCategory.Claims_Picking);
+
+            Logger.Log($"[{Name}] Created entity: display text: '{entity.DisplayText}', claim value: '{entity.Claim.Value}', claim type: '{entity.Claim.ClaimType}', and filled with {nbMetadata} metadata.", TraceSeverity.VerboseEx, EventSeverity.Information, TraceCategory.Claims_Picking);
             return entity;
         }
-
-        //private PickerEntity CreatePickerEntityForSpecificClaimType(string value, ClaimTypeConfig ctConfig)
-        //{
-        //    List<PickerEntity> entities = CreatePickerEntityForSpecificClaimTypes(
-        //        value,
-        //        new List<ClaimTypeConfig>() { ctConfig });
-        //    return entities == null ? null : entities.First();
-        //}
 
         private List<PickerEntity> CreatePickerEntityForSpecificClaimTypes(string value, List<ClaimTypeConfig> ctConfigs)
         {
@@ -906,15 +853,7 @@ namespace Yvand.EntraClaimsProvider
             return entities.Count > 0 ? entities : null;
         }
 
-        /// <summary>
-        /// Override this method to customize value of permission being created
-        /// </summary>
-        /// <param name="claimType"></param>
-        /// <param name="claimValue"></param>
-        /// <param name="isIdentityClaimType"></param>
-        /// <param name="result"></param>
-        /// <returns></returns>
-        protected virtual string FormatPermissionValue(string claimType, string claimValue, bool isIdentityClaimType, ClaimsProviderEntityResult result)
+        protected virtual string FormatPermissionValue(string claimValue)
         {
             return claimValue;
         }
