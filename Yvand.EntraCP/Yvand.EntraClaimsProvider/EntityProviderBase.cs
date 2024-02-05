@@ -25,7 +25,7 @@ namespace Yvand.EntraClaimsProvider
         /// <param name="currentContext"></param>
         /// <param name="groupClaimTypeConfig"></param>
         /// <returns></returns>
-        public abstract Task<List<string>> GetEntityGroupsAsync(OperationContext currentContext, DirectoryObjectProperty groupClaimTypeConfig);
+        public abstract Task<List<string>> GetEntityGroupsAsync(OperationContext currentContext);
 
         public EntityProviderBase(string claimsProviderName)
         {

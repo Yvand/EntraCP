@@ -379,8 +379,8 @@ namespace Yvand.EntraClaimsProvider
                 if (!this.Settings.EnableAugmentation) { return; }
 
                 Logger.Log($"[{Name}] Starting augmentation for user '{decodedEntity.Value}'.", TraceSeverity.Verbose, EventSeverity.Information, TraceCategory.Augmentation);
-                ClaimTypeConfig groupClaimTypeSettings = this.Settings.RuntimeClaimTypesList.FirstOrDefault(x => x.EntityType == DirectoryObjectType.Group);
-                if (groupClaimTypeSettings == null)
+                //ClaimTypeConfig groupClaimTypeSettings = this.Settings.RuntimeClaimTypesList.FirstOrDefault(x => x.EntityType == DirectoryObjectType.Group);
+                if (Settings.MainGroupClaimTypeConfig == null)
                 {
                     Logger.Log($"[{Name}] No claim type with EntityType 'Group' was found, please check claims mapping table.",
                         TraceSeverity.High, EventSeverity.Error, TraceCategory.Augmentation);
@@ -390,7 +390,7 @@ namespace Yvand.EntraClaimsProvider
                 OperationContext currentContext = new OperationContext(this.Settings, OperationType.Augmentation, null, decodedEntity, context, null, null, Int32.MaxValue);
                 Stopwatch timer = new Stopwatch();
                 timer.Start();
-                Task<List<string>> groupsTask = this.EntityProvider.GetEntityGroupsAsync(currentContext, groupClaimTypeSettings.EntityProperty);
+                Task<List<string>> groupsTask = this.EntityProvider.GetEntityGroupsAsync(currentContext);
                 groupsTask.ConfigureAwait(false);
                 groupsTask.Wait(this.Settings.Timeout);
                 List<string> groups = groupsTask.Result;
@@ -399,7 +399,7 @@ namespace Yvand.EntraClaimsProvider
                 {
                     foreach (string group in groups)
                     {
-                        claims.Add(CreateClaim(groupClaimTypeSettings.ClaimType, group, groupClaimTypeSettings.ClaimValueType));
+                        claims.Add(CreateClaim(Settings.MainGroupClaimTypeConfig.ClaimType, group, Settings.MainGroupClaimTypeConfig.ClaimValueType));
                         Logger.Log($"[{Name}] Added group '{group}' to user '{currentContext.IncomingEntity.Value}'",
                             TraceSeverity.Verbose, EventSeverity.Information, TraceCategory.Augmentation);
                     }
@@ -609,17 +609,17 @@ namespace Yvand.EntraClaimsProvider
                     // Exactly 1 PickerEntity is expected by SharePoint
 
                     // Check if config corresponding to current claim type has a config to bypass Entra ID
-                    if (!String.IsNullOrWhiteSpace(currentContext.IncomingEntityClaimTypeConfig.PrefixToBypassLookup))
+                    if (!String.IsNullOrWhiteSpace(currentContext.CurrentClaimTypeConfigList.First().PrefixToBypassLookup))
                     {
                         // At this stage, it is impossible to know if entity was originally created with the keyword that bypass query to Microsoft Entra ID
                         // But it should be always validated since property PrefixToBypassLookup is set for current ClaimTypeConfig, so create entity manually
                         pickerEntityList = CreatePickerEntityForSpecificClaimTypes(
                             currentContext.IncomingEntity.Value,
-                            new List<ClaimTypeConfig>() { currentContext.IncomingEntityClaimTypeConfig });
+                            currentContext.CurrentClaimTypeConfigList);
                         if (pickerEntityList?.Count == 1)
                         {
                             PickerEntity entity = pickerEntityList.FirstOrDefault();
-                            Logger.Log($"[{Name}] Validated entity without contacting Microsoft Entra ID tenant(s) because its claim type ('{currentContext.IncomingEntityClaimTypeConfig.ClaimType}') has property 'PrefixToBypassLookup' set in EntraCPConfig.ClaimTypes. Claim value: '{entity.Claim.Value}', claim type: '{entity.Claim.ClaimType}'",
+                            Logger.Log($"[{Name}] Validated entity without contacting Microsoft Entra ID tenant(s) because its claim type ('{currentContext.CurrentClaimTypeConfigList.First().ClaimType}') has property 'PrefixToBypassLookup' set in EntraCPConfig.ClaimTypes. Claim value: '{entity.Claim.Value}', claim type: '{entity.Claim.ClaimType}'",
                                 TraceSeverity.VerboseEx, EventSeverity.Information, TraceCategory.Claims_Picking);
                         }
                     }

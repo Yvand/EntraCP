@@ -24,19 +24,23 @@ namespace Yvand.EntraClaimsProvider
     public class EntraIDEntityProvider : EntityProviderBase
     {
         public IEntraCPSettings Settings { get; }
-        public EntraIDEntityProvider(string claimsProviderName, IEntraCPSettings Settings) : base(claimsProviderName) 
+        public EntraIDEntityProvider(string claimsProviderName, IEntraCPSettings Settings) : base(claimsProviderName)
         {
             this.Settings = Settings;
         }
 
-        public async override Task<List<string>> GetEntityGroupsAsync(OperationContext currentContext, DirectoryObjectProperty groupProperty)
+        public async override Task<List<string>> GetEntityGroupsAsync(OperationContext currentContext)
         {
+            DirectoryObjectProperty groupProperty = Settings.MainGroupClaimTypeConfig.EntityProperty;
             // Create 1 Task for each tenant to query
             IEnumerable<Task<List<string>>> tenantTasks = currentContext.AzureTenants.Select(async tenant =>
             {
                 // Wrap the call to GetEntityGroupsFromTenantAsync() in a Task to avoid a hang when using the "check permissions" dialog
-                List<string> groupsInTenant = await Task.Run(() => GetEntityGroupsFromTenantAsync(currentContext, groupProperty, tenant)).ConfigureAwait(false);
-                return groupsInTenant;
+                using (new SPMonitoredScope($"[{ClaimsProviderName}] Get groups of user \"{currentContext.IncomingEntity.Value}\" from tenant \"{tenant.Name}\"", 1000))
+                {
+                    List<string> groupsInTenant = await Task.Run(() => GetEntityGroupsFromTenantAsync(currentContext, groupProperty, tenant)).ConfigureAwait(false);
+                    return groupsInTenant;
+                }
             });
 
             // Wait for all tenantTasks to complete
@@ -52,7 +56,7 @@ namespace Yvand.EntraClaimsProvider
         public async Task<List<string>> GetEntityGroupsFromTenantAsync(OperationContext currentContext, DirectoryObjectProperty groupProperty, EntraIDTenant tenant)
         {
             // URL encode the filter to prevent that it gets truncated like this: "UserPrincipalName eq 'guest_contoso.com" instead of "UserPrincipalName eq 'guest_contoso.com#EXT#@TENANT.onmicrosoft.com'"
-            string getMemberUserFilter = $"{currentContext.IncomingEntityClaimTypeConfig.EntityProperty} eq '{currentContext.IncomingEntity.Value}'";
+            string getMemberUserFilter = $"{this.Settings.IdentityClaimTypeConfig.EntityProperty} eq '{currentContext.IncomingEntity.Value}'";
             string getGuestUserFilter = $"userType eq 'Guest' and {this.Settings.IdentityClaimTypeConfig.DirectoryObjectPropertyForGuestUsers} eq '{currentContext.IncomingEntity.Value}'";
 
             List<string> groupsInTenant = new List<string>();
@@ -322,19 +326,22 @@ namespace Yvand.EntraClaimsProvider
             // Create a task for each tenant to query
             var tenantQueryTasks = azureTenants.Select(async tenant =>
             {
-                Stopwatch timer = new Stopwatch();
-                timer.Start();
-                List<DirectoryObject> tenantResults = await QueryEntraIDTenantAsync(currentContext, tenant).ConfigureAwait(false);
-                timer.Stop();
-                if (tenantResults != null)
+                using (new SPMonitoredScope($"[{ClaimsProviderName}] Send request to \"{tenant.Name}\" based on input \"{currentContext.Input}\"", 1000))
                 {
-                    Logger.Log($"[{ClaimsProviderName}] Got {tenantResults.Count} users/groups in {timer.ElapsedMilliseconds.ToString()} ms from '{tenant.Name}' with input '{currentContext.Input}'", TraceSeverity.Medium, EventSeverity.Information, TraceCategory.Lookup);
+                    Stopwatch timer = new Stopwatch();
+                    timer.Start();
+                    List<DirectoryObject> tenantResults = await QueryEntraIDTenantAsync(currentContext, tenant).ConfigureAwait(false);
+                    timer.Stop();
+                    if (tenantResults != null)
+                    {
+                        Logger.Log($"[{ClaimsProviderName}] Got {tenantResults.Count} users/groups in {timer.ElapsedMilliseconds.ToString()} ms from '{tenant.Name}' with input '{currentContext.Input}'", TraceSeverity.Medium, EventSeverity.Information, TraceCategory.Lookup);
+                    }
+                    else
+                    {
+                        Logger.Log($"[{ClaimsProviderName}] Got no result from \"{tenant.Name}\" with input '{currentContext.Input}', search took {timer.ElapsedMilliseconds.ToString()} ms", TraceSeverity.Medium, EventSeverity.Information, TraceCategory.Lookup);
+                    }
+                    return tenantResults;
                 }
-                else
-                {
-                    Logger.Log($"[{ClaimsProviderName}] Got no result from '{tenant.Name}' with input '{currentContext.Input}', search took {timer.ElapsedMilliseconds.ToString()} ms", TraceSeverity.Medium, EventSeverity.Information, TraceCategory.Lookup);
-                }
-                return tenantResults;
             });
 
             // Wait for all tasks to complete
