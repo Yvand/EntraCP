@@ -6,8 +6,6 @@ namespace Yvand.EntraClaimsProvider.Tests
     [TestFixture]
     public class WrongConfigBadClaimTypeTests : ClaimsProviderTestsBase
     {
-        public override bool DoAugmentationTest => false;
-
         public override void InitializeSettings()
         {
             base.InitializeSettings();

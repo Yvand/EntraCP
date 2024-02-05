@@ -33,5 +33,12 @@ namespace Yvand.EntraClaimsProvider.Tests
         {
             base.TestSearchOperation(inputValue, expectedResultCount, expectedEntityClaimValue);
         }
+
+        [Test, TestCaseSource(typeof(ValidateEntityDataSource), nameof(ValidateEntityDataSource.GetTestData), new object[] { EntityDataSourceType.AllAccounts })]
+        [Repeat(UnitTestsHelper.TestRepeatCount)]
+        public void TestAugmentationOperation(ValidateEntityData registrationData)
+        {
+            base.TestAugmentationOperation(registrationData.ClaimValue, registrationData.IsMemberOfTrustedGroup);
+        }
     }
 }
