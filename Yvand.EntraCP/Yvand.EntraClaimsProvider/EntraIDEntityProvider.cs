@@ -31,7 +31,7 @@ namespace Yvand.EntraClaimsProvider
 
         public async override Task<List<string>> GetEntityGroupsAsync(OperationContext currentContext)
         {
-            DirectoryObjectProperty groupProperty = Settings.MainGroupClaimTypeConfig.EntityProperty;
+            DirectoryObjectProperty groupProperty = Settings.GroupIdentifierClaimTypeConfig.EntityProperty;
             // Create 1 Task for each tenant to query
             IEnumerable<Task<List<string>>> tenantTasks = currentContext.AzureTenants.Select(async tenant =>
             {
@@ -56,8 +56,8 @@ namespace Yvand.EntraClaimsProvider
         public async Task<List<string>> GetEntityGroupsFromTenantAsync(OperationContext currentContext, DirectoryObjectProperty groupProperty, EntraIDTenant tenant)
         {
             // URL encode the filter to prevent that it gets truncated like this: "UserPrincipalName eq 'guest_contoso.com" instead of "UserPrincipalName eq 'guest_contoso.com#EXT#@TENANT.onmicrosoft.com'"
-            string getMemberUserFilter = $"{this.Settings.IdentityClaimTypeConfig.EntityProperty} eq '{currentContext.IncomingEntity.Value}'";
-            string getGuestUserFilter = $"userType eq 'Guest' and {this.Settings.IdentityClaimTypeConfig.DirectoryObjectPropertyForGuestUsers} eq '{currentContext.IncomingEntity.Value}'";
+            string getMemberUserFilter = $"{this.Settings.UserIdentifierClaimTypeConfig.EntityProperty} eq '{currentContext.IncomingEntity.Value}'";
+            string getGuestUserFilter = $"userType eq 'Guest' and {this.Settings.UserIdentifierClaimTypeConfig.DirectoryObjectPropertyForGuestUsers} eq '{currentContext.IncomingEntity.Value}'";
 
             List<string> groupsInTenant = new List<string>();
             Stopwatch timer = new Stopwatch();

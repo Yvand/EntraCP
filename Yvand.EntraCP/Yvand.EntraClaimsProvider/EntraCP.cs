@@ -9,7 +9,6 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.Diagnostics.Tracing;
 using System.Linq;
-using System.Reflection;
 using System.Threading;
 using System.Threading.Tasks;
 using Yvand.EntraClaimsProvider.Configuration;
@@ -21,8 +20,8 @@ namespace Yvand.EntraClaimsProvider
     {
         List<ClaimTypeConfig> RuntimeClaimTypesList { get; }
         IEnumerable<ClaimTypeConfig> RuntimeMetadataConfig { get; }
-        IdentityClaimTypeConfig IdentityClaimTypeConfig { get; }
-        ClaimTypeConfig MainGroupClaimTypeConfig { get; }
+        IdentityClaimTypeConfig UserIdentifierClaimTypeConfig { get; }
+        ClaimTypeConfig GroupIdentifierClaimTypeConfig { get; }
     }
 
     public class EntraCPSettings : EntraIDProviderSettings, IEntraCPSettings
@@ -44,9 +43,9 @@ namespace Yvand.EntraClaimsProvider
 
         public IEnumerable<ClaimTypeConfig> RuntimeMetadataConfig { get; set; }
 
-        public IdentityClaimTypeConfig IdentityClaimTypeConfig { get; set; }
+        public IdentityClaimTypeConfig UserIdentifierClaimTypeConfig { get; set; }
 
-        public ClaimTypeConfig MainGroupClaimTypeConfig { get; set; }
+        public ClaimTypeConfig GroupIdentifierClaimTypeConfig { get; set; }
     }
 
     public class EntraCP : SPClaimProvider
@@ -262,12 +261,12 @@ namespace Yvand.EntraClaimsProvider
                 {
                     // Identity claim type found, set IdentityClaimTypeConfig property
                     identityClaimTypeFound = true;
-                    settings.IdentityClaimTypeConfig = IdentityClaimTypeConfig.ConvertClaimTypeConfig(localClaimTypeConfig);
+                    settings.UserIdentifierClaimTypeConfig = IdentityClaimTypeConfig.ConvertClaimTypeConfig(localClaimTypeConfig);
                 }
                 else if (!groupClaimTypeFound && localClaimTypeConfig.EntityType == DirectoryObjectType.Group)
                 {
                     groupClaimTypeFound = true;
-                    settings.MainGroupClaimTypeConfig = localClaimTypeConfig;
+                    settings.GroupIdentifierClaimTypeConfig = localClaimTypeConfig;
                 }
             }
 
@@ -284,19 +283,19 @@ namespace Yvand.EntraClaimsProvider
                 ClaimTypeConfig localClaimTypeConfig = claimTypeConfig.CopyConfiguration();
                 if (localClaimTypeConfig.EntityType == DirectoryObjectType.User)
                 {
-                    localClaimTypeConfig.ClaimType = settings.IdentityClaimTypeConfig.ClaimType;
-                    localClaimTypeConfig.EntityPropertyToUseAsDisplayText = settings.IdentityClaimTypeConfig.EntityPropertyToUseAsDisplayText;
+                    localClaimTypeConfig.ClaimType = settings.UserIdentifierClaimTypeConfig.ClaimType;
+                    localClaimTypeConfig.EntityPropertyToUseAsDisplayText = settings.UserIdentifierClaimTypeConfig.EntityPropertyToUseAsDisplayText;
                 }
                 else
                 {
                     // If not a user, it must be a group
-                    if (settings.MainGroupClaimTypeConfig == null)
+                    if (settings.GroupIdentifierClaimTypeConfig == null)
                     {
                         continue;
                     }
-                    localClaimTypeConfig.ClaimType = settings.MainGroupClaimTypeConfig.ClaimType;
-                    localClaimTypeConfig.EntityPropertyToUseAsDisplayText = settings.MainGroupClaimTypeConfig.EntityPropertyToUseAsDisplayText;
-                    localClaimTypeConfig.ClaimTypeDisplayName = settings.MainGroupClaimTypeConfig.ClaimTypeDisplayName;
+                    localClaimTypeConfig.ClaimType = settings.GroupIdentifierClaimTypeConfig.ClaimType;
+                    localClaimTypeConfig.EntityPropertyToUseAsDisplayText = settings.GroupIdentifierClaimTypeConfig.EntityPropertyToUseAsDisplayText;
+                    localClaimTypeConfig.ClaimTypeDisplayName = settings.GroupIdentifierClaimTypeConfig.ClaimTypeDisplayName;
                 }
                 additionalClaimTypeConfigList.Add(localClaimTypeConfig);
             }
@@ -380,7 +379,7 @@ namespace Yvand.EntraClaimsProvider
 
                 Logger.Log($"[{Name}] Starting augmentation for user '{decodedEntity.Value}'.", TraceSeverity.Verbose, EventSeverity.Information, TraceCategory.Augmentation);
                 //ClaimTypeConfig groupClaimTypeSettings = this.Settings.RuntimeClaimTypesList.FirstOrDefault(x => x.EntityType == DirectoryObjectType.Group);
-                if (Settings.MainGroupClaimTypeConfig == null)
+                if (Settings.GroupIdentifierClaimTypeConfig == null)
                 {
                     Logger.Log($"[{Name}] No claim type with EntityType 'Group' was found, please check claims mapping table.",
                         TraceSeverity.High, EventSeverity.Error, TraceCategory.Augmentation);
@@ -399,7 +398,7 @@ namespace Yvand.EntraClaimsProvider
                 {
                     foreach (string group in groups)
                     {
-                        claims.Add(CreateClaim(Settings.MainGroupClaimTypeConfig.ClaimType, group, Settings.MainGroupClaimTypeConfig.ClaimValueType));
+                        claims.Add(CreateClaim(Settings.GroupIdentifierClaimTypeConfig.ClaimType, group, Settings.GroupIdentifierClaimTypeConfig.ClaimValueType));
                         Logger.Log($"[{Name}] Added group '{group}' to user '{currentContext.IncomingEntity.Value}'",
                             TraceSeverity.Verbose, EventSeverity.Information, TraceCategory.Augmentation);
                     }
@@ -731,11 +730,11 @@ namespace Yvand.EntraClaimsProvider
                     {
                         if (objectType == DirectoryObjectType.User)
                         {
-                            claimTypeConfigToCompare = this.Settings.IdentityClaimTypeConfig;
+                            claimTypeConfigToCompare = this.Settings.UserIdentifierClaimTypeConfig;
                             if (String.Equals(((User)currentObject).UserType, ClaimsProviderConstants.GUEST_USERTYPE, StringComparison.InvariantCultureIgnoreCase))
                             {
                                 // For Guest users, use the value set in property DirectoryObjectPropertyForGuestUsers
-                                entityClaimValue = Utils.GetDirectoryObjectPropertyValue(currentObject, this.Settings.IdentityClaimTypeConfig.DirectoryObjectPropertyForGuestUsers.ToString());
+                                entityClaimValue = Utils.GetDirectoryObjectPropertyValue(currentObject, this.Settings.UserIdentifierClaimTypeConfig.DirectoryObjectPropertyForGuestUsers.ToString());
                             }
                             else
                             {
@@ -745,7 +744,7 @@ namespace Yvand.EntraClaimsProvider
                         }
                         else
                         {
-                            claimTypeConfigToCompare = this.Settings.MainGroupClaimTypeConfig;
+                            claimTypeConfigToCompare = this.Settings.GroupIdentifierClaimTypeConfig;
                             // Get the value of the DirectoryObjectProperty linked to current directory object
                             entityClaimValue = Utils.GetDirectoryObjectPropertyValue(currentObject, claimTypeConfigToCompare.EntityProperty.ToString());
                         }
@@ -782,7 +781,7 @@ namespace Yvand.EntraClaimsProvider
             if (result.ClaimTypeConfigMatch.UseMainClaimTypeOfDirectoryObject)
             {
                 // Get the config to use to create the actual entity (claim type and its DirectoryObjectAttribute) from current result
-                ctConfigToUseForClaimValue = result.ClaimTypeConfigMatch.EntityType == DirectoryObjectType.User ? this.Settings.IdentityClaimTypeConfig : this.Settings.MainGroupClaimTypeConfig;
+                ctConfigToUseForClaimValue = result.ClaimTypeConfigMatch.EntityType == DirectoryObjectType.User ? this.Settings.UserIdentifierClaimTypeConfig : this.Settings.GroupIdentifierClaimTypeConfig;
             }
 
             string permissionValue = FormatPermissionValue(result.PermissionValue);
@@ -841,7 +840,7 @@ namespace Yvand.EntraClaimsProvider
                 }
 
                 ClaimsProviderEntity result = new ClaimsProviderEntity(ctConfig, value);
-                bool isIdentityClaimType = String.Equals(claim.ClaimType, this.Settings.IdentityClaimTypeConfig.ClaimType, StringComparison.InvariantCultureIgnoreCase);
+                bool isIdentityClaimType = String.Equals(claim.ClaimType, this.Settings.UserIdentifierClaimTypeConfig.ClaimType, StringComparison.InvariantCultureIgnoreCase);
                 entity.DisplayText = FormatPermissionDisplayText(entity, isIdentityClaimType, result);
 
                 entities.Add(entity);
