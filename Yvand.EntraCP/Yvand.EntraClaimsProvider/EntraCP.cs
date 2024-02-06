@@ -367,57 +367,58 @@ namespace Yvand.EntraClaimsProvider
                 return;
             }
 
-            if (!ValidateSettings(context)) { return; }
-
-            this.Lock_LocalConfigurationRefresh.EnterReadLock();
-            try
+            using (new SPMonitoredScope($"[{ClaimsProviderName}] Augmentation for user \"{decodedEntity.Value}", 3000))
             {
-                // There can be multiple TrustedProvider on the farm, but EntraCP should only do augmentation if current entity is from TrustedProvider it is associated with
-                if (!String.Equals(decodedEntity.OriginalIssuer, this.OriginalIssuerName, StringComparison.InvariantCultureIgnoreCase)) { return; }
-
-                if (!this.Settings.EnableAugmentation) { return; }
-
-                Logger.Log($"[{Name}] Starting augmentation for user '{decodedEntity.Value}'.", TraceSeverity.Verbose, EventSeverity.Information, TraceCategory.Augmentation);
-                //ClaimTypeConfig groupClaimTypeSettings = this.Settings.RuntimeClaimTypesList.FirstOrDefault(x => x.EntityType == DirectoryObjectType.Group);
-                if (Settings.GroupIdentifierClaimTypeConfig == null)
+                if (!ValidateSettings(context)) { return; }
+                this.Lock_LocalConfigurationRefresh.EnterReadLock();
+                try
                 {
-                    Logger.Log($"[{Name}] No claim type with EntityType 'Group' was found, please check claims mapping table.",
-                        TraceSeverity.High, EventSeverity.Error, TraceCategory.Augmentation);
-                    return;
-                }
+                    // There can be multiple TrustedProvider on the farm, but EntraCP should only do augmentation if current entity is from TrustedProvider it is associated with
+                    if (!String.Equals(decodedEntity.OriginalIssuer, this.OriginalIssuerName, StringComparison.InvariantCultureIgnoreCase)) { return; }
 
-                OperationContext currentContext = new OperationContext(this.Settings as EntraCPSettings, OperationType.Augmentation, null, decodedEntity, context, null, null, Int32.MaxValue);
-                Stopwatch timer = new Stopwatch();
-                timer.Start();
-                Task<List<string>> groupsTask = this.EntityProvider.GetEntityGroupsAsync(currentContext);
-                groupsTask.ConfigureAwait(false);
-                groupsTask.Wait(this.Settings.Timeout);
-                List<string> groups = groupsTask.Result;
-                timer.Stop();
-                if (groups?.Count > 0)
-                {
-                    foreach (string group in groups)
+                    if (!this.Settings.EnableAugmentation) { return; }
+
+                    if (Settings.GroupIdentifierClaimTypeConfig == null)
                     {
-                        claims.Add(CreateClaim(Settings.GroupIdentifierClaimTypeConfig.ClaimType, group, Settings.GroupIdentifierClaimTypeConfig.ClaimValueType));
-                        Logger.Log($"[{Name}] Added group '{group}' to user '{currentContext.IncomingEntity.Value}'",
-                            TraceSeverity.Verbose, EventSeverity.Information, TraceCategory.Augmentation);
+                        Logger.Log($"[{Name}] No claim type with EntityType 'Group' was found, please check claims mapping table.",
+                            TraceSeverity.High, EventSeverity.Error, TraceCategory.Augmentation);
+                        return;
                     }
-                    Logger.Log($"[{Name}] Augmented user '{currentContext.IncomingEntity.Value}' with {groups.Count} groups in {timer.ElapsedMilliseconds} ms",
-                        TraceSeverity.Medium, EventSeverity.Information, TraceCategory.Augmentation);
+
+                    Logger.Log($"[{Name}] Starting augmentation for user '{decodedEntity.Value}'.", TraceSeverity.Verbose, EventSeverity.Information, TraceCategory.Augmentation);
+                    OperationContext currentContext = new OperationContext(this.Settings as EntraCPSettings, OperationType.Augmentation, null, decodedEntity, context, null, null, Int32.MaxValue);
+                    Stopwatch timer = new Stopwatch();
+                    timer.Start();
+                    Task<List<string>> groupsTask = this.EntityProvider.GetEntityGroupsAsync(currentContext);
+                    groupsTask.ConfigureAwait(false);
+                    groupsTask.Wait(this.Settings.Timeout);
+                    List<string> groups = groupsTask.Result;
+                    timer.Stop();
+                    if (groups?.Count > 0)
+                    {
+                        foreach (string group in groups)
+                        {
+                            claims.Add(CreateClaim(Settings.GroupIdentifierClaimTypeConfig.ClaimType, group, Settings.GroupIdentifierClaimTypeConfig.ClaimValueType));
+                            Logger.Log($"[{Name}] Added group '{group}' to user '{currentContext.IncomingEntity.Value}'",
+                                TraceSeverity.Verbose, EventSeverity.Information, TraceCategory.Augmentation);
+                        }
+                        Logger.Log($"[{Name}] Augmented user '{currentContext.IncomingEntity.Value}' with {groups.Count} groups in {timer.ElapsedMilliseconds} ms",
+                            TraceSeverity.Medium, EventSeverity.Information, TraceCategory.Augmentation);
+                    }
+                    else
+                    {
+                        Logger.Log($"[{Name}] Got no group in {timer.ElapsedMilliseconds} ms for user '{currentContext.IncomingEntity.Value}'",
+                            TraceSeverity.Medium, EventSeverity.Information, TraceCategory.Augmentation);
+                    }
                 }
-                else
+                catch (Exception ex)
                 {
-                    Logger.Log($"[{Name}] Got no group in {timer.ElapsedMilliseconds} ms for user '{currentContext.IncomingEntity.Value}'",
-                        TraceSeverity.Medium, EventSeverity.Information, TraceCategory.Augmentation);
+                    Logger.LogException(Name, "in AugmentEntity", TraceCategory.Augmentation, ex);
                 }
-            }
-            catch (Exception ex)
-            {
-                Logger.LogException(Name, "in AugmentEntity", TraceCategory.Augmentation, ex);
-            }
-            finally
-            {
-                this.Lock_LocalConfigurationRefresh.ExitReadLock();
+                finally
+                {
+                    this.Lock_LocalConfigurationRefresh.ExitReadLock();
+                }
             }
         }
         #endregion
