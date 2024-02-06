@@ -197,7 +197,7 @@ namespace Yvand.EntraClaimsProvider.Configuration
 
         public List<EntraIDTenant> AzureTenants { get; private set; }
 
-        public OperationContext(IEntraCPSettings settings, OperationType currentRequestType, string input, SPClaim incomingEntity, Uri context, string[] entityTypes, string hierarchyNodeID, int maxCount)
+        public OperationContext(EntraCPSettings settings, OperationType currentRequestType, string input, SPClaim incomingEntity, Uri context, string[] entityTypes, string hierarchyNodeID, int maxCount)
         {
             this.OperationType = currentRequestType;
             this.Input = input;

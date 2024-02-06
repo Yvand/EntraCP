@@ -18,7 +18,7 @@ namespace Yvand.EntraClaimsProvider
 {
     public interface IEntraCPSettings : IEntraIDProviderSettings
     {
-        List<ClaimTypeConfig> RuntimeClaimTypesList { get; }
+        //List<ClaimTypeConfig> RuntimeClaimTypesList { get; }
         IEnumerable<ClaimTypeConfig> RuntimeMetadataConfig { get; }
         IdentityClaimTypeConfig UserIdentifierClaimTypeConfig { get; }
         ClaimTypeConfig GroupIdentifierClaimTypeConfig { get; }
@@ -386,7 +386,7 @@ namespace Yvand.EntraClaimsProvider
                     return;
                 }
 
-                OperationContext currentContext = new OperationContext(this.Settings, OperationType.Augmentation, null, decodedEntity, context, null, null, Int32.MaxValue);
+                OperationContext currentContext = new OperationContext(this.Settings as EntraCPSettings, OperationType.Augmentation, null, decodedEntity, context, null, null, Int32.MaxValue);
                 Stopwatch timer = new Stopwatch();
                 timer.Start();
                 Task<List<string>> groupsTask = this.EntityProvider.GetEntityGroupsAsync(currentContext);
@@ -430,7 +430,7 @@ namespace Yvand.EntraClaimsProvider
             this.Lock_LocalConfigurationRefresh.EnterReadLock();
             try
             {
-                OperationContext currentContext = new OperationContext(this.Settings, OperationType.Search, resolveInput, null, context, entityTypes, null, 30);
+                OperationContext currentContext = new OperationContext(this.Settings as EntraCPSettings, OperationType.Search, resolveInput, null, context, entityTypes, null, 30);
                 List<PickerEntity> entities = SearchOrValidate(currentContext);
                 if (entities == null || entities.Count == 0) { return; }
                 foreach (PickerEntity entity in entities)
@@ -458,7 +458,7 @@ namespace Yvand.EntraClaimsProvider
             this.Lock_LocalConfigurationRefresh.EnterReadLock();
             try
             {
-                OperationContext currentContext = new OperationContext(this.Settings, OperationType.Search, searchPattern, null, context, entityTypes, hierarchyNodeID, maxCount);
+                OperationContext currentContext = new OperationContext(this.Settings as EntraCPSettings, OperationType.Search, searchPattern, null, context, entityTypes, hierarchyNodeID, maxCount);
                 List<PickerEntity> entities = this.SearchOrValidate(currentContext);
                 if (entities == null || entities.Count == 0) { return; }
                 SPProviderHierarchyNode matchNode = null;
@@ -471,7 +471,7 @@ namespace Yvand.EntraClaimsProvider
                     }
                     else
                     {
-                        ClaimTypeConfig ctConfig = this.Settings.RuntimeClaimTypesList.FirstOrDefault(x =>
+                        ClaimTypeConfig ctConfig = currentContext.CurrentClaimTypeConfigList.FirstOrDefault(x =>
                             !x.UseMainClaimTypeOfDirectoryObject &&
                             String.Equals(x.ClaimType, entity.Claim.ClaimType, StringComparison.InvariantCultureIgnoreCase));
 
@@ -508,7 +508,7 @@ namespace Yvand.EntraClaimsProvider
                 // Must be made after call to Initialize because SPTrustedLoginProvider name must be known
                 if (!String.Equals(resolveInput.OriginalIssuer, this.OriginalIssuerName, StringComparison.InvariantCultureIgnoreCase)) { return; }
 
-                OperationContext currentContext = new OperationContext(this.Settings, OperationType.Validation, resolveInput.Value, resolveInput, context, entityTypes, null, 1);
+                OperationContext currentContext = new OperationContext(this.Settings as EntraCPSettings, OperationType.Validation, resolveInput.Value, resolveInput, context, entityTypes, null, 1);
                 List<PickerEntity> entities = this.SearchOrValidate(currentContext);
                 if (entities?.Count == 1)
                 {
@@ -921,7 +921,7 @@ namespace Yvand.EntraClaimsProvider
                 try
                 {
 
-                    foreach (var claimTypeSettings in this.Settings.RuntimeClaimTypesList)
+                    foreach (var claimTypeSettings in ((EntraCPSettings)this.Settings).RuntimeClaimTypesList)
                     {
                         claimTypes.Add(claimTypeSettings.ClaimType);
                     }
@@ -962,7 +962,7 @@ namespace Yvand.EntraClaimsProvider
                 if (hierarchyNodeID == null)
                 {
                     // Root level
-                    foreach (var azureObject in this.Settings.RuntimeClaimTypesList.FindAll(x => !x.UseMainClaimTypeOfDirectoryObject && aadEntityTypes.Contains(x.EntityType)))
+                    foreach (var azureObject in ((EntraCPSettings)this.Settings).RuntimeClaimTypesList.FindAll(x => !x.UseMainClaimTypeOfDirectoryObject && aadEntityTypes.Contains(x.EntityType)))
                     {
                         hierarchy.AddChild(
                             new Microsoft.SharePoint.WebControls.SPProviderHierarchyNode(
