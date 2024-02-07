@@ -16,7 +16,7 @@ on:
       base64-encoded-signingkey:
         required: true
       NUGET_APIKEY:
-        required: true
+        required: false
 jobs:
   call-build:
     uses: Yvand/AzureCP/.github/workflows/reusable-build.yml@master
@@ -34,6 +34,9 @@ jobs:
       project-name: ${{ inputs.project-name }}
       assembly-version: ${{ needs.call-build.outputs.assembly-version }}
       tag-name: ${{ needs.call-build.outputs.tag-name }}
+      # Secrets cannot be directly referenced in if, so they need to be added to the host environment
+      # https://docs.github.com/en/actions/using-workflows/workflow-syntax-for-github-actions#example-using-secrets
+      secret_nuget_apikey: ${{ secrets.NUGET_APIKEY }}
     steps:
       - name: Download all artifacts
         uses: actions/download-artifact@v3
@@ -114,12 +117,14 @@ jobs:
 
       # Install the latest .NET SDK to publish NuGet package, as nuget.exe is not available in Linux
       - name: Setup .NET Core
+        if: ${{ env.secret_nuget_apikey != '' }}
         uses: actions/setup-dotnet@v3
 
       # Publish NuGet package to NuGet.org
       # Use --skip-duplicate to prevent errors if a package with the same version already exists.
       # If you retry a failed workflow, already published packages will be skipped without error.
       - name: Publish NuGet package
+        if: ${{ env.secret_nuget_apikey != '' }}
         shell: bash
         run: |
           nugetfile=$(ls ./NuGet/*.nupkg | head -n 1)
