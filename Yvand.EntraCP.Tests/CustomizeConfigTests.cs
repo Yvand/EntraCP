@@ -66,7 +66,7 @@ namespace Yvand.EntraClaimsProvider.Tests
             Assert.Throws<InvalidOperationException>(() => Settings.ClaimTypes.Remove(identityClaimType), $"Delete identity claim type from ClaimTypes list should throw exception InvalidOperationException with this message: \"Cannot delete claim type \"{UnitTestsHelper.SPTrust.IdentityClaimTypeInformation.MappedClaimType}\" because it is the identity claim type of \"{UnitTestsHelper.SPTrust.Name}\"\"");
 
             // Delete identity claim type from ClaimTypes list based on its ClaimTypeConfig should throw exception InvalidOperationException
-            ClaimTypeConfig identityCTConfig = Settings.ClaimTypes.GetMainConfigurationForDirectoryObjectType(DirectoryObjectType.User);
+            ClaimTypeConfig identityCTConfig = Settings.ClaimTypes.GetIdentifierConfiguration(DirectoryObjectType.User);
             Assert.Throws<InvalidOperationException>(() => Settings.ClaimTypes.Remove(identityClaimType), $"Delete identity claim type from ClaimTypes list should throw exception InvalidOperationException with this message: \"Cannot delete claim type \"{UnitTestsHelper.SPTrust.IdentityClaimTypeInformation.MappedClaimType}\" because it is the identity claim type of \"{UnitTestsHelper.SPTrust.Name}\"\"");
 
             // Modify identity ClaimTypeConfig to set its EntityType to Group should throw exception InvalidOperationException
@@ -146,7 +146,7 @@ namespace Yvand.EntraClaimsProvider.Tests
         [Test]
         public void ModifyUserIdentifier()
         {
-            IdentityClaimTypeConfig backupIdentityCTConfig = Settings.ClaimTypes.GetMainConfigurationForDirectoryObjectType(DirectoryObjectType.User) as IdentityClaimTypeConfig;
+            IdentityClaimTypeConfig backupIdentityCTConfig = Settings.ClaimTypes.GetIdentifierConfiguration(DirectoryObjectType.User) as IdentityClaimTypeConfig;
             backupIdentityCTConfig = backupIdentityCTConfig.CopyConfiguration() as IdentityClaimTypeConfig;
 
             // Member UserType

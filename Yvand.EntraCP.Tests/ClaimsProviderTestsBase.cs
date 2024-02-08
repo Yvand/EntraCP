@@ -34,7 +34,7 @@ namespace Yvand.EntraClaimsProvider.Tests
         {
             get
             {
-                return Settings.ClaimTypes.GetMainConfigurationForDirectoryObjectType(DirectoryObjectType.User).ClaimType;
+                return Settings.ClaimTypes.GetIdentifierConfiguration(DirectoryObjectType.User).ClaimType;
             }
         }
 
@@ -42,7 +42,7 @@ namespace Yvand.EntraClaimsProvider.Tests
         {
             get
             {
-                return Settings.ClaimTypes.GetMainConfigurationForDirectoryObjectType(DirectoryObjectType.Group).ClaimType;
+                return Settings.ClaimTypes.GetIdentifierConfiguration(DirectoryObjectType.Group).ClaimType;
             }
         }
 

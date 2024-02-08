@@ -312,12 +312,12 @@ namespace Yvand.EntraClaimsProvider.Configuration
         {
             get
             {
-                IdentityClaimTypeConfig ctConfig = (IdentityClaimTypeConfig)GetMainConfigurationForDirectoryObjectType(DirectoryObjectType.User);
+                IdentityClaimTypeConfig ctConfig = (IdentityClaimTypeConfig)GetIdentifierConfiguration(DirectoryObjectType.User);
                 return ctConfig;
             }
             set
             {
-                IdentityClaimTypeConfig ctConfig = (IdentityClaimTypeConfig)GetMainConfigurationForDirectoryObjectType(DirectoryObjectType.User);
+                IdentityClaimTypeConfig ctConfig = (IdentityClaimTypeConfig)GetIdentifierConfiguration(DirectoryObjectType.User);
                 ctConfig = value;
             }
         }
@@ -661,7 +661,12 @@ namespace Yvand.EntraClaimsProvider.Configuration
             return new ClaimTypeConfigEnumerator(this);
         }
 
-        public ClaimTypeConfig GetMainConfigurationForDirectoryObjectType(DirectoryObjectType objectType)
+        /// <summary>
+        /// Returns the configuration for the given <paramref name="objectType"/>
+        /// </summary>
+        /// <param name="objectType"></param>
+        /// <returns></returns>
+        public ClaimTypeConfig GetIdentifierConfiguration(DirectoryObjectType objectType)
         {
             if (objectType == DirectoryObjectType.User)
             {
@@ -682,6 +687,12 @@ namespace Yvand.EntraClaimsProvider.Configuration
             }
         }
 
+        /// <summary>
+        /// Returns the configuration for the given <paramref name="claimType"/>
+        /// </summary>
+        /// <param name="claimType"></param>
+        /// <returns></returns>
+        /// <exception cref="ArgumentNullException"></exception>
         public ClaimTypeConfig GetByClaimType(string claimType)
         {
             if (String.IsNullOrEmpty(claimType)) { throw new ArgumentNullException(nameof(claimType)); }

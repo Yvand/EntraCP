@@ -65,25 +65,25 @@ namespace Yvand.EntraClaimsProvider
         public Logger(string name, SPFarm farm) : base(name, farm) { }
 
 
-        private static Logger _current;
+        private static Logger _Local;
         public static Logger Local
         {
             get
             {
-                if (_current == null)
+                if (_Local == null)
                 {
-                    _current = SPDiagnosticsServiceBase.GetLocal<Logger>();
-                    if (_current == null)
+                    _Local = SPDiagnosticsServiceBase.GetLocal<Logger>();
+                    if (_Local == null)
                     {
                         SPSecurity.RunWithElevatedPrivileges(delegate ()
                         {
                             // otherwise instantiate and register the new instance, which requires farm administrator privileges
-                            _current = new Logger();
+                            _Local = new Logger();
                             //svc.Update();
                         });
                     }
                 }
-                return _current;
+                return _Local;
             }
         }
 
