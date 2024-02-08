@@ -153,6 +153,10 @@ namespace Yvand.EntraClaimsProvider
 
         public async override Task<List<DirectoryObject>> SearchOrValidateEntitiesAsync(OperationContext currentContext)
         {
+            if (String.IsNullOrWhiteSpace(currentContext.Input))
+            {
+                return new List<DirectoryObject>(0);
+            }
             //// this.CurrentConfiguration.EntraIDTenants must be cloned locally to ensure its properties ($select / $filter) won't be updated by multiple threads
             //List<EntraIDTenant> azureTenants = new List<EntraIDTenant>(this.Configuration.EntraIDTenants.Count);
             //foreach (EntraIDTenant tenant in this.Configuration.EntraIDTenants)

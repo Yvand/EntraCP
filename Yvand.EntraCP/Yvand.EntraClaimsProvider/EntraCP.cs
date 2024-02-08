@@ -601,7 +601,10 @@ namespace Yvand.EntraClaimsProvider
                         // Call async method in a task to avoid error "Asynchronous operations are not allowed in this context" error when permission is validated (POST from people picker)
                         // More info on the error: https://stackoverflow.com/questions/672237/running-an-asynchronous-operation-triggered-by-an-asp-net-web-page-request
                         Task.Run(async () => await SearchOrValidateInEntraID()).Wait();
-                        pickerEntityList = this.ProcessAzureADResults(currentContext, azureADEntityList);
+                        if (azureADEntityList?.Count > 0)
+                        {
+                            pickerEntityList = this.ProcessAzureADResults(currentContext, azureADEntityList);
+                        }
                     }
                 }
                 else if (currentContext.OperationType == OperationType.Validation)
@@ -630,7 +633,6 @@ namespace Yvand.EntraClaimsProvider
                         Task.Run(async () => await SearchOrValidateInEntraID()).Wait();
                         if (azureADEntityList?.Count == 1)
                         {
-                            // Got the expected count (1 DirectoryObject)
                             pickerEntityList = this.ProcessAzureADResults(currentContext, azureADEntityList);
                         }
                     }
