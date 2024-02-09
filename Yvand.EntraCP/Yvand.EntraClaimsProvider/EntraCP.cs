@@ -780,25 +780,26 @@ namespace Yvand.EntraClaimsProvider
         #region Helpers
         protected PickerEntity CreatePickerEntityHelper(OperationContext currentContext, ClaimsProviderEntity result)
         {
-            ClaimTypeConfig ctConfigToUseForClaimValue = result.ClaimTypeConfigMatch;
+            ClaimTypeConfig directoryObjectIdentifierConfig = result.ClaimTypeConfigMatch;
             if (result.ClaimTypeConfigMatch.UseMainClaimTypeOfDirectoryObject)
             {
                 // Get the config to use to create the actual entity (claim type and its DirectoryObjectAttribute) from current result
-                ctConfigToUseForClaimValue = result.ClaimTypeConfigMatch.EntityType == DirectoryObjectType.User ? this.Settings.UserIdentifierClaimTypeConfig : this.Settings.GroupIdentifierClaimTypeConfig;
+                directoryObjectIdentifierConfig = result.ClaimTypeConfigMatch.EntityType == DirectoryObjectType.User ? this.Settings.UserIdentifierClaimTypeConfig : this.Settings.GroupIdentifierClaimTypeConfig;
             }
 
             string permissionValue = FormatPermissionValue(result.PermissionValue);
-            SPClaim claim = CreateClaim(ctConfigToUseForClaimValue.ClaimType, permissionValue, ctConfigToUseForClaimValue.ClaimValueType);
+            SPClaim claim = CreateClaim(directoryObjectIdentifierConfig.ClaimType, permissionValue, directoryObjectIdentifierConfig.ClaimValueType);
             PickerEntity entity = CreatePickerEntity();
             entity.Claim = claim;
-            entity.EntityType = ctConfigToUseForClaimValue.EntityType == DirectoryObjectType.User ? SPClaimEntityTypes.User : ClaimsProviderConstants.GroupClaimEntityType;
+            entity.EntityType = directoryObjectIdentifierConfig.SharePointEntityType;
+            if (String.IsNullOrWhiteSpace(entity.EntityType))
+            {
+                entity.EntityType = directoryObjectIdentifierConfig.EntityType == DirectoryObjectType.User ? SPClaimEntityTypes.User : ClaimsProviderConstants.GroupClaimEntityType;
+            }
             entity.IsResolved = true;
             entity.EntityGroupName = this.Name;
-            entity.Description = String.Format(
-                PickerEntityOnMouseOver,
-                result.ClaimTypeConfigMatch.EntityProperty.ToString(),
-                result.DirectoryObjectPropertyValueMatch);
-            entity.DisplayText = FormatPermissionDisplayText(entity, result.ClaimTypeConfigMatch.UseMainClaimTypeOfDirectoryObject, result);
+            entity.Description = String.Format(PickerEntityOnMouseOver, result.ClaimTypeConfigMatch.EntityProperty.ToString(), result.DirectoryObjectPropertyValueMatch);
+            entity.DisplayText = FormatPermissionDisplayText(result.DirectoryEntity, directoryObjectIdentifierConfig, permissionValue);
 
             int nbMetadata = 0;
             // Populate the metadata for this PickerEntity
@@ -819,32 +820,29 @@ namespace Yvand.EntraClaimsProvider
             return entity;
         }
 
-        private List<PickerEntity> CreatePickerEntityForSpecificClaimTypes(string value, List<ClaimTypeConfig> ctConfigs)
+        private List<PickerEntity> CreatePickerEntityForSpecificClaimTypes(string claimValue, List<ClaimTypeConfig> ctConfigs)
         {
             List<PickerEntity> entities = new List<PickerEntity>();
             foreach (var ctConfig in ctConfigs)
             {
-                SPClaim claim = CreateClaim(ctConfig.ClaimType, value, ctConfig.ClaimValueType);
+                SPClaim claim = CreateClaim(ctConfig.ClaimType, claimValue, ctConfig.ClaimValueType);
                 PickerEntity entity = CreatePickerEntity();
                 entity.Claim = claim;
                 entity.IsResolved = true;
                 entity.EntityType = ctConfig.SharePointEntityType;
-                if (String.IsNullOrEmpty(entity.EntityType))
+                if (String.IsNullOrWhiteSpace(entity.EntityType))
                 {
                     entity.EntityType = ctConfig.EntityType == DirectoryObjectType.User ? SPClaimEntityTypes.User : ClaimsProviderConstants.GroupClaimEntityType;
                 }
-                //entity.EntityGroupName = "";
-                entity.Description = String.Format(PickerEntityOnMouseOver, ctConfig.EntityProperty.ToString(), value);
+                entity.EntityGroupName = this.Name;
+                entity.Description = String.Format(PickerEntityOnMouseOver, ctConfig.EntityProperty.ToString(), claimValue);
+                entity.DisplayText = FormatPermissionDisplayText(null, ctConfig, claimValue);
 
-                if (!String.IsNullOrEmpty(ctConfig.EntityDataKey))
+                if (!String.IsNullOrWhiteSpace(ctConfig.EntityDataKey))
                 {
                     entity.EntityData[ctConfig.EntityDataKey] = entity.Claim.Value;
                     Logger.Log($"[{Name}] Added metadata '{ctConfig.EntityDataKey}' with value '{entity.EntityData[ctConfig.EntityDataKey]}' to new entity", TraceSeverity.VerboseEx, EventSeverity.Information, TraceCategory.Claims_Picking);
                 }
-
-                ClaimsProviderEntity result = new ClaimsProviderEntity(ctConfig, value);
-                bool isIdentityClaimType = String.Equals(claim.ClaimType, this.Settings.UserIdentifierClaimTypeConfig.ClaimType, StringComparison.InvariantCultureIgnoreCase);
-                entity.DisplayText = FormatPermissionDisplayText(entity, isIdentityClaimType, result);
 
                 entities.Add(entity);
                 Logger.Log($"[{Name}] Created entity: display text: '{entity.DisplayText}', value: '{entity.Claim.Value}', claim type: '{entity.Claim.ClaimType}'.", TraceSeverity.VerboseEx, EventSeverity.Information, TraceCategory.Claims_Picking);
@@ -857,45 +855,37 @@ namespace Yvand.EntraClaimsProvider
             return claimValue;
         }
 
-        /// <summary>
-        /// Override this method to customize display text of permission created
-        /// </summary>
-        /// <param name="entity"></param>
-        /// <param name="isMappedClaimTypeConfig"></param>
-        /// <param name="result"></param>
-        /// <returns></returns>
-        protected virtual string FormatPermissionDisplayText(PickerEntity entity, bool isMappedClaimTypeConfig, ClaimsProviderEntity result)
+        protected virtual string FormatPermissionDisplayText(DirectoryObject directoryResult, ClaimTypeConfig associatedClaimTypeConfig, string claimValue)
         {
+            bool isUserIdentityClaimType = String.Equals(associatedClaimTypeConfig.ClaimType, this.Settings.UserIdentifierClaimTypeConfig.ClaimType, StringComparison.InvariantCultureIgnoreCase);
             string entityDisplayText = this.Settings.EntityDisplayTextPrefix;
-            if (result.ClaimTypeConfigMatch.EntityPropertyToUseAsDisplayText != DirectoryObjectProperty.NotSet)
+            if (directoryResult == null)
             {
-                if (!isMappedClaimTypeConfig || result.ClaimTypeConfigMatch.EntityType == DirectoryObjectType.Group)
+                if (isUserIdentityClaimType)
                 {
-                    entityDisplayText += "(" + result.ClaimTypeConfigMatch.ClaimTypeDisplayName + ") ";
-                }
-
-                string graphPropertyToDisplayValue = Utils.GetDirectoryObjectPropertyValue(result.DirectoryEntity, result.ClaimTypeConfigMatch.EntityPropertyToUseAsDisplayText.ToString());
-                if (!String.IsNullOrEmpty(graphPropertyToDisplayValue))
-                {
-                    entityDisplayText += graphPropertyToDisplayValue;
+                    entityDisplayText += claimValue;
                 }
                 else
                 {
-                    entityDisplayText += result.PermissionValue;
+                    entityDisplayText += String.Format(PickerEntityDisplayText, associatedClaimTypeConfig.ClaimTypeDisplayName, claimValue);
                 }
             }
             else
             {
-                if (isMappedClaimTypeConfig)
+                string leadingTokenValue = String.Empty;
+                string directoryValueInDisplayText = claimValue;
+                if (associatedClaimTypeConfig.EntityPropertyToUseAsDisplayText != DirectoryObjectProperty.NotSet)
                 {
-                    entityDisplayText += result.DirectoryObjectPropertyValueMatch;
+                    directoryValueInDisplayText = Utils.GetDirectoryObjectPropertyValue(directoryResult, associatedClaimTypeConfig.EntityPropertyToUseAsDisplayText.ToString());
+                }
+                directoryValueInDisplayText = leadingTokenValue + directoryValueInDisplayText;
+                if (!isUserIdentityClaimType)
+                {
+                    entityDisplayText += String.Format(PickerEntityDisplayText, associatedClaimTypeConfig.ClaimTypeDisplayName, directoryValueInDisplayText);
                 }
                 else
                 {
-                    entityDisplayText += String.Format(
-                        PickerEntityDisplayText,
-                        result.ClaimTypeConfigMatch.ClaimTypeDisplayName,
-                        result.PermissionValue);
+                    entityDisplayText += directoryValueInDisplayText;
                 }
             }
             return entityDisplayText;
@@ -1079,12 +1069,6 @@ namespace Yvand.EntraClaimsProvider
             ClaimTypeConfigMatch = claimTypeConfig;
             PermissionValue = permissionValue;
             DirectoryObjectPropertyValueMatch = directoryObjectPropertyValue;
-        }
-
-        public ClaimsProviderEntity(ClaimTypeConfig claimTypeConfig, string permissionValue)
-        {
-            ClaimTypeConfigMatch = claimTypeConfig;
-            PermissionValue = permissionValue;
         }
     }
 }
