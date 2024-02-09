@@ -308,17 +308,19 @@ namespace Yvand.EntraClaimsProvider.Configuration
 
         public bool IsReadOnly => false;
 
-        public IdentityClaimTypeConfig IdentityClaim
+        public IdentityClaimTypeConfig UserIdentifierConfig
         {
             get
             {
-                IdentityClaimTypeConfig ctConfig = (IdentityClaimTypeConfig)GetIdentifierConfiguration(DirectoryObjectType.User);
-                return ctConfig;
+                return (IdentityClaimTypeConfig)GetIdentifierConfiguration(DirectoryObjectType.User);
             }
-            set
+        }
+
+        public ClaimTypeConfig GroupIdentifierConfig
+        {
+            get
             {
-                IdentityClaimTypeConfig ctConfig = (IdentityClaimTypeConfig)GetIdentifierConfiguration(DirectoryObjectType.User);
-                ctConfig = value;
+                return GetIdentifierConfiguration(DirectoryObjectType.Group);
             }
         }
 
@@ -495,7 +497,7 @@ namespace Yvand.EntraClaimsProvider.Configuration
             if (newIdentifier == DirectoryObjectProperty.NotSet) { throw new ArgumentNullException(nameof(newIdentifier)); }
 
             bool identifierUpdated = false;
-            IdentityClaimTypeConfig identityClaimType = IdentityClaim;
+            IdentityClaimTypeConfig identityClaimType = UserIdentifierConfig;
             if (identityClaimType == null)
             {
                 return identifierUpdated;
