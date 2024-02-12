@@ -23,8 +23,8 @@ namespace Yvand.EntraClaimsProvider
 {
     public class EntraIDEntityProvider : EntityProviderBase
     {
-        public IEntraCPSettings Settings { get; }
-        public EntraIDEntityProvider(string claimsProviderName, IEntraCPSettings Settings) : base(claimsProviderName)
+        public IClaimsProviderSettings Settings { get; }
+        public EntraIDEntityProvider(string claimsProviderName, IClaimsProviderSettings Settings) : base(claimsProviderName)
         {
             this.Settings = Settings;
         }
