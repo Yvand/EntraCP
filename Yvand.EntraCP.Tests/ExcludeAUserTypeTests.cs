@@ -21,12 +21,12 @@ namespace Yvand.EntraClaimsProvider.Tests
             base.CheckSettingsTest();
         }
 
-        //[Test, TestCaseSource(typeof(ValidateEntityDataSource), nameof(ValidateEntityDataSource.GetTestData), new object[] { EntityDataSourceType.AllAccounts })]
-        //[Repeat(UnitTestsHelper.TestRepeatCount)]
-        //public override void AugmentEntity(ValidateEntityData registrationData)
-        //{
-        //    base.AugmentEntity(registrationData);
-        //}
+        [Test, TestCaseSource(typeof(ValidateEntityDataSource), nameof(ValidateEntityDataSource.GetTestData), new object[] { EntityDataSourceType.AllAccounts })]
+        [Repeat(UnitTestsHelper.TestRepeatCount)]
+        public void TestAugmentationOperation(ValidateEntityData registrationData)
+        {
+            base.TestAugmentationOperation(registrationData.ClaimValue, registrationData.IsMemberOfTrustedGroup);
+        }
 
         [Test, TestCaseSource(typeof(SearchEntityDataSource), nameof(SearchEntityDataSource.GetTestData), new object[] { EntityDataSourceType.AllAccounts })]
         [Repeat(UnitTestsHelper.TestRepeatCount)]
@@ -63,12 +63,12 @@ namespace Yvand.EntraClaimsProvider.Tests
             base.CheckSettingsTest();
         }
 
-        //[Test, TestCaseSource(typeof(ValidateEntityDataSource), nameof(ValidateEntityDataSource.GetTestData), new object[] { EntityDataSourceType.AllAccounts })]
-        //[Repeat(UnitTestsHelper.TestRepeatCount)]
-        //public override void AugmentEntity(ValidateEntityData registrationData)
-        //{
-        //    base.AugmentEntity(registrationData);
-        //}
+        [Test, TestCaseSource(typeof(ValidateEntityDataSource), nameof(ValidateEntityDataSource.GetTestData), new object[] { EntityDataSourceType.AllAccounts })]
+        [Repeat(UnitTestsHelper.TestRepeatCount)]
+        public void TestAugmentationOperation(ValidateEntityData registrationData)
+        {
+            base.TestAugmentationOperation(registrationData.ClaimValue, registrationData.IsMemberOfTrustedGroup);
+        }
 
         [Test, TestCaseSource(typeof(SearchEntityDataSource), nameof(SearchEntityDataSource.GetTestData), new object[] { EntityDataSourceType.AllAccounts })]
         [Repeat(UnitTestsHelper.TestRepeatCount)]
@@ -105,12 +105,12 @@ namespace Yvand.EntraClaimsProvider.Tests
             base.CheckSettingsTest();
         }
 
-        //[Test, TestCaseSource(typeof(ValidateEntityDataSource), nameof(ValidateEntityDataSource.GetTestData), new object[] { EntityDataSourceType.AllAccounts })]
-        //[Repeat(UnitTestsHelper.TestRepeatCount)]
-        //public override void AugmentEntity(ValidateEntityData registrationData)
-        //{
-        //    base.AugmentEntity(registrationData);
-        //}
+        [Test, TestCaseSource(typeof(ValidateEntityDataSource), nameof(ValidateEntityDataSource.GetTestData), new object[] { EntityDataSourceType.AllAccounts })]
+        [Repeat(UnitTestsHelper.TestRepeatCount)]
+        public void TestAugmentationOperation(ValidateEntityData registrationData)
+        {
+            base.TestAugmentationOperation(registrationData.ClaimValue, registrationData.IsMemberOfTrustedGroup);
+        }
 
         [Test, TestCaseSource(typeof(SearchEntityDataSource), nameof(SearchEntityDataSource.GetTestData), new object[] { EntityDataSourceType.AllAccounts })]
         [Repeat(UnitTestsHelper.TestRepeatCount)]

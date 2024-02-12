@@ -57,13 +57,48 @@ namespace Yvand.EntraClaimsProvider
     /// <summary>
     /// Handles logging to SharePoint
     /// </summary>
-    [System.Runtime.InteropServices.GuidAttribute("F38C33C5-ACBC-4974-82D6-E6427E245406")]
     public class Logger : SPDiagnosticsServiceBase
     {
-        public readonly static string DiagnosticsAreaName = EntraCP.ClaimsProviderName;
+        static string DiagnosticsAreaName = EntraCP.ClaimsProviderName;
+        public override string DisplayName { get { return DiagnosticsAreaName; } }
+        public Logger() : base(DiagnosticsAreaName, SPFarm.Local) { }
+        public Logger(string name, SPFarm farm) : base(name, farm) { }
 
-        // This property causes a TypeLoadException in SharePoint 2016 RTM (not in 2023-11 CU and not in 2019) because: Cannot override inherited member 'SPPersistedObject.Name' because it is not marked virtual, abstract, or override
-        public override string Name => $"{DiagnosticsAreaName}.Logging";
+
+        private static Logger _Local;
+        public static Logger Local
+        {
+            get
+            {
+                if (_Local == null)
+                {
+                    _Local = SPDiagnosticsServiceBase.GetLocal<Logger>();
+                    if (_Local == null)
+                    {
+                        SPSecurity.RunWithElevatedPrivileges(delegate ()
+                        {
+                            // otherwise instantiate and register the new instance, which requires farm administrator privileges
+                            _Local = new Logger();
+                            //svc.Update();
+                        });
+                    }
+                }
+                return _Local;
+            }
+        }
+
+        public static void Unregister()
+        {
+            SPFarm.Local.Services
+                        .OfType<Logger>()
+                        .ToList()
+                        .ForEach(s =>
+                        {
+                            s.Delete();
+                            s.Unprovision();
+                            s.Uncache();
+                        });
+        }
 
         public static void Log(string message, TraceSeverity traceSeverity, EventSeverity eventSeverity, TraceCategory category)
         {
@@ -71,8 +106,9 @@ namespace Yvand.EntraClaimsProvider
             {
                 WriteTrace(category, traceSeverity, message);
             }
-            catch
+            catch (Exception ex)
             {   // Don't want to do anything if logging goes wrong, just ignore and continue
+                Debug.WriteLine($"Unable to record message in SharePoint logs: {ex.Message}");
             }
         }
 
@@ -130,8 +166,9 @@ namespace Yvand.EntraClaimsProvider
                 }
                 WriteTrace(category, TraceSeverity.Unexpected, errorNessage);
             }
-            catch
+            catch (Exception logex)
             {   // Don't want to do anything if logging goes wrong, just ignore and continue
+                Debug.WriteLine($"Unable to record message in SharePoint logs: {logex.Message}");
             }
         }
 
@@ -151,72 +188,10 @@ namespace Yvand.EntraClaimsProvider
                 Debug.WriteLine(message);
 #endif
             }
-            catch
+            catch (Exception logex)
             {   // Don't want to do anything if logging goes wrong, just ignore and continue
+                Debug.WriteLine($"Unable to record message in SharePoint logs: {logex.Message}");
             }
-        }
-
-        public static Logger Local
-        {
-            get
-            {
-                if (_Local != null)
-                {
-                    return _Local;
-                }
-
-                SPSecurity.RunWithElevatedPrivileges(delegate ()
-                {
-                    try
-                    {
-                        // SPContext.Current can be null in some processes like PowerShell.exe
-                        if (SPContext.Current != null)
-                        {
-                            SPContext.Current.Web.AllowUnsafeUpdates = true;
-                        }
-                        // This call may try to update the persisted object, so AllowUnsafeUpdates must be set before
-                        _Local = SPDiagnosticsServiceBase.GetLocal<Logger>();
-                    }
-                    catch (SPDuplicateObjectException)
-                    {
-                        // This exception may happen for no reason that I can understand. Calling Unregister() does cleanly remove the persisted object for class Logger.
-                        // And a new persisted object will be recreated when calling new Logger()
-                        Logger.Unregister();
-                    }
-                    catch(System.Security.SecurityException)
-                    {
-                        // Even the application pool account may get an access denied while calling SPDiagnosticsServiceBase.GetLocal<Logger>();
-                    }
-
-                    // if the Logging Service is registered, just return it.
-                    if (_Local != null)
-                    {
-                        return;
-                    }
-
-                    // otherwise instantiate the new instance, which the application pool account can do
-                    _Local = new Logger();
-                    //svc.Update();
-                });
-                // SPContext.Current can be null in some processes like PowerShell.exe
-                if (SPContext.Current != null)
-                {
-                    SPContext.Current.Web.AllowUnsafeUpdates = false;
-                }
-                return _Local;
-            }
-        }
-        private static Logger _Local;
-
-        public Logger() : base(DiagnosticsAreaName, SPFarm.Local) { }
-        public Logger(string name, SPFarm farm) : base(name, farm) { }
-
-        protected override IEnumerable<SPDiagnosticsArea> ProvideAreas() { yield return Area; }
-        public override string DisplayName { get { return DiagnosticsAreaName; } }
-
-        public SPDiagnosticsCategory this[TraceCategory id]
-        {
-            get { return Areas[DiagnosticsAreaName].Categories[id.ToString()]; }
         }
 
         public static void WriteTrace(TraceCategory Category, TraceSeverity Severity, string message)
@@ -229,25 +204,12 @@ namespace Yvand.EntraClaimsProvider
             Local.WriteEvent(1337, Local.GetCategory(Category), Severity, message);
         }
 
-        public static string FormatException(Exception ex)
+        #region Init
+        protected override IEnumerable<SPDiagnosticsArea> ProvideAreas()
         {
-            return String.Format("{0}  Stack trace: {1}", ex.Message, ex.StackTrace);
+            yield return Area;
         }
 
-        public static void Unregister()
-        {
-            SPFarm.Local.Services
-                        .OfType<Logger>()
-                        .ToList()
-                        .ForEach(s =>
-                        {
-                            s.Delete();
-                            s.Unprovision();
-                            s.Uncache();
-                        });
-        }
-
-        #region Init categories in area
         private static SPDiagnosticsArea Area
         {
             get

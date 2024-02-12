@@ -16,11 +16,6 @@ namespace Yvand.EntraClaimsProvider.Tests
     public class ClaimsProviderTestsBase
     {
         /// <summary>
-        /// Configures whether to run the entity augmentation tests.
-        /// </summary>
-        public virtual bool DoAugmentationTest => true;
-
-        /// <summary>
         /// Configures whether to exclude AAD Guest users from search and validation. This does not impact augmentation.
         /// </summary>
         public virtual bool ExcludeGuestUsers => false;
@@ -39,7 +34,7 @@ namespace Yvand.EntraClaimsProvider.Tests
         {
             get
             {
-                return Settings.ClaimTypes.GetMainConfigurationForDirectoryObjectType(DirectoryObjectType.User).ClaimType;
+                return Settings.ClaimTypes.UserIdentifierConfig.ClaimType;
             }
         }
 
@@ -47,7 +42,7 @@ namespace Yvand.EntraClaimsProvider.Tests
         {
             get
             {
-                return Settings.ClaimTypes.GetMainConfigurationForDirectoryObjectType(DirectoryObjectType.Group).ClaimType;
+                return Settings.ClaimTypes.GroupIdentifierConfig.ClaimType;
             }
         }
 
@@ -110,7 +105,7 @@ namespace Yvand.EntraClaimsProvider.Tests
             Trace.TraceInformation($"{DateTime.Now:s} [{this.GetType().Name}] Cleanup.");
         }
 
-        public void ProcessAndTestValidateEntityData(ValidateEntityData registrationData)
+        protected void ProcessAndTestValidateEntityData(ValidateEntityData registrationData)
         {
             bool shouldValidate = registrationData.ShouldValidate;
             if (ExcludeGuestUsers && registrationData.UserType == ResultUserType.Guest)
@@ -130,7 +125,7 @@ namespace Yvand.EntraClaimsProvider.Tests
             TestValidationOperation(inputClaim, shouldValidate, registrationData.ClaimValue);
         }
 
-        public void ProcessAndTestSearchEntityData(SearchEntityData registrationData)
+        protected void ProcessAndTestSearchEntityData(SearchEntityData registrationData)
         {
             // If current entry does not return only users AND either guests or members are excluded, ExpectedResultCount cannot be determined so test cannot run
             if (registrationData.SearchResultEntityTypes != ResultEntityType.User &&
@@ -162,7 +157,7 @@ namespace Yvand.EntraClaimsProvider.Tests
         /// <param name="inputValue"></param>
         /// <param name="expectedCount">How many entities are expected to be returned. Set to Int32.MaxValue if exact number is unknown but greater than 0</param>
         /// <param name="expectedClaimValue"></param>
-        public void TestSearchOperation(string inputValue, int expectedCount, string expectedClaimValue)
+        protected void TestSearchOperation(string inputValue, int expectedCount, string expectedClaimValue)
         {
             try
             {
@@ -216,13 +211,13 @@ namespace Yvand.EntraClaimsProvider.Tests
             Assert.That(entities.Count, Is.EqualTo(expectedCount), $"Input \"{input}\" should have returned {expectedCount} entities, but it returned {entities.Count} instead. {detailedLog}");
         }
 
-        public void TestValidationOperation(string claimType, string claimValue, bool shouldValidate)
+        protected void TestValidationOperation(string claimType, string claimValue, bool shouldValidate)
         {
             SPClaim inputClaim = new SPClaim(claimType, claimValue, ClaimValueTypes.String, SPOriginalIssuers.Format(SPOriginalIssuerType.TrustedProvider, UnitTestsHelper.SPTrust.Name));
             TestValidationOperation(inputClaim, shouldValidate, claimValue);
         }
 
-        public void TestValidationOperation(SPClaim inputClaim, bool shouldValidate, string expectedClaimValue)
+        protected void TestValidationOperation(SPClaim inputClaim, bool shouldValidate, string expectedClaimValue)
         {
             try
             {
@@ -250,23 +245,10 @@ namespace Yvand.EntraClaimsProvider.Tests
         /// <summary>
         /// Tests if the augmentation works as expected. By default this test is executed in every scenario.
         /// </summary>
-        /// <param name="registrationData"></param>
-        [Test, TestCaseSource(typeof(ValidateEntityDataSource), nameof(ValidateEntityDataSource.GetTestData), new object[] { EntityDataSourceType.AllAccounts })]
-        [Repeat(UnitTestsHelper.TestRepeatCount)]
-        public virtual void TestAugmentationOperation(ValidateEntityData registrationData)
-        {
-            TestAugmentationOperation(registrationData.ClaimValue, registrationData.IsMemberOfTrustedGroup);
-        }
-
-        /// <summary>
-        /// Tests if the augmentation works as expected. By default this test is executed in every scenario.
-        /// </summary>
         /// <param name="claimValue"></param>
         /// <param name="isMemberOfTrustedGroup"></param>
-        [TestCase("fake@FAKE.onmicrosoft.com", false)]
-        public virtual void TestAugmentationOperation(string claimValue, bool isMemberOfTrustedGroup)
+        protected void TestAugmentationOperation(string claimValue, bool isMemberOfTrustedGroup)
         {
-            if (!DoAugmentationTest) { return; }
             string claimType = UserIdentifierClaimType;
             try
             {

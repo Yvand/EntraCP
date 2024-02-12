@@ -144,11 +144,11 @@ namespace Yvand.EntraClaimsProvider.Administration
 
             if (this.RbIdentityCustomGraphProperty.Checked)
             {
-                Settings.ClaimTypes.IdentityClaim.EntityPropertyToUseAsDisplayText = (DirectoryObjectProperty)Convert.ToInt32(this.DDLGraphPropertyToDisplay.SelectedValue);
+                Settings.ClaimTypes.UserIdentifierConfig.EntityPropertyToUseAsDisplayText = (DirectoryObjectProperty)Convert.ToInt32(this.DDLGraphPropertyToDisplay.SelectedValue);
             }
             else
             {
-                Settings.ClaimTypes.IdentityClaim.EntityPropertyToUseAsDisplayText = DirectoryObjectProperty.NotSet;
+                Settings.ClaimTypes.UserIdentifierConfig.EntityPropertyToUseAsDisplayText = DirectoryObjectProperty.NotSet;
             }
 
             DirectoryObjectProperty newUserIdentifier = (DirectoryObjectProperty)Convert.ToInt32(this.DDLDirectoryPropertyMemberUsers.SelectedValue);

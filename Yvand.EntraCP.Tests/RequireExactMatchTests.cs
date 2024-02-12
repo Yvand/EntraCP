@@ -1,7 +1,4 @@
-﻿using Newtonsoft.Json;
-using NUnit.Framework;
-using System;
-using System.Diagnostics;
+﻿using NUnit.Framework;
 
 namespace Yvand.EntraClaimsProvider.Tests
 {
@@ -33,6 +30,13 @@ namespace Yvand.EntraClaimsProvider.Tests
         public void TestSearchManual(string inputValue, int expectedResultCount, string expectedEntityClaimValue)
         {
             base.TestSearchOperation(inputValue, expectedResultCount, expectedEntityClaimValue);
+        }
+
+        [Test, TestCaseSource(typeof(ValidateEntityDataSource), nameof(ValidateEntityDataSource.GetTestData), new object[] { EntityDataSourceType.AllAccounts })]
+        [Repeat(UnitTestsHelper.TestRepeatCount)]
+        public void TestAugmentationOperation(ValidateEntityData registrationData)
+        {
+            base.TestAugmentationOperation(registrationData.ClaimValue, registrationData.IsMemberOfTrustedGroup);
         }
     }
 }

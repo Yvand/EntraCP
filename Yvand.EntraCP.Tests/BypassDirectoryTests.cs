@@ -13,8 +13,8 @@ namespace Yvand.EntraClaimsProvider.Tests
         {
             base.InitializeSettings();
             Settings.EnableAugmentation = true;
-            Settings.ClaimTypes.GetMainConfigurationForDirectoryObjectType(DirectoryObjectType.User).PrefixToBypassLookup = "bypass-user:";
-            Settings.ClaimTypes.GetMainConfigurationForDirectoryObjectType(DirectoryObjectType.Group).PrefixToBypassLookup = "bypass-group:";
+            Settings.ClaimTypes.UserIdentifierConfig.PrefixToBypassLookup = "bypass-user:";
+            Settings.ClaimTypes.GroupIdentifierConfig.PrefixToBypassLookup = "bypass-group:";
             base.ApplySettings();
         }
 
@@ -65,6 +65,13 @@ namespace Yvand.EntraClaimsProvider.Tests
             TestSearchOperation(UnitTestsHelper.RandomClaimValue, 2, UnitTestsHelper.RandomClaimValue);
             TestValidationOperation(base.UserIdentifierClaimType, UnitTestsHelper.RandomClaimValue, true);
             TestValidationOperation(base.GroupIdentifierClaimType, UnitTestsHelper.RandomClaimValue, true);
+        }
+
+        [Test, TestCaseSource(typeof(ValidateEntityDataSource), nameof(ValidateEntityDataSource.GetTestData), new object[] { EntityDataSourceType.AllAccounts })]
+        [Repeat(UnitTestsHelper.TestRepeatCount)]
+        public void TestAugmentationOperation(ValidateEntityData registrationData)
+        {
+            base.TestAugmentationOperation(registrationData.ClaimValue, registrationData.IsMemberOfTrustedGroup);
         }
     }
 }

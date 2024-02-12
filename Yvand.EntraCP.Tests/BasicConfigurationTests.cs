@@ -33,6 +33,17 @@ namespace Yvand.EntraClaimsProvider.Tests
             base.ProcessAndTestValidateEntityData(registrationData);
         }
 
+        /// <summary>
+        /// Tests if the augmentation works as expected. By default this test is executed in every scenario.
+        /// </summary>
+        /// <param name="registrationData"></param>
+        [Test, TestCaseSource(typeof(ValidateEntityDataSource), nameof(ValidateEntityDataSource.GetTestData), new object[] { EntityDataSourceType.AllAccounts })]
+        [Repeat(UnitTestsHelper.TestRepeatCount)]
+        public void TestAugmentationOperation(ValidateEntityData registrationData)
+        {
+            base.TestAugmentationOperation(registrationData.ClaimValue, registrationData.IsMemberOfTrustedGroup);
+        }
+
 #if DEBUG
         ////[TestCaseSource(typeof(SearchEntityDataSourceCollection))]
         //public void DEBUG_SearchEntitiesFromCollection(string inputValue, string expectedCount, string expectedClaimValue)
