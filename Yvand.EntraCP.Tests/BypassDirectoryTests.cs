@@ -13,8 +13,8 @@ namespace Yvand.EntraClaimsProvider.Tests
         {
             base.InitializeSettings();
             Settings.EnableAugmentation = true;
-            Settings.ClaimTypes.GetIdentifierConfiguration(DirectoryObjectType.User).PrefixToBypassLookup = "bypass-user:";
-            Settings.ClaimTypes.GetIdentifierConfiguration(DirectoryObjectType.Group).PrefixToBypassLookup = "bypass-group:";
+            Settings.ClaimTypes.UserIdentifierConfig.PrefixToBypassLookup = "bypass-user:";
+            Settings.ClaimTypes.GroupIdentifierConfig.PrefixToBypassLookup = "bypass-group:";
             base.ApplySettings();
         }
 
