@@ -8,6 +8,8 @@ using System.Diagnostics;
 using System.Linq;
 using System.Reflection;
 using System.Web;
+using Yvand.EntraClaimsProvider.Logging;
+using Logger = Yvand.EntraClaimsProvider.Logging.Logger;
 using WIF4_5 = System.Security.Claims;
 
 namespace Yvand.EntraClaimsProvider.Configuration

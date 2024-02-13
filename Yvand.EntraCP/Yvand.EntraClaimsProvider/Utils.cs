@@ -7,6 +7,7 @@ using System.Diagnostics.Tracing;
 using System.Linq;
 using System.Reflection;
 using Yvand.EntraClaimsProvider.Configuration;
+using Yvand.EntraClaimsProvider.Logging;
 
 namespace Yvand.EntraClaimsProvider
 {

@@ -15,9 +15,10 @@ using System.Diagnostics;
 using System.Linq;
 using System.Net;
 using System.Reflection;
-using System.Threading;
 using System.Threading.Tasks;
 using Yvand.EntraClaimsProvider.Configuration;
+using Yvand.EntraClaimsProvider.Logging;
+using Logger = Yvand.EntraClaimsProvider.Logging.Logger;
 
 namespace Yvand.EntraClaimsProvider
 {

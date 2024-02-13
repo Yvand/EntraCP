@@ -12,6 +12,7 @@ using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 using Yvand.EntraClaimsProvider.Configuration;
+using Yvand.EntraClaimsProvider.Logging;
 using WIF4_5 = System.Security.Claims;
 
 namespace Yvand.EntraClaimsProvider

@@ -1,6 +1,5 @@
 ﻿using Microsoft.Graph.Models;
 using Microsoft.Identity.Client;
-using Microsoft.SharePoint;
 using Microsoft.SharePoint.Administration;
 using Microsoft.SharePoint.Utilities;
 using Microsoft.SharePoint.WebControls;
@@ -16,6 +15,8 @@ using System.Threading.Tasks;
 using System.Web.UI.HtmlControls;
 using System.Web.UI.WebControls;
 using Yvand.EntraClaimsProvider.Configuration;
+using Yvand.EntraClaimsProvider.Logging;
+using Logger = Yvand.EntraClaimsProvider.Logging.Logger;
 
 namespace Yvand.EntraClaimsProvider.Administration
 {

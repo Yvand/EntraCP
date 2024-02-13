@@ -3,7 +3,7 @@ using Microsoft.SharePoint.Administration;
 using Microsoft.SharePoint.Administration.Claims;
 using System;
 using System.Runtime.InteropServices;
-using Yvand.EntraClaimsProvider.Configuration;
+using Yvand.EntraClaimsProvider.Logging;
 
 namespace Yvand.EntraClaimsProvider
 {
