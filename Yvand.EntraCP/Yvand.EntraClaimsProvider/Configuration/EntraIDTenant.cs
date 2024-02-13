@@ -3,8 +3,6 @@ using Azure.Core.Pipeline;
 using Azure.Identity;
 using Microsoft.Graph;
 using Microsoft.Identity.Client;
-using Microsoft.Kiota.Http.HttpClientLibrary.Middleware;
-using Microsoft.Kiota.Http.HttpClientLibrary.Middleware.Options;
 using Microsoft.SharePoint.Administration;
 using System;
 using System.Collections.Generic;
@@ -12,11 +10,11 @@ using System.IO;
 using System.Linq;
 using System.Net;
 using System.Net.Http;
-using System.Reflection;
-using System.Runtime.ConstrainedExecution;
 using System.Security.Cryptography;
 using System.Security.Cryptography.X509Certificates;
 using System.Threading.Tasks;
+using Yvand.EntraClaimsProvider.Logging;
+using Logger = Yvand.EntraClaimsProvider.Logging.Logger;
 
 namespace Yvand.EntraClaimsProvider.Configuration
 {
