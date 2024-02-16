@@ -76,6 +76,11 @@ jobs:
             zip -r ../NuGet.zip ./*
             cd ..
           fi
+          if [ -d "assembly-bindings.config" ]; then
+            echo "Move file assembly-bindings.config to the parent folder"
+            mv assembly-bindings.config dir-assembly-bindings-config
+            mv dir-assembly-bindings-config/assembly-bindings.config .
+          fi
           ls -al
           ls -al assembly-bindings.config
           realpath assembly-bindings.config/assembly-bindings.config
@@ -94,12 +99,12 @@ jobs:
             ./${{ env.project-name }}-Release-wsp/*.wsp
             ./${{ env.project-name }}-${{ env.assembly-version }}-symbols.zip
             ./${{ env.project-name }}-${{ env.assembly-version }}-dependencies.zip
-            ./assembly-bindings.config/assembly-bindings.config # It may or may not exist
+            ./assembly-bindings.config # It may or may not exist
             ./NuGet.zip
 
       - name: Publish nightly release
         uses: andelf/nightly-release@v1
-        if: inputs.is-production-release == false && false
+        if: inputs.is-production-release == false
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
@@ -113,7 +118,7 @@ jobs:
             ./${{ env.project-name }}-${{ env.assembly-version }}-symbols.zip
             ./${{ env.project-name }}-${{ env.assembly-version }}-dependencies.zip
             ./${{ env.project-name }}-unit-tests.zip
-            ./assembly-bindings.config/assembly-bindings.config # It may or may not exist
+            ./assembly-bindings.config # It may or may not exist
             ./NuGet.zip
             #./idonotexist.test
 
