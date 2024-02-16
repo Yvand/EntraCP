@@ -37,7 +37,6 @@ jobs:
       # Secrets cannot be directly referenced in if, so they need to be added to the host environment
       # https://docs.github.com/en/actions/using-workflows/workflow-syntax-for-github-actions#example-using-secrets
       secret_nuget_apikey: ${{ secrets.NUGET_APIKEY }}
-      debug_skip: true
     steps:
       - name: Download all artifacts
         uses: actions/download-artifact@v3
@@ -79,6 +78,7 @@ jobs:
           fi
           ls -al
           ls -al assembly-bindings.config
+          realpath assembly-bindings.config/assembly-bindings.config
 
       - name: Publish production release
         uses: softprops/action-gh-release@v1
@@ -86,6 +86,7 @@ jobs:
         with:
           name: '${{ env.project-name }} ${{ env.tag-name }}'
           prerelease: true
+          draft: true
           tag_name: ${{ env.tag-name }}
           body: |
             ${{ env.project-name }} ${{ env.tag-name }}
@@ -98,14 +99,13 @@ jobs:
 
       - name: Publish nightly release
         uses: andelf/nightly-release@v1
-        if: inputs.is-production-release == false && env.debug_skip != true
+        if: inputs.is-production-release == false && false
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
           tag_name: nightly
           name: 'Nightly Release $$'
           prerelease: true
-          draft: true
           body: |
             This is a nightly release, use it with caution **and do not deploy it in a production environment**
           files: |
@@ -119,14 +119,14 @@ jobs:
 
       # Install the latest .NET SDK to publish NuGet package, as nuget.exe is not available in Linux
       - name: Setup .NET Core
-        if: ${{ env.secret_nuget_apikey != '' && env.debug_skip != true }}
+        if: ${{ env.secret_nuget_apikey != '' && false }}
         uses: actions/setup-dotnet@v3
 
       # Publish NuGet package to NuGet.org
       # Use --skip-duplicate to prevent errors if a package with the same version already exists.
       # If you retry a failed workflow, already published packages will be skipped without error.
       - name: Publish NuGet package
-        if: ${{ env.secret_nuget_apikey != '' && env.debug_skip != true }}
+        if: ${{ env.secret_nuget_apikey != '' && false }}
         shell: bash
         run: |
           nugetfile=$(ls ./NuGet/*.nupkg | head -n 1)
