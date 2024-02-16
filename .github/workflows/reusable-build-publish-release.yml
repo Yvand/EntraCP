@@ -75,9 +75,8 @@ jobs:
             cd NuGet
             zip -r ../NuGet.zip ./*
             cd ..
-            rm -rf NuGet
           fi
-          ls -al
+          #ls -al
 
       - name: Publish production release
         uses: softprops/action-gh-release@v1
@@ -85,7 +84,6 @@ jobs:
         with:
           name: '${{ env.project-name }} ${{ env.tag-name }}'
           prerelease: true
-          draft: true
           tag_name: ${{ env.tag-name }}
           body: |
             ${{ env.project-name }} ${{ env.tag-name }}
@@ -93,7 +91,7 @@ jobs:
             ./${{ env.project-name }}-Release-wsp/*.wsp
             ./${{ env.project-name }}-${{ env.assembly-version }}-symbols.zip
             ./${{ env.project-name }}-${{ env.assembly-version }}-dependencies.zip
-            ./assembly-bindings.config
+            ./assembly-bindings.config/assembly-bindings.config # It may or may not exist
             ./NuGet.zip
 
       - name: Publish nightly release
@@ -113,9 +111,9 @@ jobs:
             ./${{ env.project-name }}-${{ env.assembly-version }}-symbols.zip
             ./${{ env.project-name }}-${{ env.assembly-version }}-dependencies.zip
             ./${{ env.project-name }}-unit-tests.zip
-            ./assembly-bindings.config/assembly-bindings.config
+            ./assembly-bindings.config/assembly-bindings.config # It may or may not exist
             ./NuGet.zip
-            ./idonotexist.test
+            #./idonotexist.test
 
       # Install the latest .NET SDK to publish NuGet package, as nuget.exe is not available in Linux
       - name: Setup .NET Core
