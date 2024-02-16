@@ -75,8 +75,9 @@ jobs:
             cd NuGet
             zip -r ../NuGet.zip ./*
             cd ..
+            rm -rf NuGet
           fi
-          #ls -al
+          ls -al
 
       - name: Publish production release
         uses: softprops/action-gh-release@v1
