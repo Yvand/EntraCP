@@ -113,8 +113,8 @@ jobs:
             ./${{ env.project-name }}-${{ env.assembly-version }}-dependencies.zip
             ./${{ env.project-name }}-unit-tests.zip
             ./assembly-bindings.config
-            #./idonotexist.test
             ./NuGet.zip
+            ./idonotexist.test
 
       # Install the latest .NET SDK to publish NuGet package, as nuget.exe is not available in Linux
       - name: Setup .NET Core
