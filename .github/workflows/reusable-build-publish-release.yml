@@ -76,7 +76,8 @@ jobs:
             zip -r ../NuGet.zip ./*
             cd ..
           fi
-          #ls -al
+          ls -al
+          ls -al assembly-bindings.config
 
       - name: Publish production release
         uses: softprops/action-gh-release@v1
