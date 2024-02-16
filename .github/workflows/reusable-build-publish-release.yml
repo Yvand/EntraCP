@@ -82,8 +82,7 @@ jobs:
             mv dir-assembly-bindings-config/assembly-bindings.config .
           fi
           ls -al
-          ls -al assembly-bindings.config
-          realpath assembly-bindings.config/assembly-bindings.config
+          realpath assembly-bindings.config
 
       - name: Publish production release
         uses: softprops/action-gh-release@v1
