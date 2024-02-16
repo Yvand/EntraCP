@@ -113,7 +113,7 @@ jobs:
             ./${{ env.project-name }}-${{ env.assembly-version }}-symbols.zip
             ./${{ env.project-name }}-${{ env.assembly-version }}-dependencies.zip
             ./${{ env.project-name }}-unit-tests.zip
-            ./assembly-bindings.config
+            ./assembly-bindings.config/assembly-bindings.config
             ./NuGet.zip
             ./idonotexist.test
 
