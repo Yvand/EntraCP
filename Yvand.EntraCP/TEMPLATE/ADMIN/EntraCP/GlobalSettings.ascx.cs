@@ -1,6 +1,7 @@
 ﻿using Microsoft.Graph.Models;
 using Microsoft.Identity.Client;
 using Microsoft.SharePoint.Administration;
+using Microsoft.SharePoint.JSGrid;
 using Microsoft.SharePoint.Utilities;
 using Microsoft.SharePoint.WebControls;
 using System;
@@ -78,11 +79,12 @@ namespace Yvand.EntraClaimsProvider.Administration
             this.lblUserIdClaimType.Text = Settings.ClaimTypes.UserIdentifierConfig.ClaimType;
             if (IdentityCTConfig.EntityPropertyToUseAsDisplayText == DirectoryObjectProperty.NotSet)
             {
-                this.RbIdentityDefault.Checked = true;
+                //this.RbIdentityDefault.Checked = true;
+                this.DDLGraphPropertyToDisplay.Items.FindByValue("NotSet").Selected = true;
             }
             else
             {
-                this.RbIdentityCustomGraphProperty.Checked = true;
+                //this.RbIdentityCustomGraphProperty.Checked = true;
                 this.DDLGraphPropertyToDisplay.Items.FindByValue(((int)IdentityCTConfig.EntityPropertyToUseAsDisplayText).ToString()).Selected = true;
             }
             this.DDLDirectoryPropertyMemberUsers.Items.FindByValue(((int)IdentityCTConfig.EntityProperty).ToString()).Selected = true;
@@ -104,6 +106,7 @@ namespace Yvand.EntraClaimsProvider.Administration
 
         private void BuildGraphPropertyDDL()
         {
+            this.DDLGraphPropertyToDisplay.Items.Add(new System.Web.UI.WebControls.ListItem("(Same as the identifier property)", "NotSet"));
             DirectoryObjectProperty[] aadPropValues = (DirectoryObjectProperty[])Enum.GetValues(typeof(DirectoryObjectProperty));
             IEnumerable<DirectoryObjectProperty> aadPropValuesSorted = aadPropValues.OrderBy(v => v.ToString());
             foreach (DirectoryObjectProperty prop in aadPropValuesSorted)
@@ -144,7 +147,7 @@ namespace Yvand.EntraClaimsProvider.Administration
         {
             if (ValidatePrerequisite() != ConfigStatus.AllGood) { return false; }
 
-            if (this.RbIdentityCustomGraphProperty.Checked)
+            if (this.DDLGraphPropertyToDisplay.SelectedValue != "NotSet")
             {
                 Settings.ClaimTypes.UserIdentifierConfig.EntityPropertyToUseAsDisplayText = (DirectoryObjectProperty)Convert.ToInt32(this.DDLGraphPropertyToDisplay.SelectedValue);
             }
