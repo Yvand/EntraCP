@@ -48,7 +48,7 @@
     .divfieldset label {
         display: inline-block;
         line-height: 1.8;
-        width: 200px;
+        width: 210px;
     }
 
     .divfieldset em {
@@ -83,15 +83,22 @@
         Init: function () {
             // Add event handlers to preview the permission's value for both entity types, based on current settings
             // users
-            $('#<%= DDLDirectoryPropertyMemberUsers.ClientID %>').on('change', function () {
-                window.Entracp.EntracpSettingsPage.UpdatePermissionValuePreview("<%= DDLDirectoryPropertyMemberUsers.ClientID %>", "lblMemberPermissionValuePreview");
+            $('#<%= DdlUserIdDirectoryPropertyMembers.ClientID %>').on('change', function () {
+                window.Entracp.EntracpSettingsPage.UpdatePermissionValuePreview("<%= DdlUserIdDirectoryPropertyMembers.ClientID %>", "lblMemberPermissionValuePreview");
             });
-            $('#<%= DDLDirectoryPropertyGuestUsers.ClientID %>').on('change', function () {
-                window.Entracp.EntracpSettingsPage.UpdatePermissionValuePreview("<%= DDLDirectoryPropertyGuestUsers.ClientID %>", "lblGuestPermissionValuePreview");
+            $('#<%= DdlUserIdDirectoryPropertyGuests.ClientID %>').on('change', function () {
+                window.Entracp.EntracpSettingsPage.UpdatePermissionValuePreview("<%= DdlUserIdDirectoryPropertyGuests.ClientID %>", "lblGuestPermissionValuePreview");
             });
 
-            this.UpdatePermissionValuePreview("<%= DDLDirectoryPropertyMemberUsers.ClientID %>", "lblMemberPermissionValuePreview");
-            this.UpdatePermissionValuePreview("<%= DDLDirectoryPropertyGuestUsers.ClientID %>", "lblGuestPermissionValuePreview");
+            // Groups
+            $('#<%= DdlGroupDirectoryProperty.ClientID %>').on('change', function () {
+                window.Entracp.EntracpSettingsPage.UpdatePermissionValuePreview("<%= DdlGroupDirectoryProperty.ClientID %>", "lblGroupsPermissionValuePreview");
+            });
+
+            // Set the initial value
+            this.UpdatePermissionValuePreview("<%= DdlUserIdDirectoryPropertyMembers.ClientID %>", "lblMemberPermissionValuePreview");
+            this.UpdatePermissionValuePreview("<%= DdlUserIdDirectoryPropertyGuests.ClientID %>", "lblGuestPermissionValuePreview");
+            this.UpdatePermissionValuePreview("<%= DdlGroupDirectoryProperty.ClientID %>", "lblGroupsPermissionValuePreview");
         },
 
         UpdatePermissionValuePreview: function (inputIdentifierAttributeId, lblResultId) {
@@ -215,12 +222,12 @@
             </tr>
         </Template_InputFormControls>
     </wssuc:InputFormSection>
-    <wssuc:InputFormSection runat="server" Title="Configuration for the user identifier claim type">
+    <wssuc:InputFormSection runat="server" Title="Configuration for the user identifier">
         <Template_Description>
             <sharepoint:encodedliteral runat="server" text="Specify the settings to search, create and display the permissions for users." encodemethod='HtmlEncodeAllowSimpleTextFormatting' />
             <br />
             <br />
-            <sharepoint:encodedliteral runat="server" text="Preview of an encoded permission returned by EntraCP, based on current settings:" encodemethod='HtmlEncodeAllowSimpleTextFormatting' />
+            <sharepoint:encodedliteral runat="server" text="Preview of an encoded permission, based on current settings:" encodemethod='HtmlEncodeAllowSimpleTextFormatting' />
             <br />
             <sharepoint:encodedliteral runat="server" text="- For members:" encodemethod='HtmlEncodeAllowSimpleTextFormatting' />
             <br />
@@ -243,16 +250,16 @@
                                         <wssawc:EncodedLiteral runat="server" ID="lblUserIdClaimType" EncodeMethod='HtmlEncodeAllowSimpleTextFormatting' /></label>
                                 </li>
                                 <li>
-                                    <label for="<%= DDLDirectoryPropertyMemberUsers.ClientID %>">Identifier for members <em>*</em></label>
-                                    <asp:DropDownList runat="server" ID="DDLDirectoryPropertyMemberUsers" class="ms-input" />
+                                    <label for="<%= DdlUserIdDirectoryPropertyMembers.ClientID %>">Identifier for members <em>*</em></label>
+                                    <asp:DropDownList runat="server" ID="DdlUserIdDirectoryPropertyMembers" class="ms-input" />
                                 </li>
                                 <li>
-                                    <label for="<%= DDLDirectoryPropertyGuestUsers.ClientID %>">Identifier for guests <em>*</em></label>
-                                    <asp:DropDownList runat="server" ID="DDLDirectoryPropertyGuestUsers" class="ms-input" />
+                                    <label for="<%= DdlUserIdDirectoryPropertyGuests.ClientID %>">Identifier for guests <em>*</em></label>
+                                    <asp:DropDownList runat="server" ID="DdlUserIdDirectoryPropertyGuests" class="ms-input" />
                                 </li>
                                 <li>
-                                    <label for="<%= DDLDirectoryPropertyGuestUsers.ClientID %>" title="Property displayed in the results list in the people picker (leave blank to use the user identifier attribute)">Property as display text &#9432;</label>
-                                    <asp:DropDownList runat="server" ID="DDLGraphPropertyToDisplay" class="ms-input" />
+                                    <label for="<%= DdlUserGraphPropertyToDisplay.ClientID %>" title="Property displayed in the results list in the people picker (leave blank to use the user identifier attribute)">Property as display text &#9432;</label>
+                                    <asp:DropDownList runat="server" ID="DdlUserGraphPropertyToDisplay" class="ms-input" />
                                 </li>
                             </ol>
                         </fieldset>
@@ -261,9 +268,72 @@
             </tr>
         </Template_InputFormControls>
     </wssuc:InputFormSection>
-    <wssuc:InputFormSection runat="server" Title="Bypass Microsoft Entra ID lookup" Description="Skip Microsoft Entra ID lookup and consider any input as valid.<br/><br/>This can be useful to keep people picker working even if connectivity with the Azure tenant is lost.">
+
+    <wssuc:InputFormSection runat="server" Title="Configuration for the group identifier">
+        <Template_Description>
+            <sharepoint:encodedliteral runat="server" text="Specify the settings to search, create and display the permissions for groups." encodemethod='HtmlEncodeAllowSimpleTextFormatting' />
+            <br />
+            <br />
+            <sharepoint:encodedliteral runat="server" text="Preview of an encoded permission, based on current settings:" encodemethod='HtmlEncodeAllowSimpleTextFormatting' />
+            <br />
+            <b><span><%= GroupIdentifierEncodedValuePrefix %><span id="lblGroupsPermissionValuePreview"></span></span></b>
+            <br />
+            <br />
+            <sharepoint:encodedliteral runat="server" text="- Augmentation: If enabled, EntraCP gets the group membership of the users when they sign-in, or whenever SharePoint asks for it. If not enabled, permissions granted to Microsoft Entra ID groups may not work." encodemethod='HtmlEncodeAllowSimpleTextFormatting' />
+        </Template_Description>
         <Template_InputFormControls>
-            <asp:CheckBox runat="server" Name="ChkAlwaysResolveUserInput" ID="ChkAlwaysResolveUserInput" Text="Bypass Microsoft Entra ID lookup" />
+            <tr>
+                <td colspan="2">
+                    <div class="divfieldset">
+                        <fieldset>
+                            <legend>Group identifier settings</legend>
+                            <ol>
+                                <li>
+                                    <label title="This liste is based on the claim types registered in your SharePoint trust">
+                                        <wssawc:EncodedLiteral runat="server" Text="Claim type &#9432;" EncodeMethod='HtmlEncodeAllowSimpleTextFormatting' /><em>*</em></label>
+                                    <asp:DropDownList ID="DdlGroupClaimType" runat="server" class="ms-input">
+                                        <asp:ListItem Selected="True" Value="None"></asp:ListItem>
+                                    </asp:DropDownList>
+                                </li>
+                                <li>
+                                    <label for="<%= DdlGroupDirectoryProperty.ClientID %>">Identifier property <em>*</em></label>
+                                    <asp:DropDownList runat="server" ID="DdlGroupDirectoryProperty" class="ms-input" />
+                                </li>
+                                <li>
+                                    <label for="<%= DdlGroupGraphPropertyToDisplay.ClientID %>" title="Property displayed in the results list in the people picker (leave blank to use the group identifier attribute)">Property as display text &#9432;</label>
+                                    <asp:DropDownList runat="server" ID="DdlGroupGraphPropertyToDisplay" class="ms-input" />
+                                </li>
+                                <li>
+                                    <label for="<%= ChkFilterSecurityEnabledGroupsOnly.ClientID %>">Enable augmentation</label>
+                                    <asp:CheckBox runat="server" Name="ChkAugmentAADRoles" ID="ChkAugmentAADRoles" />
+                                </li>
+                                <li>
+                                    <label for="<%= ChkFilterSecurityEnabledGroupsOnly.ClientID %>">Return only <a href='https://learn.microsoft.com/en-us/graph/api/resources/groups-overview' target='_blank'>security-enabled groups</a></label>
+                                    <asp:CheckBox runat="server" Name="ChkFilterSecurityEnabledGroupsOnly" ID="ChkFilterSecurityEnabledGroupsOnly" />
+                                </li>
+                            </ol>
+                        </fieldset>
+                    </div>
+                </td>
+            </tr>
+        </Template_InputFormControls>
+    </wssuc:InputFormSection>
+
+    <wssuc:InputFormSection runat="server" Title="Bypass requests to Entra ID">
+        <Template_Description>
+            <sharepoint:encodedliteral runat="server" text="Bypass the Entra ID tenant(s) registered and, depending on the context:" encodemethod='HtmlEncodeAllowSimpleTextFormatting' />
+            <br />
+            <sharepoint:encodedliteral runat="server" text="- Search: Uses the input as the claim's value, and return 1 entity per claim type." encodemethod='HtmlEncodeAllowSimpleTextFormatting' />
+            <br />
+            <sharepoint:encodedliteral runat="server" text="- Validation: Validates the incoming entity as-is." encodemethod='HtmlEncodeAllowSimpleTextFormatting' />
+            <br />
+            <sharepoint:encodedliteral runat="server" text="This setting does not affect the augmentation." encodemethod='HtmlEncodeAllowSimpleTextFormatting' />
+            <br />
+            <br />
+            <sharepoint:encodedliteral runat="server" text="You may enable this setting if one or more SharePoint server(s) can no longer connect to your Entra ID tenant, as a mitigation until connectivity is restored." encodemethod='HtmlEncodeAllowSimpleTextFormatting' />
+        </Template_Description>
+        <Template_InputFormControls>
+            <asp:CheckBox runat="server" Name="ChkAlwaysResolveUserInput" ID="ChkAlwaysResolveUserInput" Text="Bypass requests to Entra ID" />
         </Template_InputFormControls>
     </wssuc:InputFormSection>
     <wssuc:InputFormSection runat="server" Title="Require exact match" Description="Enable this to return only results that match exactly the user input (case-insensitive).">
@@ -271,17 +341,7 @@
             <asp:CheckBox runat="server" Name="ChkFilterExactMatchOnly" ID="ChkFilterExactMatchOnly" Text="Require exact match" />
         </Template_InputFormControls>
     </wssuc:InputFormSection>
-    <wssuc:InputFormSection runat="server" Title="Augmentation">
-        <Template_Description>
-            <wssawc:EncodedLiteral runat="server" Text="Enable augmentation to let EntraCP get " EncodeMethod='HtmlEncodeAllowSimpleTextFormatting' />
-            <a href="https://docs.microsoft.com/en-us/graph/api/user-getmembergroups" target="_blank">
-                <wssawc:EncodedLiteral runat="server" Text="all the Microsoft Entra ID groups" EncodeMethod='HtmlEncodeAllowSimpleTextFormatting' /></a>
-            <wssawc:EncodedLiteral runat="server" Text="that the user is a member of.<br/><br/>If not enabled, permissions granted to Microsoft Entra ID groups may not work correctly." EncodeMethod='HtmlEncodeAllowSimpleTextFormatting' />
-        </Template_Description>
-        <Template_InputFormControls>
-            <asp:CheckBox runat="server" Name="ChkAugmentAADRoles" ID="ChkAugmentAADRoles" Text="Retrieve Microsoft Entra ID groups" />
-        </Template_InputFormControls>
-    </wssuc:InputFormSection>
+
     <wssuc:InputFormSection runat="server" Title="Proxy">
         <Template_Description>
             <wssawc:EncodedLiteral runat="server" Text="Configure the proxy if it is needed for EntraCP to connect to Microsoft Graph." EncodeMethod='HtmlEncodeAllowSimpleTextFormatting' />
@@ -289,17 +349,6 @@
         <Template_InputFormControls>
             <label for="<%= InputProxyAddress.ClientID %>">Proxy address:</label><br />
             <wssawc:InputFormTextBox title="Proxy address" class="ms-input" ID="InputProxyAddress" Columns="50" runat="server" />
-        </Template_InputFormControls>
-    </wssuc:InputFormSection>
-    <wssuc:InputFormSection runat="server" Title="Type of groups">
-        <Template_Description>
-            <wssawc:EncodedLiteral runat="server" Text="Set if all " EncodeMethod='HtmlEncodeAllowSimpleTextFormatting' />
-            <a href="https://docs.microsoft.com/en-us/graph/api/resources/groups-overview?view=graph-rest-1.0" target="_blank">
-                <wssawc:EncodedLiteral runat="server" Text="type of groups" EncodeMethod='HtmlEncodeAllowSimpleTextFormatting' /></a>
-            <wssawc:EncodedLiteral runat="server" Text="should be returned, including Office 365 unified groups, or only those that are security-enabled." EncodeMethod='HtmlEncodeAllowSimpleTextFormatting' />
-        </Template_Description>
-        <Template_InputFormControls>
-            <asp:CheckBox runat="server" Name="ChkFilterSecurityEnabledGroupsOnly" ID="ChkFilterSecurityEnabledGroupsOnly" Text="Return <a href='https://docs.microsoft.com/en-us/graph/api/resources/groups-overview?view=graph-rest-1.0' target='_blank'>security-enabled</a> groups only" />
         </Template_InputFormControls>
     </wssuc:InputFormSection>
     <wssuc:InputFormSection runat="server" Title="Reset EntraCP configuration" Description="Restore configuration to its default values. All changes, including in claim types mappings, will be lost.">

@@ -525,6 +525,39 @@ namespace Yvand.EntraClaimsProvider.Configuration
             return identifierUpdated;
         }
 
+        public bool UpdateGroupIdentifier(DirectoryObjectProperty newIdentifier)
+        {
+            if (newIdentifier == DirectoryObjectProperty.NotSet) { throw new ArgumentNullException(nameof(newIdentifier)); }
+
+            bool identifierUpdated = false;
+            ClaimTypeConfig identityClaimType = GroupIdentifierConfig;
+            if (identityClaimType == null)
+            {
+                return identifierUpdated;
+            }
+
+            if (identityClaimType.EntityProperty == newIdentifier)
+            {
+                return identifierUpdated;
+            }
+
+            // Check if the new DirectoryObjectProperty duplicates an existing item, and delete it if so
+            for (int i = 0; i < innerCol.Count; i++)
+            {
+                ClaimTypeConfig curCT = (ClaimTypeConfig)innerCol[i];
+                if (curCT.EntityType == DirectoryObjectType.Group &&
+                    curCT.EntityProperty == newIdentifier)
+                {
+                    innerCol.RemoveAt(i);
+                    break;  // There can be only 1 potential duplicate
+                }
+            }
+
+            identityClaimType.EntityProperty = newIdentifier;
+            identifierUpdated = true;
+            return identifierUpdated;
+        }
+
         /// <summary>
         /// Update the DirectoryObjectPropertyForGuestUsers of the identity ClaimTypeConfig.
         /// </summary>
