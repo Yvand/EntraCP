@@ -195,24 +195,6 @@ namespace Yvand.EntraClaimsProvider.Administration
         protected global::System.Web.UI.WebControls.DropDownList DDLDirectoryPropertyGuestUsers;
 
         /// <summary>
-        /// RbIdentityDefault control.
-        /// </summary>
-        /// <remarks>
-        /// Auto-generated field.
-        /// To modify move field declaration from designer file to code-behind file.
-        /// </remarks>
-        protected global::Microsoft.SharePoint.WebControls.InputFormRadioButton RbIdentityDefault;
-
-        /// <summary>
-        /// RbIdentityCustomGraphProperty control.
-        /// </summary>
-        /// <remarks>
-        /// Auto-generated field.
-        /// To modify move field declaration from designer file to code-behind file.
-        /// </remarks>
-        protected global::Microsoft.SharePoint.WebControls.InputFormRadioButton RbIdentityCustomGraphProperty;
-
-        /// <summary>
         /// DDLGraphPropertyToDisplay control.
         /// </summary>
         /// <remarks>

@@ -45,12 +45,6 @@
         display: none;
     }
 
-    #divNewLdapConnection label {
-        display: inline-block;
-        line-height: 1.8;
-        width: 250px;
-    }
-
     .divfieldset label {
         display: inline-block;
         line-height: 1.8;
@@ -79,13 +73,8 @@
             padding: 5px;
             margin: 0;
         }
-
-    #divNewLdapConnection em {
-        font-weight: bold;
-        font-style: normal;
-        color: #f00;
-    }
 </style>
+
 <script type="text/javascript">
     // Builds unique namespace
     window.Entracp = window.Entracp || {};
@@ -105,14 +94,6 @@
             this.UpdatePermissionValuePreview("<%= DDLDirectoryPropertyGuestUsers.ClientID %>", "lblGuestPermissionValuePreview");
         },
 
-        // Identity permission section
-        CheckRbIdentityCustomGraphProperty: function () {
-            var control = (document.getElementById("<%= RbIdentityCustomGraphProperty.ClientID %>"));
-            if (control != null) {
-                control.checked = true;
-            }
-        },
-
         UpdatePermissionValuePreview: function (inputIdentifierAttributeId, lblResultId) {
             // Get the TxtGroupLdapAttribute value
             var entityPermissionValue = $("#" + inputIdentifierAttributeId + " :selected").text();
@@ -125,6 +106,7 @@
     // Register initialization method to run when DOM is ready and most SP JS functions loaded
     _spBodyOnLoadFunctionNames.push("window.Entracp.EntracpSettingsPage.Init");
 </script>
+
 <table width="100%" class="propertysheet" cellspacing="0" cellpadding="0" border="0">
     <tr>
         <td class="ms-descriptionText">
@@ -177,7 +159,7 @@
         <Template_InputFormControls>
             <tr>
                 <td>
-                    <div id="divNewLdapConnection">
+                    <div class="divfieldset">
                         <fieldset>
                             <legend>Information on the Microsoft Entra ID tenant to register</legend>
                             <ul>
@@ -211,11 +193,11 @@
                                     <wssawc:InputFormTextBox title="Certificate password" class="ms-input" ID="InputClientCertPassword" Columns="50" runat="server" MaxLength="255" TextMode="Password" />
                                 </li>
                                 <li>
-                                    <label for="<%= ChkMemberUserTypeOnly.ClientID %>">Exclude <a href="https://docs.microsoft.com/en-us/azure/active-directory/active-directory-b2b-user-properties" target="_blank">Guest users</a> on this tenant:</label>
+                                    <label for="<%= ChkMemberUserTypeOnly.ClientID %>">Exclude <a href="https://learn.microsoft.com/en-us/entra/external-id/user-properties" target="_blank">guest users</a></label>
                                     <asp:CheckBox class="ms-input" ID="ChkMemberUserTypeOnly" runat="server" />
                                 </li>
                                 <li>
-                                    <label for="<%= TxtExtensionAttributesApplicationId.ClientID %>">Application ID for extension attributes</label>
+                                    <label for="<%= TxtExtensionAttributesApplicationId.ClientID %>">App ID for extension attributes</label>
                                     <wssawc:InputFormTextBox title="Application ID" class="ms-input" ID="TxtExtensionAttributesApplicationId" Columns="50" runat="server" MaxLength="36" />
                                 </li>
                             </ul>
@@ -240,11 +222,11 @@
             <br />
             <sharepoint:encodedliteral runat="server" text="Preview of an encoded permission returned by EntraCP, based on current settings:" encodemethod='HtmlEncodeAllowSimpleTextFormatting' />
             <br />
-            <sharepoint:encodedliteral runat="server" text="- For a member user:" encodemethod='HtmlEncodeAllowSimpleTextFormatting' />
+            <sharepoint:encodedliteral runat="server" text="- For members:" encodemethod='HtmlEncodeAllowSimpleTextFormatting' />
             <br />
             <b><span><%= UserIdentifierEncodedValuePrefix %><span id="lblMemberPermissionValuePreview"></span></span></b>
             <br />
-            <sharepoint:encodedliteral runat="server" text="- For a guest user:" encodemethod='HtmlEncodeAllowSimpleTextFormatting' />
+            <sharepoint:encodedliteral runat="server" text="- For guests:" encodemethod='HtmlEncodeAllowSimpleTextFormatting' />
             <br />
             <b><span><%= UserIdentifierEncodedValuePrefix %><span id="lblGuestPermissionValuePreview"></span></span></b>
         </Template_Description>
@@ -253,7 +235,7 @@
                 <td colspan="2">
                     <div class="divfieldset">
                         <fieldset>
-                            <legend>Settings that uniquely identify a user</legend>
+                            <legend>User identifier settings</legend>
                             <ol>
                                 <li>
                                     <label>Claim type</label>
@@ -268,36 +250,15 @@
                                     <label for="<%= DDLDirectoryPropertyGuestUsers.ClientID %>">Identifier for guests <em>*</em></label>
                                     <asp:DropDownList runat="server" ID="DDLDirectoryPropertyGuestUsers" class="ms-input" />
                                 </li>
+                                <li>
+                                    <label for="<%= DDLDirectoryPropertyGuestUsers.ClientID %>" title="Property displayed in the results list in the people picker (leave blank to use the user identifier attribute)">Property as display text &#9432;</label>
+                                    <asp:DropDownList runat="server" ID="DDLGraphPropertyToDisplay" class="ms-input" />
+                                </li>
                             </ol>
-                        </fieldset>
-                        <fieldset>
-                            <legend>Additional settings</legend>
                         </fieldset>
                     </div>
                 </td>
             </tr>
-        </Template_InputFormControls>
-    </wssuc:InputFormSection>
-    <wssuc:InputFormSection runat="server" Title="Display of user identifier results" Description="Configure how entities created with the identity claim type appear in the people picker.<br/>It does not affect the actual value of the entity, which is always set with the user identifier property.">
-        <Template_InputFormControls>
-            <wssawc:InputFormRadioButton ID="RbIdentityDefault"
-                LabelText="Show the user identifier value"
-                Checked="true"
-                GroupName="RbIdentityDisplay"
-                CausesValidation="false"
-                runat="server">
-            </wssawc:InputFormRadioButton>
-            <wssawc:InputFormRadioButton ID="RbIdentityCustomGraphProperty"
-                LabelText="Show the value of another property, e.g the display name:"
-                GroupName="RbIdentityDisplay"
-                CausesValidation="false"
-                runat="server">
-                <wssuc:InputFormControl LabelText="InputFormControlLabelText">
-                    <Template_Control>
-                        <asp:DropDownList runat="server" ID="DDLGraphPropertyToDisplay" onclick="window.Entracp.EntracpSettingsPage.CheckRbIdentityCustomGraphProperty()" class="ms-input" />
-                    </Template_Control>
-                </wssuc:InputFormControl>
-            </wssawc:InputFormRadioButton>
         </Template_InputFormControls>
     </wssuc:InputFormSection>
     <wssuc:InputFormSection runat="server" Title="Bypass Microsoft Entra ID lookup" Description="Skip Microsoft Entra ID lookup and consider any input as valid.<br/><br/>This can be useful to keep people picker working even if connectivity with the Azure tenant is lost.">
