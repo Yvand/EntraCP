@@ -75,6 +75,7 @@ namespace Yvand.EntraClaimsProvider.Administration
 
         private void PopulateFields()
         {
+            this.lblUserIdClaimType.Text = Settings.ClaimTypes.UserIdentifierConfig.ClaimType;
             if (IdentityCTConfig.EntityPropertyToUseAsDisplayText == DirectoryObjectProperty.NotSet)
             {
                 this.RbIdentityDefault.Checked = true;

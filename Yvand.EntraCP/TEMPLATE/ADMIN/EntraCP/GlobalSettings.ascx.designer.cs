@@ -120,7 +120,7 @@ namespace Yvand.EntraClaimsProvider.Administration
         /// Auto-generated field.
         /// To modify move field declaration from designer file to code-behind file.
         /// </remarks>
-        protected global::Microsoft.SharePoint.WebControls.InputFormCheckBox ChkMemberUserTypeOnly;
+        protected global::System.Web.UI.WebControls.CheckBox ChkMemberUserTypeOnly;
 
         /// <summary>
         /// TxtExtensionAttributesApplicationId control.
@@ -166,6 +166,15 @@ namespace Yvand.EntraClaimsProvider.Administration
         /// To modify move field declaration from designer file to code-behind file.
         /// </remarks>
         protected global::System.Web.UI.WebControls.Label LabelTestTenantConnectionOK;
+
+        /// <summary>
+        /// lblUserIdClaimType control.
+        /// </summary>
+        /// <remarks>
+        /// Auto-generated field.
+        /// To modify move field declaration from designer file to code-behind file.
+        /// </remarks>
+        protected global::Microsoft.SharePoint.WebControls.EncodedLiteral lblUserIdClaimType;
 
         /// <summary>
         /// DDLDirectoryPropertyMemberUsers control.
