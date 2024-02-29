@@ -7,6 +7,7 @@ using Microsoft.SharePoint.WebControls;
 using System;
 using System.Collections.Generic;
 using System.Data;
+using System.Drawing;
 using System.IO;
 using System.Linq;
 using System.Reflection;
@@ -17,6 +18,7 @@ using System.Web.UI.HtmlControls;
 using System.Web.UI.WebControls;
 using Yvand.EntraClaimsProvider.Configuration;
 using Yvand.EntraClaimsProvider.Logging;
+using ListItem = System.Web.UI.WebControls.ListItem;
 using Logger = Yvand.EntraClaimsProvider.Logging.Logger;
 
 namespace Yvand.EntraClaimsProvider.Administration
@@ -52,7 +54,7 @@ namespace Yvand.EntraClaimsProvider.Administration
             PopulateConnectionsGrid();
             if (!this.IsPostBack)
             {
-                BuildGraphPropertyDDL();
+                PopulateGraphPropertiesLists();
                 PopulateFields();
             }
         }
@@ -76,23 +78,49 @@ namespace Yvand.EntraClaimsProvider.Administration
 
         private void PopulateFields()
         {
+            // User identifier settings
             this.lblUserIdClaimType.Text = Settings.ClaimTypes.UserIdentifierConfig.ClaimType;
             if (IdentityCTConfig.EntityPropertyToUseAsDisplayText == DirectoryObjectProperty.NotSet)
             {
-                //this.RbIdentityDefault.Checked = true;
-                this.DDLGraphPropertyToDisplay.Items.FindByValue("NotSet").Selected = true;
+                this.DdlUserGraphPropertyToDisplay.Items.FindByValue("NotSet").Selected = true;
             }
             else
             {
-                //this.RbIdentityCustomGraphProperty.Checked = true;
-                this.DDLGraphPropertyToDisplay.Items.FindByValue(((int)IdentityCTConfig.EntityPropertyToUseAsDisplayText).ToString()).Selected = true;
+                this.DdlUserGraphPropertyToDisplay.Items.FindByValue(((int)IdentityCTConfig.EntityPropertyToUseAsDisplayText).ToString()).Selected = true;
             }
-            this.DDLDirectoryPropertyMemberUsers.Items.FindByValue(((int)IdentityCTConfig.EntityProperty).ToString()).Selected = true;
-            this.DDLDirectoryPropertyGuestUsers.Items.FindByValue(((int)IdentityCTConfig.DirectoryObjectPropertyForGuestUsers).ToString()).Selected = true;
-            this.ChkAlwaysResolveUserInput.Checked = Settings.AlwaysResolveUserInput;
-            this.ChkFilterExactMatchOnly.Checked = Settings.FilterExactMatchOnly;
+            this.DdlUserIdDirectoryPropertyMembers.Items.FindByValue(((int)IdentityCTConfig.EntityProperty).ToString()).Selected = true;
+            this.DdlUserIdDirectoryPropertyGuests.Items.FindByValue(((int)IdentityCTConfig.DirectoryObjectPropertyForGuestUsers).ToString()).Selected = true;
+
+            // Group identifier settings
+            var possibleGroupClaimTypes = SPTrust.ClaimTypeInformation
+                .Where(x => !String.Equals(x.MappedClaimType, Settings.ClaimTypes.UserIdentifierConfig.ClaimType, StringComparison.InvariantCultureIgnoreCase))
+                .Select(x => x.MappedClaimType);
+            foreach (string possibleGroupClaimType in possibleGroupClaimTypes)
+            {
+                ListItem possibleGroupClaimTypeItem = new ListItem(possibleGroupClaimType);
+                this.DdlGroupClaimType.Items.Add(possibleGroupClaimTypeItem);
+            }
+
+            ClaimTypeConfig groupCtc = Settings.ClaimTypes.GroupIdentifierConfig;
+            if (groupCtc != null)
+            {
+                this.DdlGroupClaimType.SelectedValue = groupCtc.ClaimType;
+                this.DdlGroupDirectoryProperty.Items.FindByValue(((int)groupCtc.EntityProperty).ToString()).Selected = true;
+                if (groupCtc.EntityPropertyToUseAsDisplayText == DirectoryObjectProperty.NotSet)
+                {
+                    this.DdlGroupGraphPropertyToDisplay.Items.FindByValue("NotSet").Selected = true;
+                }
+                else
+                {
+                    this.DdlGroupGraphPropertyToDisplay.Items.FindByValue(((int)groupCtc.EntityPropertyToUseAsDisplayText).ToString()).Selected = true;
+                }
+            }
             this.ChkAugmentAADRoles.Checked = Settings.EnableAugmentation;
             this.ChkFilterSecurityEnabledGroupsOnly.Checked = Settings.FilterSecurityEnabledGroupsOnly;
+
+            // Other settings
+            this.ChkAlwaysResolveUserInput.Checked = Settings.AlwaysResolveUserInput;
+            this.ChkFilterExactMatchOnly.Checked = Settings.FilterExactMatchOnly;
             this.InputProxyAddress.Text = Settings.ProxyAddress;
 
             AzureCloudInstance[] azureCloudInstanceValues = (AzureCloudInstance[])Enum.GetValues(typeof(AzureCloudInstance));
@@ -104,9 +132,10 @@ namespace Yvand.EntraClaimsProvider.Administration
             this.DDLAzureCloudInstance.SelectedValue = AzureCloudInstance.AzurePublic.ToString();
         }
 
-        private void BuildGraphPropertyDDL()
+        private void PopulateGraphPropertiesLists()
         {
-            this.DDLGraphPropertyToDisplay.Items.Add(new System.Web.UI.WebControls.ListItem("(Same as the identifier property)", "NotSet"));
+            this.DdlUserGraphPropertyToDisplay.Items.Add(new ListItem("(Same as the identifier property)", "NotSet"));
+
             DirectoryObjectProperty[] aadPropValues = (DirectoryObjectProperty[])Enum.GetValues(typeof(DirectoryObjectProperty));
             IEnumerable<DirectoryObjectProperty> aadPropValuesSorted = aadPropValues.OrderBy(v => v.ToString());
             foreach (DirectoryObjectProperty prop in aadPropValuesSorted)
@@ -117,11 +146,13 @@ namespace Yvand.EntraClaimsProvider.Administration
                 // Ensure property is of type System.String
                 PropertyInfo pi = typeof(User).GetProperty(prop.ToString());
                 if (pi == null) { continue; }
-                if (pi.PropertyType != typeof(System.String)) { continue; }
+                if (pi.PropertyType != typeof(String)) { continue; }
 
-                this.DDLGraphPropertyToDisplay.Items.Add(new System.Web.UI.WebControls.ListItem(prop.ToString(), ((int)prop).ToString()));
-                this.DDLDirectoryPropertyMemberUsers.Items.Add(new System.Web.UI.WebControls.ListItem(prop.ToString(), ((int)prop).ToString()));
-                this.DDLDirectoryPropertyGuestUsers.Items.Add(new System.Web.UI.WebControls.ListItem(prop.ToString(), ((int)prop).ToString()));
+                this.DdlUserIdDirectoryPropertyMembers.Items.Add(new ListItem(prop.ToString(), ((int)prop).ToString()));
+                this.DdlUserIdDirectoryPropertyGuests.Items.Add(new ListItem(prop.ToString(), ((int)prop).ToString()));
+                this.DdlUserGraphPropertyToDisplay.Items.Add(new ListItem(prop.ToString(), ((int)prop).ToString()));
+                this.DdlGroupDirectoryProperty.Items.Add(new ListItem(prop.ToString(), ((int)prop).ToString()));
+                this.DdlGroupGraphPropertyToDisplay.Items.Add(new ListItem(prop.ToString(), ((int)prop).ToString()));
             }
         }
 
@@ -147,31 +178,34 @@ namespace Yvand.EntraClaimsProvider.Administration
         {
             if (ValidatePrerequisite() != ConfigStatus.AllGood) { return false; }
 
-            if (this.DDLGraphPropertyToDisplay.SelectedValue != "NotSet")
+            // User identifier settings
+            Settings.ClaimTypes.UpdateUserIdentifier((DirectoryObjectProperty)Convert.ToInt32(this.DdlUserIdDirectoryPropertyMembers.SelectedValue));
+            Settings.ClaimTypes.UpdateIdentifierForGuestUsers((DirectoryObjectProperty)Convert.ToInt32(this.DdlUserIdDirectoryPropertyGuests.SelectedValue));
+            if (this.DdlUserGraphPropertyToDisplay.SelectedValue != "NotSet")
             {
-                Settings.ClaimTypes.UserIdentifierConfig.EntityPropertyToUseAsDisplayText = (DirectoryObjectProperty)Convert.ToInt32(this.DDLGraphPropertyToDisplay.SelectedValue);
+                Settings.ClaimTypes.UserIdentifierConfig.EntityPropertyToUseAsDisplayText = (DirectoryObjectProperty)Convert.ToInt32(this.DdlUserGraphPropertyToDisplay.SelectedValue);
             }
             else
             {
                 Settings.ClaimTypes.UserIdentifierConfig.EntityPropertyToUseAsDisplayText = DirectoryObjectProperty.NotSet;
             }
 
-            DirectoryObjectProperty newUserIdentifier = (DirectoryObjectProperty)Convert.ToInt32(this.DDLDirectoryPropertyMemberUsers.SelectedValue);
-            if (newUserIdentifier != DirectoryObjectProperty.NotSet)
+            // Group identifier settings
+            Settings.ClaimTypes.UpdateGroupIdentifier((DirectoryObjectProperty)Convert.ToInt32(this.DdlGroupDirectoryProperty.SelectedValue));
+            if (this.DdlGroupGraphPropertyToDisplay.SelectedValue != "NotSet")
             {
-                Settings.ClaimTypes.UpdateUserIdentifier(newUserIdentifier);
+                Settings.ClaimTypes.GroupIdentifierConfig.EntityPropertyToUseAsDisplayText = (DirectoryObjectProperty)Convert.ToInt32(this.DdlGroupGraphPropertyToDisplay.SelectedValue);
             }
-
-            DirectoryObjectProperty newIdentifierForGuestUsers = (DirectoryObjectProperty)Convert.ToInt32(this.DDLDirectoryPropertyGuestUsers.SelectedValue);
-            if (newIdentifierForGuestUsers != DirectoryObjectProperty.NotSet)
+            else
             {
-                Settings.ClaimTypes.UpdateIdentifierForGuestUsers(newIdentifierForGuestUsers);
+                Settings.ClaimTypes.GroupIdentifierConfig.EntityPropertyToUseAsDisplayText = DirectoryObjectProperty.NotSet;
             }
-
-            Settings.AlwaysResolveUserInput = this.ChkAlwaysResolveUserInput.Checked;
-            Settings.FilterExactMatchOnly = this.ChkFilterExactMatchOnly.Checked;
             Settings.EnableAugmentation = this.ChkAugmentAADRoles.Checked;
             Settings.FilterSecurityEnabledGroupsOnly = this.ChkFilterSecurityEnabledGroupsOnly.Checked;
+
+            // Other settings
+            Settings.AlwaysResolveUserInput = this.ChkAlwaysResolveUserInput.Checked;
+            Settings.FilterExactMatchOnly = this.ChkFilterExactMatchOnly.Checked;
             Settings.ProxyAddress = this.InputProxyAddress.Text;
 
             if (commitChanges) { CommitChanges(); }
