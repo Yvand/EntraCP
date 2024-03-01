@@ -14,7 +14,7 @@ namespace Yvand.EntraClaimsProvider.Tests
             base.InitializeSettings();
             Settings.EnableAugmentation = true;
             Settings.FilterSecurityEnabledGroupsOnly = true;
-            Settings.ClaimTypes.UpdateGroupIdentifier(DirectoryObjectProperty.DisplayName);
+            Settings.ClaimTypes.UpdateGroupIdentifier(DirectoryObjectProperty.Id);
             base.ApplySettings();
         }
 
@@ -25,8 +25,8 @@ namespace Yvand.EntraClaimsProvider.Tests
         }
 
 #if DEBUG
-        [TestCase("all company", 0, "All Company")]
-        [TestCase("aadgroup1", 1, "AADGroup1")]
+        [TestCase("EntracpTestM365Group2", 0, "6d1efd6c-bf07-4a09-9cb0-9b3d367af415")]
+        [TestCase("EntracpTestM365Group1", 1, "1c4a3a59-2c52-44e8-b210-f020fa4526a8")]
         public void TestSearchAndValidation(string inputValue, int expectedCount, string expectedClaimValue)
         {
             TestSearchOperation(inputValue, expectedCount, expectedClaimValue);
@@ -49,7 +49,7 @@ namespace Yvand.EntraClaimsProvider.Tests
             base.InitializeSettings();
             Settings.EnableAugmentation = true;
             Settings.FilterSecurityEnabledGroupsOnly = false;
-            Settings.ClaimTypes.UpdateGroupIdentifier(DirectoryObjectProperty.DisplayName);
+            Settings.ClaimTypes.UpdateGroupIdentifier(DirectoryObjectProperty.Id);
             base.ApplySettings();
         }
 
@@ -60,8 +60,8 @@ namespace Yvand.EntraClaimsProvider.Tests
         }
 
 #if DEBUG
-        [TestCase("all company", 1, "All Company")]
-        [TestCase("aadgroup1", 1, "AADGroup1")]
+        [TestCase("EntracpTestM365Group2", 1, "6d1efd6c-bf07-4a09-9cb0-9b3d367af415")]
+        [TestCase("EntracpTestM365Group1", 1, "1c4a3a59-2c52-44e8-b210-f020fa4526a8")]
         public void TestSearchAndValidation(string inputValue, int expectedCount, string expectedClaimValue)
         {
             TestSearchOperation(inputValue, expectedCount, expectedClaimValue);
