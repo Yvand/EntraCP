@@ -1,4 +1,6 @@
-﻿using NUnit.Framework;
+﻿using Microsoft.SharePoint.Administration.Claims;
+using NUnit.Framework;
+using System.Security.Claims;
 
 namespace Yvand.EntraClaimsProvider.Tests
 {
@@ -71,6 +73,19 @@ namespace Yvand.EntraClaimsProvider.Tests
         {
             base.TestValidationOperation(claimType, claimValue, shouldValidate);
         }
+
+        //[TestCase("AdeleV@XXXX.OnMicrosoft.com", 1, "AdeleV@XXXX.OnMicrosoft.com")]
+        //[TestCase("Adele", 1, "AdeleV@XXXX.OnMicrosoft.com")]
+        //public void TestSearchAndValidation(string inputValue, int expectedCount, string expectedClaimValue)
+        //{
+        //    TestSearchOperation(inputValue, expectedCount, expectedClaimValue);
+
+        //    if (expectedCount > 0)
+        //    {
+        //        SPClaim inputClaim = new SPClaim(base.UserIdentifierClaimType, expectedClaimValue, ClaimValueTypes.String, SPOriginalIssuers.Format(SPOriginalIssuerType.TrustedProvider, UnitTestsHelper.SPTrust.Name));
+        //        TestValidationOperation(inputClaim, true, expectedClaimValue);
+        //    }
+        //}
 
         //[TestCase("xydGUEST@FAKE.onmicrosoft.com", false)]
         //public override void AugmentEntity(string claimValue, bool shouldHavePermissions)

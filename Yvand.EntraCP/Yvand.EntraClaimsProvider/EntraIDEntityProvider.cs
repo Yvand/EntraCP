@@ -175,26 +175,17 @@ namespace Yvand.EntraClaimsProvider
             string searchPatternStartsWith = "startswith({0}, '{1}')";
             string identityConfigSearchPatternEquals = "({0} eq '{1}' and UserType eq '{2}')";
             string identityConfigSearchPatternStartsWith = "(startswith({0}, '{1}') and UserType eq '{2}')";
+            string groupSearchPatternSGOnlyEquals = "({0} eq '{1}' and securityEnabled eq true)";
+            string groupSearchPatternSGOnlyStartsWith = "(startswith({0}, '{1}') and securityEnabled eq true)";
 
             List<string> userFilterBuilder = new List<string>();
             List<string> groupFilterBuilder = new List<string>();
             List<string> userSelectBuilder = new List<string> { "UserType", "Mail" };    // UserType and Mail are always needed to deal with Guest users
             List<string> groupSelectBuilder = new List<string> { "Id", "securityEnabled" };               // Id is always required for groups
 
-            string filterPattern;
-            string input = currentContext.Input;
 
             // https://github.com/Yvand/AzureCP/issues/88: Escape single quotes as documented in https://docs.microsoft.com/en-us/graph/query-parameters#escaping-single-quotes
-            input = input.Replace("'", "''");
-
-            if (currentContext.ExactSearch)
-            {
-                filterPattern = String.Format(searchPatternEquals, "{0}", input);
-            }
-            else
-            {
-                filterPattern = String.Format(searchPatternStartsWith, "{0}", input);
-            }
+            string input = currentContext.Input.Replace("'", "''");
 
             foreach (ClaimTypeConfig ctConfig in currentContext.CurrentClaimTypeConfigList)
             {
@@ -204,28 +195,16 @@ namespace Yvand.EntraClaimsProvider
                     currentPropertyString = String.Format("{0}_{1}_{2}", "extension", "EXTENSIONATTRIBUTESAPPLICATIONID", currentPropertyString);
                 }
 
-                string currentFilter;
-                if (!ctConfig.SupportsWildcard)
-                {
-                    currentFilter = String.Format(searchPatternEquals, currentPropertyString, input);
-                }
-                else
-                {
-                    // Use String.Replace instead of String.Format because String.Format trows an exception if input contains a '{'
-                    currentFilter = filterPattern.Replace("{0}", currentPropertyString);
-                }
+                string filterForCurrentProp;
 
                 // Id needs a specific check: input must be a valid GUID AND equals filter must be used, otherwise Microsoft Entra ID will throw an error
                 if (ctConfig.EntityProperty == DirectoryObjectProperty.Id)
                 {
+                    ctConfig.DirectoryPropertySupportsWildcard = false;
                     Guid idGuid = new Guid();
                     if (!Guid.TryParse(input, out idGuid))
                     {
                         continue;
-                    }
-                    else
-                    {
-                        currentFilter = String.Format(searchPatternEquals, currentPropertyString, idGuid.ToString());
                     }
                 }
 
@@ -234,30 +213,40 @@ namespace Yvand.EntraClaimsProvider
                     if (ctConfig is IdentityClaimTypeConfig)
                     {
                         IdentityClaimTypeConfig identityClaimTypeConfig = ctConfig as IdentityClaimTypeConfig;
-                        if (!ctConfig.SupportsWildcard)
+                        string filterPatternForCurrentProp = identityConfigSearchPatternEquals;
+                        if (ctConfig.DirectoryPropertySupportsWildcard == true && currentContext.ExactSearch == false)
                         {
-                            currentFilter = "( " + String.Format(identityConfigSearchPatternEquals, currentPropertyString, input, ClaimsProviderConstants.MEMBER_USERTYPE) + " or " + String.Format(identityConfigSearchPatternEquals, identityClaimTypeConfig.DirectoryObjectPropertyForGuestUsers, input, ClaimsProviderConstants.GUEST_USERTYPE) + " )";
+                            filterPatternForCurrentProp = identityConfigSearchPatternStartsWith;
                         }
-                        else
-                        {
-                            if (currentContext.ExactSearch)
-                            {
-                                currentFilter = "( " + String.Format(identityConfigSearchPatternEquals, currentPropertyString, input, ClaimsProviderConstants.MEMBER_USERTYPE) + " or " + String.Format(identityConfigSearchPatternEquals, identityClaimTypeConfig.DirectoryObjectPropertyForGuestUsers, input, ClaimsProviderConstants.GUEST_USERTYPE) + " )";
-                            }
-                            else
-                            {
-                                currentFilter = "( " + String.Format(identityConfigSearchPatternStartsWith, currentPropertyString, input, ClaimsProviderConstants.MEMBER_USERTYPE) + " or " + String.Format(identityConfigSearchPatternStartsWith, identityClaimTypeConfig.DirectoryObjectPropertyForGuestUsers, input, ClaimsProviderConstants.GUEST_USERTYPE) + " )";
-                            }
-                        }
+                        filterForCurrentProp = "( " + String.Format(filterPatternForCurrentProp, currentPropertyString, input, ClaimsProviderConstants.MEMBER_USERTYPE) + " or " + String.Format(identityConfigSearchPatternStartsWith, identityClaimTypeConfig.DirectoryObjectPropertyForGuestUsers, input, ClaimsProviderConstants.GUEST_USERTYPE) + " )";
+                    }
+                    else if (currentContext.ExactSearch || !ctConfig.DirectoryPropertySupportsWildcard)
+                    {
+                        filterForCurrentProp = String.Format(searchPatternEquals, currentPropertyString, input);
+                    }
+                    else
+                    {
+                        filterForCurrentProp = String.Format(searchPatternStartsWith, currentPropertyString, input);
                     }
 
-                    userFilterBuilder.Add(currentFilter);
+                    userFilterBuilder.Add(filterForCurrentProp);
                     userSelectBuilder.Add(currentPropertyString);
                 }
                 else
                 {
                     // else assume it's a Group
-                    groupFilterBuilder.Add(currentFilter);
+                    if (currentContext.ExactSearch || !ctConfig.DirectoryPropertySupportsWildcard)
+                    {
+                        string filterPatternForCurrentProp = this.Settings.FilterSecurityEnabledGroupsOnly ? groupSearchPatternSGOnlyEquals : searchPatternEquals;
+                        filterForCurrentProp = String.Format(filterPatternForCurrentProp, currentPropertyString, input);
+                    }
+                    else
+                    {
+                        string filterPatternForCurrentProp = this.Settings.FilterSecurityEnabledGroupsOnly ? groupSearchPatternSGOnlyStartsWith : searchPatternStartsWith;
+                        filterForCurrentProp = String.Format(filterPatternForCurrentProp, currentPropertyString, input);
+                    }
+
+                    groupFilterBuilder.Add(filterForCurrentProp);
                     groupSelectBuilder.Add(currentPropertyString);
                 }
             }

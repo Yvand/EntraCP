@@ -109,20 +109,13 @@ namespace Yvand.EntraClaimsProvider.Configuration
         [Persisted]
         private string _ClaimType;
 
-        internal bool SupportsWildcard
+        public bool DirectoryPropertySupportsWildcard
         {
-            get
-            {
-                if (this.EntityProperty == DirectoryObjectProperty.Id)
-                {
-                    return false;
-                }
-                else
-                {
-                    return true;
-                }
-            }
+            get { return _DirectoryPropertySupportsWildcard; }
+            set { _DirectoryPropertySupportsWildcard = value; }
         }
+        [Persisted]
+        private bool _DirectoryPropertySupportsWildcard = true;
 
         /// <summary>
         /// If set to true, property ClaimType should not be set

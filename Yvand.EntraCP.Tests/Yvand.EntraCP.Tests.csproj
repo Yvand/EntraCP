@@ -48,6 +48,7 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="BasicConfigurationTests.cs" />
+    <Compile Include="WithSecurityEnabledGroupsOnlyTests.cs" />
     <Compile Include="ExcludeAUserTypeTests.cs" />
     <Compile Include="ClaimsProviderTestsBase.cs" />
     <Compile Include="ExtensionAttributeTests.cs" />

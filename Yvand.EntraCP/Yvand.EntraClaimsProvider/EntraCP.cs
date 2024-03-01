@@ -688,16 +688,16 @@ namespace Yvand.EntraClaimsProvider
                     currentObject = userOrGroup;
                     objectType = DirectoryObjectType.Group;
 
-                    if (this.Settings.FilterSecurityEnabledGroupsOnly)
-                    {
-                        Group group = (Group)userOrGroup;
-                        // If Group.SecurityEnabled is not set, assume the group is not SecurityEnabled - verified per tests, it is not documentated in https://docs.microsoft.com/en-us/graph/api/resources/group?view=graph-rest-1.0
-                        bool isSecurityEnabled = group.SecurityEnabled ?? false;
-                        if (!isSecurityEnabled)
-                        {
-                            continue;
-                        }
-                    }
+                    // No longer necessary since now it is handled directly when building the filter for Graph
+                    //if (this.Settings.FilterSecurityEnabledGroupsOnly)
+                    //{
+                    //    Group group = (Group)userOrGroup;
+                    //    bool isSecurityEnabled = group.SecurityEnabled ?? false;
+                    //    if (!isSecurityEnabled)
+                    //    {
+                    //        continue;
+                    //    }
+                    //}
                 }
 
                 foreach (ClaimTypeConfig ctConfig in ctConfigs.Where(x => x.EntityType == objectType))
