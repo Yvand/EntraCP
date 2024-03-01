@@ -161,7 +161,7 @@
     </wssuc:InputFormSection>
     <wssuc:InputFormSection Title="Register a new Microsoft Entra ID tenant" runat="server">
         <Template_Description>
-            <wssawc:EncodedLiteral runat="server" Text="<p>EntraCP needs its own app registration to connect to your Microsoft Entra ID tenant, with permissions 'GroupMember.Read.All' and 'User.Read.All'.<br />Check <a href='https://entracp.yvand.net/docs/usage/register-application/' target='_blank'>this page</a> to see how to register it properly.<br /><br />EntraCP can authenticate using <a href='https://docs.microsoft.com/en-us/azure/active-directory/develop/v2-oauth2-client-creds-grant-flow#get-a-token' target='_blank'>either a secret or a certificate</a>.</p>" EncodeMethod='NoEncode' />
+            <wssawc:EncodedLiteral runat="server" Text="<p>EntraCP needs its own app registration to connect to your Microsoft Entra ID tenant, with permissions 'GroupMember.Read.All' and 'User.Read.All'.<br />Read <a href='https://entracp.yvand.net/overview/register-application/' target='_blank'>this article</a> to learn how to register the app in your tenant.<br /><br />EntraCP can authenticate using <a href='https://learn.microsoft.com/en-us/entra/identity-platform/v2-oauth2-client-creds-grant-flow#get-a-token' target='_blank'>either a secret or a certificate</a>.</p>" EncodeMethod='NoEncode' />
         </Template_Description>
         <Template_InputFormControls>
             <tr>
@@ -319,7 +319,7 @@
         </Template_InputFormControls>
     </wssuc:InputFormSection>
 
-    <wssuc:InputFormSection runat="server" Title="Bypass requests to Entra ID">
+    <wssuc:InputFormSection runat="server" Title="Bypass Entra ID">
         <Template_Description>
             <sharepoint:encodedliteral runat="server" text="Bypass the Entra ID tenant(s) registered and, depending on the context:" encodemethod='HtmlEncodeAllowSimpleTextFormatting' />
             <br />
@@ -330,21 +330,24 @@
             <sharepoint:encodedliteral runat="server" text="This setting does not affect the augmentation." encodemethod='HtmlEncodeAllowSimpleTextFormatting' />
             <br />
             <br />
-            <sharepoint:encodedliteral runat="server" text="You may enable this setting if one or more SharePoint server(s) can no longer connect to your Entra ID tenant, as a mitigation until connectivity is restored." encodemethod='HtmlEncodeAllowSimpleTextFormatting' />
+            <sharepoint:encodedliteral runat="server" text="It can be used as a mitigation if one or more SharePoint server(s) lost the connection with your Entra ID tenant(s), until it is restored." encodemethod='HtmlEncodeAllowSimpleTextFormatting' />
         </Template_Description>
         <Template_InputFormControls>
-            <asp:CheckBox runat="server" Name="ChkAlwaysResolveUserInput" ID="ChkAlwaysResolveUserInput" Text="Bypass requests to Entra ID" />
+            <asp:CheckBox runat="server" Name="ChkAlwaysResolveUserInput" ID="ChkAlwaysResolveUserInput" Text="Bypass the Entra ID tenant(s) registered" />
         </Template_InputFormControls>
     </wssuc:InputFormSection>
     <wssuc:InputFormSection runat="server" Title="Require exact match" Description="Enable this to return only results that match exactly the user input (case-insensitive).">
         <Template_InputFormControls>
-            <asp:CheckBox runat="server" Name="ChkFilterExactMatchOnly" ID="ChkFilterExactMatchOnly" Text="Require exact match" />
+            <asp:CheckBox runat="server" Name="ChkFilterExactMatchOnly" ID="ChkFilterExactMatchOnly" Text="Require exact match when typing in the people picker" />
         </Template_InputFormControls>
     </wssuc:InputFormSection>
 
     <wssuc:InputFormSection runat="server" Title="Proxy">
         <Template_Description>
             <wssawc:EncodedLiteral runat="server" Text="Configure the proxy if it is needed for EntraCP to connect to Microsoft Graph." EncodeMethod='HtmlEncodeAllowSimpleTextFormatting' />
+            <br />
+            <br />
+            <wssawc:EncodedLiteral runat="server" Text="Additional configuration in Windows may still be required. Read <a href='https://entracp.yvand.net/docs/configure-the-proxy/' target='_blank'>this article</a> to fully configure the proxy." EncodeMethod='NoEncode' />
         </Template_Description>
         <Template_InputFormControls>
             <label for="<%= InputProxyAddress.ClientID %>">Proxy address:</label><br />
