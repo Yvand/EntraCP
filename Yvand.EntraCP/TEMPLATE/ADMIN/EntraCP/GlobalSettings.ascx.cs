@@ -135,6 +135,7 @@ namespace Yvand.EntraClaimsProvider.Administration
         private void PopulateGraphPropertiesLists()
         {
             this.DdlUserGraphPropertyToDisplay.Items.Add(new ListItem("(Same as the identifier property)", "NotSet"));
+            this.DdlGroupGraphPropertyToDisplay.Items.Add(new ListItem("(Same as the identifier property)", "NotSet"));
 
             DirectoryObjectProperty[] aadPropValues = (DirectoryObjectProperty[])Enum.GetValues(typeof(DirectoryObjectProperty));
             IEnumerable<DirectoryObjectProperty> aadPropValuesSorted = aadPropValues.OrderBy(v => v.ToString());
