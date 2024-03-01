@@ -141,19 +141,30 @@ namespace Yvand.EntraClaimsProvider.Administration
             IEnumerable<DirectoryObjectProperty> aadPropValuesSorted = aadPropValues.OrderBy(v => v.ToString());
             foreach (DirectoryObjectProperty prop in aadPropValuesSorted)
             {
-                // Ensure property exists for the User object type
-                if (Utils.GetDirectoryObjectPropertyValue(new User(), prop.ToString()) == null) { continue; }
+                // Test property exists in type User, to populate lists of user properties
+                if (Utils.GetDirectoryObjectPropertyValue(new User(), prop.ToString()) != null)
+                {
+                    // Ensure property is of type System.String
+                    PropertyInfo pi = typeof(User).GetProperty(prop.ToString());
+                    if (pi != null && pi.PropertyType == typeof(String))
+                    {
+                        this.DdlUserIdDirectoryPropertyMembers.Items.Add(new ListItem(prop.ToString(), ((int)prop).ToString()));
+                        this.DdlUserIdDirectoryPropertyGuests.Items.Add(new ListItem(prop.ToString(), ((int)prop).ToString()));
+                        this.DdlUserGraphPropertyToDisplay.Items.Add(new ListItem(prop.ToString(), ((int)prop).ToString()));
+                    }
+                }
 
-                // Ensure property is of type System.String
-                PropertyInfo pi = typeof(User).GetProperty(prop.ToString());
-                if (pi == null) { continue; }
-                if (pi.PropertyType != typeof(String)) { continue; }
-
-                this.DdlUserIdDirectoryPropertyMembers.Items.Add(new ListItem(prop.ToString(), ((int)prop).ToString()));
-                this.DdlUserIdDirectoryPropertyGuests.Items.Add(new ListItem(prop.ToString(), ((int)prop).ToString()));
-                this.DdlUserGraphPropertyToDisplay.Items.Add(new ListItem(prop.ToString(), ((int)prop).ToString()));
-                this.DdlGroupDirectoryProperty.Items.Add(new ListItem(prop.ToString(), ((int)prop).ToString()));
-                this.DdlGroupGraphPropertyToDisplay.Items.Add(new ListItem(prop.ToString(), ((int)prop).ToString()));
+                // Test property exists in type Group, to populate lists of group properties
+                if (Utils.GetDirectoryObjectPropertyValue(new Group(), prop.ToString()) != null)
+                {
+                    // Ensure property is of type System.String
+                    PropertyInfo pi = typeof(Group).GetProperty(prop.ToString());
+                    if (pi != null && pi.PropertyType == typeof(String))
+                    {
+                        this.DdlGroupDirectoryProperty.Items.Add(new ListItem(prop.ToString(), ((int)prop).ToString()));
+                        this.DdlGroupGraphPropertyToDisplay.Items.Add(new ListItem(prop.ToString(), ((int)prop).ToString()));
+                    }
+                }
             }
         }
 
