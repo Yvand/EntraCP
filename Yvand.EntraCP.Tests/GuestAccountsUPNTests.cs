@@ -24,25 +24,23 @@ namespace Yvand.EntraClaimsProvider.Tests
             base.CheckSettingsTest();
         }
 
-        [Test, TestCaseSource(typeof(SearchEntityDataSource), nameof(SearchEntityDataSource.GetTestData), new object[] { EntityDataSourceType.UPNB2BGuestAccounts })]
-        [Repeat(UnitTestsHelper.TestRepeatCount)]
-        public void TestSearch(SearchEntityData registrationData)
+        [Test, TestCaseSource(typeof(EntraIdTestGroupsSource), nameof(EntraIdTestGroupsSource.GetTestData), new object[] { true })]
+        public void TestAllEntraIDGroups(EntraIdTestGroup group)
         {
-            base.ProcessAndTestSearchEntityData(registrationData);
+            TestSearchAndValidateForEntraIDGroup(group);
         }
 
-        [Test, TestCaseSource(typeof(ValidateEntityDataSource), nameof(ValidateEntityDataSource.GetTestData), new object[] { EntityDataSourceType.UPNB2BGuestAccounts })]
-        [Repeat(UnitTestsHelper.TestRepeatCount)]
-        public void TestValidateClaim(ValidateEntityData registrationData)
+        [Test, TestCaseSource(typeof(EntraIdTestUsersSource), nameof(EntraIdTestUsersSource.GetTestData), null)]
+        public void TestAllEntraIDUsers(EntraIdTestUser user)
         {
-            base.ProcessAndTestValidateEntityData(registrationData);
+            base.TestSearchAndValidateForEntraIDUser(user);
         }
 
-        [Test, TestCaseSource(typeof(ValidateEntityDataSource), nameof(ValidateEntityDataSource.GetTestData), new object[] { EntityDataSourceType.AllAccounts })]
-        [Repeat(UnitTestsHelper.TestRepeatCount)]
-        public void TestAugmentationOperation(ValidateEntityData registrationData)
+        [Test]
+        [Repeat(5)]
+        public override void TestAugmentationForUsersMembersOfAllGroups()
         {
-            base.TestAugmentationOperation(registrationData.ClaimValue, registrationData.IsMemberOfTrustedGroup);
+            base.TestAugmentationForUsersMembersOfAllGroups();
         }
     }
 }

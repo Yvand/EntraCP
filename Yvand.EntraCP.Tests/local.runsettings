@@ -18,5 +18,7 @@
     <Parameter name="TestLogFileName" value="EntraCPIntegrationTests.log" />
     <Parameter name="ProxyAddress" value="http://localhost:8888" />
     <Parameter name="MultiPurposeCustomClaimType" value="http://schemas.yvand.org/claims/type1" />
+    <Parameter name="DataFile_EntraId_TestGroups" value="C:\YvanData\Dev\EntraCP_Tests_EntraID_Groups.csv" />
+    <Parameter name="DataFile_EntraId_TestUsers" value="C:\YvanData\Dev\EntraCP_Tests_EntraID_Users.csv" />
   </TestRunParameters>
 </RunSettings>

@@ -727,6 +727,13 @@ namespace Yvand.EntraClaimsProvider.Configuration
             ClaimTypeConfig ctConfig = innerCol.FirstOrDefault(x => String.Equals(claimType, x.ClaimType, StringComparison.InvariantCultureIgnoreCase));
             return ctConfig;
         }
+
+        public IEnumerable<ClaimTypeConfig> GetConfigsMappedToClaimType()
+        {
+            return innerCol.Where(x => 
+                !String.IsNullOrWhiteSpace(x.ClaimType) && 
+                !x.UseMainClaimTypeOfDirectoryObject);
+        }
     }
 
     public class ClaimTypeConfigEnumerator : IEnumerator<ClaimTypeConfig>
