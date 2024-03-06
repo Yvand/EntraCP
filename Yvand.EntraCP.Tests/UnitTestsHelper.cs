@@ -21,12 +21,8 @@ namespace Yvand.EntraClaimsProvider.Tests
         public static Uri TestSiteCollUri;
         public static string TestSiteRelativePath => $"/sites/{TestContext.Parameters["TestSiteCollectionName"]}";
         public const int MaxTime = 50000;
-        public static string FarmAdmin => TestContext.Parameters["FarmAdmin"];
-#if DEBUG
         public const int TestRepeatCount = 1;
-#else
-    public const int TestRepeatCount = 20;
-#endif
+        public static string FarmAdmin => TestContext.Parameters["FarmAdmin"];
 
         public static string RandomClaimType => "http://schemas.yvand.net/ws/claims/random";
         public static string RandomClaimValue => "IDoNotExist";
@@ -37,10 +33,13 @@ namespace Yvand.EntraClaimsProvider.Tests
         public static SPClaim TrustedGroup => new SPClaim(TrustedGroupToAdd_ClaimType, TrustedGroupToAdd_ClaimValue, ClaimValueTypes.String, SPOriginalIssuers.Format(SPOriginalIssuerType.TrustedProvider, SPTrust.Name));
 
         public static string AzureTenantsJsonFile => TestContext.Parameters["AzureTenantsJsonFile"];
-        public static string DataFile_GuestAccountsUPN_Search => TestContext.Parameters["DataFile_GuestAccountsUPN_Search"];
-        public static string DataFile_GuestAccountsUPN_Validate => TestContext.Parameters["DataFile_GuestAccountsUPN_Validate"];
-        public static string DataFile_AllAccounts_Search => TestContext.Parameters["DataFile_AllAccounts_Search"];
-        public static string DataFile_AllAccounts_Validate => TestContext.Parameters["DataFile_AllAccounts_Validate"];
+        public static string DataFile_EntraId_TestUsers => TestContext.Parameters["DataFile_EntraId_TestUsers"];
+        public static string DataFile_EntraId_TestGroups => TestContext.Parameters["DataFile_EntraId_TestGroups"];
+        public static string UserAccountNamePrefix => "testEntraCPUser_";
+        public static string GroupAccountNamePrefix => "testEntraCPGroup_";
+        public static string[] UsersMembersOfAllGroups => new string[] { $"{UserAccountNamePrefix}001", $"{UserAccountNamePrefix}010", $"{UserAccountNamePrefix}011", $"{UserAccountNamePrefix}012", $"{UserAccountNamePrefix}013", $"{UserAccountNamePrefix}014", $"{UserAccountNamePrefix}015" };
+        public const int TotalNumberOfUsersInSource = 50 + 3; // 50 members + 3 guests
+        public const int TotalNumberOfGroupsInSource = 50;
         static TextWriterTraceListener Logger { get; set; }
         public static EntraIDProviderConfiguration PersistedConfiguration;
         private static IEntraIDProviderSettings OriginalSettings;
@@ -52,10 +51,8 @@ namespace Yvand.EntraClaimsProvider.Tests
             Trace.Listeners.Add(Logger);
             Trace.AutoFlush = true;
             Trace.TraceInformation($"{DateTime.Now:s} Start integration tests of {EntraCP.ClaimsProviderName} {FileVersionInfo.GetVersionInfo(Assembly.GetAssembly(typeof(EntraCP)).Location).FileVersion}.");
-            Trace.TraceInformation($"{DateTime.Now:s} DataFile_AllAccounts_Search: {DataFile_AllAccounts_Search}");
-            Trace.TraceInformation($"{DateTime.Now:s} DataFile_AllAccounts_Validate: {DataFile_AllAccounts_Validate}");
-            Trace.TraceInformation($"{DateTime.Now:s} DataFile_GuestAccountsUPN_Search: {DataFile_GuestAccountsUPN_Search}");
-            Trace.TraceInformation($"{DateTime.Now:s} DataFile_GuestAccountsUPN_Validate: {DataFile_GuestAccountsUPN_Validate}");
+            Trace.TraceInformation($"{DateTime.Now:s} DataFile_EntraId_TestGroups: {DataFile_EntraId_TestGroups}");
+            Trace.TraceInformation($"{DateTime.Now:s} DataFile_EntraId_TestUsers: {DataFile_EntraId_TestUsers}");
             Trace.TraceInformation($"{DateTime.Now:s} TestSiteCollectionName: {TestContext.Parameters["TestSiteCollectionName"]}");
 
             if (SPTrust == null)
@@ -81,7 +78,7 @@ namespace Yvand.EntraClaimsProvider.Tests
 
 #if DEBUG
             TestSiteCollUri = new Uri($"http://spsites{TestSiteRelativePath}");
-            return; // Uncommented when debugging from unit tests
+            //return; // Uncommented when debugging from unit tests
 #endif
 
             var service = SPFarm.Local.Services.GetValue<SPWebService>(String.Empty);
@@ -178,15 +175,6 @@ namespace Yvand.EntraClaimsProvider.Tests
         }
     }
 
-    //public class SearchEntityDataSourceCollection : IEnumerable
-    //{
-    //    public IEnumerator GetEnumerator()
-    //    {
-    //        yield return new[] { "AADGroup1", "1", "5b0f6c56-c87f-44c3-9354-56cba03da433" };
-    //        yield return new[] { "AADGroupTes", "1", "99abdc91-e6e0-475c-a0ba-5014f91de853" };
-    //    }
-    //}
-
     public enum ResultUserType
     {
         None,
@@ -203,12 +191,6 @@ namespace Yvand.EntraClaimsProvider.Tests
         Group,
     }
 
-    public enum EntityDataSourceType
-    {
-        AllAccounts,
-        UPNB2BGuestAccounts
-    }
-
     public class SearchEntityData
     {
         public string Input;
@@ -219,71 +201,6 @@ namespace Yvand.EntraClaimsProvider.Tests
         public bool ExactMatch;
     }
 
-    public class SearchEntityDataSource
-    {
-        public static IEnumerable<TestCaseData> GetTestData(EntityDataSourceType entityDataSourceType)
-        {
-            string csvPath = UnitTestsHelper.DataFile_AllAccounts_Search;
-            if (entityDataSourceType == EntityDataSourceType.UPNB2BGuestAccounts)
-            {
-                csvPath = UnitTestsHelper.DataFile_GuestAccountsUPN_Search;
-            }
-
-            DataTable dt = DataTable.New.ReadCsv(csvPath);
-            foreach (Row row in dt.Rows)
-            {
-                var registrationData = new SearchEntityData();
-                registrationData.Input = row["Input"];
-                registrationData.SearchResultCount = Convert.ToInt32(row["SearchResultCount"]);
-                registrationData.SearchResultSingleEntityClaimValue = row["SearchResultSingleEntityClaimValue"];
-                registrationData.SearchResultEntityTypes = (ResultEntityType) Enum.Parse(typeof(ResultEntityType), row["SearchResultEntityTypes"]);
-                registrationData.SearchResultUserTypes = (ResultUserType)Enum.Parse(typeof(ResultUserType), row["SearchResultUserTypes"]);
-                registrationData.ExactMatch = Convert.ToBoolean(row["ExactMatch"]);
-                yield return new TestCaseData(new object[] { registrationData });
-            }
-        }
-
-        //public class ReadCSV
-        //{
-        //    public void GetValue()
-        //    {
-        //        TextReader tr1 = new StreamReader(@"c:\pathtofile\filename", true);
-
-        //        var Data = tr1.ReadToEnd().Split('\n')
-        //        .Where(l => l.Length > 0)  //nonempty strings
-        //        .Skip(1)               // skip header 
-        //        .Select(s => s.Trim())   // delete whitespace
-        //        .Select(l => l.Split(',')) // get arrays of values
-        //        .Select(l => new { Field1 = l[0], Field2 = l[1], Field3 = l[2] });
-        //    }
-        //}
-    }
-
-    public class ValidateEntityDataSource
-    {
-        public static IEnumerable<TestCaseData> GetTestData(EntityDataSourceType entityDataSourceType)
-        {
-            string csvPath = UnitTestsHelper.DataFile_AllAccounts_Validate;
-            if (entityDataSourceType == EntityDataSourceType.UPNB2BGuestAccounts)
-            {
-                csvPath = UnitTestsHelper.DataFile_GuestAccountsUPN_Validate;
-            }
-
-            DataTable dt = DataTable.New.ReadCsv(csvPath);
-
-            foreach (Row row in dt.Rows)
-            {
-                var registrationData = new ValidateEntityData();
-                registrationData.ClaimValue = row["ClaimValue"];
-                registrationData.ShouldValidate = Convert.ToBoolean(row["ShouldValidate"]);
-                registrationData.IsMemberOfTrustedGroup = Convert.ToBoolean(row["IsMemberOfTrustedGroup"]);
-                registrationData.EntityType = (ResultEntityType)Enum.Parse(typeof(ResultEntityType), row["EntityType"]);
-                registrationData.UserType = (ResultUserType)Enum.Parse(typeof(ResultUserType), row["UserType"]);
-                yield return new TestCaseData(new object[] { registrationData });
-            }
-        }
-    }
-
     public class ValidateEntityData
     {
         public string ClaimValue;
@@ -291,5 +208,117 @@ namespace Yvand.EntraClaimsProvider.Tests
         public bool IsMemberOfTrustedGroup;
         public ResultEntityType EntityType;
         public ResultUserType UserType;
+    }
+
+    public class EntraIdTestGroup
+    {
+        public string Id;
+        public string DisplayName;
+        public string GroupType;
+        public bool SecurityEnabled;
+    }
+
+    public class EntraIdTestGroupsSource
+    {
+        private static object _LockInitList = new object();
+        private static List<EntraIdTestGroup> _Groups;
+        public static List<EntraIdTestGroup> Groups
+        {
+            get
+            {
+                if (_Groups != null) { return _Groups; }
+                lock (_LockInitList)
+                {
+                    if (_Groups != null) { return _Groups; }
+                    _Groups = new List<EntraIdTestGroup>();
+                    foreach (EntraIdTestGroup group in GetTestData(false))
+                    {
+                        _Groups.Add(group);
+                    }
+                    return _Groups;
+                }
+            }
+        }
+
+        public static EntraIdTestGroup ASecurityEnabledGroup => Groups.FirstOrDefault(x => x.SecurityEnabled);
+        public static EntraIdTestGroup ANonSecurityEnabledGroup => Groups.FirstOrDefault(x => !x.SecurityEnabled);
+
+        public static IEnumerable<EntraIdTestGroup> GetTestData(bool securityEnabledGroupsOnly = false)
+        {
+            string csvPath = UnitTestsHelper.DataFile_EntraId_TestGroups;
+            DataTable dt = DataTable.New.ReadCsv(csvPath);
+            foreach (Row row in dt.Rows)
+            {
+                var registrationData = new EntraIdTestGroup();
+                registrationData.Id = row["id"];
+                registrationData.DisplayName = row["displayName"];
+                registrationData.GroupType = row["groupType"];
+                registrationData.SecurityEnabled = Convert.ToBoolean(row["SecurityEnabled"]);
+                if (securityEnabledGroupsOnly && !registrationData.SecurityEnabled)
+                {
+                    continue;
+                }
+                yield return registrationData;
+            }
+        }
+    }
+
+    public enum UserType
+    {
+        Member,
+        Guest
+    }
+
+    public class EntraIdTestUser
+    {
+        public string Id;
+        public string DisplayName;
+        public string UserPrincipalName;
+        public UserType UserType;
+        public string Mail;
+        public string GivenName;
+    }
+
+    public class EntraIdTestUsersSource
+    {
+        private static object _LockInitList = new object();
+        private static List<EntraIdTestUser> _Users;
+        public static List<EntraIdTestUser> Users
+        {
+            get
+            {
+                if (_Users != null) { return _Users; }
+                lock (_LockInitList)
+                {
+                    if (_Users != null) { return _Users; }
+                    _Users = new List<EntraIdTestUser>();
+                    foreach (EntraIdTestUser user in GetTestData())
+                    {
+                        _Users.Add(user);
+                    }
+                    return _Users;
+                }
+            }
+        }
+
+        public static EntraIdTestUser AGuestUser => Users.FirstOrDefault(x => x.UserType == UserType.Guest);
+        public static IEnumerable<EntraIdTestUser> AllGuestUsers => Users.Where(x => x.UserType == UserType.Guest);
+
+        public static IEnumerable<EntraIdTestUser> GetTestData()
+        {
+            string csvPath = UnitTestsHelper.DataFile_EntraId_TestUsers;
+            DataTable dt = DataTable.New.ReadCsv(csvPath);
+            foreach (Row row in dt.Rows)
+            {
+                var registrationData = new EntraIdTestUser();
+                registrationData.Id = row["id"];
+                registrationData.DisplayName = row["displayName"];
+                registrationData.UserPrincipalName = row["userPrincipalName"];
+                registrationData.UserType = String.Equals(row["userType"], ClaimsProviderConstants.MEMBER_USERTYPE, StringComparison.InvariantCultureIgnoreCase) ? UserType.Member : UserType.Guest;
+                registrationData.Mail = row["mail"];
+                registrationData.GivenName = row["givenName"];
+                yield return registrationData;
+            }
+        }
     }
 }

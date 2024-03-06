@@ -9,12 +9,14 @@ namespace Yvand.EntraClaimsProvider.Tests
     [Parallelizable(ParallelScope.Children)]
     public class BypassDirectoryOnClaimTypesTests : ClaimsProviderTestsBase
     {
+        string PrefixBypassUserSearch = "bypass-user:";
+        string PrefixBypassGroupSearch = "bypass-group:";
         public override void InitializeSettings()
         {
             base.InitializeSettings();
             Settings.EnableAugmentation = true;
-            Settings.ClaimTypes.UserIdentifierConfig.PrefixToBypassLookup = "bypass-user:";
-            Settings.ClaimTypes.GroupIdentifierConfig.PrefixToBypassLookup = "bypass-group:";
+            Settings.ClaimTypes.UserIdentifierConfig.PrefixToBypassLookup = PrefixBypassUserSearch;
+            Settings.ClaimTypes.GroupIdentifierConfig.PrefixToBypassLookup = PrefixBypassGroupSearch;
             base.ApplySettings();
         }
 
@@ -24,11 +26,27 @@ namespace Yvand.EntraClaimsProvider.Tests
             base.CheckSettingsTest();
         }
 
+        [Test, TestCaseSource(typeof(EntraIdTestUsersSource), nameof(EntraIdTestUsersSource.GetTestData), null)]
+        public void TestAllEntraIDUsers(EntraIdTestUser user)
+        {
+            base.TestSearchAndValidateForEntraIDUser(user);
+            user.UserPrincipalName = user.DisplayName;
+            user.Mail = user.DisplayName;
+            user.DisplayName = $"{PrefixBypassUserSearch}{user.DisplayName}";
+            base.TestSearchAndValidateForEntraIDUser(user);
+        }
+
+        [Test, TestCaseSource(typeof(EntraIdTestGroupsSource), nameof(EntraIdTestGroupsSource.GetTestData), new object[] { true })]
+        public void TestAllEntraIDGroups(EntraIdTestGroup group)
+        {
+            TestSearchAndValidateForEntraIDGroup(group);
+            group.Id = group.DisplayName;
+            group.DisplayName = $"{PrefixBypassGroupSearch}{group.DisplayName}";
+            TestSearchAndValidateForEntraIDGroup(group);
+        }
+
         [TestCase("bypass-user:externalUser@contoso.com", 1, "externalUser@contoso.com")]
-        [TestCase("externalUser@contoso.com", 0, "")]
         [TestCase("bypass-user:", 0, "")]
-        [TestCase(@"bypass-group:domain\groupValue", 1, @"domain\groupValue")]
-        [TestCase(@"domain\groupValue", 0, "")]
         [TestCase("bypass-group:", 0, "")]
         public void TestBypassDirectoryByClaimType(string inputValue, int expectedCount, string expectedClaimValue)
         {
@@ -59,19 +77,23 @@ namespace Yvand.EntraClaimsProvider.Tests
             base.CheckSettingsTest();
         }
 
-        [Test]
-        public void TestBypassDirectoryGlobally()
+        [Test, TestCaseSource(typeof(EntraIdTestGroupsSource), nameof(EntraIdTestGroupsSource.GetTestData), new object[] { true })]
+        public void TestAllEntraIDGroups(EntraIdTestGroup group)
         {
-            TestSearchOperation(UnitTestsHelper.RandomClaimValue, 2, UnitTestsHelper.RandomClaimValue);
-            TestValidationOperation(base.UserIdentifierClaimType, UnitTestsHelper.RandomClaimValue, true);
-            TestValidationOperation(base.GroupIdentifierClaimType, UnitTestsHelper.RandomClaimValue, true);
+            TestSearchAndValidateForEntraIDGroup(group);
         }
 
-        [Test, TestCaseSource(typeof(ValidateEntityDataSource), nameof(ValidateEntityDataSource.GetTestData), new object[] { EntityDataSourceType.AllAccounts })]
-        [Repeat(UnitTestsHelper.TestRepeatCount)]
-        public void TestAugmentationOperation(ValidateEntityData registrationData)
+        [Test, TestCaseSource(typeof(EntraIdTestUsersSource), nameof(EntraIdTestUsersSource.GetTestData), null)]
+        public void TestAllEntraIDUsers(EntraIdTestUser user)
         {
-            base.TestAugmentationOperation(registrationData.ClaimValue, registrationData.IsMemberOfTrustedGroup);
+            base.TestSearchAndValidateForEntraIDUser(user);
+        }
+
+        [Test]
+        [Repeat(5)]
+        public override void TestAugmentationForUsersMembersOfAllGroups()
+        {
+            base.TestAugmentationForUsersMembersOfAllGroups();
         }
     }
 }

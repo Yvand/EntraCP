@@ -24,20 +24,18 @@ namespace Yvand.EntraClaimsProvider.Tests
             base.CheckSettingsTest();
         }
 
-#if DEBUG
-        [TestCase("EntracpTestM365Group2", 0, "6d1efd6c-bf07-4a09-9cb0-9b3d367af415")]
-        [TestCase("EntracpTestM365Group1", 1, "1c4a3a59-2c52-44e8-b210-f020fa4526a8")]
-        public void TestSearchAndValidation(string inputValue, int expectedCount, string expectedClaimValue)
+        [Test, TestCaseSource(typeof(EntraIdTestGroupsSource), nameof(EntraIdTestGroupsSource.GetTestData), new object[] { true })]
+        public void TestAllEntraIDGroups(EntraIdTestGroup group)
         {
-            TestSearchOperation(inputValue, expectedCount, expectedClaimValue);
-
-            if (expectedCount > 0)
-            {
-                SPClaim inputClaim = new SPClaim(base.GroupIdentifierClaimType, expectedClaimValue, ClaimValueTypes.String, SPOriginalIssuers.Format(SPOriginalIssuerType.TrustedProvider, UnitTestsHelper.SPTrust.Name));
-                TestValidationOperation(inputClaim, true, expectedClaimValue);
-            }
+            TestSearchAndValidateForEntraIDGroup(group);
         }
-#endif
+
+        [Test]
+        [Repeat(5)]
+        public override void TestAugmentationForUsersMembersOfAllGroups()
+        {
+            base.TestAugmentationForUsersMembersOfAllGroups();
+        }
     }
 
     [TestFixture]
@@ -59,19 +57,17 @@ namespace Yvand.EntraClaimsProvider.Tests
             base.CheckSettingsTest();
         }
 
-#if DEBUG
-        [TestCase("EntracpTestM365Group2", 1, "6d1efd6c-bf07-4a09-9cb0-9b3d367af415")]
-        [TestCase("EntracpTestM365Group1", 1, "1c4a3a59-2c52-44e8-b210-f020fa4526a8")]
-        public void TestSearchAndValidation(string inputValue, int expectedCount, string expectedClaimValue)
+        [Test, TestCaseSource(typeof(EntraIdTestGroupsSource), nameof(EntraIdTestGroupsSource.GetTestData), new object[] { true })]
+        public void TestAllEntraIDGroups(EntraIdTestGroup group)
         {
-            TestSearchOperation(inputValue, expectedCount, expectedClaimValue);
-
-            if (expectedCount > 0)
-            {
-                SPClaim inputClaim = new SPClaim(base.GroupIdentifierClaimType, expectedClaimValue, ClaimValueTypes.String, SPOriginalIssuers.Format(SPOriginalIssuerType.TrustedProvider, UnitTestsHelper.SPTrust.Name));
-                TestValidationOperation(inputClaim, true, expectedClaimValue);
-            }
+            TestSearchAndValidateForEntraIDGroup(group);
         }
-#endif
+
+        [Test]
+        [Repeat(5)]
+        public override void TestAugmentationForUsersMembersOfAllGroups()
+        {
+            base.TestAugmentationForUsersMembersOfAllGroups();
+        }
     }
 }

@@ -90,6 +90,76 @@ namespace Yvand.EntraClaimsProvider.Tests
             }
         }
 
+        public void TestSearchAndValidateForEntraIDGroup(EntraIdTestGroup entity)
+        {
+            string inputValue = entity.DisplayName;
+            int expectedCount = 1;
+            bool shouldValidate = true;
+
+            if (Settings.AlwaysResolveUserInput)
+            {
+                inputValue = entity.Id;
+                expectedCount = Settings.ClaimTypes.GetConfigsMappedToClaimType().Count();
+            }
+            if (Settings.FilterSecurityEnabledGroupsOnly && entity.SecurityEnabled == false)
+            {
+                expectedCount = 0;
+                shouldValidate = false;
+            }
+
+            TestSearchOperation(inputValue, expectedCount, entity.Id);
+            TestValidationOperation(GroupIdentifierClaimType, entity.Id, shouldValidate);
+        }
+
+        public void TestSearchAndValidateForEntraIDUser(EntraIdTestUser entity)
+        {
+            int expectedCount = 1;
+            string inputValue = entity.DisplayName;
+            string claimValue = entity.UserPrincipalName;
+            bool shouldValidate = true;
+
+            if (Settings.AlwaysResolveUserInput)
+            {
+                inputValue = entity.UserPrincipalName;
+                claimValue = entity.UserPrincipalName;
+                expectedCount = Settings.ClaimTypes.GetConfigsMappedToClaimType().Count();
+            }
+            else
+            {
+                if (entity.UserType == UserType.Member)
+                {
+                    claimValue = Settings.ClaimTypes.UserIdentifierConfig.EntityProperty == Configuration.DirectoryObjectProperty.UserPrincipalName ?
+                        entity.UserPrincipalName :
+                        entity.Mail;
+                    expectedCount = ExcludeMemberUsers ? 0 : 1;
+                    shouldValidate = !ExcludeMemberUsers;
+                }
+                else
+                {
+                    claimValue = Settings.ClaimTypes.UserIdentifierConfig.DirectoryObjectPropertyForGuestUsers == Configuration.DirectoryObjectProperty.UserPrincipalName ?
+                        entity.UserPrincipalName :
+                        entity.Mail;
+                    expectedCount = ExcludeGuestUsers ? 0 : 1;
+                    shouldValidate = !ExcludeGuestUsers;
+                }
+            }
+            TestSearchOperation(inputValue, expectedCount, claimValue);
+            TestValidationOperation(UserIdentifierClaimType, claimValue, shouldValidate);
+        }
+
+        public virtual void TestAugmentationForUsersMembersOfAllGroups()
+        {
+            Random rnd = new Random();
+            int randomIdx = rnd.Next(0, UnitTestsHelper.TotalNumberOfGroupsInSource - 1);
+            var anyGroup = EntraIdTestGroupsSource.Groups[randomIdx];
+            bool shouldBeMember = Settings.FilterSecurityEnabledGroupsOnly && !anyGroup.SecurityEnabled ? false : true;
+            foreach (string userAccountName in UnitTestsHelper.UsersMembersOfAllGroups)
+            {
+                string userPrincipalName = EntraIdTestUsersSource.Users.First(x => x.UserPrincipalName.StartsWith(userAccountName, StringComparison.InvariantCultureIgnoreCase)).UserPrincipalName;
+                TestAugmentationOperation(userPrincipalName, shouldBeMember, anyGroup.Id);
+            }
+        }
+
         /// <summary>
         /// Applies the <see cref="Settings"/> to the configuration object and save it in the configuration database
         /// </summary>
@@ -247,9 +317,10 @@ namespace Yvand.EntraClaimsProvider.Tests
         /// </summary>
         /// <param name="claimValue"></param>
         /// <param name="isMemberOfTrustedGroup"></param>
-        protected void TestAugmentationOperation(string claimValue, bool isMemberOfTrustedGroup)
+        protected void TestAugmentationOperation(string claimValue, bool isMemberOfTrustedGroup, string groupNameToTestInGroupMembership)
         {
             string claimType = UserIdentifierClaimType;
+            SPClaim groupClaimToTestInGroupMembership = new SPClaim(GroupIdentifierClaimType, groupNameToTestInGroupMembership, ClaimValueTypes.String, SPOriginalIssuers.Format(SPOriginalIssuerType.TrustedProvider, UnitTestsHelper.SPTrust.Name));
             try
             {
                 Stopwatch timer = new Stopwatch();
@@ -260,18 +331,18 @@ namespace Yvand.EntraClaimsProvider.Tests
                 SPClaim[] groups = UnitTestsHelper.ClaimsProvider.GetClaimsForEntity(context, inputClaim);
 
                 bool groupFound = false;
-                if (groups != null && groups.Contains(UnitTestsHelper.TrustedGroup))
+                if (groups != null && groups.Contains(groupClaimToTestInGroupMembership))
                 {
                     groupFound = true;
                 }
 
                 if (isMemberOfTrustedGroup)
                 {
-                    Assert.That(groupFound, Is.True, $"Entity \"{claimValue}\" should be member of group \"{UnitTestsHelper.TrustedGroupToAdd_ClaimValue}\", but this group was not found in the claims returned by the claims provider.");
+                    Assert.That(groupFound, Is.True, $"Entity \"{claimValue}\" should be member of group \"{groupNameToTestInGroupMembership}\", but this group was not found in the claims returned by the claims provider.");
                 }
                 else
                 {
-                    Assert.That(groupFound, Is.False, $"Entity \"{claimValue}\" should NOT be member of group \"{UnitTestsHelper.TrustedGroupToAdd_ClaimValue}\", but this group was found in the claims returned by the claims provider.");
+                    Assert.That(groupFound, Is.False, $"Entity \"{claimValue}\" should NOT be member of group \"{groupNameToTestInGroupMembership}\", but this group was found in the claims returned by the claims provider.");
                 }
                 timer.Stop();
                 Trace.TraceInformation($"{DateTime.Now:s} TestAugmentationOperation finished in {timer.ElapsedMilliseconds} ms. Parameters: claimType: '{claimType}', claimValue: '{claimValue}', isMemberOfTrustedGroup: '{isMemberOfTrustedGroup}'.");
