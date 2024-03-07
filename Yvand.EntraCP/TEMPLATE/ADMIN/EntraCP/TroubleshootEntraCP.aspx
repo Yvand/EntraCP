@@ -36,7 +36,7 @@
             if (tenant != null)
             {
                 string claimsProviderName = "EntraCP";
-                EntraCPSettings settings = EntraCPSettings.GetDefaultSettings(claimsProviderName);
+                ClaimsProviderSettings settings = ClaimsProviderSettings.GetDefaultSettings(claimsProviderName);
                 settings.EntraIDTenants.Add(tenant);
                 settings.ProxyAddress = proxy;
                 EntraCP claimsProvider = new EntraCP(claimsProviderName, settings);
@@ -158,7 +158,7 @@
         {
             try
             {
-                IdentityClaimTypeConfig idClaim = claimsProvider.Settings.ClaimTypes.IdentityClaim;
+                IdentityClaimTypeConfig idClaim = claimsProvider.Settings.ClaimTypes.UserIdentifierConfig;
                 string originalIssuer = SPOriginalIssuers.Format(SPOriginalIssuerType.TrustedProvider, Utils.GetSPTrustAssociatedWithClaimsProvider("EntraCP").Name);
                 SPClaim claim = new SPClaim(idClaim.ClaimType, input, idClaim.ClaimValueType, originalIssuer);
                 SPClaim[] groups = claimsProvider.GetClaimsForEntity(new Uri(context), claim);
