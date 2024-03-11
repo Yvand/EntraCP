@@ -98,7 +98,7 @@ jobs:
             ./${{ env.project-name }}-Release-wsp/*.wsp
             ./${{ env.project-name }}-${{ env.assembly-version }}-symbols.zip
             ./${{ env.project-name }}-${{ env.assembly-version }}-dependencies.zip
-            ./assembly-bindings.config # It may or may not exist
+            ./assembly-bindings.config
             ./NuGet.zip
 
       - name: Publish nightly release
@@ -110,6 +110,7 @@ jobs:
           tag_name: nightly
           name: 'Nightly Release $$'
           prerelease: true
+          draft: true
           body: |
             This is a nightly release, use it with caution **and do not deploy it in a production environment**
           files: |
@@ -117,9 +118,8 @@ jobs:
             ./${{ env.project-name }}-${{ env.assembly-version }}-symbols.zip
             ./${{ env.project-name }}-${{ env.assembly-version }}-dependencies.zip
             ./${{ env.project-name }}-unit-tests.zip
-            ./assembly-bindings.config # It may or may not exist
+            ./assembly-bindings.config
             ./NuGet.zip
-            #./idonotexist.test
 
       # Install the latest .NET SDK to publish NuGet package, as nuget.exe is not available in Linux
       - name: Setup .NET Core
