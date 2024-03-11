@@ -192,9 +192,10 @@
         {
         }
     </script>
-    This page helps you troubleshoot EntraCP with minimal overhead, directly in the context of SharePoint sites.<br />
-    It is written entirely using inline code, so you can easily customize it (and set valid credentials).<br />
-    For security reasons, by default it can only be called from the central administration, but you can simply copy it in the LAYOUTS folder, to call it from any SharePoint web application.<br />
+    This page is designed to help you troubleshoot common issues with EntraCP.<br />
+    It is located in &quot;16\template\admin\EntraCP\TroubleshootEntraCP.aspx&quot;, and you may copy it anywhere under &quot;16\template\LAYOUTS folder&quot;, to call it from any SharePoint site.<br />
+    This page is standalone and does NOT use the EntraCP configuration<br />
+    It is written with inline code so you can edit it using notepad, to replace the hardcoded value &quot;ReplaceWithYourOwnValue&quot; with your own values.
     <br />
     <asp:Literal ID="LblResult" runat="server" Text="" />
     <br />
