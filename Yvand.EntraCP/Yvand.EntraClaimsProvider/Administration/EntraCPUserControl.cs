@@ -102,6 +102,11 @@ namespace Yvand.EntraClaimsProvider.Administration
         {
             get
             {
+                // Settings may be null if EntraCP is not associated with any SPTrustedLoginProvider
+                if (Settings == null)
+                {
+                    return String.Empty;
+                }
                 SPClaimProviderManager claimMgr = SPClaimProviderManager.Local;
                 ClaimTypeConfig idConfig = Settings.ClaimTypes.UserIdentifierConfig;
                 if (idConfig == null)
@@ -116,6 +121,11 @@ namespace Yvand.EntraClaimsProvider.Administration
         {
             get
             {
+                // Settings may be null if EntraCP is not associated with any SPTrustedLoginProvider
+                if (Settings == null)
+                {
+                    return String.Empty;
+                }
                 SPClaimProviderManager claimMgr = SPClaimProviderManager.Local;
                 ClaimTypeConfig idConfig = Settings.ClaimTypes.GroupIdentifierConfig;
                 if (idConfig == null)
