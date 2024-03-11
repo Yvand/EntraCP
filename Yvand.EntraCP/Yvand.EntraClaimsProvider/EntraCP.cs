@@ -61,7 +61,7 @@ namespace Yvand.EntraClaimsProvider
         public EntraIDEntityProvider EntityProvider { get; private set; }
         private ReaderWriterLockSlim Lock_LocalConfigurationRefresh = new ReaderWriterLockSlim();
         protected virtual string PickerEntityDisplayText => "({0}) {1}";
-        protected virtual string PickerEntityOnMouseOver => "{0}={1}";
+        protected virtual string PickerEntityOnMouseOver => "{0}: {1}";
 
         /// <summary>
         /// Gets the settings that contain the configuration for EntraCP
