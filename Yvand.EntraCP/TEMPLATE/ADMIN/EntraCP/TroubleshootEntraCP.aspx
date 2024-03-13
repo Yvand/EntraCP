@@ -180,7 +180,7 @@
                 ClaimsIdentity claimsIdentity = claimsPrincipal.Identity as ClaimsIdentity;
                 BootstrapContext bootstrapContext = claimsIdentity.BootstrapContext as BootstrapContext;
                 string sessionLifetime = bootstrapContext == null ? String.Empty : String.Format("is valid from \"{0}\" to \"{1}\" and it", bootstrapContext.SecurityToken.ValidFrom, bootstrapContext.SecurityToken.ValidTo);
-                LblResult.Text += String.Format("<br/><br/><br/>Current token of user \"{0}\" {1} contains {2} claims:", claimsIdentity.Name, sessionLifetime, claimsIdentity.Claims.Count());
+                LblResult.Text += String.Format("<br/><br/><br/>Token of current user \"{0}\" {1} contains {2} claims:", claimsIdentity.Name, sessionLifetime, claimsIdentity.Claims.Count());
                 foreach (Claim claim in claimsIdentity.Claims)
                 {
                     LblResult.Text += String.Format("<br/>Claim type \"{0}\" with value \"{1}\" issued by \"{2}\".", claim.Type, claim.Value, claim.OriginalIssuer);

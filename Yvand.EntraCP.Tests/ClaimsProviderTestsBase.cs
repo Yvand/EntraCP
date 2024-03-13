@@ -175,52 +175,6 @@ namespace Yvand.EntraClaimsProvider.Tests
             Trace.TraceInformation($"{DateTime.Now:s} [{this.GetType().Name}] Cleanup.");
         }
 
-        protected void ProcessAndTestValidateEntityData(ValidateEntityData registrationData)
-        {
-            bool shouldValidate = registrationData.ShouldValidate;
-            if (ExcludeGuestUsers && registrationData.UserType == ResultUserType.Guest)
-            {
-                shouldValidate = false;
-            }
-            if (ExcludeMemberUsers && registrationData.UserType == ResultUserType.Member)
-            {
-                shouldValidate = false;
-            }
-
-            string claimType = registrationData.EntityType == ResultEntityType.User ?
-                UnitTestsHelper.SPTrust.IdentityClaimTypeInformation.MappedClaimType :
-                UnitTestsHelper.TrustedGroupToAdd_ClaimType;
-
-            SPClaim inputClaim = new SPClaim(claimType, registrationData.ClaimValue, ClaimValueTypes.String, SPOriginalIssuers.Format(SPOriginalIssuerType.TrustedProvider, UnitTestsHelper.SPTrust.Name));
-            TestValidationOperation(inputClaim, shouldValidate, registrationData.ClaimValue);
-        }
-
-        protected void ProcessAndTestSearchEntityData(SearchEntityData registrationData)
-        {
-            // If current entry does not return only users AND either guests or members are excluded, ExpectedResultCount cannot be determined so test cannot run
-            if (registrationData.SearchResultEntityTypes != ResultEntityType.User &&
-                (ExcludeGuestUsers || ExcludeMemberUsers))
-            {
-                return;
-            }
-
-            if (ExcludeGuestUsers && registrationData.SearchResultUserTypes == ResultUserType.Guest)
-            {
-                registrationData.SearchResultCount = 0;
-            }
-            if (ExcludeMemberUsers && registrationData.SearchResultUserTypes == ResultUserType.Member)
-            {
-                registrationData.SearchResultCount = 0;
-            }
-
-            if (Settings.FilterExactMatchOnly == true)
-            {
-                registrationData.SearchResultCount = registrationData.ExactMatch ? 1 : 0;
-            }
-
-            TestSearchOperation(registrationData.Input, registrationData.SearchResultCount, registrationData.SearchResultSingleEntityClaimValue);
-        }
-
         /// <summary>
         /// Start search operation on a specific claims provider
         /// </summary>

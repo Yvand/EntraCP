@@ -106,7 +106,7 @@ namespace Yvand.EntraClaimsProvider
             {
                 if (args.EventSource.Name == "Azure-Identity")
                 {
-                    Logger.Log($"[{EntraCP.ClaimsProviderName}] {args.EventName} {message}", Utils.EventLogToTraceSeverity(args.Level), EventSeverity.Error, TraceCategory.AzureIdentity);
+                    Logger.Log($"[{this.Name}] {args.EventName} {message}", Utils.EventLogToTraceSeverity(args.Level), EventSeverity.Error, TraceCategory.AzureIdentity);
                 }
             }, EventLevel.Informational);
         }

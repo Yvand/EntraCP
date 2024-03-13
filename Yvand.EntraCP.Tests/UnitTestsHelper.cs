@@ -28,15 +28,11 @@ namespace Yvand.EntraClaimsProvider.Tests
         public static string RandomClaimValue => "IDoNotExist";
         public static DirectoryObjectProperty RandomObjectProperty => DirectoryObjectProperty.AccountEnabled;
 
-        public static string TrustedGroupToAdd_ClaimType => TestContext.Parameters["TrustedGroupToAdd_ClaimType"];
-        public static string TrustedGroupToAdd_ClaimValue => TestContext.Parameters["TrustedGroupToAdd_ClaimValue"];
-        public static SPClaim TrustedGroup => new SPClaim(TrustedGroupToAdd_ClaimType, TrustedGroupToAdd_ClaimValue, ClaimValueTypes.String, SPOriginalIssuers.Format(SPOriginalIssuerType.TrustedProvider, SPTrust.Name));
-
         public static string AzureTenantsJsonFile => TestContext.Parameters["AzureTenantsJsonFile"];
         public static string DataFile_EntraId_TestUsers => TestContext.Parameters["DataFile_EntraId_TestUsers"];
         public static string DataFile_EntraId_TestGroups => TestContext.Parameters["DataFile_EntraId_TestGroups"];
-        public static string UserAccountNamePrefix => "testEntraCPUser_";
-        public static string GroupAccountNamePrefix => "testEntraCPGroup_";
+        public static string UserAccountNamePrefix => TestContext.Parameters["UserAccountNamePrefix"];
+        public static string GroupAccountNamePrefix => TestContext.Parameters["GroupAccountNamePrefix"];
         public static string[] UsersMembersOfAllGroups => new string[] { $"{UserAccountNamePrefix}001", $"{UserAccountNamePrefix}010", $"{UserAccountNamePrefix}011", $"{UserAccountNamePrefix}012", $"{UserAccountNamePrefix}013", $"{UserAccountNamePrefix}014", $"{UserAccountNamePrefix}015" };
         public const int TotalNumberOfUsersInSource = 50 + 3; // 50 members + 3 guests
         public const int TotalNumberOfGroupsInSource = 50;
@@ -106,8 +102,8 @@ namespace Yvand.EntraClaimsProvider.Tests
             Uri waRootAuthority = wa.AlternateUrls[0].Uri;
             TestSiteCollUri = new Uri($"{waRootAuthority.GetLeftPart(UriPartial.Authority)}{TestSiteRelativePath}");
             SPClaimProviderManager claimMgr = SPClaimProviderManager.Local;
-            string encodedClaim = claimMgr.EncodeClaim(TrustedGroup);
-            SPUserInfo userInfo = new SPUserInfo { LoginName = encodedClaim, Name = TrustedGroupToAdd_ClaimValue };
+            //string encodedClaim = claimMgr.EncodeClaim(TrustedGroup);
+            //SPUserInfo userInfo = new SPUserInfo { LoginName = encodedClaim, Name = TrustedGroupToAdd_ClaimValue };
 
             FileVersionInfo spAssemblyVersion = FileVersionInfo.GetVersionInfo(Assembly.GetAssembly(typeof(SPSite)).Location);
             string spSiteTemplate = "STS#3"; // modern team site template
@@ -125,7 +121,7 @@ namespace Yvand.EntraClaimsProvider.Tests
                 spSite.RootWeb.CreateDefaultAssociatedGroups(FarmAdmin, FarmAdmin, spSite.RootWeb.Title);
 
                 SPGroup membersGroup = spSite.RootWeb.AssociatedMemberGroup;
-                membersGroup.AddUser(userInfo.LoginName, userInfo.Email, userInfo.Name, userInfo.Notes);
+                //membersGroup.AddUser(userInfo.LoginName, userInfo.Email, userInfo.Name, userInfo.Notes);
                 spSite.Dispose();
             }
 
@@ -136,7 +132,7 @@ namespace Yvand.EntraClaimsProvider.Tests
                 spSite.RootWeb.CreateDefaultAssociatedGroups(FarmAdmin, FarmAdmin, spSite.RootWeb.Title);
 
                 SPGroup membersGroup = spSite.RootWeb.AssociatedMemberGroup;
-                membersGroup.AddUser(userInfo.LoginName, userInfo.Email, userInfo.Name, userInfo.Notes);
+                //membersGroup.AddUser(userInfo.LoginName, userInfo.Email, userInfo.Name, userInfo.Notes);
                 spSite.Dispose();
             }
             else
@@ -144,7 +140,7 @@ namespace Yvand.EntraClaimsProvider.Tests
                 using (SPSite spSite = new SPSite(TestSiteCollUri.AbsoluteUri))
                 {
                     SPGroup membersGroup = spSite.RootWeb.AssociatedMemberGroup;
-                    membersGroup.AddUser(userInfo.LoginName, userInfo.Email, userInfo.Name, userInfo.Notes);
+                    //membersGroup.AddUser(userInfo.LoginName, userInfo.Email, userInfo.Name, userInfo.Notes);
                 }
             }
         }
@@ -173,41 +169,6 @@ namespace Yvand.EntraClaimsProvider.Tests
                 Logger.Dispose();
             }
         }
-    }
-
-    public enum ResultUserType
-    {
-        None,
-        Mixed,
-        Member,
-        Guest,
-    }
-
-    public enum ResultEntityType
-    {
-        None,
-        Mixed,
-        User,
-        Group,
-    }
-
-    public class SearchEntityData
-    {
-        public string Input;
-        public int SearchResultCount;
-        public string SearchResultSingleEntityClaimValue;
-        public ResultEntityType SearchResultEntityTypes;
-        public ResultUserType SearchResultUserTypes;
-        public bool ExactMatch;
-    }
-
-    public class ValidateEntityData
-    {
-        public string ClaimValue;
-        public bool ShouldValidate;
-        public bool IsMemberOfTrustedGroup;
-        public ResultEntityType EntityType;
-        public ResultUserType UserType;
     }
 
     public class EntraIdTestGroup
