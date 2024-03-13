@@ -1,4 +1,5 @@
 ﻿using NUnit.Framework;
+using System;
 
 namespace Yvand.EntraClaimsProvider.Tests
 {
@@ -10,6 +11,7 @@ namespace Yvand.EntraClaimsProvider.Tests
         {
             base.InitializeSettings();
             Settings.FilterExactMatchOnly = true;
+            Settings.ClaimTypes.UpdateIdentifierForGuestUsers(Configuration.DirectoryObjectProperty.UserPrincipalName);
             base.ApplySettings();
         }
 
@@ -19,24 +21,14 @@ namespace Yvand.EntraClaimsProvider.Tests
             base.CheckSettingsTest();
         }
 
-        //[Test, TestCaseSource(typeof(SearchEntityDataSource), nameof(SearchEntityDataSource.GetTestData), new object[] { EntityDataSourceType.UPNB2BGuestAccounts })]
-        //[Repeat(UnitTestsHelper.TestRepeatCount)]
-        //public void TestSearch(SearchEntityData registrationData)
-        //{
-        //    base.ProcessAndTestSearchEntityData(registrationData);
-        //}
-
-        //[TestCase(@"aadgroup1143", 1, "3f4b724c-125d-47b4-b989-195b29417d6e")]
-        //public void TestSearchManual(string inputValue, int expectedResultCount, string expectedEntityClaimValue)
-        //{
-        //    base.TestSearchOperation(inputValue, expectedResultCount, expectedEntityClaimValue);
-        //}
-
-        //[Test, TestCaseSource(typeof(ValidateEntityDataSource), nameof(ValidateEntityDataSource.GetTestData), new object[] { EntityDataSourceType.AllAccounts })]
-        //[Repeat(UnitTestsHelper.TestRepeatCount)]
-        //public void TestAugmentationOperation(ValidateEntityData registrationData)
-        //{
-        //    base.TestAugmentationOperation(registrationData.ClaimValue, registrationData.IsMemberOfTrustedGroup);
-        //}
+        [Test, TestCaseSource(typeof(EntraIdTestUsersSource), nameof(EntraIdTestUsersSource.GetTestData), null)]
+        public void TestAllEntraIDUsers(EntraIdTestUser user)
+        {
+            // Input is not the full UPN value: it should not return any result
+            TestSearchOperation(user.UserPrincipalName.Substring(0, 5), 0, String.Empty);
+            // Input is exactly the UPN value: it should return 1 result
+            TestSearchOperation(user.UserPrincipalName, 1, user.UserPrincipalName);
+            TestValidationOperation(UserIdentifierClaimType, user.UserPrincipalName, true);
+        }
     }
 }

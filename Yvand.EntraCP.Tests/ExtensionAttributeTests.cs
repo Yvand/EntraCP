@@ -28,17 +28,12 @@ namespace Yvand.EntraClaimsProvider.Tests
             base.CheckSettingsTest();
         }
 
+#if DEBUG
         [TestCase("val", 1, "value1")]  // Extension attribute configuration
         public void TestSearchExtensionAttributeManual(string inputValue, int expectedResultCount, string expectedEntityClaimValue)
         {
             base.TestSearchOperation(inputValue, expectedResultCount, expectedEntityClaimValue);
         }
-
-        //[Test, TestCaseSource(typeof(ValidateEntityDataSource), nameof(ValidateEntityDataSource.GetTestData), new object[] { EntityDataSourceType.AllAccounts })]
-        //[Repeat(UnitTestsHelper.TestRepeatCount)]
-        //public void TestAugmentationOperation(ValidateEntityData registrationData)
-        //{
-        //    base.TestAugmentationOperation(registrationData.ClaimValue, registrationData.IsMemberOfTrustedGroup);
-        //}
+#endif
     }
 }
