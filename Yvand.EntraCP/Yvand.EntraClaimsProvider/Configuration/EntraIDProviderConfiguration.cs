@@ -5,7 +5,7 @@ using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Linq;
-using System.Security.Cryptography.X509Certificates;
+using Yvand.EntraClaimsProvider.Logging;
 
 namespace Yvand.EntraClaimsProvider.Configuration
 {
@@ -174,7 +174,7 @@ namespace Yvand.EntraClaimsProvider.Configuration
             {
                 if (_ClaimTypes == null)
                 {
-                    _ClaimTypes = new ClaimTypeConfigCollection(ref this._ClaimTypesCollection);
+                    _ClaimTypes = new ClaimTypeConfigCollection(ref this._ClaimTypesCollection, this.SPTrust);
                 }
                 return _ClaimTypes;
             }
@@ -436,6 +436,17 @@ namespace Yvand.EntraClaimsProvider.Configuration
                 throw new InvalidOperationException($"Some changes made to collection {nameof(ClaimTypes)} are invalid and cannot be committed to configuration database. Inspect inner exception for more details about the error.", ex);
             }
 
+            // Ensure identity claim type is present and valid
+            ClaimTypeConfig identityClaimTypeConfig = this.ClaimTypes.GetIdentifierConfiguration(DirectoryObjectType.User);
+            if (identityClaimTypeConfig == null)
+            {
+                throw new InvalidOperationException($"The configuration is invalid because the identity claim type configuration is missing in the collection {nameof(ClaimTypes)}, so changes cannot be committed to the configuration database.");
+            }
+            else if (identityClaimTypeConfig is IdentityClaimTypeConfig == false)
+            {
+                throw new InvalidOperationException($"The configuration is invalid because the identity claim type configuration is invalid in the collection {nameof(ClaimTypes)}, so changes cannot be committed to the configuration database.");
+            }
+
             foreach (EntraIDTenant tenant in this.EntraIDTenants)
             {
                 if (tenant == null)
@@ -484,10 +495,11 @@ namespace Yvand.EntraClaimsProvider.Configuration
         }
 
         /// <summary>
-        /// Applies the settings passed in parameter to the current settings
+        /// Applies the settings passed in parameter to the local configuration
         /// </summary>
-        /// <param name="settings"></param>
-        public virtual void ApplySettings(IEntraIDProviderSettings settings, bool commitIfValid)
+        /// <param name="settings">Settings to apply to local configuration</param>
+        /// <param name="commitChangesInDatabase">Commit the updates in the local configuration to the configuration database</param>
+        public virtual void ApplySettings(IEntraIDProviderSettings settings, bool commitChangesInDatabase)
         {
             if (settings == null)
             {
@@ -517,7 +529,7 @@ namespace Yvand.EntraClaimsProvider.Configuration
             this.FilterSecurityEnabledGroupsOnly = settings.FilterSecurityEnabledGroupsOnly;
             this.ProxyAddress = settings.ProxyAddress;
 
-            if (commitIfValid)
+            if (commitChangesInDatabase)
             {
                 this.Update();
             }

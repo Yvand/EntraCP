@@ -15,24 +15,33 @@ using System.Diagnostics;
 using System.Linq;
 using System.Net;
 using System.Reflection;
-using System.Threading;
 using System.Threading.Tasks;
 using Yvand.EntraClaimsProvider.Configuration;
+using Yvand.EntraClaimsProvider.Logging;
+using Logger = Yvand.EntraClaimsProvider.Logging.Logger;
 
 namespace Yvand.EntraClaimsProvider
 {
     public class EntraIDEntityProvider : EntityProviderBase
     {
-        public EntraIDEntityProvider(string claimsProviderName) : base(claimsProviderName) { }
-
-        public async override Task<List<string>> GetEntityGroupsAsync(OperationContext currentContext, DirectoryObjectProperty groupProperty)
+        public IClaimsProviderSettings Settings { get; }
+        public EntraIDEntityProvider(string claimsProviderName, IClaimsProviderSettings Settings) : base(claimsProviderName)
         {
-            // Create a Task for each tenant to query
+            this.Settings = Settings;
+        }
+
+        public async override Task<List<string>> GetEntityGroupsAsync(OperationContext currentContext)
+        {
+            DirectoryObjectProperty groupProperty = Settings.GroupIdentifierClaimTypeConfig.EntityProperty;
+            // Create 1 Task for each tenant to query
             IEnumerable<Task<List<string>>> tenantTasks = currentContext.AzureTenants.Select(async tenant =>
             {
                 // Wrap the call to GetEntityGroupsFromTenantAsync() in a Task to avoid a hang when using the "check permissions" dialog
-                List<string> groupsInTenant = await Task.Run(() => GetEntityGroupsFromTenantAsync(currentContext, groupProperty, tenant)).ConfigureAwait(false);
-                return groupsInTenant;
+                using (new SPMonitoredScope($"[{ClaimsProviderName}] Get groups of user \"{currentContext.IncomingEntity.Value}\" from tenant \"{tenant.Name}\"", 1000))
+                {
+                    List<string> groupsInTenant = await Task.Run(() => GetEntityGroupsFromTenantAsync(currentContext, groupProperty, tenant)).ConfigureAwait(false);
+                    return groupsInTenant;
+                }
             });
 
             // Wait for all tenantTasks to complete
@@ -48,8 +57,8 @@ namespace Yvand.EntraClaimsProvider
         public async Task<List<string>> GetEntityGroupsFromTenantAsync(OperationContext currentContext, DirectoryObjectProperty groupProperty, EntraIDTenant tenant)
         {
             // URL encode the filter to prevent that it gets truncated like this: "UserPrincipalName eq 'guest_contoso.com" instead of "UserPrincipalName eq 'guest_contoso.com#EXT#@TENANT.onmicrosoft.com'"
-            string getMemberUserFilter = $"{currentContext.IncomingEntityClaimTypeConfig.EntityProperty} eq '{currentContext.IncomingEntity.Value}'";
-            string getGuestUserFilter = $"userType eq 'Guest' and {currentContext.Settings.IdentityClaimTypeConfig.DirectoryObjectPropertyForGuestUsers} eq '{currentContext.IncomingEntity.Value}'";
+            string getMemberUserFilter = $"{this.Settings.UserIdentifierClaimTypeConfig.EntityProperty} eq '{currentContext.IncomingEntity.Value}'";
+            string getGuestUserFilter = $"userType eq 'Guest' and {this.Settings.UserIdentifierClaimTypeConfig.DirectoryObjectPropertyForGuestUsers} eq '{currentContext.IncomingEntity.Value}'";
 
             List<string> groupsInTenant = new List<string>();
             Stopwatch timer = new Stopwatch();
@@ -86,7 +95,7 @@ namespace Yvand.EntraClaimsProvider
                     // POST to /v1.0/users/user@TENANT.onmicrosoft.com/microsoft.graph.getMemberGroups is the preferred way to return security groups as it includes nested groups
                     // But it returns only the group IDs so it can be used only if groupClaimTypeConfig.DirectoryObjectProperty == AzureADObjectProperty.Id
                     // For Guest users, it must be the id: POST to /v1.0/users/18ff6ae9-dd01-4008-a786-aabf71f1492a/microsoft.graph.getMemberGroups
-                    GetMemberGroupsPostRequestBody getGroupsOptions = new GetMemberGroupsPostRequestBody { SecurityEnabledOnly = currentContext.Settings.FilterSecurityEnabledGroupsOnly };
+                    GetMemberGroupsPostRequestBody getGroupsOptions = new GetMemberGroupsPostRequestBody { SecurityEnabledOnly = this.Settings.FilterSecurityEnabledGroupsOnly };
                     GetMemberGroupsPostResponse memberGroupsResponse = await Task.Run(() => tenant.GraphService.Users[user.Id].GetMemberGroups.PostAsGetMemberGroupsPostResponseAsync(getGroupsOptions)).ConfigureAwait(false);
                     if (memberGroupsResponse?.Value != null)
                     {
@@ -122,7 +131,7 @@ namespace Yvand.EntraClaimsProvider
             }
             catch (TaskCanceledException ex)
             {
-                Logger.LogException(ClaimsProviderName, $"while getting groups for user '{currentContext.IncomingEntity.Value}' from tenant '{tenant.Name}': The task likely exceeded the timeout of {currentContext.Settings.Timeout} ms and was canceled", TraceCategory.Augmentation, ex);
+                Logger.LogException(ClaimsProviderName, $"while getting groups for user '{currentContext.IncomingEntity.Value}' from tenant '{tenant.Name}': The task likely exceeded the timeout of {this.Settings.Timeout} ms and was canceled", TraceCategory.Augmentation, ex);
             }
             catch (Exception ex)
             {
@@ -145,6 +154,10 @@ namespace Yvand.EntraClaimsProvider
 
         public async override Task<List<DirectoryObject>> SearchOrValidateEntitiesAsync(OperationContext currentContext)
         {
+            if (String.IsNullOrWhiteSpace(currentContext.Input))
+            {
+                return new List<DirectoryObject>(0);
+            }
             //// this.CurrentConfiguration.EntraIDTenants must be cloned locally to ensure its properties ($select / $filter) won't be updated by multiple threads
             //List<EntraIDTenant> azureTenants = new List<EntraIDTenant>(this.Configuration.EntraIDTenants.Count);
             //foreach (EntraIDTenant tenant in this.Configuration.EntraIDTenants)
@@ -162,26 +175,17 @@ namespace Yvand.EntraClaimsProvider
             string searchPatternStartsWith = "startswith({0}, '{1}')";
             string identityConfigSearchPatternEquals = "({0} eq '{1}' and UserType eq '{2}')";
             string identityConfigSearchPatternStartsWith = "(startswith({0}, '{1}') and UserType eq '{2}')";
+            string groupSearchPatternSGOnlyEquals = "({0} eq '{1}' and securityEnabled eq true)";
+            string groupSearchPatternSGOnlyStartsWith = "(startswith({0}, '{1}') and securityEnabled eq true)";
 
             List<string> userFilterBuilder = new List<string>();
             List<string> groupFilterBuilder = new List<string>();
             List<string> userSelectBuilder = new List<string> { "UserType", "Mail" };    // UserType and Mail are always needed to deal with Guest users
             List<string> groupSelectBuilder = new List<string> { "Id", "securityEnabled" };               // Id is always required for groups
 
-            string filterPattern;
-            string input = currentContext.Input;
 
             // https://github.com/Yvand/AzureCP/issues/88: Escape single quotes as documented in https://docs.microsoft.com/en-us/graph/query-parameters#escaping-single-quotes
-            input = input.Replace("'", "''");
-
-            if (currentContext.ExactSearch)
-            {
-                filterPattern = String.Format(searchPatternEquals, "{0}", input);
-            }
-            else
-            {
-                filterPattern = String.Format(searchPatternStartsWith, "{0}", input);
-            }
+            string input = currentContext.Input.Replace("'", "''");
 
             foreach (ClaimTypeConfig ctConfig in currentContext.CurrentClaimTypeConfigList)
             {
@@ -191,28 +195,16 @@ namespace Yvand.EntraClaimsProvider
                     currentPropertyString = String.Format("{0}_{1}_{2}", "extension", "EXTENSIONATTRIBUTESAPPLICATIONID", currentPropertyString);
                 }
 
-                string currentFilter;
-                if (!ctConfig.SupportsWildcard)
-                {
-                    currentFilter = String.Format(searchPatternEquals, currentPropertyString, input);
-                }
-                else
-                {
-                    // Use String.Replace instead of String.Format because String.Format trows an exception if input contains a '{'
-                    currentFilter = filterPattern.Replace("{0}", currentPropertyString);
-                }
+                string filterForCurrentProp;
 
                 // Id needs a specific check: input must be a valid GUID AND equals filter must be used, otherwise Microsoft Entra ID will throw an error
                 if (ctConfig.EntityProperty == DirectoryObjectProperty.Id)
                 {
+                    ctConfig.DirectoryPropertySupportsWildcard = false;
                     Guid idGuid = new Guid();
                     if (!Guid.TryParse(input, out idGuid))
                     {
                         continue;
-                    }
-                    else
-                    {
-                        currentFilter = String.Format(searchPatternEquals, currentPropertyString, idGuid.ToString());
                     }
                 }
 
@@ -221,30 +213,40 @@ namespace Yvand.EntraClaimsProvider
                     if (ctConfig is IdentityClaimTypeConfig)
                     {
                         IdentityClaimTypeConfig identityClaimTypeConfig = ctConfig as IdentityClaimTypeConfig;
-                        if (!ctConfig.SupportsWildcard)
+                        string filterPatternForCurrentProp = identityConfigSearchPatternEquals;
+                        if (ctConfig.DirectoryPropertySupportsWildcard == true && currentContext.ExactSearch == false)
                         {
-                            currentFilter = "( " + String.Format(identityConfigSearchPatternEquals, currentPropertyString, input, ClaimsProviderConstants.MEMBER_USERTYPE) + " or " + String.Format(identityConfigSearchPatternEquals, identityClaimTypeConfig.DirectoryObjectPropertyForGuestUsers, input, ClaimsProviderConstants.GUEST_USERTYPE) + " )";
+                            filterPatternForCurrentProp = identityConfigSearchPatternStartsWith;
                         }
-                        else
-                        {
-                            if (currentContext.ExactSearch)
-                            {
-                                currentFilter = "( " + String.Format(identityConfigSearchPatternEquals, currentPropertyString, input, ClaimsProviderConstants.MEMBER_USERTYPE) + " or " + String.Format(identityConfigSearchPatternEquals, identityClaimTypeConfig.DirectoryObjectPropertyForGuestUsers, input, ClaimsProviderConstants.GUEST_USERTYPE) + " )";
-                            }
-                            else
-                            {
-                                currentFilter = "( " + String.Format(identityConfigSearchPatternStartsWith, currentPropertyString, input, ClaimsProviderConstants.MEMBER_USERTYPE) + " or " + String.Format(identityConfigSearchPatternStartsWith, identityClaimTypeConfig.DirectoryObjectPropertyForGuestUsers, input, ClaimsProviderConstants.GUEST_USERTYPE) + " )";
-                            }
-                        }
+                        filterForCurrentProp = "( " + String.Format(filterPatternForCurrentProp, currentPropertyString, input, ClaimsProviderConstants.MEMBER_USERTYPE) + " or " + String.Format(identityConfigSearchPatternStartsWith, identityClaimTypeConfig.DirectoryObjectPropertyForGuestUsers, input, ClaimsProviderConstants.GUEST_USERTYPE) + " )";
+                    }
+                    else if (currentContext.ExactSearch || !ctConfig.DirectoryPropertySupportsWildcard)
+                    {
+                        filterForCurrentProp = String.Format(searchPatternEquals, currentPropertyString, input);
+                    }
+                    else
+                    {
+                        filterForCurrentProp = String.Format(searchPatternStartsWith, currentPropertyString, input);
                     }
 
-                    userFilterBuilder.Add(currentFilter);
+                    userFilterBuilder.Add(filterForCurrentProp);
                     userSelectBuilder.Add(currentPropertyString);
                 }
                 else
                 {
                     // else assume it's a Group
-                    groupFilterBuilder.Add(currentFilter);
+                    if (currentContext.ExactSearch || !ctConfig.DirectoryPropertySupportsWildcard)
+                    {
+                        string filterPatternForCurrentProp = this.Settings.FilterSecurityEnabledGroupsOnly ? groupSearchPatternSGOnlyEquals : searchPatternEquals;
+                        filterForCurrentProp = String.Format(filterPatternForCurrentProp, currentPropertyString, input);
+                    }
+                    else
+                    {
+                        string filterPatternForCurrentProp = this.Settings.FilterSecurityEnabledGroupsOnly ? groupSearchPatternSGOnlyStartsWith : searchPatternStartsWith;
+                        filterForCurrentProp = String.Format(filterPatternForCurrentProp, currentPropertyString, input);
+                    }
+
+                    groupFilterBuilder.Add(filterForCurrentProp);
                     groupSelectBuilder.Add(currentPropertyString);
                 }
             }
@@ -252,14 +254,14 @@ namespace Yvand.EntraClaimsProvider
             // Also add metadata properties to $select of corresponding object type
             if (userFilterBuilder.Count > 0)
             {
-                foreach (ClaimTypeConfig ctConfig in currentContext.Settings.RuntimeMetadataConfig.Where(x => x.EntityType == DirectoryObjectType.User))
+                foreach (ClaimTypeConfig ctConfig in this.Settings.RuntimeMetadataConfig.Where(x => x.EntityType == DirectoryObjectType.User))
                 {
                     userSelectBuilder.Add(ctConfig.EntityProperty.ToString());
                 }
             }
             if (groupFilterBuilder.Count > 0)
             {
-                foreach (ClaimTypeConfig ctConfig in currentContext.Settings.RuntimeMetadataConfig.Where(x => x.EntityType == DirectoryObjectType.Group))
+                foreach (ClaimTypeConfig ctConfig in this.Settings.RuntimeMetadataConfig.Where(x => x.EntityType == DirectoryObjectType.Group))
                 {
                     groupSelectBuilder.Add(ctConfig.EntityProperty.ToString());
                 }
@@ -318,19 +320,22 @@ namespace Yvand.EntraClaimsProvider
             // Create a task for each tenant to query
             var tenantQueryTasks = azureTenants.Select(async tenant =>
             {
-                Stopwatch timer = new Stopwatch();
-                timer.Start();
-                List<DirectoryObject> tenantResults = await QueryEntraIDTenantAsync(currentContext, tenant).ConfigureAwait(false);
-                timer.Stop();
-                if (tenantResults != null)
+                using (new SPMonitoredScope($"[{ClaimsProviderName}] Send request to \"{tenant.Name}\" based on input \"{currentContext.Input}\"", 1000))
                 {
-                    Logger.Log($"[{ClaimsProviderName}] Got {tenantResults.Count} users/groups in {timer.ElapsedMilliseconds.ToString()} ms from '{tenant.Name}' with input '{currentContext.Input}'", TraceSeverity.Medium, EventSeverity.Information, TraceCategory.Lookup);
+                    Stopwatch timer = new Stopwatch();
+                    timer.Start();
+                    List<DirectoryObject> tenantResults = await QueryEntraIDTenantAsync(currentContext, tenant).ConfigureAwait(false);
+                    timer.Stop();
+                    if (tenantResults != null)
+                    {
+                        Logger.Log($"[{ClaimsProviderName}] Got {tenantResults.Count} users/groups in {timer.ElapsedMilliseconds.ToString()} ms from '{tenant.Name}' with input '{currentContext.Input}'", TraceSeverity.Medium, EventSeverity.Information, TraceCategory.Lookup);
+                    }
+                    else
+                    {
+                        Logger.Log($"[{ClaimsProviderName}] Got no result from \"{tenant.Name}\" with input '{currentContext.Input}', search took {timer.ElapsedMilliseconds.ToString()} ms", TraceSeverity.Medium, EventSeverity.Information, TraceCategory.Lookup);
+                    }
+                    return tenantResults;
                 }
-                else
-                {
-                    Logger.Log($"[{ClaimsProviderName}] Got no result from '{tenant.Name}' with input '{currentContext.Input}', search took {timer.ElapsedMilliseconds.ToString()} ms", TraceSeverity.Medium, EventSeverity.Information, TraceCategory.Lookup);
-                }
-                return tenantResults;
             });
 
             // Wait for all tasks to complete
@@ -363,7 +368,7 @@ namespace Yvand.EntraClaimsProvider
 
             Logger.Log($"[{ClaimsProviderName}] Querying Microsoft Entra ID tenant '{tenant.Name}' for users and groups, with input '{currentContext.Input}'", TraceSeverity.VerboseEx, EventSeverity.Information, TraceCategory.Lookup);
             object lockAddResultToCollection = new object();
-            int timeout = currentContext.Settings.Timeout;
+            int timeout = this.Settings.Timeout;
             int maxRetry = currentContext.OperationType == OperationType.Validation ? 3 : 2;
             int tenantResultCount = 0;
 

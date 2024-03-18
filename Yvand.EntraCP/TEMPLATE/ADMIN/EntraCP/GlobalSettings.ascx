@@ -45,20 +45,20 @@
         display: none;
     }
 
-    #divNewLdapConnection label {
+    .divfieldset label {
         display: inline-block;
         line-height: 1.8;
-        width: 250px;
+        width: 210px;
     }
 
-    #divUserIdentifiers label {
-        display: inline-block;
-        line-height: 1.8;
-        width: 250px;
+    .divfieldset em {
+        font-weight: bold;
+        font-style: normal;
+        color: #f00;
     }
 
     fieldset {
-        border: 1;
+        border: 1px lightgray solid;
         margin: 0;
         padding: 0;
     }
@@ -73,34 +73,47 @@
             padding: 5px;
             margin: 0;
         }
-
-    #divNewLdapConnection em {
-        font-weight: bold;
-        font-style: normal;
-        color: #f00;
-    }
 </style>
+
 <script type="text/javascript">
     // Builds unique namespace
     window.Entracp = window.Entracp || {};
-    window.Entracp.EntracpSettingsPage = window.Entracp.EntracpSettingsPage || {};
+    window.Entracp.EntracpSettingsPage = window.Entracp.EntracpSettingsPage || {
 
-    // Identity permission section
-    window.Entracp.EntracpSettingsPage.CheckRbIdentityCustomGraphProperty = function () {
-        var control = (document.getElementById("<%= RbIdentityCustomGraphProperty.ClientID %>"));
-        if (control != null) {
-            control.checked = true;
+        Init: function () {
+            // Add event handlers to preview the permission's value for both entity types, based on current settings
+            // users
+            $('#<%= DdlUserIdDirectoryPropertyMembers.ClientID %>').on('change', function () {
+                window.Entracp.EntracpSettingsPage.UpdatePermissionValuePreview("<%= DdlUserIdDirectoryPropertyMembers.ClientID %>", "lblMemberPermissionValuePreview");
+            });
+            $('#<%= DdlUserIdDirectoryPropertyGuests.ClientID %>').on('change', function () {
+                window.Entracp.EntracpSettingsPage.UpdatePermissionValuePreview("<%= DdlUserIdDirectoryPropertyGuests.ClientID %>", "lblGuestPermissionValuePreview");
+            });
+
+            // Groups
+            $('#<%= DdlGroupDirectoryProperty.ClientID %>').on('change', function () {
+                window.Entracp.EntracpSettingsPage.UpdatePermissionValuePreview("<%= DdlGroupDirectoryProperty.ClientID %>", "lblGroupsPermissionValuePreview");
+            });
+
+            // Set the initial value
+            this.UpdatePermissionValuePreview("<%= DdlUserIdDirectoryPropertyMembers.ClientID %>", "lblMemberPermissionValuePreview");
+            this.UpdatePermissionValuePreview("<%= DdlUserIdDirectoryPropertyGuests.ClientID %>", "lblGuestPermissionValuePreview");
+            this.UpdatePermissionValuePreview("<%= DdlGroupDirectoryProperty.ClientID %>", "lblGroupsPermissionValuePreview");
+        },
+
+        UpdatePermissionValuePreview: function (inputIdentifierAttributeId, lblResultId) {
+            // Get the TxtGroupLdapAttribute value
+            var entityPermissionValue = $("#" + inputIdentifierAttributeId + " :selected").text();
+
+            // Set the label control to preview a group's value
+            var entityPermissionValuePreview = "<" + entityPermissionValue + "_from_EntraID>";
+            $("#" + lblResultId).text(entityPermissionValuePreview);
         }
-    }
-
+    };
     // Register initialization method to run when DOM is ready and most SP JS functions loaded
     _spBodyOnLoadFunctionNames.push("window.Entracp.EntracpSettingsPage.Init");
-
-    window.Entracp.EntracpSettingsPage.Init = function () {
-        // Variables initialized from server side code
-
-    }
 </script>
+
 <table width="100%" class="propertysheet" cellspacing="0" cellpadding="0" border="0">
     <tr>
         <td class="ms-descriptionText">
@@ -120,175 +133,238 @@
     </tr>
 </table>
 <table border="0" cellspacing="0" cellpadding="0" width="100%">
-    <wssuc:buttonsection runat="server">
+    <wssuc:ButtonSection runat="server">
         <template_buttons>
-			<asp:Button UseSubmitBehavior="false" runat="server" class="ms-ButtonHeightWidth" OnClick="BtnOK_Click" Text="<%$Resources:wss,multipages_okbutton_text%>" id="BtnOKTop" accesskey="<%$Resources:wss,okbutton_accesskey%>"/>
-		</template_buttons>
-    </wssuc:buttonsection>
-    <wssuc:inputformsection title="Registered Microsoft Entra ID tenants" runat="server">
+            <asp:Button UseSubmitBehavior="false" runat="server" class="ms-ButtonHeightWidth" OnClick="BtnOK_Click" Text="<%$Resources:wss,multipages_okbutton_text%>" ID="BtnOKTop" AccessKey="<%$Resources:wss,okbutton_accesskey%>" />
+        </template_buttons>
+    </wssuc:ButtonSection>
+    <wssuc:InputFormSection Title="Registered Microsoft Entra ID tenants" runat="server">
         <template_description>
-				<wssawc:EncodedLiteral runat="server" text="Microsoft Entra ID tenants currently registered in EntraCP configuration." EncodeMethod='HtmlEncodeAllowSimpleTextFormatting'/>
-			</template_description>
+            <wssawc:EncodedLiteral runat="server" Text="Microsoft Entra ID tenants currently registered in EntraCP configuration." EncodeMethod='HtmlEncodeAllowSimpleTextFormatting' />
+            <br />
+            <br />
+            <wssawc:EncodedLiteral runat="server" Text="<a href='https://entracp.yvand.net/docs/configure-the-credentials/' target='_blank'>Read this article</a> to find how to update the credentials on a tenant already registered." EncodeMethod='NoEncode' />
+        </template_description>
         <template_inputformcontrols>
-			<tr><td>
-			<wssawc:SPGridView runat="server" ID="grdAzureTenants" AutoGenerateColumns="false" OnRowDeleting="grdAzureTenants_RowDeleting">
-				<Columns>
-					<asp:BoundField DataField="Id" ItemStyle-CssClass="Entracp-HideCol" HeaderStyle-CssClass="Entracp-HideCol"/>
-					<asp:BoundField HeaderText="Tenant" DataField="TenantName"/>
-					<asp:BoundField HeaderText="Application ID" DataField="ClientID"/>
-                    <asp:BoundField HeaderText="Authentication mode" DataField="AuthenticationMode" />
-                    <asp:BoundField HeaderText="Extension Attributes Application ID" DataField="ExtensionAttributesApplicationId" />
-					<asp:CommandField HeaderText="Action" ButtonType="Button" DeleteText="Remove" ShowDeleteButton="True" />
-				</Columns>
-			</wssawc:SPGridView>
-			</td></tr>
-		</template_inputformcontrols>
-    </wssuc:inputformsection>
-    <wssuc:inputformsection title="Register a new Microsoft Entra ID tenant" runat="server">
+            <tr>
+                <td>
+                    <wssawc:SPGridView runat="server" ID="grdAzureTenants" AutoGenerateColumns="false" OnRowDeleting="grdAzureTenants_RowDeleting">
+                        <Columns>
+                            <asp:BoundField DataField="Id" ItemStyle-CssClass="Entracp-HideCol" HeaderStyle-CssClass="Entracp-HideCol" />
+                            <asp:BoundField HeaderText="Tenant" DataField="TenantName" />
+                            <asp:BoundField HeaderText="Application ID" DataField="ClientID" />
+                            <asp:BoundField HeaderText="Authentication mode" DataField="AuthenticationMode" />
+                            <asp:BoundField HeaderText="Extension Attributes Application ID" DataField="ExtensionAttributesApplicationId" />
+                            <asp:CommandField HeaderText="Action" ButtonType="Button" DeleteText="Remove" ShowDeleteButton="True" />
+                        </Columns>
+                    </wssawc:SPGridView>
+                </td>
+            </tr>
+        </template_inputformcontrols>
+    </wssuc:InputFormSection>
+    <wssuc:InputFormSection Title="Register a new Microsoft Entra ID tenant" runat="server">
         <template_description>
-			<wssawc:EncodedLiteral runat="server" text="<p>EntraCP needs its own app registration to connect to your Microsoft Entra ID tenant, with permissions 'GroupMember.Read.All' and 'User.Read.All'.<br />Check <a href='https://entracp.yvand.net/docs/usage/register-application/' target='_blank'>this page</a> to see how to register it properly.<br /><br />EntraCP can authenticate using <a href='https://docs.microsoft.com/en-us/azure/active-directory/develop/v2-oauth2-client-creds-grant-flow#get-a-token' target='_blank'>either a secret or a certificate</a>.</p>" EncodeMethod='NoEncode' />
-		</template_description>
+            <wssawc:EncodedLiteral runat="server" Text="<p>EntraCP needs its own app registration to connect to your Microsoft Entra ID tenant, with permissions 'GroupMember.Read.All' and 'User.Read.All'.<br /><br />Read <a href='https://entracp.yvand.net/overview/register-application/' target='_blank'>this article</a> to find how to register the app in your tenant.<br /><br />EntraCP can authenticate using <a href='https://learn.microsoft.com/en-us/entra/identity-platform/v2-oauth2-client-creds-grant-flow#get-a-token' target='_blank'>either a secret or a certificate</a>.</p>" EncodeMethod='NoEncode' />
+        </template_description>
         <template_inputformcontrols>
-			<tr><td>
-				<div id="divNewLdapConnection">
-				<fieldset>
-				<legend>Information on the Microsoft Entra ID tenant to register</legend>
-				<ul>
-					<li>
-						<label for="<%= TxtTenantName.ClientID %>">Tenant name: <em>*</em></label>
-						<wssawc:InputFormTextBox title="Azure tenant name" class="ms-input" ID="TxtTenantName" Columns="50" Runat="server" MaxLength="255" Text="TENANTNAME.onMicrosoft.com" />
-					</li>
-                    <li>
-                        <label for="<%= DDLAzureCloudInstance.ClientID %>">Cloud instance: <em>*</em></label>
-                        <asp:DropDownList runat="server" ID="DDLAzureCloudInstance" class="ms-input" Columns="50" />
-                    </li>
-					<li>
-						<label for="<%= TxtClientId.ClientID %>">Application (client) ID: <em>*</em></label>
-						<wssawc:InputFormTextBox title="Password" class="ms-input" ID="TxtClientId" Columns="50" Runat="server" MaxLength="255" />
-					</li>
-					<li>
-						<p style="margin-bottom: 0px; margin-top: 0px">Specify either a client secret or a client certificate (but not both):</p>
-					</li>
-					<li>
-						<label for="<%= TxtClientSecret.ClientID %>">Client secret:</label>
-						<wssawc:InputFormTextBox title="Password" class="ms-input" ID="TxtClientSecret" Columns="50" Runat="server" MaxLength="255" TextMode="Password" />
-					</li>
-                    <li>
-						<label for="<%= InputClientCertFile.ClientID %>">Client certificate (.pfx):</label>
-                        <span dir="ltr">
-					        <input id="InputClientCertFile" title="Client certificate file" runat="server" type="file" size="38" class="ms-fileinput" />
-				        </span>
-                    </li>
-					<li>
-						<label for="<%= InputClientCertPassword.ClientID %>">Client certificate password:</label>
-						<wssawc:InputFormTextBox title="Certificate password" class="ms-input" ID="InputClientCertPassword" Columns="50" Runat="server" MaxLength="255" TextMode="Password" />
-					</li>
-					<li>
-						<label for="<%= ChkMemberUserTypeOnly.ClientID %>">Filter out <a href="https://docs.microsoft.com/en-us/azure/active-directory/active-directory-b2b-user-properties" target="_blank">Guest users</a> on this tenant:</label>
-						<table border="0" cellpadding="0" cellspacing="0" style="display: inline;">
-						<wssawc:InputFormCheckBox class="ms-input" ID="ChkMemberUserTypeOnly" ToolTip="Filter out Guest users" runat="server" />
-						</table>
-					</li>
-                    <li>
-                        <label for="<%= TxtExtensionAttributesApplicationId.ClientID %>">Application ID for extension attributes</label>
-			            <wssawc:InputFormTextBox title="Application ID" class="ms-input" ID="TxtExtensionAttributesApplicationId" Columns="50" Runat="server" MaxLength="36" />
-                    </li>
-				</ul>
-				<div class="divbuttons">
-					<asp:Button runat="server" ID="BtnTestAzureTenantConnection" Text="Test connection to tenant" ToolTip="Make sure this server has access to Internet before you click" onclick="BtnTestAzureTenantConnection_Click" class="ms-ButtonHeightWidth" />
-					<asp:Button runat="server" ID="BtnAddLdapConnection" Text="Add tenant" OnClick="BtnAddAzureTenant_Click" class="ms-ButtonHeightWidth" />
-				</div>
-				<p style="margin-left: 10px;">
-					<asp:Label ID="LabelErrorTestLdapConnection" Runat="server" EnableViewState="False" class="ms-error" />
-					<asp:Label ID="LabelTestTenantConnectionOK" Runat="server" EnableViewState="False" />
-				</p>
-				</fieldset>
-				</div>
-			</td></tr>
-		 </template_inputformcontrols>
-    </wssuc:inputformsection>
-    <wssuc:inputformsection runat="server" title="User identifier property" description="Set the properties that identify users in Microsoft Entra ID.<br/>EntraCP automatically maps them to the identity claim type you set in the SPTrustedIdentityTokenIssuer.<br/><br/>Be cautious: Changing it may make existing Microsoft Entra ID user permissions invalid.">
-        <template_inputformcontrols>
-			<div id="divUserIdentifiers">
-			<label>User identifier for 'Member' users:</label>
-			<asp:DropDownList runat="server" ID="DDLDirectoryPropertyMemberUsers" class="ms-input">
-			</asp:DropDownList>
-			<br/>
-			<label>User identifier for 'Guest' users:</label>
-			<asp:DropDownList runat="server" ID="DDLDirectoryPropertyGuestUsers" class="ms-input">
-			</asp:DropDownList>
-			</div> 
-		</template_inputformcontrols>
-    </wssuc:inputformsection>
-    <wssuc:inputformsection runat="server" title="Display of user identifier results" description="Configure how entities created with the identity claim type appear in the people picker.<br/>It does not affect the actual value of the entity, which is always set with the user identifier property.">
-        <template_inputformcontrols>
-			<wssawc:InputFormRadioButton id="RbIdentityDefault"
-				LabelText="Show the user identifier value"
-				Checked="true"
-				GroupName="RbIdentityDisplay"
-				CausesValidation="false"
-				runat="server" >
-            </wssawc:InputFormRadioButton>
-			<wssawc:InputFormRadioButton id="RbIdentityCustomGraphProperty"
-				LabelText="Show the value of another property, e.g the display name:"
-				GroupName="RbIdentityDisplay"
-				CausesValidation="false"
-				runat="server" >
-            <wssuc:InputFormControl LabelText="InputFormControlLabelText">
-				<Template_control>
-                    <asp:DropDownList runat="server" ID="DDLGraphPropertyToDisplay" onclick="window.Entracp.EntracpSettingsPage.CheckRbIdentityCustomGraphProperty()" class="ms-input" />
-				</Template_control>
-			</wssuc:InputFormControl>
-			</wssawc:InputFormRadioButton>
-		</template_inputformcontrols>
-    </wssuc:inputformsection>
-    <wssuc:inputformsection runat="server" title="Bypass Microsoft Entra ID lookup" description="Skip Microsoft Entra ID lookup and consider any input as valid.<br/><br/>This can be useful to keep people picker working even if connectivity with the Azure tenant is lost.">
-        <template_inputformcontrols>
-            <asp:Checkbox Runat="server" Name="ChkAlwaysResolveUserInput" ID="ChkAlwaysResolveUserInput" Text="Bypass Microsoft Entra ID lookup" />
-		</template_inputformcontrols>
-    </wssuc:inputformsection>
-    <wssuc:inputformsection runat="server" title="Require exact match" description="Enable this to return only results that match exactly the user input (case-insensitive).">
-        <template_inputformcontrols>
-			<asp:Checkbox Runat="server" Name="ChkFilterExactMatchOnly" ID="ChkFilterExactMatchOnly" Text="Require exact match" />
-		</template_inputformcontrols>
-    </wssuc:inputformsection>
-    <wssuc:inputformsection runat="server" title="Augmentation" >
-		<template_description>
-			<wssawc:EncodedLiteral runat="server" text="Enable augmentation to let EntraCP get " EncodeMethod='HtmlEncodeAllowSimpleTextFormatting'/>
-			<a href="https://docs.microsoft.com/en-us/graph/api/user-getmembergroups" target="_blank"><wssawc:EncodedLiteral runat="server" text="all the Microsoft Entra ID groups" EncodeMethod='HtmlEncodeAllowSimpleTextFormatting'/></a>
-			<wssawc:EncodedLiteral runat="server" text="that the user is a member of.<br/><br/>If not enabled, permissions granted to Microsoft Entra ID groups may not work correctly." EncodeMethod='HtmlEncodeAllowSimpleTextFormatting'/>
-		</template_description>
-        <template_inputformcontrols>
-			<asp:Checkbox Runat="server" Name="ChkAugmentAADRoles" ID="ChkAugmentAADRoles" Text="Retrieve Microsoft Entra ID groups" />
-		</template_inputformcontrols>
-    </wssuc:inputformsection>
-    <wssuc:inputformsection runat="server" title="Proxy" >
-		<template_description>
-			<wssawc:EncodedLiteral runat="server" text="Configure the proxy if it is needed for EntraCP to connect to Microsoft Graph." EncodeMethod='HtmlEncodeAllowSimpleTextFormatting'/>
-		</template_description>
-        <template_inputformcontrols>
-            <label for="<%= InputProxyAddress.ClientID %>">Proxy address:</label><br/>
-            <wssawc:InputFormTextBox title="Proxy address" class="ms-input" ID="InputProxyAddress" Columns="50" Runat="server" />
-		</template_inputformcontrols>
-    </wssuc:inputformsection>
-    <wssuc:inputformsection runat="server" title="Type of groups">
+            <tr>
+                <td>
+                    <div class="divfieldset">
+                        <fieldset>
+                            <legend>Information on the Microsoft Entra ID tenant to register</legend>
+                            <ul>
+                                <li>
+                                    <label for="<%= TxtTenantName.ClientID %>">Tenant name: <em>*</em></label>
+                                    <wssawc:InputFormTextBox title="Azure tenant name" class="ms-input" ID="TxtTenantName" Columns="50" runat="server" MaxLength="255" Text="TENANTNAME.onMicrosoft.com" />
+                                </li>
+                                <li>
+                                    <label for="<%= DDLAzureCloudInstance.ClientID %>">Cloud instance: <em>*</em></label>
+                                    <asp:DropDownList runat="server" ID="DDLAzureCloudInstance" class="ms-input" Columns="50" />
+                                </li>
+                                <li>
+                                    <label for="<%= TxtClientId.ClientID %>">Application (client) ID: <em>*</em></label>
+                                    <wssawc:InputFormTextBox title="Password" class="ms-input" ID="TxtClientId" Columns="50" runat="server" MaxLength="255" />
+                                </li>
+                                <li>
+                                    <p style="margin-bottom: 0px; margin-top: 0px">Specify either a client secret or a client certificate (but not both):</p>
+                                </li>
+                                <li>
+                                    <label for="<%= TxtClientSecret.ClientID %>">Client secret:</label>
+                                    <wssawc:InputFormTextBox title="Password" class="ms-input" ID="TxtClientSecret" Columns="50" runat="server" MaxLength="255" TextMode="Password" />
+                                </li>
+                                <li>
+                                    <label for="<%= InputClientCertFile.ClientID %>">Client certificate (.pfx):</label>
+                                    <span dir="ltr">
+                                        <input id="InputClientCertFile" title="Client certificate file" runat="server" type="file" size="38" class="ms-fileinput" />
+                                    </span>
+                                </li>
+                                <li>
+                                    <label for="<%= InputClientCertPassword.ClientID %>">Client certificate password:</label>
+                                    <wssawc:InputFormTextBox title="Certificate password" class="ms-input" ID="InputClientCertPassword" Columns="50" runat="server" MaxLength="255" TextMode="Password" />
+                                </li>
+                                <li>
+                                    <label for="<%= ChkMemberUserTypeOnly.ClientID %>">Exclude <a href="https://learn.microsoft.com/en-us/entra/external-id/user-properties" target="_blank">guest users</a></label>
+                                    <asp:CheckBox class="ms-input" ID="ChkMemberUserTypeOnly" runat="server" />
+                                </li>
+                                <li>
+                                    <label for="<%= TxtExtensionAttributesApplicationId.ClientID %>">App ID for extension attributes</label>
+                                    <wssawc:InputFormTextBox title="Application ID" class="ms-input" ID="TxtExtensionAttributesApplicationId" Columns="50" runat="server" MaxLength="36" />
+                                </li>
+                            </ul>
+                            <div class="divbuttons">
+                                <asp:Button runat="server" ID="BtnTestAzureTenantConnection" Text="Test connection to tenant" ToolTip="Make sure this server has access to Internet before you click" OnClick="BtnTestAzureTenantConnection_Click" class="ms-ButtonHeightWidth" />
+                                <asp:Button runat="server" ID="BtnAddLdapConnection" Text="Add tenant" OnClick="BtnAddAzureTenant_Click" class="ms-ButtonHeightWidth" />
+                            </div>
+                            <p style="margin-left: 10px;">
+                                <asp:Label ID="LabelErrorTestLdapConnection" runat="server" EnableViewState="False" class="ms-error" />
+                                <asp:Label ID="LabelTestTenantConnectionOK" runat="server" EnableViewState="False" />
+                            </p>
+                        </fieldset>
+                    </div>
+                </td>
+            </tr>
+        </template_inputformcontrols>
+    </wssuc:InputFormSection>
+    <wssuc:InputFormSection runat="server" Title="Configuration for the user identifier">
         <template_description>
-			<wssawc:EncodedLiteral runat="server" text="Set if all " EncodeMethod='HtmlEncodeAllowSimpleTextFormatting'/>
-			<a href="https://docs.microsoft.com/en-us/graph/api/resources/groups-overview?view=graph-rest-1.0" target="_blank"><wssawc:EncodedLiteral runat="server" text="type of groups" EncodeMethod='HtmlEncodeAllowSimpleTextFormatting'/></a>
-			<wssawc:EncodedLiteral runat="server" text="should be returned, including Office 365 unified groups, or only those that are security-enabled." EncodeMethod='HtmlEncodeAllowSimpleTextFormatting'/>
-		</template_description>
+            <sharepoint:encodedliteral runat="server" text="Specify the settings to search, create and display the permissions for users." encodemethod='HtmlEncodeAllowSimpleTextFormatting' />
+            <br />
+            <br />
+            <sharepoint:encodedliteral runat="server" text="Preview of an encoded permission, based on current settings:" encodemethod='HtmlEncodeAllowSimpleTextFormatting' />
+            <br />
+            <sharepoint:encodedliteral runat="server" text="- For members:" encodemethod='HtmlEncodeAllowSimpleTextFormatting' />
+            <br />
+            <b><span><%= UserIdentifierEncodedValuePrefix %><span id="lblMemberPermissionValuePreview"></span></span></b>
+            <br />
+            <sharepoint:encodedliteral runat="server" text="- For guests:" encodemethod='HtmlEncodeAllowSimpleTextFormatting' />
+            <br />
+            <b><span><%= UserIdentifierEncodedValuePrefix %><span id="lblGuestPermissionValuePreview"></span></span></b>
+        </template_description>
         <template_inputformcontrols>
-			<asp:Checkbox Runat="server" Name="ChkFilterSecurityEnabledGroupsOnly" ID="ChkFilterSecurityEnabledGroupsOnly" Text="Return <a href='https://docs.microsoft.com/en-us/graph/api/resources/groups-overview?view=graph-rest-1.0' target='_blank'>security-enabled</a> groups only" />
-		</template_inputformcontrols>
-    </wssuc:inputformsection>
-    <wssuc:inputformsection runat="server" title="Reset EntraCP configuration" description="Restore configuration to its default values. All changes, including in claim types mappings, will be lost.">
+            <tr>
+                <td colspan="2">
+                    <div class="divfieldset">
+                        <fieldset>
+                            <legend>User identifier settings</legend>
+                            <ol>
+                                <li>
+                                    <label>Claim type</label>
+                                    <label>
+                                        <wssawc:EncodedLiteral runat="server" ID="lblUserIdClaimType" EncodeMethod='HtmlEncodeAllowSimpleTextFormatting' /></label>
+                                </li>
+                                <li>
+                                    <label for="<%= DdlUserIdDirectoryPropertyMembers.ClientID %>">Identifier for members <em>*</em></label>
+                                    <asp:DropDownList runat="server" ID="DdlUserIdDirectoryPropertyMembers" class="ms-input" />
+                                </li>
+                                <li>
+                                    <label for="<%= DdlUserIdDirectoryPropertyGuests.ClientID %>">Identifier for guests <em>*</em></label>
+                                    <asp:DropDownList runat="server" ID="DdlUserIdDirectoryPropertyGuests" class="ms-input" />
+                                </li>
+                                <li>
+                                    <label for="<%= DdlUserGraphPropertyToDisplay.ClientID %>" title="Property displayed in the results list in the people picker (leave blank to use the user identifier attribute)">Property as display text &#9432;</label>
+                                    <asp:DropDownList runat="server" ID="DdlUserGraphPropertyToDisplay" class="ms-input" />
+                                </li>
+                            </ol>
+                        </fieldset>
+                    </div>
+                </td>
+            </tr>
+        </template_inputformcontrols>
+    </wssuc:InputFormSection>
+
+    <wssuc:InputFormSection runat="server" Title="Configuration for the group identifier">
+        <template_description>
+            <sharepoint:encodedliteral runat="server" text="Specify the settings to search, create and display the permissions for groups." encodemethod='HtmlEncodeAllowSimpleTextFormatting' />
+            <br />
+            <br />
+            <sharepoint:encodedliteral runat="server" text="Preview of an encoded permission, based on current settings:" encodemethod='HtmlEncodeAllowSimpleTextFormatting' />
+            <br />
+            <b><span><%= GroupIdentifierEncodedValuePrefix %><span id="lblGroupsPermissionValuePreview"></span></span></b>
+            <br />
+            <br />
+            <sharepoint:encodedliteral runat="server" text="- Augmentation: If enabled, EntraCP gets the group membership of the users when they sign-in, or whenever SharePoint asks for it. If not enabled, permissions granted to Microsoft Entra ID groups may not work." encodemethod='HtmlEncodeAllowSimpleTextFormatting' />
+        </template_description>
         <template_inputformcontrols>
-			<asp:Button runat="server" ID="BtnResetConfig" Text="Reset EntraCP configuration" onclick="BtnResetConfig_Click" class="ms-ButtonHeightWidth" OnClientClick="return confirm('Do you really want to reset EntraCP configuration?');" />
-		</template_inputformcontrols>
-    </wssuc:inputformsection>
-    <wssuc:buttonsection runat="server">
+            <tr>
+                <td colspan="2">
+                    <div class="divfieldset">
+                        <fieldset>
+                            <legend>Group identifier settings</legend>
+                            <ol>
+                                <li>
+                                    <label title="This liste is based on the claim types registered in your SharePoint trust">
+                                        <wssawc:EncodedLiteral runat="server" Text="Claim type &#9432;" EncodeMethod='HtmlEncodeAllowSimpleTextFormatting' /><em>*</em></label>
+                                    <asp:DropDownList ID="DdlGroupClaimType" runat="server" class="ms-input">
+                                        <asp:ListItem Selected="True" Value="None"></asp:ListItem>
+                                    </asp:DropDownList>
+                                </li>
+                                <li>
+                                    <label for="<%= DdlGroupDirectoryProperty.ClientID %>">Identifier property <em>*</em></label>
+                                    <asp:DropDownList runat="server" ID="DdlGroupDirectoryProperty" class="ms-input" />
+                                </li>
+                                <li>
+                                    <label for="<%= DdlGroupGraphPropertyToDisplay.ClientID %>" title="Property displayed in the results list in the people picker (leave blank to use the group identifier attribute)">Property as display text &#9432;</label>
+                                    <asp:DropDownList runat="server" ID="DdlGroupGraphPropertyToDisplay" class="ms-input" />
+                                </li>
+                                <li>
+                                    <label for="<%= ChkFilterSecurityEnabledGroupsOnly.ClientID %>">Enable augmentation</label>
+                                    <asp:CheckBox runat="server" Name="ChkAugmentAADRoles" ID="ChkAugmentAADRoles" />
+                                </li>
+                                <li>
+                                    <label for="<%= ChkFilterSecurityEnabledGroupsOnly.ClientID %>">Return only <a href='https://learn.microsoft.com/en-us/graph/api/resources/groups-overview' target='_blank'>security-enabled groups</a></label>
+                                    <asp:CheckBox runat="server" Name="ChkFilterSecurityEnabledGroupsOnly" ID="ChkFilterSecurityEnabledGroupsOnly" />
+                                </li>
+                            </ol>
+                        </fieldset>
+                    </div>
+                </td>
+            </tr>
+        </template_inputformcontrols>
+    </wssuc:InputFormSection>
+
+    <wssuc:InputFormSection runat="server" Title="Bypass Entra ID">
+        <template_description>
+            <sharepoint:encodedliteral runat="server" text="Bypass the Entra ID tenant(s) registered and, depending on the context:" encodemethod='HtmlEncodeAllowSimpleTextFormatting' />
+            <br />
+            <sharepoint:encodedliteral runat="server" text="- Search: Uses the input as the claim's value, and return 1 entity per claim type." encodemethod='HtmlEncodeAllowSimpleTextFormatting' />
+            <br />
+            <sharepoint:encodedliteral runat="server" text="- Validation: Validates the incoming entity as-is." encodemethod='HtmlEncodeAllowSimpleTextFormatting' />
+            <br />
+            <sharepoint:encodedliteral runat="server" text="This setting does not affect the augmentation." encodemethod='HtmlEncodeAllowSimpleTextFormatting' />
+            <br />
+            <br />
+            <sharepoint:encodedliteral runat="server" text="It can be used as a mitigation if one or more SharePoint server(s) lost the connection with your Entra ID tenant(s), until it is restored." encodemethod='HtmlEncodeAllowSimpleTextFormatting' />
+        </template_description>
+        <template_inputformcontrols>
+            <asp:CheckBox runat="server" Name="ChkAlwaysResolveUserInput" ID="ChkAlwaysResolveUserInput" Text="Bypass the Entra ID tenant(s) registered" />
+        </template_inputformcontrols>
+    </wssuc:InputFormSection>
+    <wssuc:InputFormSection runat="server" Title="Require exact match" Description="Enable this to return only results that match exactly the user input (case-insensitive).">
+        <template_inputformcontrols>
+            <asp:CheckBox runat="server" Name="ChkFilterExactMatchOnly" ID="ChkFilterExactMatchOnly" Text="Require exact match when typing in the people picker" />
+        </template_inputformcontrols>
+    </wssuc:InputFormSection>
+
+    <wssuc:InputFormSection runat="server" Title="Proxy">
+        <template_description>
+            <wssawc:EncodedLiteral runat="server" Text="Configure the proxy if it is needed for EntraCP to connect to Microsoft Graph." EncodeMethod='HtmlEncodeAllowSimpleTextFormatting' />
+            <br />
+            <br />
+            <wssawc:EncodedLiteral runat="server" Text="Additional configuration in Windows may still be required. Read <a href='https://entracp.yvand.net/docs/configure-the-proxy/' target='_blank'>this article</a> to fully configure the proxy." EncodeMethod='NoEncode' />
+        </template_description>
+        <template_inputformcontrols>
+            <label for="<%= InputProxyAddress.ClientID %>">Proxy address:</label><br />
+            <wssawc:InputFormTextBox title="Proxy address" class="ms-input" ID="InputProxyAddress" Columns="50" runat="server" />
+        </template_inputformcontrols>
+    </wssuc:InputFormSection>
+    <wssuc:InputFormSection runat="server" Title="Reset EntraCP configuration" Description="Restore configuration to its default values. All changes, including in claim types mappings, will be lost.">
+        <template_inputformcontrols>
+            <asp:Button runat="server" ID="BtnResetConfig" Text="Reset EntraCP configuration" OnClick="BtnResetConfig_Click" class="ms-ButtonHeightWidth" OnClientClick="return confirm('Do you really want to reset EntraCP configuration?');" />
+        </template_inputformcontrols>
+    </wssuc:InputFormSection>
+    <wssuc:ButtonSection runat="server">
         <template_buttons>
-			<asp:Button UseSubmitBehavior="false" runat="server" class="ms-ButtonHeightWidth" OnClick="BtnOK_Click" Text="<%$Resources:wss,multipages_okbutton_text%>" id="BtnOK" accesskey="<%$Resources:wss,okbutton_accesskey%>"/>
-		</template_buttons>
-    </wssuc:buttonsection>
+            <asp:Button UseSubmitBehavior="false" runat="server" class="ms-ButtonHeightWidth" OnClick="BtnOK_Click" Text="<%$Resources:wss,multipages_okbutton_text%>" ID="BtnOK" AccessKey="<%$Resources:wss,okbutton_accesskey%>" />
+        </template_buttons>
+    </wssuc:ButtonSection>
 </table>

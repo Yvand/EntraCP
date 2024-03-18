@@ -3,8 +3,10 @@ using Microsoft.SharePoint.Administration;
 using Microsoft.SharePoint.Administration.Claims;
 using Microsoft.SharePoint.Utilities;
 using System;
+using System.Security.Claims;
 using System.Web.UI;
 using Yvand.EntraClaimsProvider.Configuration;
+using Yvand.EntraClaimsProvider.Logging;
 
 namespace Yvand.EntraClaimsProvider.Administration
 {
@@ -93,6 +95,44 @@ namespace Yvand.EntraClaimsProvider.Administration
                     this._SPTrust = Utils.GetSPTrustAssociatedWithClaimsProvider(this.ClaimsProviderName);
                 }
                 return this._SPTrust;
+            }
+        }
+
+        protected string UserIdentifierEncodedValuePrefix
+        {
+            get
+            {
+                // Settings may be null if EntraCP is not associated with any SPTrustedLoginProvider
+                if (Settings == null)
+                {
+                    return String.Empty;
+                }
+                SPClaimProviderManager claimMgr = SPClaimProviderManager.Local;
+                ClaimTypeConfig idConfig = Settings.ClaimTypes.UserIdentifierConfig;
+                if (idConfig == null)
+                {
+                    return String.Empty;
+                }
+                return claimMgr.EncodeClaim(new SPClaim(idConfig.ClaimType, String.Empty, ClaimValueTypes.String, SPOriginalIssuers.Format(SPOriginalIssuerType.TrustedProvider, SPTrust.Name)));
+            }
+        }
+
+        protected string GroupIdentifierEncodedValuePrefix
+        {
+            get
+            {
+                // Settings may be null if EntraCP is not associated with any SPTrustedLoginProvider
+                if (Settings == null)
+                {
+                    return String.Empty;
+                }
+                SPClaimProviderManager claimMgr = SPClaimProviderManager.Local;
+                ClaimTypeConfig idConfig = Settings.ClaimTypes.GroupIdentifierConfig;
+                if (idConfig == null)
+                {
+                    return String.Empty;
+                }
+                return claimMgr.EncodeClaim(new SPClaim(idConfig.ClaimType, String.Empty, ClaimValueTypes.String, SPOriginalIssuers.Format(SPOriginalIssuerType.TrustedProvider, SPTrust.Name)));
             }
         }
 

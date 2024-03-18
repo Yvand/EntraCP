@@ -109,20 +109,13 @@ namespace Yvand.EntraClaimsProvider.Configuration
         [Persisted]
         private string _ClaimType;
 
-        internal bool SupportsWildcard
+        public bool DirectoryPropertySupportsWildcard
         {
-            get
-            {
-                if (this.EntityProperty == DirectoryObjectProperty.Id)
-                {
-                    return false;
-                }
-                else
-                {
-                    return true;
-                }
-            }
+            get { return _DirectoryPropertySupportsWildcard; }
+            set { _DirectoryPropertySupportsWildcard = value; }
         }
+        [Persisted]
+        private bool _DirectoryPropertySupportsWildcard = true;
 
         /// <summary>
         /// If set to true, property ClaimType should not be set
@@ -136,7 +129,7 @@ namespace Yvand.EntraClaimsProvider.Configuration
         private bool _UseMainClaimTypeOfDirectoryObject = false;
 
         /// <summary>
-        /// Can contain a member of class PeopleEditorEntityDataKey http://msdn.microsoft.com/en-us/library/office/microsoft.sharepoint.webcontrols.peopleeditorentitydatakeys_members(v=office.15).aspx
+        /// Can contain a member of class PeopleEditorEntityDataKey https://learn.microsoft.com/en-us/previous-versions/office/sharepoint-server/ms415673(v=office.15)
         /// to populate additional metadata in permission created
         /// </summary>
         public string EntityDataKey
@@ -308,17 +301,19 @@ namespace Yvand.EntraClaimsProvider.Configuration
 
         public bool IsReadOnly => false;
 
-        public IdentityClaimTypeConfig IdentityClaim
+        public IdentityClaimTypeConfig UserIdentifierConfig
         {
             get
             {
-                IdentityClaimTypeConfig ctConfig = (IdentityClaimTypeConfig)innerCol.FirstOrDefault(x => x is IdentityClaimTypeConfig);
-                return ctConfig;
+                return (IdentityClaimTypeConfig)GetIdentifierConfiguration(DirectoryObjectType.User);
             }
-            set
+        }
+
+        public ClaimTypeConfig GroupIdentifierConfig
+        {
+            get
             {
-                IdentityClaimTypeConfig ctConfig = (IdentityClaimTypeConfig)innerCol.FirstOrDefault(x => x is IdentityClaimTypeConfig);
-                ctConfig = value;
+                return GetIdentifierConfiguration(DirectoryObjectType.Group);
             }
         }
 
@@ -332,9 +327,10 @@ namespace Yvand.EntraClaimsProvider.Configuration
             this.SPTrust = spTrust;
         }
 
-        internal ClaimTypeConfigCollection(ref Collection<ClaimTypeConfig> innerCol)
+        internal ClaimTypeConfigCollection(ref Collection<ClaimTypeConfig> innerCol, SPTrustedLoginProvider spTrust)
         {
             this.innerCol = innerCol;
+            this.SPTrust = spTrust;
         }
 
         public ClaimTypeConfig this[int index]
@@ -494,7 +490,7 @@ namespace Yvand.EntraClaimsProvider.Configuration
             if (newIdentifier == DirectoryObjectProperty.NotSet) { throw new ArgumentNullException(nameof(newIdentifier)); }
 
             bool identifierUpdated = false;
-            IdentityClaimTypeConfig identityClaimType = innerCol.FirstOrDefault(x => x is IdentityClaimTypeConfig) as IdentityClaimTypeConfig;
+            IdentityClaimTypeConfig identityClaimType = UserIdentifierConfig;
             if (identityClaimType == null)
             {
                 return identifierUpdated;
@@ -510,6 +506,39 @@ namespace Yvand.EntraClaimsProvider.Configuration
             {
                 ClaimTypeConfig curCT = (ClaimTypeConfig)innerCol[i];
                 if (curCT.EntityType == DirectoryObjectType.User &&
+                    curCT.EntityProperty == newIdentifier)
+                {
+                    innerCol.RemoveAt(i);
+                    break;  // There can be only 1 potential duplicate
+                }
+            }
+
+            identityClaimType.EntityProperty = newIdentifier;
+            identifierUpdated = true;
+            return identifierUpdated;
+        }
+
+        public bool UpdateGroupIdentifier(DirectoryObjectProperty newIdentifier)
+        {
+            if (newIdentifier == DirectoryObjectProperty.NotSet) { throw new ArgumentNullException(nameof(newIdentifier)); }
+
+            bool identifierUpdated = false;
+            ClaimTypeConfig identityClaimType = GroupIdentifierConfig;
+            if (identityClaimType == null)
+            {
+                return identifierUpdated;
+            }
+
+            if (identityClaimType.EntityProperty == newIdentifier)
+            {
+                return identifierUpdated;
+            }
+
+            // Check if the new DirectoryObjectProperty duplicates an existing item, and delete it if so
+            for (int i = 0; i < innerCol.Count; i++)
+            {
+                ClaimTypeConfig curCT = (ClaimTypeConfig)innerCol[i];
+                if (curCT.EntityType == DirectoryObjectType.Group &&
                     curCT.EntityProperty == newIdentifier)
                 {
                     innerCol.RemoveAt(i);
@@ -596,6 +625,15 @@ namespace Yvand.EntraClaimsProvider.Configuration
             }
         }
 
+        public void RemoveAll(IEnumerable<ClaimTypeConfig> elementsToRemove)
+        {
+            // ToList() creates a copy and avoids exception "Collection was modified; enumeration operation may not execute"
+            foreach (ClaimTypeConfig ct in elementsToRemove.ToList())
+            {
+                Remove(ct);
+            }
+        }
+
         public bool Remove(ClaimTypeConfig item)
         {
             if (SPTrust != null && String.Equals(item.ClaimType, SPTrust.IdentityClaimTypeInformation.MappedClaimType, StringComparison.InvariantCultureIgnoreCase))
@@ -607,7 +645,7 @@ namespace Yvand.EntraClaimsProvider.Configuration
             for (int i = 0; i < innerCol.Count; i++)
             {
                 ClaimTypeConfig curCT = (ClaimTypeConfig)innerCol[i];
-                if (new ClaimTypeConfigSameConfig().Equals(curCT, item))
+                if (curCT.Equals(item))
                 {
                     innerCol.RemoveAt(i);
                     result = true;
@@ -651,11 +689,50 @@ namespace Yvand.EntraClaimsProvider.Configuration
             return new ClaimTypeConfigEnumerator(this);
         }
 
+        /// <summary>
+        /// Returns the configuration for the given <paramref name="objectType"/>
+        /// </summary>
+        /// <param name="objectType"></param>
+        /// <returns></returns>
+        public ClaimTypeConfig GetIdentifierConfiguration(DirectoryObjectType objectType)
+        {
+            if (objectType == DirectoryObjectType.User)
+            {
+                // If user, add a test on the identity claim type
+                return innerCol
+                .FirstOrDefault(x =>
+                    x.EntityType == DirectoryObjectType.User &&
+                    String.Equals(x.ClaimType, SPTrust.IdentityClaimTypeInformation.MappedClaimType, StringComparison.OrdinalIgnoreCase) &&
+                    x.UseMainClaimTypeOfDirectoryObject == false);
+            }
+            else
+            {
+                // There can be only 1 DirectoryObjectType "Group"
+                return innerCol
+                .FirstOrDefault(x =>
+                    x.EntityType == DirectoryObjectType.Group &&
+                    x.UseMainClaimTypeOfDirectoryObject == false);
+            }
+        }
+
+        /// <summary>
+        /// Returns the configuration for the given <paramref name="claimType"/>
+        /// </summary>
+        /// <param name="claimType"></param>
+        /// <returns></returns>
+        /// <exception cref="ArgumentNullException"></exception>
         public ClaimTypeConfig GetByClaimType(string claimType)
         {
             if (String.IsNullOrEmpty(claimType)) { throw new ArgumentNullException(nameof(claimType)); }
             ClaimTypeConfig ctConfig = innerCol.FirstOrDefault(x => String.Equals(claimType, x.ClaimType, StringComparison.InvariantCultureIgnoreCase));
             return ctConfig;
+        }
+
+        public IEnumerable<ClaimTypeConfig> GetConfigsMappedToClaimType()
+        {
+            return innerCol.Where(x => 
+                !String.IsNullOrWhiteSpace(x.ClaimType) && 
+                !x.UseMainClaimTypeOfDirectoryObject);
         }
     }
 

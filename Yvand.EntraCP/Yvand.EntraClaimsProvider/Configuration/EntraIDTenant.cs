@@ -3,8 +3,6 @@ using Azure.Core.Pipeline;
 using Azure.Identity;
 using Microsoft.Graph;
 using Microsoft.Identity.Client;
-using Microsoft.Kiota.Http.HttpClientLibrary.Middleware;
-using Microsoft.Kiota.Http.HttpClientLibrary.Middleware.Options;
 using Microsoft.SharePoint.Administration;
 using System;
 using System.Collections.Generic;
@@ -12,11 +10,11 @@ using System.IO;
 using System.Linq;
 using System.Net;
 using System.Net.Http;
-using System.Reflection;
-using System.Runtime.ConstrainedExecution;
 using System.Security.Cryptography;
 using System.Security.Cryptography.X509Certificates;
 using System.Threading.Tasks;
+using Yvand.EntraClaimsProvider.Logging;
+using Logger = Yvand.EntraClaimsProvider.Logging.Logger;
 
 namespace Yvand.EntraClaimsProvider.Configuration
 {
@@ -292,25 +290,6 @@ namespace Yvand.EntraClaimsProvider.Configuration
         {
             EntraIDTenant copy = new EntraIDTenant();
             copy = (EntraIDTenant)Utils.CopyPersistedFields(typeof(EntraIDTenant), this, copy);
-            return copy;
-        }
-
-        public EntraIDTenant CopyPublicProperties()
-        {
-            EntraIDTenant copy = new EntraIDTenant();
-            // Copy non-inherited public properties
-            PropertyInfo[] propertiesToCopy = this.GetType().GetProperties(BindingFlags.Public | BindingFlags.Instance | BindingFlags.DeclaredOnly);
-            foreach (PropertyInfo property in propertiesToCopy)
-            {
-                if (property.CanWrite)
-                {
-                    object value = property.GetValue(this);
-                    if (value != null)
-                    {
-                        property.SetValue(copy, value);
-                    }
-                }
-            }
             return copy;
         }
 
