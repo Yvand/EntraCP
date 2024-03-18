@@ -1,6 +1,6 @@
 # Change log for ~~AzureCP~~ EntraCP
 
-## Unreleased
+## EntraCP v24.0.20240318.32 enhancements & bug-fixes - Published in March 18, 2024
 
 * Fix "Edit" links fail to work on the "Claim types configuration" page - https://github.com/Yvand/EntraCP/pull/220
 * Fix the verbosity of the logging which could no longer be changed and optimized it
