@@ -180,7 +180,7 @@ namespace Yvand.EntraClaimsProvider
 
             List<string> userFilterBuilder = new List<string>();
             List<string> groupFilterBuilder = new List<string>();
-            List<string> userSelectBuilder = new List<string> { "UserType", "Mail" };    // UserType and Mail are always needed to deal with Guest users
+            List<string> userSelectBuilder = new List<string> { "Id", "UserType", "Mail" };    // UserType and Mail are always needed to deal with Guest users
             List<string> groupSelectBuilder = new List<string> { "Id", "securityEnabled" };               // Id is always required for groups
 
 
@@ -450,6 +450,34 @@ namespace Yvand.EntraClaimsProvider
                         groupsRequestId = await batchRequestContent.AddBatchRequestStepAsync(groupRequest).ConfigureAwait(false);
                     }
 
+                    // List of groups that users must be member of, to be returned to SharePoint
+                    string[] groupsWhichUsersMustBeMemberOfRequestIds = null;
+                    string groupsWhichUsersMustBeMemberOfAny = this.Settings.GroupsWhichUsersMustBeMemberOfAny;
+                    //groupsWhichUsersMustBeMemberOfAny = "c9a94341-89b5-4109-a501-2a14027b5bf0"; // testEntraCPGroup_005 - everyone member
+                    //groupsWhichUsersMustBeMemberOfAny = "cd5f135c-9fe5-4ec2-90d9-114e9ad2e236"; // testEntraCPGroup_004 - testEntraCPUser_001 and testEntraCPUser_010 members
+                    if (!String.IsNullOrEmpty(groupsWhichUsersMustBeMemberOfAny))
+                    {
+                        string[] groupIds = groupsWhichUsersMustBeMemberOfAny.Split(new char[] { ',' }, StringSplitOptions.RemoveEmptyEntries);
+                        groupsWhichUsersMustBeMemberOfRequestIds = new string[groupIds.Length];
+                        int groupIdx = 0;
+                        foreach (string groupId in groupIds)
+                        {
+                            RequestInformation usersMembersOfGroupRequest = tenant.GraphService.Groups[groupId].Members.GraphUser.ToGetRequestInformation(conf =>
+                            {
+                                conf.QueryParameters = new Microsoft.Graph.Groups.Item.Members.GraphUser.GraphUserRequestBuilder.GraphUserRequestBuilderGetQueryParameters
+                                {
+                                    Select = new string[] { "Id" },
+                                };
+                                conf.Options = new List<IRequestOption>
+                                {
+                                    retryHandlerOption,
+                                };
+                            });
+                            groupsWhichUsersMustBeMemberOfRequestIds[groupIdx] = await batchRequestContent.AddBatchRequestStepAsync(usersMembersOfGroupRequest).ConfigureAwait(false);
+                            groupIdx++;
+                        }
+                    }
+
                     // Run the batch request and get the HTTP status code of each request inside the batch
                     BatchResponseContentCollection batchResponse = await tenant.GraphService.Batch.PostAsync(batchRequestContent).ConfigureAwait(false);
                     Dictionary<string, HttpStatusCode> requestsStatusInBatchResponse = await batchResponse.GetResponsesStatusCodesAsync().ConfigureAwait(false);
@@ -484,6 +512,30 @@ namespace Yvand.EntraClaimsProvider
                         }
                     }
 
+                    List<string> userIdsMembersOfAnyRequiredGroup = null;
+                    if (groupsWhichUsersMustBeMemberOfRequestIds != null)
+                    {
+                        // only need 1 list that contains unique user ids
+                        userIdsMembersOfAnyRequiredGroup = new List<string>();
+                        foreach (string groupsWhichUsersMustBeMemberOfRequestId in groupsWhichUsersMustBeMemberOfRequestIds)
+                        {
+                            HttpStatusCode usersMembersOfAnyRequiredGroupResponseStatus;
+                            UserCollectionResponse usersMembersOfAnyRequiredGroupResponse = null;
+                            if (requestsStatusInBatchResponse.TryGetValue(groupsWhichUsersMustBeMemberOfRequestId, out usersMembersOfAnyRequiredGroupResponseStatus))
+                            {
+                                if (usersMembersOfAnyRequiredGroupResponseStatus == HttpStatusCode.OK)
+                                {
+                                    usersMembersOfAnyRequiredGroupResponse = await batchResponse.GetResponseByIdAsync<UserCollectionResponse>(groupsWhichUsersMustBeMemberOfRequestId).ConfigureAwait(false);
+                                    userIdsMembersOfAnyRequiredGroup.AddRange(usersMembersOfAnyRequiredGroupResponse.Value.Where(x => !userIdsMembersOfAnyRequiredGroup.Contains(x.Id)).Select(x => x.Id).ToList());
+                                }
+                                else
+                                {
+                                    Logger.Log($"[{ClaimsProviderName}] Request inside the batch returned unexpected status '{usersMembersOfAnyRequiredGroupResponseStatus}' for tenant '{tenant.Name}', to get users members of a group ", TraceSeverity.Unexpected, EventSeverity.Error, TraceCategory.Lookup);
+                                }
+                            }
+                        }
+                    }
+
                     Logger.Log($"[{ClaimsProviderName}] Query to tenant '{tenant.Name}' returned {(userCollectionResult?.Value == null ? 0 : userCollectionResult.Value.Count)} user(s) with filter \"{tenant.UserFilter}\" and {(groupCollectionResult?.Value == null ? 0 : groupCollectionResult.Value.Count)} group(s) with filter \"{tenant.GroupFilter}\"", TraceSeverity.VerboseEx, EventSeverity.Information, TraceCategory.Lookup);
                     // Process users result
                     if (userCollectionResult?.Value != null)
@@ -508,6 +560,11 @@ namespace Yvand.EntraClaimsProvider
                                     {
                                         addUser = true;
                                     }
+                                }
+
+                                if (userIdsMembersOfAnyRequiredGroup != null && !userIdsMembersOfAnyRequiredGroup.Contains(user.Id))
+                                {
+                                    addUser = false;
                                 }
 
                                 bool continueIteration = true;

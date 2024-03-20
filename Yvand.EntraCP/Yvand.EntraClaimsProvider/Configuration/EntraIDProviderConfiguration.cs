@@ -69,6 +69,11 @@ namespace Yvand.EntraClaimsProvider.Configuration
         /// Gets if only security-enabled groups should be returned
         /// </summary>
         bool FilterSecurityEnabledGroupsOnly { get; }
+
+        /// <summary>
+        /// Comma separated list of group IDs (max 18 values). If set, users must be member of any of these groups to be returned to SharePoint
+        /// </summary>
+        string GroupsWhichUsersMustBeMemberOfAny { get; }
         #endregion
     }
 
@@ -89,6 +94,7 @@ namespace Yvand.EntraClaimsProvider.Configuration
         public List<EntraIDTenant> EntraIDTenants { get; set; } = new List<EntraIDTenant>();
         public string ProxyAddress { get; set; }
         public bool FilterSecurityEnabledGroupsOnly { get; set; } = false;
+        public string GroupsWhichUsersMustBeMemberOfAny { get; set; }
         #endregion
 
         public EntraIDProviderSettings() { }
@@ -268,6 +274,14 @@ namespace Yvand.EntraClaimsProvider.Configuration
         }
         [Persisted]
         private bool _FilterSecurityEnabledGroupsOnly = false;
+
+        public string GroupsWhichUsersMustBeMemberOfAny
+        {
+            get => _GroupsWhichUsersMustBeMemberOfAny;
+            set => _GroupsWhichUsersMustBeMemberOfAny = value;
+        }
+        [Persisted]
+        private string _GroupsWhichUsersMustBeMemberOfAny;
         #endregion
 
         #region "Other properties"
