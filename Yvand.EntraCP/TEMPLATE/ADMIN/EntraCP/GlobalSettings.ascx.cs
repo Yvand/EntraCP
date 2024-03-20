@@ -450,6 +450,16 @@ namespace Yvand.EntraClaimsProvider.Administration
             }
             return true;
         }
+
+        protected void grdAzureTenants_RowEditing(object sender, GridViewEditEventArgs e)
+        {
+
+        }
+
+        protected void grdAzureTenants_RowCancelingEdit(object sender, GridViewCancelEditEventArgs e)
+        {
+
+        }
     }
 
     public class PropertyCollectionBinder
