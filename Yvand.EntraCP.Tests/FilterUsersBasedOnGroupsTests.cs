@@ -23,7 +23,7 @@ namespace Yvand.EntraClaimsProvider.Tests
         }
 
         [Test, TestCaseSource(typeof(EntraIdTestUsersSource), nameof(EntraIdTestUsersSource.GetTestData), null)]
-        public void TestAllEntraIDUsers(EntraIdTestUser user)
+        public void TestAllTestUsers(EntraIdTestUser user)
         {
             base.TestSearchAndValidateForEntraIDUser(user);
         }
@@ -31,7 +31,7 @@ namespace Yvand.EntraClaimsProvider.Tests
 #if DEBUG
         [TestCase("testEntraCPUser_001")]
         [TestCase("testEntraCPUser_020")]
-        public void DebugSpecificUser(string upnPrefix)
+        public void DebugTestUser(string upnPrefix)
         {
             EntraIdTestUser user = EntraIdTestUsersSource.Users.Find(x => x.UserPrincipalName.StartsWith(upnPrefix));
             base.TestSearchAndValidateForEntraIDUser(user);
@@ -58,19 +58,9 @@ namespace Yvand.EntraClaimsProvider.Tests
         }
 
         [Test, TestCaseSource(typeof(EntraIdTestUsersSource), nameof(EntraIdTestUsersSource.GetTestData), null)]
-        public void TestAllEntraIDUsers(EntraIdTestUser user)
+        public void TestAllTestUsers(EntraIdTestUser user)
         {
             base.TestSearchAndValidateForEntraIDUser(user);
         }
-
-#if DEBUG
-        [TestCase("testEntraCPUser_001")]
-        [TestCase("testEntraCPUser_020")]
-        public void DebugSpecificUser(string upnPrefix)
-        {
-            EntraIdTestUser user = EntraIdTestUsersSource.Users.Find(x => x.UserPrincipalName.StartsWith(upnPrefix));
-            base.TestSearchAndValidateForEntraIDUser(user);
-        }
-#endif
     }
 }

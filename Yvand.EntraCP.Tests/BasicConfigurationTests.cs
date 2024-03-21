@@ -21,26 +21,26 @@ namespace Yvand.EntraClaimsProvider.Tests
         }
 
         [Test, TestCaseSource(typeof(EntraIdTestGroupsSource), nameof(EntraIdTestGroupsSource.GetTestData), new object[] { true })]
-        public void TestAllEntraIDGroups(EntraIdTestGroup group)
+        public void TestAllTestGroups(EntraIdTestGroup group)
         {
             TestSearchAndValidateForEntraIDGroup(group);
         }
 
         [Test]
-        public void TestSomeEntraIDGroups([Random(0, UnitTestsHelper.TotalNumberOfGroupsInSource - 1, 5)] int idx)
+        public void TestRandomTestGroups([Random(0, UnitTestsHelper.TestGroupsCount - 1, 5)] int idx)
         {
             EntraIdTestGroup group = EntraIdTestGroupsSource.Groups[idx];
             TestSearchAndValidateForEntraIDGroup(group);
         }
 
         [Test, TestCaseSource(typeof(EntraIdTestUsersSource), nameof(EntraIdTestUsersSource.GetTestData), null)]
-        public void TestAllEntraIDUsers(EntraIdTestUser user)
+        public void TestAllTestUsers(EntraIdTestUser user)
         {
             base.TestSearchAndValidateForEntraIDUser(user);
         }
 
         [Test]
-        public void TestSomeEntraIDUsers([Random(0, UnitTestsHelper.TotalNumberOfUsersInSource - 1, 5)] int idx)
+        public void TestRandomTestUsers([Random(0, UnitTestsHelper.TestUsersCount - 1, 5)] int idx)
         {
             var user = EntraIdTestUsersSource.Users[idx];
             base.TestSearchAndValidateForEntraIDUser(user);
@@ -48,12 +48,20 @@ namespace Yvand.EntraClaimsProvider.Tests
 
         [Test]
         [Repeat(5)]
-        public override void TestAugmentationForUsersMembersOfAllGroups()
+        public override void TestAugmentationOfGoldUsersAgainstRandomGroups()
         {
-            base.TestAugmentationForUsersMembersOfAllGroups();
+            base.TestAugmentationOfGoldUsersAgainstRandomGroups();
         }
 
 #if DEBUG
+        [TestCase("testEntraCPUser_001")]
+        [TestCase("testEntraCPUser_020")]
+        public void DebugTestUser(string upnPrefix)
+        {
+            EntraIdTestUser user = EntraIdTestUsersSource.Users.Find(x => x.UserPrincipalName.StartsWith(upnPrefix));
+            base.TestSearchAndValidateForEntraIDUser(user);
+        }
+
         [TestCase(@"testentracp", 30, "")]
         public void DebugSearchManual(string inputValue, int expectedResultCount, string expectedEntityClaimValue)
         {

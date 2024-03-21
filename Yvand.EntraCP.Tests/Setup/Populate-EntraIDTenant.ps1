@@ -21,7 +21,7 @@ if ($confirmation -ne 'y') {
 }
 
 # Set specific attributes for some users
-$usersWithSpecificAttributes = @( 
+$usersWithSpecificSettings = @( 
     @{ UserPrincipalName = "$($accountNamePrefix)001@$($tenantName)"; IsMemberOfAllGroups = $true }
     @{ UserPrincipalName = "$($accountNamePrefix)002@$($tenantName)"; UserAttributes = @{ "GivenName" = "firstname 002" } }
     @{ UserPrincipalName = "$($accountNamePrefix)010@$($tenantName)"; IsMemberOfAllGroups = $true }
@@ -95,7 +95,7 @@ for ($i = 1; $i -le $totalUsers; $i++) {
     $user = Get-MgUser -Filter "UserPrincipalName eq '$userPrincipalName'"
     if ($null -eq $user) {
         $additionalUserAttributes = New-Object -TypeName HashTable
-        $userHasSpecificAttributes = [System.Linq.Enumerable]::FirstOrDefault($usersWithSpecificAttributes, [Func[object, bool]] { param($x) $x.UserPrincipalName -like $userPrincipalName })
+        $userHasSpecificAttributes = [System.Linq.Enumerable]::FirstOrDefault($usersWithSpecificSettings, [Func[object, bool]] { param($x) $x.UserPrincipalName -like $userPrincipalName })
         if ($null -ne $userHasSpecificAttributes.UserAttributes) {
             $additionalUserAttributes = $userHasSpecificAttributes.UserAttributes
         }
@@ -116,7 +116,7 @@ foreach ($guestUser in $guestUsers) {
 
 # groups
 $allTestEntraUsers = Get-MgUser -ConsistencyLevel eventual -Count userCount -Filter "startsWith(DisplayName, '$($accountNamePrefix)')" -OrderBy UserPrincipalName
-$usersMemberOfAllGroups = [System.Linq.Enumerable]::Where($usersWithSpecificAttributes, [Func[object, bool]] { param($x) $x.IsMemberOfAllGroups -eq $true })
+$usersMemberOfAllGroups = [System.Linq.Enumerable]::Where($usersWithSpecificSettings, [Func[object, bool]] { param($x) $x.IsMemberOfAllGroups -eq $true })
 
 # Bulk add groups
 $totalGroups = 50

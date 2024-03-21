@@ -35,9 +35,9 @@ namespace Yvand.EntraClaimsProvider.Tests
 
         [Test]
         [Repeat(5)]
-        public override void TestAugmentationForUsersMembersOfAllGroups()
+        public override void TestAugmentationOfGoldUsersAgainstRandomGroups()
         {
-            base.TestAugmentationForUsersMembersOfAllGroups();
+            base.TestAugmentationOfGoldUsersAgainstRandomGroups();
         }
     }
 
@@ -74,9 +74,9 @@ namespace Yvand.EntraClaimsProvider.Tests
 
         [Test]
         [Repeat(5)]
-        public override void TestAugmentationForUsersMembersOfAllGroups()
+        public override void TestAugmentationOfGoldUsersAgainstRandomGroups()
         {
-            base.TestAugmentationForUsersMembersOfAllGroups();
+            base.TestAugmentationOfGoldUsersAgainstRandomGroups();
         }
     }
 
@@ -113,9 +113,9 @@ namespace Yvand.EntraClaimsProvider.Tests
 
         [Test]
         [Repeat(5)]
-        public override void TestAugmentationForUsersMembersOfAllGroups()
+        public override void TestAugmentationOfGoldUsersAgainstRandomGroups()
         {
-            base.TestAugmentationForUsersMembersOfAllGroups();
+            base.TestAugmentationOfGoldUsersAgainstRandomGroups();
         }
     }
 }

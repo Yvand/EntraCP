@@ -143,7 +143,7 @@ namespace Yvand.EntraClaimsProvider.Tests
                     // Test 2: If test 1 is false, is current test users member of all the test groups?
                     if (!groupWithAllTestUsersAreMembersFound)
                     {
-                        EntraIdTestUserSettings userSettings = EntraIdTestUsersSource.UsersWithSpecificAttributes.FirstOrDefault(x => String.Equals(x.UserPrincipalName, entity.UserPrincipalName, StringComparison.InvariantCultureIgnoreCase));
+                        EntraIdTestUserSettings userSettings = EntraIdTestUsersSource.UsersWithSpecificSettings.FirstOrDefault(x => String.Equals(x.UserPrincipalName, entity.UserPrincipalName, StringComparison.InvariantCultureIgnoreCase));
                         if (userSettings == null) { userSettings = new EntraIdTestUserSettings(); }
                         if (!userSettings.IsMemberOfAllGroups)
                         {
@@ -178,16 +178,19 @@ namespace Yvand.EntraClaimsProvider.Tests
             TestValidationOperation(UserIdentifierClaimType, claimValue, shouldValidate);
         }
 
-        public virtual void TestAugmentationForUsersMembersOfAllGroups()
+        /// <summary>
+        /// Gold users are the test users who are members of all the test groups
+        /// </summary>
+        public virtual void TestAugmentationOfGoldUsersAgainstRandomGroups()
         {
             Random rnd = new Random();
-            int randomIdx = rnd.Next(0, UnitTestsHelper.TotalNumberOfGroupsInSource - 1);
-            var anyGroup = EntraIdTestGroupsSource.Groups[randomIdx];
-            bool shouldBeMember = Settings.FilterSecurityEnabledGroupsOnly && !anyGroup.SecurityEnabled ? false : true;
-            foreach (string userAccountName in UnitTestsHelper.UsersMembersOfAllGroups)
+            int randomIdx = rnd.Next(0, UnitTestsHelper.TestGroupsCount - 1);
+            var randomGroup = EntraIdTestGroupsSource.Groups[randomIdx];
+            bool shouldBeMember = Settings.FilterSecurityEnabledGroupsOnly && !randomGroup.SecurityEnabled ? false : true;
+            
+            foreach (string userPrincipalName in EntraIdTestUsersSource.UsersWithSpecificSettings.Where(x => x.IsMemberOfAllGroups).Select(x => x.UserPrincipalName))
             {
-                string userPrincipalName = EntraIdTestUsersSource.Users.First(x => x.UserPrincipalName.StartsWith(userAccountName, StringComparison.InvariantCultureIgnoreCase)).UserPrincipalName;
-                TestAugmentationOperation(userPrincipalName, shouldBeMember, anyGroup.Id);
+                TestAugmentationOperation(userPrincipalName, shouldBeMember, randomGroup.Id);
             }
         }
 
