@@ -62,10 +62,8 @@ namespace Yvand.EntraClaimsProvider.Tests
             Settings.Timeout = 99999;
 #endif
 
-            string json = File.ReadAllText(UnitTestsHelper.AzureTenantsJsonFile);
-            List<EntraIDTenant> azureTenants = JsonConvert.DeserializeObject<List<EntraIDTenant>>(json);
-            Settings.EntraIDTenants = azureTenants;
-            foreach (EntraIDTenant tenant in azureTenants)
+            Settings.EntraIDTenants = new List<EntraIDTenant> { UnitTestsHelper.TenantConnection };
+            foreach (EntraIDTenant tenant in Settings.EntraIDTenants)
             {
                 tenant.ExcludeMemberUsers = ExcludeMemberUsers;
                 tenant.ExcludeGuestUsers = ExcludeGuestUsers;
@@ -126,21 +124,54 @@ namespace Yvand.EntraClaimsProvider.Tests
             }
             else
             {
-                if (entity.UserType == UserType.Member)
+                if (!String.IsNullOrWhiteSpace(Settings.GroupsWhichUsersMustBeMemberOfAny))
                 {
-                    claimValue = Settings.ClaimTypes.UserIdentifierConfig.EntityProperty == Configuration.DirectoryObjectProperty.UserPrincipalName ?
-                        entity.UserPrincipalName :
-                        entity.Mail;
-                    expectedCount = ExcludeMemberUsers ? 0 : 1;
-                    shouldValidate = !ExcludeMemberUsers;
+                    // Test 1: Does Settings.GroupsWhichUsersMustBeMemberOfAny contain any group where all test users are members?
+                    bool groupWithAllTestUsersAreMembersFound = false;
+                    string[] groupIds = Settings.GroupsWhichUsersMustBeMemberOfAny.Split(new char[] { ',' }, StringSplitOptions.RemoveEmptyEntries);
+                    foreach (string groupId in groupIds)
+                    {
+                        EntraIdTestGroupSettings groupSettings = EntraIdTestGroupsSource.GroupsSettings.FirstOrDefault(x => x.Id == groupId);
+                        if (groupSettings == null) { groupSettings = new EntraIdTestGroupSettings(); }
+                        if (groupSettings.AllTestUsersAreMembers)
+                        {
+                            groupWithAllTestUsersAreMembersFound = true;
+                            break;  // No need to change shouldValidate, which is true by default, or process other groups
+                        }
+                    }
+
+                    // Test 2: If test 1 is false, is current test users member of all the test groups?
+                    if (!groupWithAllTestUsersAreMembersFound)
+                    {
+                        EntraIdTestUserSettings userSettings = EntraIdTestUsersSource.UsersWithSpecificAttributes.FirstOrDefault(x => String.Equals(x.UserPrincipalName, entity.UserPrincipalName, StringComparison.InvariantCultureIgnoreCase));
+                        if (userSettings == null) { userSettings = new EntraIdTestUserSettings(); }
+                        if (!userSettings.IsMemberOfAllGroups)
+                        {
+                            shouldValidate = false;
+                            expectedCount = 0;
+                        }
+                    }
                 }
-                else
+
+                // If shouldValidate is false, user should not be found anyway so no need to do additional checks
+                if (shouldValidate)
                 {
-                    claimValue = Settings.ClaimTypes.UserIdentifierConfig.DirectoryObjectPropertyForGuestUsers == Configuration.DirectoryObjectProperty.UserPrincipalName ?
-                        entity.UserPrincipalName :
-                        entity.Mail;
-                    expectedCount = ExcludeGuestUsers ? 0 : 1;
-                    shouldValidate = !ExcludeGuestUsers;
+                    if (entity.UserType == UserType.Member)
+                    {
+                        claimValue = Settings.ClaimTypes.UserIdentifierConfig.EntityProperty == Configuration.DirectoryObjectProperty.UserPrincipalName ?
+                            entity.UserPrincipalName :
+                            entity.Mail;
+                        expectedCount = ExcludeMemberUsers ? 0 : 1;
+                        shouldValidate = !ExcludeMemberUsers;
+                    }
+                    else
+                    {
+                        claimValue = Settings.ClaimTypes.UserIdentifierConfig.DirectoryObjectPropertyForGuestUsers == Configuration.DirectoryObjectProperty.UserPrincipalName ?
+                            entity.UserPrincipalName :
+                            entity.Mail;
+                        expectedCount = ExcludeGuestUsers ? 0 : 1;
+                        shouldValidate = !ExcludeGuestUsers;
+                    }
                 }
             }
             TestSearchOperation(inputValue, expectedCount, claimValue);

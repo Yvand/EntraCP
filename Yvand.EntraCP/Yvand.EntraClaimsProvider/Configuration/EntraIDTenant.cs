@@ -150,6 +150,8 @@ namespace Yvand.EntraClaimsProvider.Configuration
         public string[] UserSelect { get; set; }
         public string[] GroupSelect { get; set; }
 
+        //public List<string> UserIdsMembersOfAnyRequiredGroup;
+
         public EntraIDTenant() { }
         
         public EntraIDTenant(string tenantName) 

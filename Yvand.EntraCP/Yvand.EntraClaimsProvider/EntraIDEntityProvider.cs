@@ -455,7 +455,7 @@ namespace Yvand.EntraClaimsProvider
                     string groupsWhichUsersMustBeMemberOfAny = this.Settings.GroupsWhichUsersMustBeMemberOfAny;
                     //groupsWhichUsersMustBeMemberOfAny = "c9a94341-89b5-4109-a501-2a14027b5bf0"; // testEntraCPGroup_005 - everyone member
                     //groupsWhichUsersMustBeMemberOfAny = "cd5f135c-9fe5-4ec2-90d9-114e9ad2e236"; // testEntraCPGroup_004 - testEntraCPUser_001 and testEntraCPUser_010 members
-                    if (!String.IsNullOrEmpty(groupsWhichUsersMustBeMemberOfAny))
+                    if (!String.IsNullOrWhiteSpace(groupsWhichUsersMustBeMemberOfAny))
                     {
                         string[] groupIds = groupsWhichUsersMustBeMemberOfAny.Split(new char[] { ',' }, StringSplitOptions.RemoveEmptyEntries);
                         groupsWhichUsersMustBeMemberOfRequestIds = new string[groupIds.Length];

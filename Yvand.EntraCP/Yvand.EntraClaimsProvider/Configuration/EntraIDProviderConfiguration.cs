@@ -352,6 +352,7 @@ namespace Yvand.EntraClaimsProvider.Configuration
                 EntraIDTenants = this.EntraIDTenants,
                 ProxyAddress = this.ProxyAddress,
                 FilterSecurityEnabledGroupsOnly = this.FilterSecurityEnabledGroupsOnly,
+                GroupsWhichUsersMustBeMemberOfAny = this.GroupsWhichUsersMustBeMemberOfAny,
             };
             return (IEntraIDProviderSettings)entityProviderSettings;
         }
@@ -542,6 +543,7 @@ namespace Yvand.EntraClaimsProvider.Configuration
             this.EntraIDTenants = settings.EntraIDTenants;
             this.FilterSecurityEnabledGroupsOnly = settings.FilterSecurityEnabledGroupsOnly;
             this.ProxyAddress = settings.ProxyAddress;
+            this.GroupsWhichUsersMustBeMemberOfAny = settings.GroupsWhichUsersMustBeMemberOfAny;
 
             if (commitChangesInDatabase)
             {
