@@ -211,6 +211,7 @@ namespace Yvand.EntraClaimsProvider.Tests
                 lock (_LockInitGroupsList)
                 {
                     if (_Groups != null) { return _Groups; }
+                    Trace.TraceInformation($"{DateTime.Now:s} [{typeof(EntraIdTestGroupsSource).Name}] Initialize List of Groups.");
                     _Groups = new List<EntraIdTestGroup>();
                     foreach (EntraIdTestGroup group in GetTestData(false))
                     {
@@ -234,6 +235,7 @@ namespace Yvand.EntraClaimsProvider.Tests
                 lock (_LockInitGroupsSettingsList)
                 {
                     if (_GroupsSettings != null) { return _GroupsSettings; }
+                    Trace.TraceInformation($"{DateTime.Now:s} [{typeof(EntraIdTestGroupSettings).Name}] Initialize List of GroupsSettings.");
                     _GroupsSettings = new List<EntraIdTestGroupSettings>
                     {
                         new EntraIdTestGroupSettings { DisplayName = $"{UnitTestsHelper.TestGroupsAccountNamePrefix}001" , SecurityEnabled = false, AllTestUsersAreMembers = true},
@@ -307,6 +309,7 @@ namespace Yvand.EntraClaimsProvider.Tests
                 lock (_LockInitList)
                 {
                     if (_Users != null) { return _Users; }
+                    Trace.TraceInformation($"{DateTime.Now:s} [{typeof(EntraIdTestUsersSource).Name}] Initialize List of Users.");
                     _Users = new List<EntraIdTestUser>();
                     foreach (EntraIdTestUser user in GetTestData())
                     {
@@ -330,6 +333,7 @@ namespace Yvand.EntraClaimsProvider.Tests
                 lock (_LockInitUsersWithSpecificSettingsList)
                 {
                     if (_UsersWithSpecificSettings != null) { return _UsersWithSpecificSettings; }
+                    Trace.TraceInformation($"{DateTime.Now:s} [{typeof(EntraIdTestUserSettings).Name}] Initialize List of _UsersWithSpecificSettings.");
                     _UsersWithSpecificSettings = new List<EntraIdTestUserSettings>
                     {
                         new EntraIdTestUserSettings { UserPrincipalName = $"{UnitTestsHelper.TestUsersAccountNamePrefix}001@{UnitTestsHelper.TenantConnection.Name}" , IsMemberOfAllGroups = true },

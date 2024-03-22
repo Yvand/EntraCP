@@ -5,7 +5,6 @@ using NUnit.Framework;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
-using System.IO;
 using System.Linq;
 using System.Security.Claims;
 using System.Text;
@@ -47,6 +46,35 @@ namespace Yvand.EntraClaimsProvider.Tests
         }
 
         protected EntraIDProviderSettings Settings = new EntraIDProviderSettings();
+
+        private object _LockVerifyIfCurrentUserShouldBeFound = new object();
+        private object _LockInitGroupsWhichUsersMustBeMemberOfAny = new object();
+        private List<EntraIdTestGroupSettings> _GroupsWhichUsersMustBeMemberOfAny;
+        protected List<EntraIdTestGroupSettings> GroupsWhichUsersMustBeMemberOfAny
+        {
+            get
+            {
+                if (_GroupsWhichUsersMustBeMemberOfAny != null) { return _GroupsWhichUsersMustBeMemberOfAny; }
+                lock (_LockInitGroupsWhichUsersMustBeMemberOfAny)
+                {
+                    if (_GroupsWhichUsersMustBeMemberOfAny != null) { return _GroupsWhichUsersMustBeMemberOfAny; }
+                    _GroupsWhichUsersMustBeMemberOfAny = new List<EntraIdTestGroupSettings>();
+                    string groupsWhichUsersMustBeMemberOfAny = Settings.GroupsWhichUsersMustBeMemberOfAny;
+                    if (!String.IsNullOrWhiteSpace(groupsWhichUsersMustBeMemberOfAny))
+                    {
+                        string[] groupIds = groupsWhichUsersMustBeMemberOfAny.Split(new char[] { ',' }, StringSplitOptions.RemoveEmptyEntries);
+                        foreach (string groupId in groupIds)
+                        {
+                            EntraIdTestGroupSettings groupSettings = EntraIdTestGroupsSource.GroupsSettings.FirstOrDefault(x => x.Id == groupId);
+                            if (groupSettings == null) { groupSettings = new EntraIdTestGroupSettings(); }
+                            _GroupsWhichUsersMustBeMemberOfAny.Add(groupSettings);
+                        }
+                    }
+                    return _GroupsWhichUsersMustBeMemberOfAny;
+                }
+            }
+        }
+
 
         /// <summary>
         /// Initialize settings
@@ -126,31 +154,38 @@ namespace Yvand.EntraClaimsProvider.Tests
             {
                 if (!String.IsNullOrWhiteSpace(Settings.GroupsWhichUsersMustBeMemberOfAny))
                 {
-                    // Test 1: Does Settings.GroupsWhichUsersMustBeMemberOfAny contain any group where all test users are members?
-                    bool groupWithAllTestUsersAreMembersFound = false;
-                    string[] groupIds = Settings.GroupsWhichUsersMustBeMemberOfAny.Split(new char[] { ',' }, StringSplitOptions.RemoveEmptyEntries);
-                    foreach (string groupId in groupIds)
+                    lock (_LockVerifyIfCurrentUserShouldBeFound) // TODO: understand why this lock is necessary
                     {
-                        EntraIdTestGroupSettings groupSettings = EntraIdTestGroupsSource.GroupsSettings.FirstOrDefault(x => x.Id == groupId);
-                        if (groupSettings == null) { groupSettings = new EntraIdTestGroupSettings(); }
-                        if (groupSettings.AllTestUsersAreMembers)
+                        // Test 1: Does Settings.GroupsWhichUsersMustBeMemberOfAny contain any group where all test users are members?
+                        bool groupWithAllTestUsersAreMembersFound = false;
+                        foreach (var groupSettings in GroupsWhichUsersMustBeMemberOfAny)
                         {
-                            groupWithAllTestUsersAreMembersFound = true;
-                            break;  // No need to change shouldValidate, which is true by default, or process other groups
+                            if (groupSettings.AllTestUsersAreMembers)
+                            {
+                                groupWithAllTestUsersAreMembersFound = true;
+                                Trace.TraceInformation($"{DateTime.Now:s} [{this.GetType().Name}] User \"{entity.UserPrincipalName}\" may be found because Settings.GroupsWhichUsersMustBeMemberOfAny contains group: \"{groupSettings.DisplayName}\" with AllTestUsersAreMembers {groupSettings.AllTestUsersAreMembers}.");
+                                break;  // No need to change shouldValidate, which is true by default, or process other groups
+                            }
                         }
-                    }
 
-                    // Test 2: If test 1 is false, is current test users member of all the test groups?
-                    if (!groupWithAllTestUsersAreMembersFound)
-                    {
-                        EntraIdTestUserSettings userSettings = EntraIdTestUsersSource.UsersWithSpecificSettings.FirstOrDefault(x => String.Equals(x.UserPrincipalName, entity.UserPrincipalName, StringComparison.InvariantCultureIgnoreCase));
-                        if (userSettings == null) { userSettings = new EntraIdTestUserSettings(); }
-                        if (!userSettings.IsMemberOfAllGroups)
+                        // Test 2: If test 1 is false, is current entity member of all the test groups?
+                        if (!groupWithAllTestUsersAreMembersFound)
                         {
-                            shouldValidate = false;
-                            expectedCount = 0;
+
+                            EntraIdTestUserSettings userSettings = EntraIdTestUsersSource.UsersWithSpecificSettings.FirstOrDefault(x => String.Equals(x.UserPrincipalName, entity.UserPrincipalName, StringComparison.InvariantCultureIgnoreCase));
+                            if (userSettings == null) { userSettings = new EntraIdTestUserSettings(); }
+                            if (!userSettings.IsMemberOfAllGroups)
+                            {
+                                shouldValidate = false;
+                                expectedCount = 0;
+                                Trace.TraceInformation($"{DateTime.Now:s} [{this.GetType().Name}] User \"{entity.UserPrincipalName}\" should not be found because it has IsMemberOfAllGroups {userSettings.IsMemberOfAllGroups} and no group set in Settings.GroupsWhichUsersMustBeMemberOfAny has AllTestUsersAreMembers set to true.");
+                            }
                         }
                     }
+                }
+                else
+                {
+                    Trace.TraceInformation($"{DateTime.Now:s} [{this.GetType().Name}] Property Settings.GroupsWhichUsersMustBeMemberOfAny IsNullOrWhiteSpace.");
                 }
 
                 // If shouldValidate is false, user should not be found anyway so no need to do additional checks
@@ -187,7 +222,7 @@ namespace Yvand.EntraClaimsProvider.Tests
             int randomIdx = rnd.Next(0, UnitTestsHelper.TestGroupsCount - 1);
             var randomGroup = EntraIdTestGroupsSource.Groups[randomIdx];
             bool shouldBeMember = Settings.FilterSecurityEnabledGroupsOnly && !randomGroup.SecurityEnabled ? false : true;
-            
+
             foreach (string userPrincipalName in EntraIdTestUsersSource.UsersWithSpecificSettings.Where(x => x.IsMemberOfAllGroups).Select(x => x.UserPrincipalName))
             {
                 TestAugmentationOperation(userPrincipalName, shouldBeMember, randomGroup.Id);
