@@ -150,11 +150,35 @@ namespace Yvand.EntraClaimsProvider.Configuration
         public string[] UserSelect { get; set; }
         public string[] GroupSelect { get; set; }
 
-        //public List<string> UserIdsMembersOfAnyRequiredGroup;
+        public List<string> UserIdsMembersOfAnyRequiredGroup
+        {
+            get
+            {
+                if (UserIdsMembersOfAnyRequiredGroupCacheTime == default(DateTime))
+                {
+                    return _UserIdsMembersOfAnyRequiredGroup;
+                }
+                TimeSpan interval = DateTime.UtcNow - UserIdsMembersOfAnyRequiredGroupCacheTime;
+                if (interval > UserIdsMembersOfAnyRequiredGroupCacheTTL)
+                {
+                    UserIdsMembersOfAnyRequiredGroupCacheTime = default(DateTime);
+                    _UserIdsMembersOfAnyRequiredGroup = null;
+                }
+                return _UserIdsMembersOfAnyRequiredGroup;
+            }
+            set
+            {
+                _UserIdsMembersOfAnyRequiredGroup = value;
+                UserIdsMembersOfAnyRequiredGroupCacheTime = DateTime.UtcNow;
+            }
+        }
+        private List<string> _UserIdsMembersOfAnyRequiredGroup;
+        private DateTime UserIdsMembersOfAnyRequiredGroupCacheTime;
+        private TimeSpan UserIdsMembersOfAnyRequiredGroupCacheTTL = new TimeSpan(0, 1, 0);
 
         public EntraIDTenant() { }
-        
-        public EntraIDTenant(string tenantName) 
+
+        public EntraIDTenant(string tenantName)
         {
             this.Name = tenantName;
         }
