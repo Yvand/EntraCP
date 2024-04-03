@@ -197,7 +197,10 @@ namespace Yvand.EntraClaimsProvider.Configuration
         /// </summary>
         public List<ClaimTypeConfig> CurrentClaimTypeConfigList { get; private set; }
 
-        public List<EntraIDTenant> AzureTenants { get; private set; }
+        /// <summary>
+        /// List of the Azure tenants registered, in an object that is unique to this thread, so none of its changes will be shared with other threads
+        /// </summary>
+        public List<EntraIDTenant> AzureTenantsCopy { get; private set; }
 
         public OperationContext(ClaimsProviderSettings settings, OperationType currentRequestType, string input, SPClaim incomingEntity, Uri context, string[] entityTypes, string hierarchyNodeID, int maxCount)
         {
@@ -209,12 +212,12 @@ namespace Yvand.EntraClaimsProvider.Configuration
             this.MaxCount = maxCount;
 
             // settings.EntraIDTenants must be cloned locally to ensure its properties ($select / $filter) won't be updated by multiple threads
-            this.AzureTenants = new List<EntraIDTenant>(settings.EntraIDTenants.Count);
+            this.AzureTenantsCopy = new List<EntraIDTenant>(settings.EntraIDTenants.Count);
             foreach (EntraIDTenant tenant in settings.EntraIDTenants)
             {
                 EntraIDTenant copy = new EntraIDTenant();
                 Utils.CopyPublicProperties(typeof(EntraIDTenant), tenant, copy);
-                AzureTenants.Add(copy);
+                AzureTenantsCopy.Add(copy);
             }
 
             if (entityTypes != null)

@@ -25,6 +25,7 @@ namespace Yvand.EntraClaimsProvider
     public class EntraIDEntityProvider : EntityProviderBase
     {
         public IClaimsProviderSettings Settings { get; }
+        //private object lockFillSharedListOfUserIdsMembersOfAnyRequiredGroupInTenant = new object();
         public EntraIDEntityProvider(string claimsProviderName, IClaimsProviderSettings Settings) : base(claimsProviderName)
         {
             this.Settings = Settings;
@@ -34,7 +35,7 @@ namespace Yvand.EntraClaimsProvider
         {
             DirectoryObjectProperty groupProperty = Settings.GroupIdentifierClaimTypeConfig.EntityProperty;
             // Create 1 Task for each tenant to query
-            IEnumerable<Task<List<string>>> tenantTasks = currentContext.AzureTenants.Select(async tenant =>
+            IEnumerable<Task<List<string>>> tenantTasks = currentContext.AzureTenantsCopy.Select(async tenant =>
             {
                 // Wrap the call to GetEntityGroupsFromTenantAsync() in a Task to avoid a hang when using the "check permissions" dialog
                 using (new SPMonitoredScope($"[{ClaimsProviderName}] Get groups of user \"{currentContext.IncomingEntity.Value}\" from tenant \"{tenant.Name}\"", 1000))
@@ -164,8 +165,8 @@ namespace Yvand.EntraClaimsProvider
             //{
             //    azureTenants.Add(tenant.CopyPublicProperties());
             //}
-            this.BuildFilter(currentContext, currentContext.AzureTenants);
-            List<DirectoryObject> results = await this.QueryEntraIDTenantsAsync(currentContext, currentContext.AzureTenants);
+            this.BuildFilter(currentContext, currentContext.AzureTenantsCopy);
+            List<DirectoryObject> results = await this.QueryEntraIDTenantsAsync(currentContext, currentContext.AzureTenantsCopy);
             return results;
         }
 
@@ -455,7 +456,8 @@ namespace Yvand.EntraClaimsProvider
                     string groupsWhichUsersMustBeMemberOfAny = this.Settings.GroupsWhichUsersMustBeMemberOfAny;
                     //groupsWhichUsersMustBeMemberOfAny = "c9a94341-89b5-4109-a501-2a14027b5bf0"; // testEntraCPGroup_005 - everyone member
                     //groupsWhichUsersMustBeMemberOfAny = "cd5f135c-9fe5-4ec2-90d9-114e9ad2e236"; // testEntraCPGroup_004 - testEntraCPUser_001 and testEntraCPUser_010 members
-                    if (!String.IsNullOrWhiteSpace(groupsWhichUsersMustBeMemberOfAny) && this.Settings.EntraIDTenants[0].UserIdsMembersOfAnyRequiredGroup == null)
+                    List<string> SharedListOfUserIdsMembersOfAnyRequiredGroupInTenant = this.Settings.EntraIDTenants.First(x => x.Identifier == tenant.Identifier).UserIdsMembersOfAnyRequiredGroup;
+                    if (!String.IsNullOrWhiteSpace(groupsWhichUsersMustBeMemberOfAny) && SharedListOfUserIdsMembersOfAnyRequiredGroupInTenant == null)
                     {
                         string[] groupIds = groupsWhichUsersMustBeMemberOfAny.Split(new char[] { ',' }, StringSplitOptions.RemoveEmptyEntries);
                         groupsWhichUsersMustBeMemberOfRequestIds = new string[groupIds.Length];
@@ -512,11 +514,10 @@ namespace Yvand.EntraClaimsProvider
                         }
                     }
 
-                    //List<string> UserIdsMembersOfAnyRequiredGroup = null;
                     if (groupsWhichUsersMustBeMemberOfRequestIds != null)
                     {
                         // only need 1 list that contains unique user ids
-                        this.Settings.EntraIDTenants[0].UserIdsMembersOfAnyRequiredGroup = new List<string>();
+                        SharedListOfUserIdsMembersOfAnyRequiredGroupInTenant = new List<string>();
                         foreach (string groupsWhichUsersMustBeMemberOfRequestId in groupsWhichUsersMustBeMemberOfRequestIds)
                         {
                             HttpStatusCode usersMembersOfAnyRequiredGroupResponseStatus;
@@ -526,7 +527,7 @@ namespace Yvand.EntraClaimsProvider
                                 if (usersMembersOfAnyRequiredGroupResponseStatus == HttpStatusCode.OK)
                                 {
                                     usersMembersOfAnyRequiredGroupResponse = await batchResponse.GetResponseByIdAsync<UserCollectionResponse>(groupsWhichUsersMustBeMemberOfRequestId).ConfigureAwait(false);
-                                    this.Settings.EntraIDTenants[0].UserIdsMembersOfAnyRequiredGroup.AddRange(usersMembersOfAnyRequiredGroupResponse.Value.Where(x => !this.Settings.EntraIDTenants[0].UserIdsMembersOfAnyRequiredGroup.Contains(x.Id)).Select(x => x.Id).ToList());
+                                    SharedListOfUserIdsMembersOfAnyRequiredGroupInTenant.AddRange(usersMembersOfAnyRequiredGroupResponse.Value.Where(x => !SharedListOfUserIdsMembersOfAnyRequiredGroupInTenant.Contains(x.Id)).Select(x => x.Id).ToList());
                                 }
                                 else
                                 {
@@ -562,7 +563,7 @@ namespace Yvand.EntraClaimsProvider
                                     }
                                 }
 
-                                if (this.Settings.EntraIDTenants[0].UserIdsMembersOfAnyRequiredGroup != null && !this.Settings.EntraIDTenants[0].UserIdsMembersOfAnyRequiredGroup.Contains(user.Id))
+                                if (SharedListOfUserIdsMembersOfAnyRequiredGroupInTenant != null && !SharedListOfUserIdsMembersOfAnyRequiredGroupInTenant.Contains(user.Id))
                                 {
                                     addUser = false;
                                 }
