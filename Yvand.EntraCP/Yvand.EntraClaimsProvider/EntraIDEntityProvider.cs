@@ -15,6 +15,7 @@ using System.Diagnostics;
 using System.Linq;
 using System.Net;
 using System.Reflection;
+using System.Threading;
 using System.Threading.Tasks;
 using Yvand.EntraClaimsProvider.Configuration;
 using Yvand.EntraClaimsProvider.Logging;
@@ -25,10 +26,18 @@ namespace Yvand.EntraClaimsProvider
     public class EntraIDEntityProvider : EntityProviderBase
     {
         public IClaimsProviderSettings Settings { get; }
-        //private object lockFillSharedListOfUserIdsMembersOfAnyRequiredGroupInTenant = new object();
+        private static List<CachedEntraIDTenantData> CachedTenantData;
+
         public EntraIDEntityProvider(string claimsProviderName, IClaimsProviderSettings Settings) : base(claimsProviderName)
         {
             this.Settings = Settings;
+
+            // Reset cache if config changes
+            CachedTenantData = new List<CachedEntraIDTenantData>();
+            foreach (var tenant in this.Settings.EntraIDTenants)
+            {
+                CachedTenantData.Add(new CachedEntraIDTenantData(tenant.Identifier));
+            }
         }
 
         public async override Task<List<string>> GetEntityGroupsAsync(OperationContext currentContext)
@@ -325,7 +334,7 @@ namespace Yvand.EntraClaimsProvider
                 {
                     Stopwatch timer = new Stopwatch();
                     timer.Start();
-                    List<DirectoryObject> tenantResults = await QueryEntraIDTenantAsync(currentContext, tenant).ConfigureAwait(false);
+                    List<DirectoryObject> tenantResults = await QueryEntraIDTenantAsync(currentContext, tenant, CachedTenantData.First(x => x.TenantIdentifier == tenant.Identifier)).ConfigureAwait(false);
                     timer.Stop();
                     if (tenantResults != null)
                     {
@@ -353,7 +362,7 @@ namespace Yvand.EntraClaimsProvider
             return allResults;
         }
 
-        protected virtual async Task<List<DirectoryObject>> QueryEntraIDTenantAsync(OperationContext currentContext, EntraIDTenant tenant)
+        protected virtual async Task<List<DirectoryObject>> QueryEntraIDTenantAsync(OperationContext currentContext, EntraIDTenant tenant, CachedEntraIDTenantData cachedTenantData)
         {
             List<DirectoryObject> tenantResults = new List<DirectoryObject>();
             if (String.IsNullOrWhiteSpace(tenant.UserFilter) && String.IsNullOrWhiteSpace(tenant.GroupFilter))
@@ -372,7 +381,7 @@ namespace Yvand.EntraClaimsProvider
             int timeout = this.Settings.Timeout;
             int maxRetry = currentContext.OperationType == OperationType.Validation ? 3 : 2;
             int tenantResultCount = 0;
-
+            bool lockToWriteInCachedDataWasTaken = false;
             try
             {
                 using (new SPMonitoredScope($"[{ClaimsProviderName}] Querying Microsoft Entra ID tenant '{tenant.Name}' for users and groups, with input '{currentContext.Input}'", 1000))
@@ -456,27 +465,36 @@ namespace Yvand.EntraClaimsProvider
                     string groupsWhichUsersMustBeMemberOfAny = this.Settings.GroupsWhichUsersMustBeMemberOfAny;
                     //groupsWhichUsersMustBeMemberOfAny = "c9a94341-89b5-4109-a501-2a14027b5bf0"; // testEntraCPGroup_005 - everyone member
                     //groupsWhichUsersMustBeMemberOfAny = "cd5f135c-9fe5-4ec2-90d9-114e9ad2e236"; // testEntraCPGroup_004 - testEntraCPUser_001 and testEntraCPUser_010 members
-                    List<string> SharedListOfUserIdsMembersOfAnyRequiredGroupInTenant = this.Settings.EntraIDTenants.First(x => x.Identifier == tenant.Identifier).UserIdsMembersOfAnyRequiredGroup;
-                    if (!String.IsNullOrWhiteSpace(groupsWhichUsersMustBeMemberOfAny) && SharedListOfUserIdsMembersOfAnyRequiredGroupInTenant == null)
+                    if (!String.IsNullOrWhiteSpace(groupsWhichUsersMustBeMemberOfAny) && cachedTenantData.UserIdsMembersOfAnyRequiredGroup == null)
                     {
-                        string[] groupIds = groupsWhichUsersMustBeMemberOfAny.Split(new char[] { ',' }, StringSplitOptions.RemoveEmptyEntries);
-                        groupsWhichUsersMustBeMemberOfRequestIds = new string[groupIds.Length];
-                        int groupIdx = 0;
-                        foreach (string groupId in groupIds)
+                        await cachedTenantData.WriteDataLock.WaitAsync().ConfigureAwait(false);
+                        lockToWriteInCachedDataWasTaken = true;
+                        if (cachedTenantData.UserIdsMembersOfAnyRequiredGroup != null)
                         {
-                            RequestInformation usersMembersOfGroupRequest = tenant.GraphService.Groups[groupId].Members.GraphUser.ToGetRequestInformation(conf =>
+                            cachedTenantData.WriteDataLock.Release();
+                            lockToWriteInCachedDataWasTaken = false;
+                        }
+                        else
+                        {
+                            string[] groupIds = groupsWhichUsersMustBeMemberOfAny.Split(new char[] { ',' }, StringSplitOptions.RemoveEmptyEntries);
+                            groupsWhichUsersMustBeMemberOfRequestIds = new string[groupIds.Length];
+                            int groupIdx = 0;
+                            foreach (string groupId in groupIds)
                             {
-                                conf.QueryParameters = new Microsoft.Graph.Groups.Item.Members.GraphUser.GraphUserRequestBuilder.GraphUserRequestBuilderGetQueryParameters
+                                RequestInformation usersMembersOfGroupRequest = tenant.GraphService.Groups[groupId].Members.GraphUser.ToGetRequestInformation(conf =>
                                 {
-                                    Select = new string[] { "Id" },
-                                };
-                                conf.Options = new List<IRequestOption>
-                                {
+                                    conf.QueryParameters = new Microsoft.Graph.Groups.Item.Members.GraphUser.GraphUserRequestBuilder.GraphUserRequestBuilderGetQueryParameters
+                                    {
+                                        Select = new string[] { "Id" },
+                                    };
+                                    conf.Options = new List<IRequestOption>
+                                    {
                                     retryHandlerOption,
-                                };
-                            });
-                            groupsWhichUsersMustBeMemberOfRequestIds[groupIdx] = await batchRequestContent.AddBatchRequestStepAsync(usersMembersOfGroupRequest).ConfigureAwait(false);
-                            groupIdx++;
+                                    };
+                                });
+                                groupsWhichUsersMustBeMemberOfRequestIds[groupIdx] = await batchRequestContent.AddBatchRequestStepAsync(usersMembersOfGroupRequest).ConfigureAwait(false);
+                                groupIdx++;
+                            }
                         }
                     }
 
@@ -517,7 +535,7 @@ namespace Yvand.EntraClaimsProvider
                     if (groupsWhichUsersMustBeMemberOfRequestIds != null)
                     {
                         // only need 1 list that contains unique user ids
-                        SharedListOfUserIdsMembersOfAnyRequiredGroupInTenant = new List<string>();
+                        cachedTenantData.UserIdsMembersOfAnyRequiredGroup = new List<string>();
                         foreach (string groupsWhichUsersMustBeMemberOfRequestId in groupsWhichUsersMustBeMemberOfRequestIds)
                         {
                             HttpStatusCode usersMembersOfAnyRequiredGroupResponseStatus;
@@ -527,7 +545,7 @@ namespace Yvand.EntraClaimsProvider
                                 if (usersMembersOfAnyRequiredGroupResponseStatus == HttpStatusCode.OK)
                                 {
                                     usersMembersOfAnyRequiredGroupResponse = await batchResponse.GetResponseByIdAsync<UserCollectionResponse>(groupsWhichUsersMustBeMemberOfRequestId).ConfigureAwait(false);
-                                    SharedListOfUserIdsMembersOfAnyRequiredGroupInTenant.AddRange(usersMembersOfAnyRequiredGroupResponse.Value.Where(x => !SharedListOfUserIdsMembersOfAnyRequiredGroupInTenant.Contains(x.Id)).Select(x => x.Id).ToList());
+                                    cachedTenantData.UserIdsMembersOfAnyRequiredGroup.AddRange(usersMembersOfAnyRequiredGroupResponse.Value.Where(x => !cachedTenantData.UserIdsMembersOfAnyRequiredGroup.Contains(x.Id)).Select(x => x.Id).ToList());
                                 }
                                 else
                                 {
@@ -535,6 +553,8 @@ namespace Yvand.EntraClaimsProvider
                                 }
                             }
                         }
+                        cachedTenantData.WriteDataLock.Release();
+                        lockToWriteInCachedDataWasTaken = false;
                     }
 
                     Logger.Log($"[{ClaimsProviderName}] Query to tenant '{tenant.Name}' returned {(userCollectionResult?.Value == null ? 0 : userCollectionResult.Value.Count)} user(s) with filter \"{tenant.UserFilter}\" and {(groupCollectionResult?.Value == null ? 0 : groupCollectionResult.Value.Count)} group(s) with filter \"{tenant.GroupFilter}\"", TraceSeverity.VerboseEx, EventSeverity.Information, TraceCategory.Lookup);
@@ -563,7 +583,7 @@ namespace Yvand.EntraClaimsProvider
                                     }
                                 }
 
-                                if (SharedListOfUserIdsMembersOfAnyRequiredGroupInTenant != null && !SharedListOfUserIdsMembersOfAnyRequiredGroupInTenant.Contains(user.Id))
+                                if (cachedTenantData.UserIdsMembersOfAnyRequiredGroup != null && !cachedTenantData.UserIdsMembersOfAnyRequiredGroup.Contains(user.Id))
                                 {
                                     addUser = false;
                                 }
@@ -649,6 +669,11 @@ namespace Yvand.EntraClaimsProvider
             }
             finally
             {
+                if (lockToWriteInCachedDataWasTaken)
+                {
+                    cachedTenantData.WriteDataLock.Release();
+                    lockToWriteInCachedDataWasTaken = false;
+                }
             }
             return tenantResults;
         }
@@ -718,6 +743,45 @@ namespace Yvand.EntraClaimsProvider
             }   // Property doesn't exist
             object propertyValue = pi.GetValue(directoryObject, null);
             return propertyValue == null ? String.Empty : propertyValue.ToString();
+        }
+    }
+
+    /// <summary>
+    /// Cache of data fetched from an Entra ID tenant
+    /// </summary>
+    public class CachedEntraIDTenantData
+    {
+        public Guid TenantIdentifier;
+        public SemaphoreSlim WriteDataLock = new SemaphoreSlim(1, 1);
+        public List<string> UserIdsMembersOfAnyRequiredGroup
+        {
+            get
+            {
+                if (UserIdsMembersOfAnyRequiredGroupCacheTime == default(DateTime))
+                {
+                    return _UserIdsMembersOfAnyRequiredGroup;
+                }
+                TimeSpan interval = DateTime.UtcNow - UserIdsMembersOfAnyRequiredGroupCacheTime;
+                if (interval > UserIdsMembersOfAnyRequiredGroupCacheTTL)
+                {
+                    UserIdsMembersOfAnyRequiredGroupCacheTime = default(DateTime);
+                    _UserIdsMembersOfAnyRequiredGroup = null;
+                }
+                return _UserIdsMembersOfAnyRequiredGroup;
+            }
+            set
+            {
+                _UserIdsMembersOfAnyRequiredGroup = value;
+                UserIdsMembersOfAnyRequiredGroupCacheTime = DateTime.UtcNow;
+            }
+        }
+        private List<string> _UserIdsMembersOfAnyRequiredGroup;
+        private DateTime UserIdsMembersOfAnyRequiredGroupCacheTime;
+        private TimeSpan UserIdsMembersOfAnyRequiredGroupCacheTTL = new TimeSpan(0, 1, 0);
+
+        public CachedEntraIDTenantData(Guid tenantIdentifier)
+        {
+            this.TenantIdentifier = tenantIdentifier;
         }
     }
 }
