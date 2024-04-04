@@ -36,7 +36,7 @@ namespace Yvand.EntraClaimsProvider
             CachedTenantData = new List<CachedEntraIDTenantData>();
             foreach (var tenant in this.Settings.EntraIDTenants)
             {
-                CachedTenantData.Add(new CachedEntraIDTenantData(tenant.Identifier));
+                CachedTenantData.Add(new CachedEntraIDTenantData(tenant.Identifier, Settings.TenantDataCacheLifetimeInMinutes));
             }
         }
 
@@ -779,9 +779,10 @@ namespace Yvand.EntraClaimsProvider
         private DateTime UserIdsMembersOfAnyRequiredGroupCacheTime;
         private TimeSpan UserIdsMembersOfAnyRequiredGroupCacheTTL = new TimeSpan(0, 1, 0);
 
-        public CachedEntraIDTenantData(Guid tenantIdentifier)
+        public CachedEntraIDTenantData(Guid tenantIdentifier, int tenantDataCacheLifetimeInMinutes)
         {
             this.TenantIdentifier = tenantIdentifier;
+            this.UserIdsMembersOfAnyRequiredGroupCacheTTL = new TimeSpan(0, tenantDataCacheLifetimeInMinutes, 0);
         }
     }
 }

@@ -74,6 +74,8 @@ namespace Yvand.EntraClaimsProvider.Configuration
         /// Comma separated list of group IDs (max 18 values). If set, users must be member of any of these groups to be returned to SharePoint
         /// </summary>
         string GroupsWhichUsersMustBeMemberOfAny { get; }
+
+        int TenantDataCacheLifetimeInMinutes { get; }
         #endregion
     }
 
@@ -95,6 +97,7 @@ namespace Yvand.EntraClaimsProvider.Configuration
         public string ProxyAddress { get; set; }
         public bool FilterSecurityEnabledGroupsOnly { get; set; } = false;
         public string GroupsWhichUsersMustBeMemberOfAny { get; set; }
+        public int TenantDataCacheLifetimeInMinutes { get; set; } = 5;
         #endregion
 
         public EntraIDProviderSettings() { }
@@ -275,6 +278,9 @@ namespace Yvand.EntraClaimsProvider.Configuration
         [Persisted]
         private bool _FilterSecurityEnabledGroupsOnly = false;
 
+        /// <summary>
+        /// Gets or sets the ID of the Entra ID groups that users must be members of, to be returned by EntraCP. Leave empty to not apply any filtering.
+        /// </summary>
         public string GroupsWhichUsersMustBeMemberOfAny
         {
             get => _GroupsWhichUsersMustBeMemberOfAny;
@@ -282,6 +288,17 @@ namespace Yvand.EntraClaimsProvider.Configuration
         }
         [Persisted]
         private string _GroupsWhichUsersMustBeMemberOfAny;
+
+        /// <summary>
+        /// Gets or sets the lifetime in minutes of the cache which stores data from Entra ID which may be time-consuming to retrieve with each request
+        /// </summary>
+        public int TenantDataCacheLifetimeInMinutes
+        {
+            get => _TenantDataCacheLifetimeInMinutes;
+            set => _TenantDataCacheLifetimeInMinutes = value;
+        }
+        [Persisted]
+        private int _TenantDataCacheLifetimeInMinutes;
         #endregion
 
         #region "Other properties"
@@ -353,6 +370,7 @@ namespace Yvand.EntraClaimsProvider.Configuration
                 ProxyAddress = this.ProxyAddress,
                 FilterSecurityEnabledGroupsOnly = this.FilterSecurityEnabledGroupsOnly,
                 GroupsWhichUsersMustBeMemberOfAny = this.GroupsWhichUsersMustBeMemberOfAny,
+                TenantDataCacheLifetimeInMinutes = this.TenantDataCacheLifetimeInMinutes,
             };
             return (IEntraIDProviderSettings)entityProviderSettings;
         }
@@ -544,6 +562,7 @@ namespace Yvand.EntraClaimsProvider.Configuration
             this.FilterSecurityEnabledGroupsOnly = settings.FilterSecurityEnabledGroupsOnly;
             this.ProxyAddress = settings.ProxyAddress;
             this.GroupsWhichUsersMustBeMemberOfAny = settings.GroupsWhichUsersMustBeMemberOfAny;
+            this.TenantDataCacheLifetimeInMinutes = settings.TenantDataCacheLifetimeInMinutes;
 
             if (commitChangesInDatabase)
             {
