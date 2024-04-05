@@ -220,7 +220,18 @@ namespace Yvand.EntraClaimsProvider.Tests
         {
             Random rnd = new Random();
             int randomIdx = rnd.Next(0, UnitTestsHelper.TestGroupsCount - 1);
-            var randomGroup = EntraIdTestGroupsSource.Groups[randomIdx];
+            Trace.TraceInformation($"{DateTime.Now:s} [{this.GetType().Name}] TestAugmentationOfGoldUsersAgainstRandomGroups: Get group in EntraIdTestGroupsSource.Groups at index {randomIdx}.");
+            EntraIdTestGroup randomGroup = null;
+            try
+            {
+                randomGroup = EntraIdTestGroupsSource.Groups[randomIdx];
+            }
+            catch (ArgumentOutOfRangeException)
+            {
+                string errorMessage = $"{DateTime.Now:s} [{this.GetType().Name}] TestAugmentationOfGoldUsersAgainstRandomGroups: Could not get group in EntraIdTestGroupsSource.Groups at index {randomIdx}. EntraIdTestGroupsSource.Groups has {EntraIdTestGroupsSource.Groups.Count} items.";
+                Trace.TraceError(errorMessage);
+                throw new ArgumentOutOfRangeException(errorMessage);
+            }
             bool shouldBeMember = Settings.FilterSecurityEnabledGroupsOnly && !randomGroup.SecurityEnabled ? false : true;
 
             foreach (string userPrincipalName in EntraIdTestUsersSource.UsersWithSpecificSettings.Where(x => x.IsMemberOfAllGroups).Select(x => x.UserPrincipalName))
