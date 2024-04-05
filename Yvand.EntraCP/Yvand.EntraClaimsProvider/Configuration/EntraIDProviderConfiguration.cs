@@ -507,6 +507,30 @@ namespace Yvand.EntraClaimsProvider.Configuration
                     throw new InvalidOperationException($"Configuration is not valid because tenant \"{tenant.Name}\" has both properties {nameof(tenant.ClientSecret)} and {nameof(tenant.ClientCertificateWithPrivateKey)} set in list {nameof(EntraIDTenants)}, while only one must be set");
                 }
             }
+
+            if (this.TenantDataCacheLifetimeInMinutes < 0)
+            {
+                throw new InvalidOperationException($"The configuration is invalid because property {nameof(TenantDataCacheLifetimeInMinutes)} has a negative value.");
+            }
+
+            if (this.GroupsWhichUsersMustBeMemberOfAny != null)
+            {
+                string[] groupsId = this.GroupsWhichUsersMustBeMemberOfAny.Split(new char[] { ',' }, StringSplitOptions.RemoveEmptyEntries);
+                // Batch request size limit in Graph is 20: https://learn.microsoft.com/en-us/graph/json-batching#batch-size-limitations
+                // So max is 18 + 1 to get users + 1 to get groups
+                if (groupsId.Length > 18)
+                {
+                    throw new InvalidOperationException($"The configuration is invalid because property {nameof(GroupsWhichUsersMustBeMemberOfAny)} exceeds the limit of 18 groups, which would generate a batch request too big for Graph. More information in https://learn.microsoft.com/en-us/graph/json-batching#batch-size-limitations");
+                }
+                Guid testGuidResult = Guid.Empty;
+                foreach (string groupId in groupsId)
+                {
+                    if (!Guid.TryParse(groupId, out testGuidResult))
+                    {
+                        throw new InvalidOperationException($"The configuration is invalid because property {nameof(GroupsWhichUsersMustBeMemberOfAny)} is not set correctly. It should be a csv list of group IDs");
+                    }
+                }
+            }
         }
 
         /// <summary>
