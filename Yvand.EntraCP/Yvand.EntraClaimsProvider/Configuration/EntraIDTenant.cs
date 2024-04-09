@@ -151,8 +151,8 @@ namespace Yvand.EntraClaimsProvider.Configuration
         public string[] GroupSelect { get; set; }
 
         public EntraIDTenant() { }
-        
-        public EntraIDTenant(string tenantName) 
+
+        public EntraIDTenant(string tenantName)
         {
             this.Name = tenantName;
         }

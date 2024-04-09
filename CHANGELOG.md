@@ -1,5 +1,9 @@
 # Change log for ~~AzureCP~~ EntraCP
 
+## Unreleased
+
+* New feature: It is now possible to configure EntraCP, to return only users that are members of some Entra groups, configured by the administrator - https://github.com/Yvand/EntraCP/pull/243
+
 ## EntraCP v24.0.20240318.32 enhancements & bug-fixes - Published in March 18, 2024
 
 * Fix "Edit" links fail to work on the "Claim types configuration" page - https://github.com/Yvand/EntraCP/pull/220

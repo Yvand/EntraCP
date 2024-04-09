@@ -69,6 +69,13 @@ namespace Yvand.EntraClaimsProvider.Configuration
         /// Gets if only security-enabled groups should be returned
         /// </summary>
         bool FilterSecurityEnabledGroupsOnly { get; }
+
+        /// <summary>
+        /// Comma separated list of group IDs (max 18 values). If set, users must be member of any of these groups to be returned to SharePoint
+        /// </summary>
+        string GroupsWhichUsersMustBeMemberOfAny { get; }
+
+        int TenantDataCacheLifetimeInMinutes { get; }
         #endregion
     }
 
@@ -89,6 +96,8 @@ namespace Yvand.EntraClaimsProvider.Configuration
         public List<EntraIDTenant> EntraIDTenants { get; set; } = new List<EntraIDTenant>();
         public string ProxyAddress { get; set; }
         public bool FilterSecurityEnabledGroupsOnly { get; set; } = false;
+        public string GroupsWhichUsersMustBeMemberOfAny { get; set; }
+        public int TenantDataCacheLifetimeInMinutes { get; set; } = 15;
         #endregion
 
         public EntraIDProviderSettings() { }
@@ -268,6 +277,28 @@ namespace Yvand.EntraClaimsProvider.Configuration
         }
         [Persisted]
         private bool _FilterSecurityEnabledGroupsOnly = false;
+
+        /// <summary>
+        /// Gets or sets the ID of the Entra ID groups that users must be members of, to be returned by EntraCP. Leave empty to not apply any filtering.
+        /// </summary>
+        public string GroupsWhichUsersMustBeMemberOfAny
+        {
+            get => _GroupsWhichUsersMustBeMemberOfAny;
+            set => _GroupsWhichUsersMustBeMemberOfAny = value;
+        }
+        [Persisted]
+        private string _GroupsWhichUsersMustBeMemberOfAny;
+
+        /// <summary>
+        /// Gets or sets the lifetime in minutes of the cache which stores data from Entra ID which may be time-consuming to retrieve with each request
+        /// </summary>
+        public int TenantDataCacheLifetimeInMinutes
+        {
+            get => _TenantDataCacheLifetimeInMinutes;
+            set => _TenantDataCacheLifetimeInMinutes = value;
+        }
+        [Persisted]
+        private int _TenantDataCacheLifetimeInMinutes;
         #endregion
 
         #region "Other properties"
@@ -338,6 +369,8 @@ namespace Yvand.EntraClaimsProvider.Configuration
                 EntraIDTenants = this.EntraIDTenants,
                 ProxyAddress = this.ProxyAddress,
                 FilterSecurityEnabledGroupsOnly = this.FilterSecurityEnabledGroupsOnly,
+                GroupsWhichUsersMustBeMemberOfAny = this.GroupsWhichUsersMustBeMemberOfAny,
+                TenantDataCacheLifetimeInMinutes = this.TenantDataCacheLifetimeInMinutes,
             };
             return (IEntraIDProviderSettings)entityProviderSettings;
         }
@@ -474,6 +507,30 @@ namespace Yvand.EntraClaimsProvider.Configuration
                     throw new InvalidOperationException($"Configuration is not valid because tenant \"{tenant.Name}\" has both properties {nameof(tenant.ClientSecret)} and {nameof(tenant.ClientCertificateWithPrivateKey)} set in list {nameof(EntraIDTenants)}, while only one must be set");
                 }
             }
+
+            if (this.TenantDataCacheLifetimeInMinutes < 0)
+            {
+                throw new InvalidOperationException($"The configuration is invalid because property {nameof(TenantDataCacheLifetimeInMinutes)} has a negative value.");
+            }
+
+            if (this.GroupsWhichUsersMustBeMemberOfAny != null)
+            {
+                string[] groupsId = this.GroupsWhichUsersMustBeMemberOfAny.Split(new char[] { ',' }, StringSplitOptions.RemoveEmptyEntries);
+                // Batch request size limit in Graph is 20: https://learn.microsoft.com/en-us/graph/json-batching#batch-size-limitations
+                // So max is 18 + 1 to get users + 1 to get groups
+                if (groupsId.Length > 18)
+                {
+                    throw new InvalidOperationException($"The configuration is invalid because property {nameof(GroupsWhichUsersMustBeMemberOfAny)} exceeds the limit of 18 groups, which would generate a batch request too big for Graph. More information in https://learn.microsoft.com/en-us/graph/json-batching#batch-size-limitations");
+                }
+                Guid testGuidResult = Guid.Empty;
+                foreach (string groupId in groupsId)
+                {
+                    if (!Guid.TryParse(groupId, out testGuidResult))
+                    {
+                        throw new InvalidOperationException($"The configuration is invalid because property {nameof(GroupsWhichUsersMustBeMemberOfAny)} is not set correctly. It should be a csv list of group IDs");
+                    }
+                }
+            }
         }
 
         /// <summary>
@@ -528,6 +585,8 @@ namespace Yvand.EntraClaimsProvider.Configuration
             this.EntraIDTenants = settings.EntraIDTenants;
             this.FilterSecurityEnabledGroupsOnly = settings.FilterSecurityEnabledGroupsOnly;
             this.ProxyAddress = settings.ProxyAddress;
+            this.GroupsWhichUsersMustBeMemberOfAny = settings.GroupsWhichUsersMustBeMemberOfAny;
+            this.TenantDataCacheLifetimeInMinutes = settings.TenantDataCacheLifetimeInMinutes;
 
             if (commitChangesInDatabase)
             {
