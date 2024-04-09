@@ -97,7 +97,7 @@ namespace Yvand.EntraClaimsProvider.Configuration
         public string ProxyAddress { get; set; }
         public bool FilterSecurityEnabledGroupsOnly { get; set; } = false;
         public string GroupsWhichUsersMustBeMemberOfAny { get; set; }
-        public int TenantDataCacheLifetimeInMinutes { get; set; } = 5;
+        public int TenantDataCacheLifetimeInMinutes { get; set; } = 15;
         #endregion
 
         public EntraIDProviderSettings() { }
