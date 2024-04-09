@@ -211,12 +211,12 @@ namespace Yvand.EntraClaimsProvider.Tests
                 lock (_LockInitGroupsList)
                 {
                     if (_Groups != null) { return _Groups; }
-                    Trace.TraceInformation($"{DateTime.Now:s} [{typeof(EntraIdTestGroupsSource).Name}] Initialize List of Groups.");
                     _Groups = new List<EntraIdTestGroup>();
                     foreach (EntraIdTestGroup group in GetTestData(false))
                     {
                         _Groups.Add(group);
                     }
+                    Trace.TraceInformation($"{DateTime.Now:s} [{typeof(EntraIdTestGroupsSource).Name}] Initialized List of {nameof(Groups)} with {_Groups.Count} items.");
                     return _Groups;
                 }
             }
@@ -235,7 +235,6 @@ namespace Yvand.EntraClaimsProvider.Tests
                 lock (_LockInitGroupsSettingsList)
                 {
                     if (_GroupsSettings != null) { return _GroupsSettings; }
-                    Trace.TraceInformation($"{DateTime.Now:s} [{typeof(EntraIdTestGroupSettings).Name}] Initialize List of GroupsSettings.");
                     _GroupsSettings = new List<EntraIdTestGroupSettings>
                     {
                         new EntraIdTestGroupSettings { DisplayName = $"{UnitTestsHelper.TestGroupsAccountNamePrefix}001" , SecurityEnabled = false, AllTestUsersAreMembers = true},
@@ -251,6 +250,7 @@ namespace Yvand.EntraClaimsProvider.Tests
                     {
                         groupsSetting.Id = Groups.First(x => x.DisplayName == groupsSetting.DisplayName).Id;
                     }
+                    Trace.TraceInformation($"{DateTime.Now:s} [{typeof(EntraIdTestGroupSettings).Name}] Initialized List of {nameof(GroupsSettings)} with {_GroupsSettings.Count} items.");
                 }
                 return _GroupsSettings;
             }
@@ -309,12 +309,12 @@ namespace Yvand.EntraClaimsProvider.Tests
                 lock (_LockInitList)
                 {
                     if (_Users != null) { return _Users; }
-                    Trace.TraceInformation($"{DateTime.Now:s} [{typeof(EntraIdTestUsersSource).Name}] Initialize List of Users.");
                     _Users = new List<EntraIdTestUser>();
                     foreach (EntraIdTestUser user in GetTestData())
                     {
                         _Users.Add(user);
                     }
+                    Trace.TraceInformation($"{DateTime.Now:s} [{typeof(EntraIdTestUsersSource).Name}] Initialized List of {nameof(Users)} with {_Users.Count} items.");
                     return _Users;
                 }
             }
@@ -333,7 +333,6 @@ namespace Yvand.EntraClaimsProvider.Tests
                 lock (_LockInitUsersWithSpecificSettingsList)
                 {
                     if (_UsersWithSpecificSettings != null) { return _UsersWithSpecificSettings; }
-                    Trace.TraceInformation($"{DateTime.Now:s} [{typeof(EntraIdTestUserSettings).Name}] Initialize List of _UsersWithSpecificSettings.");
                     _UsersWithSpecificSettings = new List<EntraIdTestUserSettings>
                     {
                         new EntraIdTestUserSettings { UserPrincipalName = $"{UnitTestsHelper.TestUsersAccountNamePrefix}001@{UnitTestsHelper.TenantConnection.Name}" , IsMemberOfAllGroups = true },
@@ -345,6 +344,7 @@ namespace Yvand.EntraClaimsProvider.Tests
                         new EntraIdTestUserSettings { UserPrincipalName = $"{UnitTestsHelper.TestUsersAccountNamePrefix}015@{UnitTestsHelper.TenantConnection.Name}" , IsMemberOfAllGroups = true },
                     };
                 }
+                Trace.TraceInformation($"{DateTime.Now:s} [{typeof(EntraIdTestUserSettings).Name}] Initialized List of {nameof(UsersWithSpecificSettings)} with {_UsersWithSpecificSettings.Count} items.");
                 return _UsersWithSpecificSettings;
             }
         }
