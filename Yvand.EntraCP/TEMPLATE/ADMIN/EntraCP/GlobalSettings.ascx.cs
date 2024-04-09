@@ -51,9 +51,9 @@ namespace Yvand.EntraClaimsProvider.Administration
             }
 
             LabelMessage.Text = String.Format(TextSummaryPersistedObjectInformation, Configuration.Name, Configuration.Version, Configuration.Id);
-            PopulateConnectionsGrid();
             if (!this.IsPostBack)
             {
+                PopulateConnectionsGrid();
                 PopulateGraphPropertiesLists();
                 PopulateFields();
             }
