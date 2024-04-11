@@ -119,6 +119,10 @@ namespace Yvand.EntraClaimsProvider.Configuration
             set => _ExtensionAttributesApplicationId = value;
         }
 
+        /// <summary>
+        /// Gets or sets the Microsoft Entra ID endpoint to use to connect to the tenant. See https://learn.microsoft.com/en-us/graph/deployments for more information.
+        /// It is set to the Azure global service (https://login.microsoftonline.com) by default
+        /// </summary>
         public Uri AzureAuthority
         {
             get => new Uri(this._AzureAuthority);
