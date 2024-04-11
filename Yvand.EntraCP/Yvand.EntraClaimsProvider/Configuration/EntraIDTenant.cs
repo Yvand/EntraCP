@@ -122,19 +122,34 @@ namespace Yvand.EntraClaimsProvider.Configuration
         public Uri AzureAuthority
         {
             get => new Uri(this._AzureAuthority);
-            set => _AzureAuthority = value.ToString();
+            set
+            {
+                if (
+                    String.Equals(value.ToString(), AzureAuthorityHosts.AzurePublicCloud.ToString(), StringComparison.OrdinalIgnoreCase) ||
+                    String.Equals(value.ToString(), AzureAuthorityHosts.AzureChina.ToString(), StringComparison.OrdinalIgnoreCase) ||
+                    String.Equals(value.ToString(), AzureAuthorityHosts.AzureGovernment.ToString(), StringComparison.OrdinalIgnoreCase)
+                )
+                {
+                    _AzureAuthority = value.ToString();
+                }
+                else
+                {
+                    _AzureAuthority = AzureAuthorityHosts.AzurePublicCloud.ToString();
+                }
+                
+            }
         }
         [Persisted]
         private string _AzureAuthority = AzureAuthorityHosts.AzurePublicCloud.ToString();
-        public AzureCloudInstance CloudInstance
-        {
-            get
-            {
-                if (AzureAuthority == null) { return AzureCloudInstance.AzurePublic; }
-                KeyValuePair<AzureCloudInstance, Uri> kvp = ClaimsProviderConstants.AzureCloudEndpoints.FirstOrDefault(item => item.Value.Equals(this.AzureAuthority));
-                return kvp.Equals(default(KeyValuePair<AzureCloudInstance, Uri>)) ? AzureCloudInstance.AzurePublic : kvp.Key;
-            }
-        }
+        //public AzureCloudInstance CloudInstance
+        //{
+        //    get
+        //    {
+        //        if (AzureAuthority == null) { return AzureCloudInstance.AzurePublic; }
+        //        KeyValuePair<AzureCloudInstance, Uri> kvp = ClaimsProviderConstants.AzureCloudEndpoints.FirstOrDefault(item => item.Value.Equals(this.AzureAuthority));
+        //        return kvp.Equals(default(KeyValuePair<AzureCloudInstance, Uri>)) ? AzureCloudInstance.AzurePublic : kvp.Key;
+        //    }
+        //}
 
         public string AuthenticationMode
         {
@@ -251,8 +266,19 @@ namespace Yvand.EntraClaimsProvider.Configuration
 
             HttpClient httpClient = GraphClientFactory.Create(handlers: handlers, proxy: webProxy);
             httpClient.Timeout = TimeSpan.FromMilliseconds(requestsTimeout);
-            var scopes = new[] { "https://graph.microsoft.com/.default" };
+
+            string[] scopes = new[] { "https://graph.microsoft.com/.default" };
+            // Set scope for national clouds as documented in https://learn.microsoft.com/en-us/graph/deployments#microsoft-graph-and-graph-explorer-service-root-endpoints
+            if (String.Equals(this.AzureAuthority.ToString(), AzureAuthorityHosts.AzureChina.ToString(), StringComparison.OrdinalIgnoreCase))
+            {
+                scopes = new[] { "https://microsoftgraph.chinacloudapi.cn/.default" };
+            }
+            else if (String.Equals(this.AzureAuthority.ToString(), AzureAuthorityHosts.AzureGovernment.ToString(), StringComparison.OrdinalIgnoreCase))
+            {
+                scopes = new[] { "https://graph.microsoft.us/.default" };
+            }
             this.GraphService = new GraphServiceClient(httpClient, tokenCredential, scopes);
+            Logger.Log($"[{EntraCP.ClaimsProviderName}] Initialized authentication for tenant \"{this.Name}\" using authority \"{this.AzureAuthority}\" and scope \"{scopes[0]}\" .", TraceSeverity.High, EventSeverity.Information, TraceCategory.Configuration);
         }
 
         public async Task<bool> TestConnectionAsync(string proxyAddress)
