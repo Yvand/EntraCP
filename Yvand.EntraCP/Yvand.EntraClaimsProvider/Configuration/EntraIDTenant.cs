@@ -118,42 +118,14 @@ namespace Yvand.EntraClaimsProvider.Configuration
             get => _ExtensionAttributesApplicationId;
             set => _ExtensionAttributesApplicationId = value;
         }
-
-        /// <summary>
-        /// Gets or sets the Microsoft Entra ID endpoint to use to connect to the tenant. See https://learn.microsoft.com/en-us/graph/deployments for more information.
-        /// It is set to the Azure global service (https://login.microsoftonline.com) by default
-        /// </summary>
-        public Uri AzureAuthority
+        
+        public AzureCloudName AzureCloud
         {
-            get => new Uri(this._AzureAuthority);
-            set
-            {
-                if (
-                    String.Equals(value.ToString(), AzureAuthorityHosts.AzurePublicCloud.ToString(), StringComparison.OrdinalIgnoreCase) ||
-                    String.Equals(value.ToString(), AzureAuthorityHosts.AzureChina.ToString(), StringComparison.OrdinalIgnoreCase) ||
-                    String.Equals(value.ToString(), AzureAuthorityHosts.AzureGovernment.ToString(), StringComparison.OrdinalIgnoreCase)
-                )
-                {
-                    _AzureAuthority = value.ToString();
-                }
-                else
-                {
-                    _AzureAuthority = AzureAuthorityHosts.AzurePublicCloud.ToString();
-                }
-                
-            }
+            get => _AzureCloud;
+            set => _AzureCloud = value;
         }
         [Persisted]
-        private string _AzureAuthority = AzureAuthorityHosts.AzurePublicCloud.ToString();
-        //public AzureCloudInstance CloudInstance
-        //{
-        //    get
-        //    {
-        //        if (AzureAuthority == null) { return AzureCloudInstance.AzurePublic; }
-        //        KeyValuePair<AzureCloudInstance, Uri> kvp = ClaimsProviderConstants.AzureCloudEndpoints.FirstOrDefault(item => item.Value.Equals(this.AzureAuthority));
-        //        return kvp.Equals(default(KeyValuePair<AzureCloudInstance, Uri>)) ? AzureCloudInstance.AzurePublic : kvp.Key;
-        //    }
-        //}
+        private AzureCloudName _AzureCloud = AzureCloudName.AzureGlobal;
 
         public string AuthenticationMode
         {
@@ -221,6 +193,7 @@ namespace Yvand.EntraClaimsProvider.Configuration
                 requestsTimeout = ClaimsProviderConstants.DEFAULT_TIMEOUT;
             }
 
+
             WebProxy webProxy = null;
             HttpClientTransport clientTransportProxy = null;
             if (!String.IsNullOrWhiteSpace(proxyAddress))
@@ -240,9 +213,10 @@ namespace Yvand.EntraClaimsProvider.Configuration
             //handlers.Remove(retryHandler);
 #endif
 
+            AzureCloudProperties cloudInstanceSettings = ClaimsProviderConstants.AzureClouds.First(x => x.Name == AzureCloud);
             TokenCredentialOptions options = new TokenCredentialOptions
             {
-                AuthorityHost = this.AzureAuthority,
+                AuthorityHost = new Uri(cloudInstanceSettings.Authority),
                 Retry =
                 {
                     NetworkTimeout = TimeSpan.FromMilliseconds(requestsTimeout),
@@ -268,21 +242,10 @@ namespace Yvand.EntraClaimsProvider.Configuration
                 tokenCredential = new ClientCertificateCredential(this.Name, this.ClientId, this.ClientCertificateWithPrivateKey, options);
             }
 
-            HttpClient httpClient = GraphClientFactory.Create(handlers: handlers, proxy: webProxy);
+            HttpClient httpClient = GraphClientFactory.Create(handlers: handlers, proxy: webProxy, nationalCloud: cloudInstanceSettings.NameInGraphCore);
             httpClient.Timeout = TimeSpan.FromMilliseconds(requestsTimeout);
-
-            string[] scopes = new[] { "https://graph.microsoft.com/.default" };
-            // Set scope for national clouds as documented in https://learn.microsoft.com/en-us/graph/deployments#microsoft-graph-and-graph-explorer-service-root-endpoints
-            if (String.Equals(this.AzureAuthority.ToString(), AzureAuthorityHosts.AzureChina.ToString(), StringComparison.OrdinalIgnoreCase))
-            {
-                scopes = new[] { "https://microsoftgraph.chinacloudapi.cn/.default" };
-            }
-            else if (String.Equals(this.AzureAuthority.ToString(), AzureAuthorityHosts.AzureGovernment.ToString(), StringComparison.OrdinalIgnoreCase))
-            {
-                scopes = new[] { "https://graph.microsoft.us/.default" };
-            }
-            this.GraphService = new GraphServiceClient(httpClient, tokenCredential, scopes);
-            Logger.Log($"[{EntraCP.ClaimsProviderName}] Initialized authentication for tenant \"{this.Name}\" using authority \"{this.AzureAuthority}\" and scope \"{scopes[0]}\" .", TraceSeverity.High, EventSeverity.Information, TraceCategory.Configuration);
+            this.GraphService = new GraphServiceClient(httpClient, tokenCredential, new[] { cloudInstanceSettings.GraphScope });
+            Logger.Log($"[{EntraCP.ClaimsProviderName}] Initialized authentication for tenant \"{this.Name}\" on cloud instance \"{cloudInstanceSettings.Name}\" (authority \"{cloudInstanceSettings.Authority}\" and scope \"{cloudInstanceSettings.GraphScope}\").", TraceSeverity.High, EventSeverity.Information, TraceCategory.Configuration);
         }
 
         public async Task<bool> TestConnectionAsync(string proxyAddress)
