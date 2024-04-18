@@ -148,7 +148,7 @@
         <Template_InputFormControls>
             <tr>
                 <td>
-                    <wssawc:SPGridView runat="server" ID="grdAzureTenants" AutoGenerateColumns="false" OnRowDeleting="grdAzureTenants_RowDeleting" OnRowEditing="grdAzureTenants_RowEditing" OnRowCancelingEdit="grdAzureTenants_RowCancelingEdit">
+                    <wssawc:SPGridView runat="server" ID="grdAzureTenants" AutoGenerateColumns="false" OnRowDeleting="grdAzureTenants_RowDeleting" OnRowEditing="grdAzureTenants_RowEditing" OnRowCancelingEdit="grdAzureTenants_RowCancelingEdit" OnRowUpdating="grdAzureTenants_RowUpdating">
                         <Columns>
                             <asp:BoundField DataField="Id" ItemStyle-CssClass="Entracp-HideCol" HeaderStyle-CssClass="Entracp-HideCol" />
                             <asp:TemplateField HeaderText="Tenant name">
@@ -159,17 +159,26 @@
                                     <asp:Label ID="grdAzureTenants_TenantNameLbl" runat="server" Text='<%# Bind("TenantName") %>'></asp:Label>
                                 </EditItemTemplate>
                             </asp:TemplateField>
-                            <asp:BoundField HeaderText="Application ID" DataField="ClientID" />
-                            <asp:TemplateField HeaderText="Authentication mode">
+                            <asp:TemplateField HeaderText="Client ID">
+                                <ItemTemplate>
+                                    <asp:Label ID="grdAzureTenants_TenantClientIdLbl" runat="server" Text='<%# Bind("ClientID") %>'></asp:Label>
+                                </ItemTemplate>
+                                <EditItemTemplate>
+                                    <asp:Label runat="server" Text="New client ID:"></asp:Label><br />
+                                    <asp:TextBox ID="EditTenantNewClientID" runat="server" Text='<%# Bind("ClientID") %>' />
+                                </EditItemTemplate>
+                            </asp:TemplateField>
+                            <asp:TemplateField HeaderText="Credential">
                                 <ItemTemplate>
                                     <asp:Label ID="grdAzureTenants_AuthenticationModeLbl" runat="server" Text='<%# Bind("AuthenticationMode") %>'></asp:Label>
                                 </ItemTemplate>
                                 <EditItemTemplate>
+                                    <asp:Label runat="server" Text="New secret  &#9432;:" ToolTip="Leave blank to keep the current secret or certificate"></asp:Label><br />
                                     <asp:TextBox ID="EditTenantNewSecret" runat="server" ToolTip="New secret, or leave blank to keep the current secret or certificate" />
                                 </EditItemTemplate>
                             </asp:TemplateField>
-                            <asp:BoundField HeaderText="Extension Attributes Application ID" DataField="ExtensionAttributesApplicationId" />
-                            <asp:CommandField HeaderText="Action" ButtonType="Button" ShowDeleteButton="True" DeleteText="Remove tenant" ShowEditButton="true" EditText="Edit tenant" />
+                            <%--<asp:BoundField HeaderText="Extension Attributes Application ID" DataField="ExtensionAttributesApplicationId" />--%>
+                            <asp:CommandField HeaderText="Action" ButtonType="Button" ShowDeleteButton="True" DeleteText="Delete" ShowEditButton="true" EditText="Edit" />
                         </Columns>
                     </wssawc:SPGridView>
                 </td>
