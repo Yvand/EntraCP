@@ -51,9 +51,9 @@ namespace Yvand.EntraClaimsProvider.Administration
             }
 
             LabelMessage.Text = String.Format(TextSummaryPersistedObjectInformation, Configuration.Name, Configuration.Version, Configuration.Id);
-            PopulateConnectionsGrid();
             if (!this.IsPostBack)
             {
+                PopulateConnectionsGrid();
                 PopulateGraphPropertiesLists();
                 PopulateFields();
             }
@@ -444,6 +444,58 @@ namespace Yvand.EntraClaimsProvider.Administration
             }
             return true;
         }
+
+        protected void grdAzureTenants_RowEditing(object sender, GridViewEditEventArgs e)
+        {
+            grdAzureTenants.EditIndex = e.NewEditIndex;
+            PopulateConnectionsGrid();
+        }
+
+        protected void grdAzureTenants_RowCancelingEdit(object sender, GridViewCancelEditEventArgs e)
+        {
+            grdAzureTenants.EditIndex = -1;
+            PopulateConnectionsGrid();
+        }
+
+        protected void grdAzureTenants_RowUpdating(object sender, GridViewUpdateEventArgs e)
+        {
+            Guid tenantId = Guid.Parse(e.NewValues["Id"].ToString());
+            string newClientId = e.NewValues["ClientID"].ToString();
+            TextBox newSecretTextBox = (TextBox)grdAzureTenants.Rows[e.RowIndex].FindControl("EditTenantNewSecret");
+            string newSecret = newSecretTextBox.Text;
+
+            EntraIDTenant tenant = Settings.EntraIDTenants.First(x => x.Identifier == tenantId);
+            bool tenantUpdated = false;
+            if (String.IsNullOrWhiteSpace(newSecret))
+            {
+                if (tenant.ClientId != newClientId)
+                {
+                    tenant.ClientId = newClientId;
+                    tenantUpdated = true;
+                }
+            }
+            else
+            {
+                tenant.SetCredentials(newClientId, newSecret);
+                tenantUpdated = true;
+            }
+            if (tenantUpdated)
+            {
+                CommitChanges();
+            }
+            grdAzureTenants.EditIndex = -1;
+            PopulateConnectionsGrid();
+        }
+
+        protected void grdAzureTenants_RowDataBound(object sender, GridViewRowEventArgs e)
+        {
+            // Ask user for confirmation when cliking on button Delete - https://stackoverflow.com/questions/9026884/asp-net-gridview-delete-row-only-on-confirmation
+            if (e.Row.RowType == DataControlRowType.DataRow)
+            {
+                Button deleteButton = (Button)e.Row.Cells[4].Controls[2];
+                deleteButton.OnClientClick = "if(!confirm('Are you sure you want to delete this tenant?')) return;";
+            }
+        }
     }
 
     public class PropertyCollectionBinder
@@ -456,7 +508,7 @@ namespace Yvand.EntraClaimsProvider.Administration
             PropertyCollection.Columns.Add("ClientID", typeof(string));
             //PropertyCollection.Columns.Add("MemberUserTypeOnly", typeof(bool));
             PropertyCollection.Columns.Add("AuthenticationMode", typeof(string));
-            PropertyCollection.Columns.Add("ExtensionAttributesApplicationId", typeof(Guid));
+            //PropertyCollection.Columns.Add("ExtensionAttributesApplicationId", typeof(Guid));
         }
 
         public void AddRow(Guid Id, string TenantName, string ClientID, string AuthenticationMode, Guid ExtensionAttributesApplicationId)
@@ -467,7 +519,7 @@ namespace Yvand.EntraClaimsProvider.Administration
             newRow["ClientID"] = ClientID;
             //newRow["MemberUserTypeOnly"] = MemberUserTypeOnly;
             newRow["AuthenticationMode"] = AuthenticationMode;
-            newRow["ExtensionAttributesApplicationId"] = ExtensionAttributesApplicationId;
+            //newRow["ExtensionAttributesApplicationId"] = ExtensionAttributesApplicationId;
         }
 
         public void BindGrid(SPGridView grid)

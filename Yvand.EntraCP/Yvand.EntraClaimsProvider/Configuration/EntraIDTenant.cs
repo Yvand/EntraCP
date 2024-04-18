@@ -72,7 +72,12 @@ namespace Yvand.EntraClaimsProvider.Configuration
             }
             protected set
             {
-                if (value == null) { return; }
+                if (value == null)
+                {
+                    _ClientCertificateWithPrivateKey = value;
+                    return;
+                }
+
                 if (!value.HasPrivateKey) { throw new ArgumentException("The certificate cannot be imported because it does not have a private key"); }
                 _ClientCertificateWithPrivateKey = value;
                 try
