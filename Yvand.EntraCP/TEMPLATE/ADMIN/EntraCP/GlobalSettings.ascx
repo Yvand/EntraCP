@@ -143,7 +143,9 @@
             <wssawc:EncodedLiteral runat="server" Text="Microsoft Entra ID tenants currently registered in EntraCP configuration." EncodeMethod='HtmlEncodeAllowSimpleTextFormatting' />
             <br />
             <br />
-            <wssawc:EncodedLiteral runat="server" Text="<a href='https://entracp.yvand.net/docs/configure-the-credentials/' target='_blank'>Read this article</a> to find how to update the credentials on a tenant already registered." EncodeMethod='NoEncode' />
+            <wssawc:EncodedLiteral runat="server" Text="You can update the client secret here." EncodeMethod='HtmlEncodeAllowSimpleTextFormatting' />
+            <br />
+            <wssawc:EncodedLiteral runat="server" Text="<a href='https://entracp.yvand.net/docs/how-to/configure-the-credentials/' target='_blank'>Read this article</a> if you need to set a client certificate." EncodeMethod='NoEncode' />
         </Template_Description>
         <Template_InputFormControls>
             <tr>
@@ -151,12 +153,16 @@
                     <wssawc:SPGridView runat="server" ID="grdAzureTenants" AutoGenerateColumns="false" OnRowDeleting="grdAzureTenants_RowDeleting" OnRowEditing="grdAzureTenants_RowEditing" OnRowCancelingEdit="grdAzureTenants_RowCancelingEdit" OnRowUpdating="grdAzureTenants_RowUpdating" OnRowDataBound="grdAzureTenants_RowDataBound">
                         <Columns>
                             <asp:BoundField DataField="Id" ItemStyle-CssClass="Entracp-HideCol" HeaderStyle-CssClass="Entracp-HideCol" />
-                            <asp:TemplateField HeaderText="Tenant name">
+                            <asp:TemplateField HeaderText="Tenant + cloud instance">
                                 <ItemTemplate>
-                                    <asp:Label ID="grdAzureTenants_TenantNameLbl" runat="server" Text='<%# Bind("TenantName") %>'></asp:Label>
+                                    <asp:Label ID="grdAzureTenants_TenantNameLbl" runat="server" Text='<%# Bind("TenantName") %>'></asp:Label><br />
+                                    (in
+                                    <asp:Label ID="grdAzureTenants_TenantCloudLbl" runat="server" Text='<%# Bind("AzureCloud") %>'></asp:Label>)
                                 </ItemTemplate>
                                 <EditItemTemplate>
                                     <asp:Label ID="grdAzureTenants_TenantNameLbl" runat="server" Text='<%# Bind("TenantName") %>'></asp:Label>
+                                    (in
+                                    <asp:Label ID="grdAzureTenants_TenantCloudLbl" runat="server" Text='<%# Bind("AzureCloud") %>'></asp:Label>)
                                 </EditItemTemplate>
                             </asp:TemplateField>
                             <asp:TemplateField HeaderText="Client ID">

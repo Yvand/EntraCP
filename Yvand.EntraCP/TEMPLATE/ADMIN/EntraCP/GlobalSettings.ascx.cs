@@ -70,7 +70,7 @@ namespace Yvand.EntraClaimsProvider.Administration
                     {
                         continue;
                     }
-                    pcb.AddRow(tenant.Identifier, tenant.Name, tenant.ClientId, tenant.AuthenticationMode, tenant.ExtensionAttributesApplicationId);
+                    pcb.AddRow(tenant.Identifier, tenant.Name, tenant.ClientId, tenant.AuthenticationMode, tenant.AzureCloud.ToString());
                 }
                 pcb.BindGrid(grdAzureTenants);
             }
@@ -364,7 +364,7 @@ namespace Yvand.EntraClaimsProvider.Administration
             var newTenant = new EntraIDTenant
             {
                 Name = this.TxtTenantName.Text,
-                AzureCloud = (AzureCloudName) Enum.Parse(typeof(AzureCloudName), this.DDLAzureCloudInstance.SelectedValue),
+                AzureCloud = (AzureCloudName)Enum.Parse(typeof(AzureCloudName), this.DDLAzureCloudInstance.SelectedValue),
                 ExcludeGuestUsers = this.ChkMemberUserTypeOnly.Checked,
                 ExtensionAttributesApplicationId = string.IsNullOrWhiteSpace(this.TxtExtensionAttributesApplicationId.Text) ? Guid.Empty : Guid.Parse(this.TxtExtensionAttributesApplicationId.Text)
             };
@@ -493,7 +493,10 @@ namespace Yvand.EntraClaimsProvider.Administration
             if (e.Row.RowType == DataControlRowType.DataRow)
             {
                 Button deleteButton = (Button)e.Row.Cells[4].Controls[2];
-                deleteButton.OnClientClick = "if(!confirm('Are you sure you want to delete this tenant?')) return;";
+                if (deleteButton != null && String.Equals(deleteButton.Text, "Delete", StringComparison.OrdinalIgnoreCase))
+                {
+                    deleteButton.OnClientClick = "if(!confirm('Are you sure you want to delete this tenant?')) return;";
+                }
             }
         }
     }
@@ -508,10 +511,10 @@ namespace Yvand.EntraClaimsProvider.Administration
             PropertyCollection.Columns.Add("ClientID", typeof(string));
             //PropertyCollection.Columns.Add("MemberUserTypeOnly", typeof(bool));
             PropertyCollection.Columns.Add("AuthenticationMode", typeof(string));
-            //PropertyCollection.Columns.Add("ExtensionAttributesApplicationId", typeof(Guid));
+            PropertyCollection.Columns.Add("AzureCloud", typeof(string));
         }
 
-        public void AddRow(Guid Id, string TenantName, string ClientID, string AuthenticationMode, Guid ExtensionAttributesApplicationId)
+        public void AddRow(Guid Id, string TenantName, string ClientID, string AuthenticationMode, string AzureCloud)
         {
             DataRow newRow = PropertyCollection.Rows.Add();
             newRow["Id"] = Id;
@@ -519,7 +522,7 @@ namespace Yvand.EntraClaimsProvider.Administration
             newRow["ClientID"] = ClientID;
             //newRow["MemberUserTypeOnly"] = MemberUserTypeOnly;
             newRow["AuthenticationMode"] = AuthenticationMode;
-            //newRow["ExtensionAttributesApplicationId"] = ExtensionAttributesApplicationId;
+            newRow["AzureCloud"] = AzureCloud;
         }
 
         public void BindGrid(SPGridView grid)
