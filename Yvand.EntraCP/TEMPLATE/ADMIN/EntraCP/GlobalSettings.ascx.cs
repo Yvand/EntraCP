@@ -123,13 +123,12 @@ namespace Yvand.EntraClaimsProvider.Administration
             this.ChkFilterExactMatchOnly.Checked = Settings.FilterExactMatchOnly;
             this.InputProxyAddress.Text = Settings.ProxyAddress;
 
-            AzureCloudInstance[] azureCloudInstanceValues = (AzureCloudInstance[])Enum.GetValues(typeof(AzureCloudInstance));
-            foreach (var azureCloudInstanceValue in azureCloudInstanceValues)
+            AzureCloudName[] azureCloudNames = (AzureCloudName[])Enum.GetValues(typeof(AzureCloudName));
+            foreach (var azureCloudName in azureCloudNames)
             {
-                if (azureCloudInstanceValue == AzureCloudInstance.None) { continue; }
-                this.DDLAzureCloudInstance.Items.Add(new System.Web.UI.WebControls.ListItem(azureCloudInstanceValue.ToString(), azureCloudInstanceValue.ToString()));
+                this.DDLAzureCloudInstance.Items.Add(new ListItem(azureCloudName.ToString(), azureCloudName.ToString()));
             }
-            this.DDLAzureCloudInstance.SelectedValue = AzureCloudInstance.AzurePublic.ToString();
+            this.DDLAzureCloudInstance.SelectedValue = AzureCloudName.AzureGlobal.ToString();
         }
 
         private void PopulateGraphPropertiesLists()
@@ -244,12 +243,11 @@ namespace Yvand.EntraClaimsProvider.Administration
                 this.LabelErrorTestLdapConnection.Text = TextErrorNewTenantCreds;
                 return;
             }
-            AzureCloudInstance cloudInstance = (AzureCloudInstance)Enum.Parse(typeof(AzureCloudInstance), this.DDLAzureCloudInstance.SelectedValue);
 
             EntraIDTenant newTenant = new EntraIDTenant
             {
                 Name = this.TxtTenantName.Text,
-                AzureAuthority = ClaimsProviderConstants.AzureCloudEndpoints.FirstOrDefault(item => item.Key == cloudInstance).Value,
+                AzureCloud = (AzureCloudName)Enum.Parse(typeof(AzureCloudName), this.DDLAzureCloudInstance.SelectedValue),
             };
 
             if (String.IsNullOrWhiteSpace(this.TxtClientSecret.Text))
@@ -268,7 +266,6 @@ namespace Yvand.EntraClaimsProvider.Administration
 
             try
             {
-                //Task<bool> taskTestConnection = newTenant.TestConnectionAsync(Settings.ProxyAddress);
                 Task<bool> taskTestConnection = Task.Run(async () => await newTenant.TestConnectionAsync(Settings.ProxyAddress));
                 taskTestConnection.Wait();
                 bool success = taskTestConnection.Result;
@@ -359,9 +356,6 @@ namespace Yvand.EntraClaimsProvider.Administration
                 }
             }
 
-            Uri cloudInstance = ClaimsProviderConstants.AzureCloudEndpoints.FirstOrDefault(item => item.Key == (AzureCloudInstance)Enum.Parse(typeof(AzureCloudInstance), this.DDLAzureCloudInstance.SelectedValue)).Value;
-
-
             if (Settings.EntraIDTenants == null)
             {
                 Settings.EntraIDTenants = new List<EntraIDTenant>();
@@ -370,8 +364,8 @@ namespace Yvand.EntraClaimsProvider.Administration
             var newTenant = new EntraIDTenant
             {
                 Name = this.TxtTenantName.Text,
+                AzureCloud = (AzureCloudName) Enum.Parse(typeof(AzureCloudName), this.DDLAzureCloudInstance.SelectedValue),
                 ExcludeGuestUsers = this.ChkMemberUserTypeOnly.Checked,
-                AzureAuthority = cloudInstance,
                 ExtensionAttributesApplicationId = string.IsNullOrWhiteSpace(this.TxtExtensionAttributesApplicationId.Text) ? Guid.Empty : Guid.Parse(this.TxtExtensionAttributesApplicationId.Text)
             };
 
@@ -395,7 +389,7 @@ namespace Yvand.EntraClaimsProvider.Administration
             this.TxtClientSecret.Text = String.Empty;
             this.InputClientCertPassword.Text = String.Empty;
             this.TxtExtensionAttributesApplicationId.Text = String.Empty;
-            this.DDLAzureCloudInstance.SelectedValue = AzureCloudInstance.AzurePublic.ToString();
+            this.DDLAzureCloudInstance.SelectedValue = AzureCloudName.AzureGlobal.ToString();
         }
 
         private bool ValidateUploadedCertFile(
