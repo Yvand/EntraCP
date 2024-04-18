@@ -25,6 +25,8 @@ namespace Yvand.EntraClaimsProvider.Administration
 {
     public partial class GlobalSettingsUserControl : EntraCPUserControl
     {
+        protected int DefaultTenantDataCacheLifetimeInMinutes = ClaimsProviderConstants.DefaultTenantDataCacheLifetimeInMinutes;
+
         readonly string TextErrorNewTenantFieldsMissing = "Some mandatory fields are missing.";
         readonly string TextErrorTestAzureADConnection = "Unable to get access token for tenant '{0}': {1}";
         readonly string TextConnectionSuccessful = "Connection successful.";
