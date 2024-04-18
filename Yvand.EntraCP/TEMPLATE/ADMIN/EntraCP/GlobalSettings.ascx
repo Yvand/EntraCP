@@ -148,7 +148,7 @@
         <Template_InputFormControls>
             <tr>
                 <td>
-                    <wssawc:SPGridView runat="server" ID="grdAzureTenants" AutoGenerateColumns="false" OnRowDeleting="grdAzureTenants_RowDeleting" OnRowEditing="grdAzureTenants_RowEditing" OnRowCancelingEdit="grdAzureTenants_RowCancelingEdit" OnRowUpdating="grdAzureTenants_RowUpdating">
+                    <wssawc:SPGridView runat="server" ID="grdAzureTenants" AutoGenerateColumns="false" OnRowDeleting="grdAzureTenants_RowDeleting" OnRowEditing="grdAzureTenants_RowEditing" OnRowCancelingEdit="grdAzureTenants_RowCancelingEdit" OnRowUpdating="grdAzureTenants_RowUpdating" OnRowDataBound="grdAzureTenants_RowDataBound">
                         <Columns>
                             <asp:BoundField DataField="Id" ItemStyle-CssClass="Entracp-HideCol" HeaderStyle-CssClass="Entracp-HideCol" />
                             <asp:TemplateField HeaderText="Tenant name">

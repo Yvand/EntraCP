@@ -486,6 +486,16 @@ namespace Yvand.EntraClaimsProvider.Administration
             grdAzureTenants.EditIndex = -1;
             PopulateConnectionsGrid();
         }
+
+        protected void grdAzureTenants_RowDataBound(object sender, GridViewRowEventArgs e)
+        {
+            // Ask user for confirmation when cliking on button Delete - https://stackoverflow.com/questions/9026884/asp-net-gridview-delete-row-only-on-confirmation
+            if (e.Row.RowType == DataControlRowType.DataRow)
+            {
+                Button deleteButton = (Button)e.Row.Cells[4].Controls[2];
+                deleteButton.OnClientClick = "if(!confirm('Are you sure you want to delete this tenant?')) return;";
+            }
+        }
     }
 
     public class PropertyCollectionBinder
