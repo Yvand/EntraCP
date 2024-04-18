@@ -3,6 +3,7 @@
 ## Unreleased
 
 * New feature: It is now possible to configure EntraCP, to return only users that are members of some Entra groups, configured by the administrator - https://github.com/Yvand/EntraCP/pull/243
+* Fix the connection to Microsoft Graph not working when the tenant is hosted in a national cloud
 
 ## EntraCP v24.0.20240318.32 enhancements & bug-fixes - Published in March 18, 2024
 

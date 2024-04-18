@@ -118,23 +118,14 @@ namespace Yvand.EntraClaimsProvider.Configuration
             get => _ExtensionAttributesApplicationId;
             set => _ExtensionAttributesApplicationId = value;
         }
-
-        public Uri AzureAuthority
+        
+        public AzureCloudName AzureCloud
         {
-            get => new Uri(this._AzureAuthority);
-            set => _AzureAuthority = value.ToString();
+            get => _AzureCloud;
+            set => _AzureCloud = value;
         }
         [Persisted]
-        private string _AzureAuthority = AzureAuthorityHosts.AzurePublicCloud.ToString();
-        public AzureCloudInstance CloudInstance
-        {
-            get
-            {
-                if (AzureAuthority == null) { return AzureCloudInstance.AzurePublic; }
-                KeyValuePair<AzureCloudInstance, Uri> kvp = ClaimsProviderConstants.AzureCloudEndpoints.FirstOrDefault(item => item.Value.Equals(this.AzureAuthority));
-                return kvp.Equals(default(KeyValuePair<AzureCloudInstance, Uri>)) ? AzureCloudInstance.AzurePublic : kvp.Key;
-            }
-        }
+        private AzureCloudName _AzureCloud = AzureCloudName.AzureGlobal;
 
         public string AuthenticationMode
         {
@@ -202,6 +193,7 @@ namespace Yvand.EntraClaimsProvider.Configuration
                 requestsTimeout = ClaimsProviderConstants.DEFAULT_TIMEOUT;
             }
 
+
             WebProxy webProxy = null;
             HttpClientTransport clientTransportProxy = null;
             if (!String.IsNullOrWhiteSpace(proxyAddress))
@@ -221,9 +213,10 @@ namespace Yvand.EntraClaimsProvider.Configuration
             //handlers.Remove(retryHandler);
 #endif
 
+            AzureCloudProperties cloudInstanceSettings = ClaimsProviderConstants.AzureClouds.First(x => x.Name == AzureCloud);
             TokenCredentialOptions options = new TokenCredentialOptions
             {
-                AuthorityHost = this.AzureAuthority,
+                AuthorityHost = new Uri(cloudInstanceSettings.Authority),
                 Retry =
                 {
                     NetworkTimeout = TimeSpan.FromMilliseconds(requestsTimeout),
@@ -249,10 +242,10 @@ namespace Yvand.EntraClaimsProvider.Configuration
                 tokenCredential = new ClientCertificateCredential(this.Name, this.ClientId, this.ClientCertificateWithPrivateKey, options);
             }
 
-            HttpClient httpClient = GraphClientFactory.Create(handlers: handlers, proxy: webProxy);
+            HttpClient httpClient = GraphClientFactory.Create(handlers: handlers, proxy: webProxy, nationalCloud: cloudInstanceSettings.NameInGraphCore);
             httpClient.Timeout = TimeSpan.FromMilliseconds(requestsTimeout);
-            var scopes = new[] { "https://graph.microsoft.com/.default" };
-            this.GraphService = new GraphServiceClient(httpClient, tokenCredential, scopes);
+            this.GraphService = new GraphServiceClient(httpClient, tokenCredential, new[] { cloudInstanceSettings.GraphScope });
+            Logger.Log($"[{EntraCP.ClaimsProviderName}] Initialized authentication for tenant \"{this.Name}\" on cloud instance \"{cloudInstanceSettings.Name}\" (authority \"{cloudInstanceSettings.Authority}\" and scope \"{cloudInstanceSettings.GraphScope}\").", TraceSeverity.High, EventSeverity.Information, TraceCategory.Configuration);
         }
 
         public async Task<bool> TestConnectionAsync(string proxyAddress)
