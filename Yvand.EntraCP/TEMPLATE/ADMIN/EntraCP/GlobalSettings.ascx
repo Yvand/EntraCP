@@ -396,7 +396,7 @@
             <br />
             <wssawc:EncodedLiteral runat="server" Text="For performance reasons, the members of those groups are stored in a local cache." EncodeMethod='NoEncode' />
             <br />
-            <span>You can customize its lifetime (default value is <%= DefaultTenantDataCacheLifetimeInMinutes %> minutes), or type 0 to deactivate it (not recommended).</span>
+            <span>You can customize its lifetime (default value is <%= DefaultTenantDataCacheLifetimeInMinutes %> minutes), and the minimum possible value is 1 minute.</span>
         </Template_Description>
         <Template_InputFormControls>
             <label for="<%= InputRestrictSearchableUsersByGroups.ClientID %>" title="Example: 1D6C19BB-DA3B-48D7-98FF-066CB9CA3F14,755D28C4-A2D8-4ACB-ADCE-68D4C6570938">List of groups ID separated by a comma &#9432;:</label><br />

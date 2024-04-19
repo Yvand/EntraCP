@@ -517,9 +517,9 @@ namespace Yvand.EntraClaimsProvider.Configuration
                 }
             }
 
-            if (this.TenantDataCacheLifetimeInMinutes < 0)
+            if (this.TenantDataCacheLifetimeInMinutes < 1)
             {
-                throw new InvalidOperationException($"The configuration is invalid because property {nameof(TenantDataCacheLifetimeInMinutes)} has a negative value.");
+                throw new InvalidOperationException($"The configuration is invalid because property {nameof(TenantDataCacheLifetimeInMinutes)} is set to 0 or a negative value. Minimum value is 1");
             }
 
             if (this.RestrictSearchableUsersByGroups != null)
