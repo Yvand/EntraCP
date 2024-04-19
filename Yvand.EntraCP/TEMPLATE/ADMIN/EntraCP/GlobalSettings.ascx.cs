@@ -124,6 +124,8 @@ namespace Yvand.EntraClaimsProvider.Administration
             this.ChkAlwaysResolveUserInput.Checked = Settings.AlwaysResolveUserInput;
             this.ChkFilterExactMatchOnly.Checked = Settings.FilterExactMatchOnly;
             this.InputProxyAddress.Text = Settings.ProxyAddress;
+            this.InputRestrictSearchableUsersByGroups.Text = Settings.RestrictSearchableUsersByGroups;
+            this.InputTenantDataCacheLifetimeInMinutes.Text = Settings.TenantDataCacheLifetimeInMinutes.ToString();
 
             AzureCloudName[] azureCloudNames = (AzureCloudName[])Enum.GetValues(typeof(AzureCloudName));
             foreach (var azureCloudName in azureCloudNames)
@@ -220,6 +222,8 @@ namespace Yvand.EntraClaimsProvider.Administration
             Settings.AlwaysResolveUserInput = this.ChkAlwaysResolveUserInput.Checked;
             Settings.FilterExactMatchOnly = this.ChkFilterExactMatchOnly.Checked;
             Settings.ProxyAddress = this.InputProxyAddress.Text;
+            Settings.RestrictSearchableUsersByGroups = this.InputRestrictSearchableUsersByGroups.Text;
+            Settings.TenantDataCacheLifetimeInMinutes = Convert.ToInt32(this.InputTenantDataCacheLifetimeInMinutes.Text);
 
             if (commitChanges) { CommitChanges(); }
             return true;

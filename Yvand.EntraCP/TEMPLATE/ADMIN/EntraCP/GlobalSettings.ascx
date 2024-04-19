@@ -387,9 +387,9 @@
         </Template_InputFormControls>
     </wssuc:InputFormSection>
 
-    <wssuc:InputFormSection runat="server" Title="Filter searchable users">
+    <wssuc:InputFormSection runat="server" Title="Restrict searchable users">
         <Template_Description>
-            <wssawc:EncodedLiteral runat="server" Text="You can restrict the users returned by EntraCP, by specifying a list of groups. Users must be members of at least 1 of those groups, to be searchable." EncodeMethod='NoEncode' />
+            <wssawc:EncodedLiteral runat="server" Text="Restrict the users who can be searched, by specifying a list of Entra groups. Only users members of any of those groups may be returned." EncodeMethod='NoEncode' />
             <br />
             <wssawc:EncodedLiteral runat="server" Text="You can specify up to 18 groups." EncodeMethod='NoEncode' />
             <br />
@@ -399,12 +399,12 @@
             <span>You can customize its lifetime (default value is <%= DefaultTenantDataCacheLifetimeInMinutes %> minutes), or type 0 to deactivate it (not recommended).</span>
         </Template_Description>
         <Template_InputFormControls>
-            <label for="<%= InputFilterUsersGroupsList.ClientID %>" title="Example: 1D6C19BB-DA3B-48D7-98FF-066CB9CA3F14,755D28C4-A2D8-4ACB-ADCE-68D4C6570938">List of groups ID separated by a comma &#9432;:</label><br />
-            <wssawc:InputFormTextBox title="Groups ID separated by a comma" class="ms-input" ID="InputFilterUsersGroupsList" Columns="50" runat="server" />
+            <label for="<%= InputRestrictSearchableUsersByGroups.ClientID %>" title="Example: 1D6C19BB-DA3B-48D7-98FF-066CB9CA3F14,755D28C4-A2D8-4ACB-ADCE-68D4C6570938">List of groups ID separated by a comma &#9432;:</label><br />
+            <wssawc:InputFormTextBox title="Groups ID separated by a comma" class="ms-input" ID="InputRestrictSearchableUsersByGroups" Columns="50" runat="server" />
             <br />
             <br />
-            <label for="<%= InputFilterUsersCacheLifetime.ClientID %>">Lifetime of the cache in minutes:</label><br />
-            <wssawc:InputFormTextBox class="ms-input" ID="InputFilterUsersCacheLifetime" Columns="50" runat="server" />
+            <label for="<%= InputTenantDataCacheLifetimeInMinutes.ClientID %>">Lifetime of the cache in minutes:</label><br />
+            <wssawc:InputFormTextBox class="ms-input" ID="InputTenantDataCacheLifetimeInMinutes" Columns="50" runat="server" />
         </Template_InputFormControls>
     </wssuc:InputFormSection>
 
