@@ -386,6 +386,28 @@
             <wssawc:InputFormTextBox title="Proxy address" class="ms-input" ID="InputProxyAddress" Columns="50" runat="server" />
         </Template_InputFormControls>
     </wssuc:InputFormSection>
+
+    <wssuc:InputFormSection runat="server" Title="Restrict searchable users">
+        <Template_Description>
+            <wssawc:EncodedLiteral runat="server" Text="Restrict the users who can be searched, by specifying a list of Entra groups. Only users members of any of those groups may be returned." EncodeMethod='NoEncode' />
+            <br />
+            <wssawc:EncodedLiteral runat="server" Text="You can specify up to 18 groups." EncodeMethod='NoEncode' />
+            <br />
+            <br />
+            <wssawc:EncodedLiteral runat="server" Text="For performance reasons, the members of those groups are stored in a local cache." EncodeMethod='NoEncode' />
+            <br />
+            <span>You can customize its lifetime (default value is <%= DefaultTenantDataCacheLifetimeInMinutes %> minutes), and the minimum possible value is 1 minute.</span>
+        </Template_Description>
+        <Template_InputFormControls>
+            <label for="<%= InputRestrictSearchableUsersByGroups.ClientID %>" title="Example: 1D6C19BB-DA3B-48D7-98FF-066CB9CA3F14,755D28C4-A2D8-4ACB-ADCE-68D4C6570938">List of groups ID separated by a comma &#9432;:</label><br />
+            <wssawc:InputFormTextBox title="Groups ID separated by a comma" class="ms-input" ID="InputRestrictSearchableUsersByGroups" Columns="50" runat="server" />
+            <br />
+            <br />
+            <label for="<%= InputTenantDataCacheLifetimeInMinutes.ClientID %>">Lifetime of the cache in minutes:</label><br />
+            <wssawc:InputFormTextBox class="ms-input" ID="InputTenantDataCacheLifetimeInMinutes" Columns="50" runat="server" />
+        </Template_InputFormControls>
+    </wssuc:InputFormSection>
+
     <wssuc:InputFormSection runat="server" Title="Reset EntraCP configuration" Description="Restore configuration to its default values. All changes, including in claim types mappings, will be lost.">
         <Template_InputFormControls>
             <asp:Button runat="server" ID="BtnResetConfig" Text="Reset EntraCP configuration" OnClick="BtnResetConfig_Click" class="ms-ButtonHeightWidth" OnClientClick="return confirm('Do you really want to reset EntraCP configuration?');" />

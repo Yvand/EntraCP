@@ -462,7 +462,7 @@ namespace Yvand.EntraClaimsProvider
 
                     // List of groups that users must be member of, to be returned to SharePoint
                     string[] groupsWhichUsersMustBeMemberOfRequestIds = null;
-                    string groupsWhichUsersMustBeMemberOfAny = this.Settings.GroupsWhichUsersMustBeMemberOfAny;
+                    string groupsWhichUsersMustBeMemberOfAny = this.Settings.RestrictSearchableUsersByGroups;
                     //groupsWhichUsersMustBeMemberOfAny = "c9a94341-89b5-4109-a501-2a14027b5bf0"; // testEntraCPGroup_005 - everyone member
                     //groupsWhichUsersMustBeMemberOfAny = "cd5f135c-9fe5-4ec2-90d9-114e9ad2e236"; // testEntraCPGroup_004 - testEntraCPUser_001 and testEntraCPUser_010 members
                     if (!String.IsNullOrWhiteSpace(groupsWhichUsersMustBeMemberOfAny) && cachedTenantData.UserIdsMembersOfAnyRequiredGroup == null)
@@ -489,7 +489,7 @@ namespace Yvand.EntraClaimsProvider
                                     };
                                     conf.Options = new List<IRequestOption>
                                     {
-                                    retryHandlerOption,
+                                        retryHandlerOption,
                                     };
                                 });
                                 groupsWhichUsersMustBeMemberOfRequestIds[groupIdx] = await batchRequestContent.AddBatchRequestStepAsync(usersMembersOfGroupRequest).ConfigureAwait(false);
@@ -547,9 +547,13 @@ namespace Yvand.EntraClaimsProvider
                                     usersMembersOfAnyRequiredGroupResponse = await batchResponse.GetResponseByIdAsync<UserCollectionResponse>(groupsWhichUsersMustBeMemberOfRequestId).ConfigureAwait(false);
                                     cachedTenantData.UserIdsMembersOfAnyRequiredGroup.AddRange(usersMembersOfAnyRequiredGroupResponse.Value.Where(x => !cachedTenantData.UserIdsMembersOfAnyRequiredGroup.Contains(x.Id)).Select(x => x.Id).ToList());
                                 }
+                                else if (usersMembersOfAnyRequiredGroupResponseStatus == HttpStatusCode.NotFound)
+                                {
+                                    Logger.Log($"[{ClaimsProviderName}] Request inside the batch to get the members of a group on tenant \"{tenant.Name}\" returned nothing (the group was not found).", TraceSeverity.Verbose, EventSeverity.Information, TraceCategory.Lookup);
+                                }
                                 else
                                 {
-                                    Logger.Log($"[{ClaimsProviderName}] Request inside the batch returned unexpected status '{usersMembersOfAnyRequiredGroupResponseStatus}' for tenant '{tenant.Name}', to get users members of a group ", TraceSeverity.Unexpected, EventSeverity.Error, TraceCategory.Lookup);
+                                    Logger.Log($"[{ClaimsProviderName}] Request inside the batch to get the members of a group on tenant \"{tenant.Name}\" returned unexpected status '{usersMembersOfAnyRequiredGroupResponseStatus}'", TraceSeverity.Unexpected, EventSeverity.Error, TraceCategory.Lookup);
                                 }
                             }
                         }

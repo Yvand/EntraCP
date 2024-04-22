@@ -59,7 +59,7 @@ namespace Yvand.EntraClaimsProvider.Tests
                 {
                     if (_GroupsWhichUsersMustBeMemberOfAny != null) { return _GroupsWhichUsersMustBeMemberOfAny; }
                     _GroupsWhichUsersMustBeMemberOfAny = new List<EntraIdTestGroupSettings>();
-                    string groupsWhichUsersMustBeMemberOfAny = Settings.GroupsWhichUsersMustBeMemberOfAny;
+                    string groupsWhichUsersMustBeMemberOfAny = Settings.RestrictSearchableUsersByGroups;
                     if (!String.IsNullOrWhiteSpace(groupsWhichUsersMustBeMemberOfAny))
                     {
                         string[] groupIds = groupsWhichUsersMustBeMemberOfAny.Split(new char[] { ',' }, StringSplitOptions.RemoveEmptyEntries);
@@ -152,18 +152,18 @@ namespace Yvand.EntraClaimsProvider.Tests
             }
             else
             {
-                if (!String.IsNullOrWhiteSpace(Settings.GroupsWhichUsersMustBeMemberOfAny))
+                if (!String.IsNullOrWhiteSpace(Settings.RestrictSearchableUsersByGroups))
                 {
                     lock (_LockVerifyIfCurrentUserShouldBeFound) // TODO: understand why this lock is necessary
                     {
-                        // Test 1: Does Settings.GroupsWhichUsersMustBeMemberOfAny contain any group where all test users are members?
+                        // Test 1: Does Settings.RestrictSearchableUsersByGroups contain any group where all test users are members?
                         bool groupWithAllTestUsersAreMembersFound = false;
                         foreach (var groupSettings in GroupsWhichUsersMustBeMemberOfAny)
                         {
                             if (groupSettings.AllTestUsersAreMembers)
                             {
                                 groupWithAllTestUsersAreMembersFound = true;
-                                Trace.TraceInformation($"{DateTime.Now:s} [{this.GetType().Name}] User \"{entity.UserPrincipalName}\" may be found because Settings.GroupsWhichUsersMustBeMemberOfAny contains group: \"{groupSettings.DisplayName}\" with AllTestUsersAreMembers {groupSettings.AllTestUsersAreMembers}.");
+                                Trace.TraceInformation($"{DateTime.Now:s} [{this.GetType().Name}] User \"{entity.UserPrincipalName}\" may be found because Settings.RestrictSearchableUsersByGroups contains group: \"{groupSettings.DisplayName}\" with AllTestUsersAreMembers {groupSettings.AllTestUsersAreMembers}.");
                                 break;  // No need to change shouldValidate, which is true by default, or process other groups
                             }
                         }
@@ -178,14 +178,14 @@ namespace Yvand.EntraClaimsProvider.Tests
                             {
                                 shouldValidate = false;
                                 expectedCount = 0;
-                                Trace.TraceInformation($"{DateTime.Now:s} [{this.GetType().Name}] User \"{entity.UserPrincipalName}\" should not be found because it has IsMemberOfAllGroups {userSettings.IsMemberOfAllGroups} and no group set in Settings.GroupsWhichUsersMustBeMemberOfAny has AllTestUsersAreMembers set to true.");
+                                Trace.TraceInformation($"{DateTime.Now:s} [{this.GetType().Name}] User \"{entity.UserPrincipalName}\" should not be found because it has IsMemberOfAllGroups {userSettings.IsMemberOfAllGroups} and no group set in Settings.RestrictSearchableUsersByGroups has AllTestUsersAreMembers set to true.");
                             }
                         }
                     }
                 }
                 else
                 {
-                    Trace.TraceInformation($"{DateTime.Now:s} [{this.GetType().Name}] Property Settings.GroupsWhichUsersMustBeMemberOfAny IsNullOrWhiteSpace.");
+                    Trace.TraceInformation($"{DateTime.Now:s} [{this.GetType().Name}] Property Settings.RestrictSearchableUsersByGroups IsNullOrWhiteSpace.");
                 }
 
                 // If shouldValidate is false, user should not be found anyway so no need to do additional checks

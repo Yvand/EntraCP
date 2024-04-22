@@ -99,6 +99,8 @@ namespace Yvand.EntraClaimsProvider.Configuration
 #else
         public static int DEFAULT_TIMEOUT = 15 * 1000;
 #endif
+
+        public static readonly int DefaultTenantDataCacheLifetimeInMinutes = 15;
     }
 
     public enum AzureCloudName

@@ -276,6 +276,24 @@ namespace Yvand.EntraClaimsProvider.Administration
         protected global::Microsoft.SharePoint.WebControls.InputFormTextBox InputProxyAddress;
 
         /// <summary>
+        /// InputRestrictSearchableUsersByGroups control.
+        /// </summary>
+        /// <remarks>
+        /// Auto-generated field.
+        /// To modify move field declaration from designer file to code-behind file.
+        /// </remarks>
+        protected global::Microsoft.SharePoint.WebControls.InputFormTextBox InputRestrictSearchableUsersByGroups;
+
+        /// <summary>
+        /// InputTenantDataCacheLifetimeInMinutes control.
+        /// </summary>
+        /// <remarks>
+        /// Auto-generated field.
+        /// To modify move field declaration from designer file to code-behind file.
+        /// </remarks>
+        protected global::Microsoft.SharePoint.WebControls.InputFormTextBox InputTenantDataCacheLifetimeInMinutes;
+
+        /// <summary>
         /// BtnResetConfig control.
         /// </summary>
         /// <remarks>
