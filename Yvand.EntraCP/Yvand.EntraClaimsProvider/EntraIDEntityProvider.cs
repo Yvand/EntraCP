@@ -26,17 +26,17 @@ namespace Yvand.EntraClaimsProvider
     public class EntraIDEntityProvider : EntityProviderBase
     {
         public IClaimsProviderSettings Settings { get; }
-        private static List<CachedEntraIDTenantData> CachedTenantData;
+        private static List<CachedEntraIDTenantData> CachedTenantsData;
 
         public EntraIDEntityProvider(string claimsProviderName, IClaimsProviderSettings Settings) : base(claimsProviderName)
         {
             this.Settings = Settings;
 
             // Reset cache if config changes
-            CachedTenantData = new List<CachedEntraIDTenantData>();
+            CachedTenantsData = new List<CachedEntraIDTenantData>();
             foreach (var tenant in this.Settings.EntraIDTenants)
             {
-                CachedTenantData.Add(new CachedEntraIDTenantData(tenant.Identifier, Settings.TenantDataCacheLifetimeInMinutes));
+                CachedTenantsData.Add(new CachedEntraIDTenantData(tenant.Identifier, Settings.TenantDataCacheLifetimeInMinutes));
             }
         }
 
@@ -334,7 +334,7 @@ namespace Yvand.EntraClaimsProvider
                 {
                     Stopwatch timer = new Stopwatch();
                     timer.Start();
-                    List<DirectoryObject> tenantResults = await QueryEntraIDTenantAsync(currentContext, tenant, CachedTenantData.First(x => x.TenantIdentifier == tenant.Identifier)).ConfigureAwait(false);
+                    List<DirectoryObject> tenantResults = await QueryEntraIDTenantAsync(currentContext, tenant, CachedTenantsData.First(x => x.TenantIdentifier == tenant.Identifier)).ConfigureAwait(false);
                     timer.Stop();
                     if (tenantResults != null)
                     {
@@ -461,25 +461,25 @@ namespace Yvand.EntraClaimsProvider
                     }
 
                     // List of groups that users must be member of, to be returned to SharePoint
-                    string[] groupsWhichUsersMustBeMemberOfRequestIds = null;
-                    string groupsWhichUsersMustBeMemberOfAny = this.Settings.RestrictSearchableUsersByGroups;
-                    //groupsWhichUsersMustBeMemberOfAny = "c9a94341-89b5-4109-a501-2a14027b5bf0"; // testEntraCPGroup_005 - everyone member
-                    //groupsWhichUsersMustBeMemberOfAny = "cd5f135c-9fe5-4ec2-90d9-114e9ad2e236"; // testEntraCPGroup_004 - testEntraCPUser_001 and testEntraCPUser_010 members
-                    if (!String.IsNullOrWhiteSpace(groupsWhichUsersMustBeMemberOfAny) && cachedTenantData.UserIdsMembersOfAnyRequiredGroup == null)
+                    string[] restrictSearchableUsersByGroupsRequestsId = null;
+                    string restrictSearchableUsersByGroups = this.Settings.RestrictSearchableUsersByGroups;
+                    //restrictSearchableUsersByGroups = "c9a94341-89b5-4109-a501-2a14027b5bf0"; // testEntraCPGroup_005 - everyone member
+                    //restrictSearchableUsersByGroups = "cd5f135c-9fe5-4ec2-90d9-114e9ad2e236"; // testEntraCPGroup_004 - testEntraCPUser_001 and testEntraCPUser_010 members
+                    if (!String.IsNullOrWhiteSpace(restrictSearchableUsersByGroups) && cachedTenantData.SearchableUsersId == null)
                     {
                         await cachedTenantData.WriteDataLock.WaitAsync().ConfigureAwait(false);
                         lockToWriteInCachedDataWasTaken = true;
-                        if (cachedTenantData.UserIdsMembersOfAnyRequiredGroup != null)
+                        if (cachedTenantData.SearchableUsersId != null)
                         {
                             cachedTenantData.WriteDataLock.Release();
                             lockToWriteInCachedDataWasTaken = false;
                         }
                         else
                         {
-                            string[] groupIds = groupsWhichUsersMustBeMemberOfAny.Split(new char[] { ',' }, StringSplitOptions.RemoveEmptyEntries);
-                            groupsWhichUsersMustBeMemberOfRequestIds = new string[groupIds.Length];
+                            string[] groupsId = restrictSearchableUsersByGroups.Split(new char[] { ',' }, StringSplitOptions.RemoveEmptyEntries);
+                            restrictSearchableUsersByGroupsRequestsId = new string[groupsId.Length];
                             int groupIdx = 0;
-                            foreach (string groupId in groupIds)
+                            foreach (string groupId in groupsId)
                             {
                                 RequestInformation usersMembersOfGroupRequest = tenant.GraphService.Groups[groupId].Members.GraphUser.ToGetRequestInformation(conf =>
                                 {
@@ -492,7 +492,7 @@ namespace Yvand.EntraClaimsProvider
                                         retryHandlerOption,
                                     };
                                 });
-                                groupsWhichUsersMustBeMemberOfRequestIds[groupIdx] = await batchRequestContent.AddBatchRequestStepAsync(usersMembersOfGroupRequest).ConfigureAwait(false);
+                                restrictSearchableUsersByGroupsRequestsId[groupIdx] = await batchRequestContent.AddBatchRequestStepAsync(usersMembersOfGroupRequest).ConfigureAwait(false);
                                 groupIdx++;
                             }
                         }
@@ -532,28 +532,28 @@ namespace Yvand.EntraClaimsProvider
                         }
                     }
 
-                    if (groupsWhichUsersMustBeMemberOfRequestIds != null)
+                    if (restrictSearchableUsersByGroupsRequestsId != null)
                     {
                         // only need 1 list that contains unique user ids
-                        cachedTenantData.UserIdsMembersOfAnyRequiredGroup = new List<string>();
-                        foreach (string groupsWhichUsersMustBeMemberOfRequestId in groupsWhichUsersMustBeMemberOfRequestIds)
+                        cachedTenantData.SearchableUsersId = new List<string>();
+                        foreach (string restrictSearchableUsersByGroupsRequestId in restrictSearchableUsersByGroupsRequestsId)
                         {
-                            HttpStatusCode usersMembersOfAnyRequiredGroupResponseStatus;
-                            UserCollectionResponse usersMembersOfAnyRequiredGroupResponse = null;
-                            if (requestsStatusInBatchResponse.TryGetValue(groupsWhichUsersMustBeMemberOfRequestId, out usersMembersOfAnyRequiredGroupResponseStatus))
+                            HttpStatusCode restrictSearchableUsersByGroupsResponseStatus;
+                            UserCollectionResponse restrictSearchableUsersByGroupsResponse = null;
+                            if (requestsStatusInBatchResponse.TryGetValue(restrictSearchableUsersByGroupsRequestId, out restrictSearchableUsersByGroupsResponseStatus))
                             {
-                                if (usersMembersOfAnyRequiredGroupResponseStatus == HttpStatusCode.OK)
+                                if (restrictSearchableUsersByGroupsResponseStatus == HttpStatusCode.OK)
                                 {
-                                    usersMembersOfAnyRequiredGroupResponse = await batchResponse.GetResponseByIdAsync<UserCollectionResponse>(groupsWhichUsersMustBeMemberOfRequestId).ConfigureAwait(false);
-                                    cachedTenantData.UserIdsMembersOfAnyRequiredGroup.AddRange(usersMembersOfAnyRequiredGroupResponse.Value.Where(x => !cachedTenantData.UserIdsMembersOfAnyRequiredGroup.Contains(x.Id)).Select(x => x.Id).ToList());
+                                    restrictSearchableUsersByGroupsResponse = await batchResponse.GetResponseByIdAsync<UserCollectionResponse>(restrictSearchableUsersByGroupsRequestId).ConfigureAwait(false);
+                                    cachedTenantData.SearchableUsersId.AddRange(restrictSearchableUsersByGroupsResponse.Value.Where(x => !cachedTenantData.SearchableUsersId.Contains(x.Id)).Select(x => x.Id).ToList());
                                 }
-                                else if (usersMembersOfAnyRequiredGroupResponseStatus == HttpStatusCode.NotFound)
+                                else if (restrictSearchableUsersByGroupsResponseStatus == HttpStatusCode.NotFound)
                                 {
                                     Logger.Log($"[{ClaimsProviderName}] Request inside the batch to get the members of a group on tenant \"{tenant.Name}\" returned nothing (the group was not found).", TraceSeverity.Verbose, EventSeverity.Information, TraceCategory.Lookup);
                                 }
                                 else
                                 {
-                                    Logger.Log($"[{ClaimsProviderName}] Request inside the batch to get the members of a group on tenant \"{tenant.Name}\" returned unexpected status '{usersMembersOfAnyRequiredGroupResponseStatus}'", TraceSeverity.Unexpected, EventSeverity.Error, TraceCategory.Lookup);
+                                    Logger.Log($"[{ClaimsProviderName}] Request inside the batch to get the members of a group on tenant \"{tenant.Name}\" returned unexpected status '{restrictSearchableUsersByGroupsResponseStatus}'", TraceSeverity.Unexpected, EventSeverity.Error, TraceCategory.Lookup);
                                 }
                             }
                         }
@@ -587,7 +587,7 @@ namespace Yvand.EntraClaimsProvider
                                     }
                                 }
 
-                                if (cachedTenantData.UserIdsMembersOfAnyRequiredGroup != null && !cachedTenantData.UserIdsMembersOfAnyRequiredGroup.Contains(user.Id))
+                                if (cachedTenantData.SearchableUsersId != null && !cachedTenantData.SearchableUsersId.Contains(user.Id))
                                 {
                                     addUser = false;
                                 }
@@ -755,38 +755,42 @@ namespace Yvand.EntraClaimsProvider
     /// </summary>
     public class CachedEntraIDTenantData
     {
-        public Guid TenantIdentifier;
+        public readonly Guid TenantIdentifier;
         public SemaphoreSlim WriteDataLock = new SemaphoreSlim(1, 1);
-        public List<string> UserIdsMembersOfAnyRequiredGroup
+
+        /// <summary>
+        /// Gets or sets the list of users ID, matching users that may be returned to SharePoint. Set to null to not apply amy restriction
+        /// </summary>
+        public List<string> SearchableUsersId
         {
             get
             {
-                if (UserIdsMembersOfAnyRequiredGroupCacheTime == default(DateTime))
+                if (SearchableUsersIdCacheTime == default(DateTime))
                 {
-                    return _UserIdsMembersOfAnyRequiredGroup;
+                    return _SearchableUsersId;
                 }
-                TimeSpan interval = DateTime.UtcNow - UserIdsMembersOfAnyRequiredGroupCacheTime;
-                if (interval > UserIdsMembersOfAnyRequiredGroupCacheTTL)
+                TimeSpan interval = DateTime.UtcNow - SearchableUsersIdCacheTime;
+                if (interval > SearchableUsersIdCacheTTL)
                 {
-                    UserIdsMembersOfAnyRequiredGroupCacheTime = default(DateTime);
-                    _UserIdsMembersOfAnyRequiredGroup = null;
+                    SearchableUsersIdCacheTime = default(DateTime);
+                    _SearchableUsersId = null;
                 }
-                return _UserIdsMembersOfAnyRequiredGroup;
+                return _SearchableUsersId;
             }
             set
             {
-                _UserIdsMembersOfAnyRequiredGroup = value;
-                UserIdsMembersOfAnyRequiredGroupCacheTime = DateTime.UtcNow;
+                _SearchableUsersId = value;
+                SearchableUsersIdCacheTime = DateTime.UtcNow;
             }
         }
-        private List<string> _UserIdsMembersOfAnyRequiredGroup;
-        private DateTime UserIdsMembersOfAnyRequiredGroupCacheTime;
-        private TimeSpan UserIdsMembersOfAnyRequiredGroupCacheTTL = new TimeSpan(0, 1, 0);
+        private List<string> _SearchableUsersId;
+        private DateTime SearchableUsersIdCacheTime;
+        private TimeSpan SearchableUsersIdCacheTTL = new TimeSpan(0, 1, 0);
 
         public CachedEntraIDTenantData(Guid tenantIdentifier, int tenantDataCacheLifetimeInMinutes)
         {
             this.TenantIdentifier = tenantIdentifier;
-            this.UserIdsMembersOfAnyRequiredGroupCacheTTL = new TimeSpan(0, tenantDataCacheLifetimeInMinutes, 0);
+            this.SearchableUsersIdCacheTTL = new TimeSpan(0, tenantDataCacheLifetimeInMinutes, 0);
         }
     }
 }
