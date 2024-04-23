@@ -128,10 +128,10 @@
   <!-- NuGet packages -->
   <ItemGroup>
     <PackageReference Include="Azure.Identity">
-      <Version>1.10.4</Version>
+      <Version>1.11.2</Version>
     </PackageReference>
     <PackageReference Include="Microsoft.Graph">
-      <Version>5.44.0</Version>
+      <Version>5.49.0</Version>
     </PackageReference>
     <PackageReference Include="StrongNamer">
       <Version>0.2.5</Version>
@@ -184,6 +184,7 @@ copy /Y "$(TargetDir)Microsoft.Kiota.Serialization.Multipart.dll" $(ProjectDir)\
 copy /Y "$(TargetDir)Microsoft.Kiota.Serialization.Text.dll" $(ProjectDir)\bin
 copy /Y "$(TargetDir)Std.UriTemplate.dll" $(ProjectDir)\bin
 copy /Y "$(TargetDir)System.Buffers.dll" $(ProjectDir)\bin
+copy /Y "$(TargetDir)System.ClientModel.dll" $(ProjectDir)\bin
 copy /Y "$(TargetDir)System.Diagnostics.DiagnosticSource.dll" $(ProjectDir)\bin
 copy /Y "$(TargetDir)System.IdentityModel.Tokens.Jwt.dll" $(ProjectDir)\bin
 copy /Y "$(TargetDir)System.IO.FileSystem.AccessControl.dll" $(ProjectDir)\bin
