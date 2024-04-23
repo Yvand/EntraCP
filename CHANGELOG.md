@@ -9,7 +9,6 @@
 * Fix the connection to Microsoft Graph not working when the tenant is hosted in a national cloud
 * Update Azure.Identity from 1.10.4 to 1.11.2
 * Update Microsoft.Graph from 5.44.0 to 5.49.0
-* In test project: Update NUnit.Analyzers from 4.0.1 to 4.1.0
 
 ## EntraCP v24.0.20240318.32 enhancements & bug-fixes - Published in March 18, 2024
 
