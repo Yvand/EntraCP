@@ -23,6 +23,7 @@
     <customAssembly location="Microsoft.Kiota.Serialization.Text.dll" deploymentTarget="GlobalAssemblyCache" sourcePath="bin\Microsoft.Kiota.Serialization.Text.dll" />
     <customAssembly location="Std.UriTemplate.dll" deploymentTarget="GlobalAssemblyCache" sourcePath="bin\Std.UriTemplate.dll" />   
     <customAssembly location="System.Buffers.dll" deploymentTarget="GlobalAssemblyCache" sourcePath="bin\System.Buffers.dll" /> 
+	<customAssembly location="System.ClientModel.dll" deploymentTarget="GlobalAssemblyCache" sourcePath="bin\System.ClientModel.dll" /> 
     <customAssembly location="System.Diagnostics.DiagnosticSource.dll" deploymentTarget="GlobalAssemblyCache" sourcePath="bin\System.Diagnostics.DiagnosticSource.dll" />
     <customAssembly location="System.IdentityModel.Tokens.Jwt.dll" deploymentTarget="GlobalAssemblyCache" sourcePath="bin\System.IdentityModel.Tokens.Jwt.dll" />
     <customAssembly location="System.IO.FileSystem.AccessControl.dll" deploymentTarget="GlobalAssemblyCache" sourcePath="bin\System.IO.FileSystem.AccessControl.dll" />
