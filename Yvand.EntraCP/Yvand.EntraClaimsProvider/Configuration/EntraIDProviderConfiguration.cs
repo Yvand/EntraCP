@@ -307,7 +307,7 @@ namespace Yvand.EntraClaimsProvider.Configuration
             set => _TenantDataCacheLifetimeInMinutes = value;
         }
         [Persisted]
-        private int _TenantDataCacheLifetimeInMinutes;
+        private int _TenantDataCacheLifetimeInMinutes = ClaimsProviderConstants.DefaultTenantDataCacheLifetimeInMinutes;
         #endregion
 
         #region "Other properties"
