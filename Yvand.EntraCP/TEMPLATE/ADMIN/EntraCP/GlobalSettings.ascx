@@ -155,12 +155,12 @@
                             <asp:BoundField DataField="Id" ItemStyle-CssClass="Entracp-HideCol" HeaderStyle-CssClass="Entracp-HideCol" />
                             <asp:TemplateField HeaderText="Tenant + cloud instance">
                                 <ItemTemplate>
-                                    <asp:Label ID="grdAzureTenants_TenantNameLbl" runat="server" Text='<%# Bind("TenantName") %>'></asp:Label><br />
+                                    <asp:HyperLink id="grdAzureTenants_TenantNameLbl" NavigateUrl='<%# Eval("TenantName", "https://entra.microsoft.com/{0}/#view/Microsoft_AAD_IAM/TenantOverview.ReactView") %>' Text='<%# Bind("TenantName") %>' Target="_blank" runat="server"/><br />
                                     (in
                                     <asp:Label ID="grdAzureTenants_TenantCloudLbl" runat="server" Text='<%# Bind("AzureCloud") %>'></asp:Label>)
                                 </ItemTemplate>
                                 <EditItemTemplate>
-                                    <asp:Label ID="grdAzureTenants_TenantNameLbl" runat="server" Text='<%# Bind("TenantName") %>'></asp:Label>
+                                    <asp:HyperLink id="grdAzureTenants_TenantNameLbl" NavigateUrl='<%# Eval("TenantName", "https://entra.microsoft.com/{0}/#view/Microsoft_AAD_IAM/TenantOverview.ReactView") %>' Text='<%# Bind("TenantName") %>' Target="_blank" runat="server"/><br />
                                     (in
                                     <asp:Label ID="grdAzureTenants_TenantCloudLbl" runat="server" Text='<%# Bind("AzureCloud") %>'></asp:Label>)
                                 </EditItemTemplate>
