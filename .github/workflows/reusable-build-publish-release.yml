@@ -19,7 +19,7 @@ on:
         required: false
 jobs:
   call-build:
-    uses: Yvand/AzureCP/.github/workflows/reusable-build.yml@master
+    uses: Yvand/EntraCP/.github/workflows/reusable-build.yml@master
     with:
       project-name: ${{ inputs.project-name }}
       version-major-minor: ${{ inputs.version-major-minor }}
