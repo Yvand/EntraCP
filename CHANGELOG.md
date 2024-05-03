@@ -1,6 +1,6 @@
 # Change log for ~~AzureCP~~ EntraCP
 
-## Unreleased
+## EntraCP v25.0.20240503.33 enhancements & bug-fixes - Published in May 3, 2024
 
 * Update the global configuration page to give the possibility to update the credentials of tenants already registered - https://github.com/Yvand/EntraCP/pull/248
 * Fix an issue where tenant credentials could not be changed from a client certificate to a client secret - https://github.com/Yvand/EntraCP/pull/248
