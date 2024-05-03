@@ -15,6 +15,7 @@ using System.Diagnostics;
 using System.Linq;
 using System.Net;
 using System.Reflection;
+using System.Threading;
 using System.Threading.Tasks;
 using Yvand.EntraClaimsProvider.Configuration;
 using Yvand.EntraClaimsProvider.Logging;
@@ -25,16 +26,25 @@ namespace Yvand.EntraClaimsProvider
     public class EntraIDEntityProvider : EntityProviderBase
     {
         public IClaimsProviderSettings Settings { get; }
+        private static List<CachedEntraIDTenantData> CachedTenantsData;
+
         public EntraIDEntityProvider(string claimsProviderName, IClaimsProviderSettings Settings) : base(claimsProviderName)
         {
             this.Settings = Settings;
+
+            // Reset cache if config changes
+            CachedTenantsData = new List<CachedEntraIDTenantData>();
+            foreach (var tenant in this.Settings.EntraIDTenants)
+            {
+                CachedTenantsData.Add(new CachedEntraIDTenantData(tenant.Identifier, Settings.TenantDataCacheLifetimeInMinutes));
+            }
         }
 
         public async override Task<List<string>> GetEntityGroupsAsync(OperationContext currentContext)
         {
             DirectoryObjectProperty groupProperty = Settings.GroupIdentifierClaimTypeConfig.EntityProperty;
             // Create 1 Task for each tenant to query
-            IEnumerable<Task<List<string>>> tenantTasks = currentContext.AzureTenants.Select(async tenant =>
+            IEnumerable<Task<List<string>>> tenantTasks = currentContext.AzureTenantsCopy.Select(async tenant =>
             {
                 // Wrap the call to GetEntityGroupsFromTenantAsync() in a Task to avoid a hang when using the "check permissions" dialog
                 using (new SPMonitoredScope($"[{ClaimsProviderName}] Get groups of user \"{currentContext.IncomingEntity.Value}\" from tenant \"{tenant.Name}\"", 1000))
@@ -164,8 +174,8 @@ namespace Yvand.EntraClaimsProvider
             //{
             //    azureTenants.Add(tenant.CopyPublicProperties());
             //}
-            this.BuildFilter(currentContext, currentContext.AzureTenants);
-            List<DirectoryObject> results = await this.QueryEntraIDTenantsAsync(currentContext, currentContext.AzureTenants);
+            this.BuildFilter(currentContext, currentContext.AzureTenantsCopy);
+            List<DirectoryObject> results = await this.QueryEntraIDTenantsAsync(currentContext, currentContext.AzureTenantsCopy);
             return results;
         }
 
@@ -180,7 +190,7 @@ namespace Yvand.EntraClaimsProvider
 
             List<string> userFilterBuilder = new List<string>();
             List<string> groupFilterBuilder = new List<string>();
-            List<string> userSelectBuilder = new List<string> { "UserType", "Mail" };    // UserType and Mail are always needed to deal with Guest users
+            List<string> userSelectBuilder = new List<string> { "Id", "UserType", "Mail" };    // UserType and Mail are always needed to deal with Guest users
             List<string> groupSelectBuilder = new List<string> { "Id", "securityEnabled" };               // Id is always required for groups
 
 
@@ -324,7 +334,7 @@ namespace Yvand.EntraClaimsProvider
                 {
                     Stopwatch timer = new Stopwatch();
                     timer.Start();
-                    List<DirectoryObject> tenantResults = await QueryEntraIDTenantAsync(currentContext, tenant).ConfigureAwait(false);
+                    List<DirectoryObject> tenantResults = await QueryEntraIDTenantAsync(currentContext, tenant, CachedTenantsData.First(x => x.TenantIdentifier == tenant.Identifier)).ConfigureAwait(false);
                     timer.Stop();
                     if (tenantResults != null)
                     {
@@ -352,7 +362,7 @@ namespace Yvand.EntraClaimsProvider
             return allResults;
         }
 
-        protected virtual async Task<List<DirectoryObject>> QueryEntraIDTenantAsync(OperationContext currentContext, EntraIDTenant tenant)
+        protected virtual async Task<List<DirectoryObject>> QueryEntraIDTenantAsync(OperationContext currentContext, EntraIDTenant tenant, CachedEntraIDTenantData cachedTenantData)
         {
             List<DirectoryObject> tenantResults = new List<DirectoryObject>();
             if (String.IsNullOrWhiteSpace(tenant.UserFilter) && String.IsNullOrWhiteSpace(tenant.GroupFilter))
@@ -371,7 +381,7 @@ namespace Yvand.EntraClaimsProvider
             int timeout = this.Settings.Timeout;
             int maxRetry = currentContext.OperationType == OperationType.Validation ? 3 : 2;
             int tenantResultCount = 0;
-
+            bool lockToWriteInCachedDataWasTaken = false;
             try
             {
                 using (new SPMonitoredScope($"[{ClaimsProviderName}] Querying Microsoft Entra ID tenant '{tenant.Name}' for users and groups, with input '{currentContext.Input}'", 1000))
@@ -450,6 +460,44 @@ namespace Yvand.EntraClaimsProvider
                         groupsRequestId = await batchRequestContent.AddBatchRequestStepAsync(groupRequest).ConfigureAwait(false);
                     }
 
+                    // List of groups that users must be member of, to be returned to SharePoint
+                    string[] restrictSearchableUsersByGroupsRequestsId = null;
+                    string restrictSearchableUsersByGroups = this.Settings.RestrictSearchableUsersByGroups;
+                    //restrictSearchableUsersByGroups = "c9a94341-89b5-4109-a501-2a14027b5bf0"; // testEntraCPGroup_005 - everyone member
+                    //restrictSearchableUsersByGroups = "cd5f135c-9fe5-4ec2-90d9-114e9ad2e236"; // testEntraCPGroup_004 - testEntraCPUser_001 and testEntraCPUser_010 members
+                    if (!String.IsNullOrWhiteSpace(restrictSearchableUsersByGroups) && cachedTenantData.SearchableUsersId == null)
+                    {
+                        await cachedTenantData.WriteDataLock.WaitAsync().ConfigureAwait(false);
+                        lockToWriteInCachedDataWasTaken = true;
+                        if (cachedTenantData.SearchableUsersId != null)
+                        {
+                            cachedTenantData.WriteDataLock.Release();
+                            lockToWriteInCachedDataWasTaken = false;
+                        }
+                        else
+                        {
+                            string[] groupsId = restrictSearchableUsersByGroups.Split(new char[] { ',' }, StringSplitOptions.RemoveEmptyEntries);
+                            restrictSearchableUsersByGroupsRequestsId = new string[groupsId.Length];
+                            int groupIdx = 0;
+                            foreach (string groupId in groupsId)
+                            {
+                                RequestInformation usersMembersOfGroupRequest = tenant.GraphService.Groups[groupId].Members.GraphUser.ToGetRequestInformation(conf =>
+                                {
+                                    conf.QueryParameters = new Microsoft.Graph.Groups.Item.Members.GraphUser.GraphUserRequestBuilder.GraphUserRequestBuilderGetQueryParameters
+                                    {
+                                        Select = new string[] { "Id" },
+                                    };
+                                    conf.Options = new List<IRequestOption>
+                                    {
+                                        retryHandlerOption,
+                                    };
+                                });
+                                restrictSearchableUsersByGroupsRequestsId[groupIdx] = await batchRequestContent.AddBatchRequestStepAsync(usersMembersOfGroupRequest).ConfigureAwait(false);
+                                groupIdx++;
+                            }
+                        }
+                    }
+
                     // Run the batch request and get the HTTP status code of each request inside the batch
                     BatchResponseContentCollection batchResponse = await tenant.GraphService.Batch.PostAsync(batchRequestContent).ConfigureAwait(false);
                     Dictionary<string, HttpStatusCode> requestsStatusInBatchResponse = await batchResponse.GetResponsesStatusCodesAsync().ConfigureAwait(false);
@@ -484,6 +532,35 @@ namespace Yvand.EntraClaimsProvider
                         }
                     }
 
+                    if (restrictSearchableUsersByGroupsRequestsId != null)
+                    {
+                        // only need 1 list that contains unique user ids
+                        cachedTenantData.SearchableUsersId = new List<string>();
+                        foreach (string restrictSearchableUsersByGroupsRequestId in restrictSearchableUsersByGroupsRequestsId)
+                        {
+                            HttpStatusCode restrictSearchableUsersByGroupsResponseStatus;
+                            UserCollectionResponse restrictSearchableUsersByGroupsResponse = null;
+                            if (requestsStatusInBatchResponse.TryGetValue(restrictSearchableUsersByGroupsRequestId, out restrictSearchableUsersByGroupsResponseStatus))
+                            {
+                                if (restrictSearchableUsersByGroupsResponseStatus == HttpStatusCode.OK)
+                                {
+                                    restrictSearchableUsersByGroupsResponse = await batchResponse.GetResponseByIdAsync<UserCollectionResponse>(restrictSearchableUsersByGroupsRequestId).ConfigureAwait(false);
+                                    cachedTenantData.SearchableUsersId.AddRange(restrictSearchableUsersByGroupsResponse.Value.Where(x => !cachedTenantData.SearchableUsersId.Contains(x.Id)).Select(x => x.Id).ToList());
+                                }
+                                else if (restrictSearchableUsersByGroupsResponseStatus == HttpStatusCode.NotFound)
+                                {
+                                    Logger.Log($"[{ClaimsProviderName}] Request inside the batch to get the members of a group on tenant \"{tenant.Name}\" returned nothing (the group was not found).", TraceSeverity.Verbose, EventSeverity.Information, TraceCategory.Lookup);
+                                }
+                                else
+                                {
+                                    Logger.Log($"[{ClaimsProviderName}] Request inside the batch to get the members of a group on tenant \"{tenant.Name}\" returned unexpected status '{restrictSearchableUsersByGroupsResponseStatus}'", TraceSeverity.Unexpected, EventSeverity.Error, TraceCategory.Lookup);
+                                }
+                            }
+                        }
+                        cachedTenantData.WriteDataLock.Release();
+                        lockToWriteInCachedDataWasTaken = false;
+                    }
+
                     Logger.Log($"[{ClaimsProviderName}] Query to tenant '{tenant.Name}' returned {(userCollectionResult?.Value == null ? 0 : userCollectionResult.Value.Count)} user(s) with filter \"{tenant.UserFilter}\" and {(groupCollectionResult?.Value == null ? 0 : groupCollectionResult.Value.Count)} group(s) with filter \"{tenant.GroupFilter}\"", TraceSeverity.VerboseEx, EventSeverity.Information, TraceCategory.Lookup);
                     // Process users result
                     if (userCollectionResult?.Value != null)
@@ -508,6 +585,11 @@ namespace Yvand.EntraClaimsProvider
                                     {
                                         addUser = true;
                                     }
+                                }
+
+                                if (cachedTenantData.SearchableUsersId != null && !cachedTenantData.SearchableUsersId.Contains(user.Id))
+                                {
+                                    addUser = false;
                                 }
 
                                 bool continueIteration = true;
@@ -591,6 +673,11 @@ namespace Yvand.EntraClaimsProvider
             }
             finally
             {
+                if (lockToWriteInCachedDataWasTaken)
+                {
+                    cachedTenantData.WriteDataLock.Release();
+                    lockToWriteInCachedDataWasTaken = false;
+                }
             }
             return tenantResults;
         }
@@ -660,6 +747,50 @@ namespace Yvand.EntraClaimsProvider
             }   // Property doesn't exist
             object propertyValue = pi.GetValue(directoryObject, null);
             return propertyValue == null ? String.Empty : propertyValue.ToString();
+        }
+    }
+
+    /// <summary>
+    /// Cache of data fetched from an Entra ID tenant
+    /// </summary>
+    public class CachedEntraIDTenantData
+    {
+        public readonly Guid TenantIdentifier;
+        public SemaphoreSlim WriteDataLock = new SemaphoreSlim(1, 1);
+
+        /// <summary>
+        /// Gets or sets the list of users ID, matching users that may be returned to SharePoint. Set to null to not apply amy restriction
+        /// </summary>
+        public List<string> SearchableUsersId
+        {
+            get
+            {
+                if (SearchableUsersIdCacheTime == default(DateTime))
+                {
+                    return _SearchableUsersId;
+                }
+                TimeSpan interval = DateTime.UtcNow - SearchableUsersIdCacheTime;
+                if (interval > SearchableUsersIdCacheTTL)
+                {
+                    SearchableUsersIdCacheTime = default(DateTime);
+                    _SearchableUsersId = null;
+                }
+                return _SearchableUsersId;
+            }
+            set
+            {
+                _SearchableUsersId = value;
+                SearchableUsersIdCacheTime = DateTime.UtcNow;
+            }
+        }
+        private List<string> _SearchableUsersId;
+        private DateTime SearchableUsersIdCacheTime;
+        private TimeSpan SearchableUsersIdCacheTTL = new TimeSpan(0, 1, 0);
+
+        public CachedEntraIDTenantData(Guid tenantIdentifier, int tenantDataCacheLifetimeInMinutes)
+        {
+            this.TenantIdentifier = tenantIdentifier;
+            this.SearchableUsersIdCacheTTL = new TimeSpan(0, tenantDataCacheLifetimeInMinutes, 0);
         }
     }
 }

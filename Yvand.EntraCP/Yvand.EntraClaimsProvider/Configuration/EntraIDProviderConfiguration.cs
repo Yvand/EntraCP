@@ -56,19 +56,29 @@ namespace Yvand.EntraClaimsProvider.Configuration
 
         #region EntraID specific settings
         /// <summary>
-        /// Gets the list of Azure tenants to use to get entities
+        /// Gets the list of Entra ID tenants registered
         /// </summary>
         List<EntraIDTenant> EntraIDTenants { get; }
 
         /// <summary>
-        /// Gets the proxy address used by AzureCP to connect to Azure AD
+        /// Gets the proxy address used by EntraCP to connect to your Entra ID tenant
         /// </summary>
         string ProxyAddress { get; }
 
         /// <summary>
-        /// Gets if only security-enabled groups should be returned
+        /// Gets if only security-enabled groups should be returned - https://docs.microsoft.com/en-us/graph/api/resources/groups-overview?view=graph-rest-1.0
         /// </summary>
         bool FilterSecurityEnabledGroupsOnly { get; }
+
+        /// <summary>
+        /// Gets a list of Entra groups ID (max 18 values), separated by a comma. Users must be members of at least 1, to be searchable. Leave empty to not apply any filtering.
+        /// </summary>
+        string RestrictSearchableUsersByGroups { get; }
+
+        /// <summary>
+        /// Gets the lifetime in minutes of the cache which stores data from Entra ID which may be time-consuming to retrieve with each request
+        /// </summary>
+        int TenantDataCacheLifetimeInMinutes { get; }
         #endregion
     }
 
@@ -89,6 +99,8 @@ namespace Yvand.EntraClaimsProvider.Configuration
         public List<EntraIDTenant> EntraIDTenants { get; set; } = new List<EntraIDTenant>();
         public string ProxyAddress { get; set; }
         public bool FilterSecurityEnabledGroupsOnly { get; set; } = false;
+        public string RestrictSearchableUsersByGroups { get; set; }
+        public int TenantDataCacheLifetimeInMinutes { get; set; } = ClaimsProviderConstants.DefaultTenantDataCacheLifetimeInMinutes;
         #endregion
 
         public EntraIDProviderSettings() { }
@@ -242,6 +254,9 @@ namespace Yvand.EntraClaimsProvider.Configuration
 
 
         #region "EntraID settings implemented from IEntraIDEntityProviderSettings"
+        /// <summary>
+        /// Gets or sets the list of Entra ID tenants registered
+        /// </summary>
         public List<EntraIDTenant> EntraIDTenants
         {
             get => _EntraIDTenants;
@@ -250,6 +265,9 @@ namespace Yvand.EntraClaimsProvider.Configuration
         [Persisted]
         private List<EntraIDTenant> _EntraIDTenants = new List<EntraIDTenant>();
 
+        /// <summary>
+        /// Gets or sets the proxy address used by EntraCP to connect to your Entra ID tenant
+        /// </summary>
         public string ProxyAddress
         {
             get => _ProxyAddress;
@@ -259,7 +277,7 @@ namespace Yvand.EntraClaimsProvider.Configuration
         private string _ProxyAddress;
 
         /// <summary>
-        /// Set if only AAD groups with securityEnabled = true should be returned - https://docs.microsoft.com/en-us/graph/api/resources/groups-overview?view=graph-rest-1.0
+        /// Gets or sets if only security-enabled groups should be returned - https://docs.microsoft.com/en-us/graph/api/resources/groups-overview?view=graph-rest-1.0
         /// </summary>
         public bool FilterSecurityEnabledGroupsOnly
         {
@@ -268,6 +286,28 @@ namespace Yvand.EntraClaimsProvider.Configuration
         }
         [Persisted]
         private bool _FilterSecurityEnabledGroupsOnly = false;
+
+        /// <summary>
+        /// Gets or sets a list of Entra groups ID (max 18 values), separated by a comma. Users must be members of at least 1, to be searchable. Leave empty to not apply any filtering.
+        /// </summary>
+        public string RestrictSearchableUsersByGroups
+        {
+            get => _RestrictSearchableUsersByGroups;
+            set => _RestrictSearchableUsersByGroups = value;
+        }
+        [Persisted]
+        private string _RestrictSearchableUsersByGroups;
+
+        /// <summary>
+        /// Gets or sets the lifetime in minutes of the cache which stores data from Entra ID which may be time-consuming to retrieve with each request
+        /// </summary>
+        public int TenantDataCacheLifetimeInMinutes
+        {
+            get => _TenantDataCacheLifetimeInMinutes;
+            set => _TenantDataCacheLifetimeInMinutes = value;
+        }
+        [Persisted]
+        private int _TenantDataCacheLifetimeInMinutes = ClaimsProviderConstants.DefaultTenantDataCacheLifetimeInMinutes;
         #endregion
 
         #region "Other properties"
@@ -338,6 +378,8 @@ namespace Yvand.EntraClaimsProvider.Configuration
                 EntraIDTenants = this.EntraIDTenants,
                 ProxyAddress = this.ProxyAddress,
                 FilterSecurityEnabledGroupsOnly = this.FilterSecurityEnabledGroupsOnly,
+                RestrictSearchableUsersByGroups = this.RestrictSearchableUsersByGroups,
+                TenantDataCacheLifetimeInMinutes = this.TenantDataCacheLifetimeInMinutes,
             };
             return (IEntraIDProviderSettings)entityProviderSettings;
         }
@@ -474,6 +516,30 @@ namespace Yvand.EntraClaimsProvider.Configuration
                     throw new InvalidOperationException($"Configuration is not valid because tenant \"{tenant.Name}\" has both properties {nameof(tenant.ClientSecret)} and {nameof(tenant.ClientCertificateWithPrivateKey)} set in list {nameof(EntraIDTenants)}, while only one must be set");
                 }
             }
+
+            if (this.TenantDataCacheLifetimeInMinutes < 1)
+            {
+                throw new InvalidOperationException($"The configuration is invalid because property {nameof(TenantDataCacheLifetimeInMinutes)} is set to 0 or a negative value. Minimum value is 1");
+            }
+
+            if (this.RestrictSearchableUsersByGroups != null)
+            {
+                string[] groupsId = this.RestrictSearchableUsersByGroups.Split(new char[] { ',' }, StringSplitOptions.RemoveEmptyEntries);
+                // Batch request size limit in Graph is 20: https://learn.microsoft.com/en-us/graph/json-batching#batch-size-limitations
+                // So max is 18 + 1 to get users + 1 to get groups
+                if (groupsId.Length > 18)
+                {
+                    throw new InvalidOperationException($"The configuration is invalid because property {nameof(RestrictSearchableUsersByGroups)} exceeds the limit of 18 groups, which would generate a batch request too big for Graph. More information in https://learn.microsoft.com/en-us/graph/json-batching#batch-size-limitations");
+                }
+                Guid testGuidResult = Guid.Empty;
+                foreach (string groupId in groupsId)
+                {
+                    if (!Guid.TryParse(groupId, out testGuidResult))
+                    {
+                        throw new InvalidOperationException($"The configuration is invalid because property {nameof(RestrictSearchableUsersByGroups)} is not set correctly. It should be a csv list of group IDs");
+                    }
+                }
+            }
         }
 
         /// <summary>
@@ -528,6 +594,8 @@ namespace Yvand.EntraClaimsProvider.Configuration
             this.EntraIDTenants = settings.EntraIDTenants;
             this.FilterSecurityEnabledGroupsOnly = settings.FilterSecurityEnabledGroupsOnly;
             this.ProxyAddress = settings.ProxyAddress;
+            this.RestrictSearchableUsersByGroups = settings.RestrictSearchableUsersByGroups;
+            this.TenantDataCacheLifetimeInMinutes = settings.TenantDataCacheLifetimeInMinutes;
 
             if (commitChangesInDatabase)
             {

@@ -134,39 +134,68 @@
 </table>
 <table border="0" cellspacing="0" cellpadding="0" width="100%">
     <wssuc:ButtonSection runat="server">
-        <template_buttons>
+        <Template_Buttons>
             <asp:Button UseSubmitBehavior="false" runat="server" class="ms-ButtonHeightWidth" OnClick="BtnOK_Click" Text="<%$Resources:wss,multipages_okbutton_text%>" ID="BtnOKTop" AccessKey="<%$Resources:wss,okbutton_accesskey%>" />
-        </template_buttons>
+        </Template_Buttons>
     </wssuc:ButtonSection>
     <wssuc:InputFormSection Title="Registered Microsoft Entra ID tenants" runat="server">
-        <template_description>
+        <Template_Description>
             <wssawc:EncodedLiteral runat="server" Text="Microsoft Entra ID tenants currently registered in EntraCP configuration." EncodeMethod='HtmlEncodeAllowSimpleTextFormatting' />
             <br />
             <br />
-            <wssawc:EncodedLiteral runat="server" Text="<a href='https://entracp.yvand.net/docs/configure-the-credentials/' target='_blank'>Read this article</a> to find how to update the credentials on a tenant already registered." EncodeMethod='NoEncode' />
-        </template_description>
-        <template_inputformcontrols>
+            <wssawc:EncodedLiteral runat="server" Text="You can update the client secret here." EncodeMethod='HtmlEncodeAllowSimpleTextFormatting' />
+            <br />
+            <wssawc:EncodedLiteral runat="server" Text="<a href='https://entracp.yvand.net/docs/how-to/configure-the-credentials/' target='_blank'>Read this article</a> if you need to set a client certificate." EncodeMethod='NoEncode' />
+        </Template_Description>
+        <Template_InputFormControls>
             <tr>
                 <td>
-                    <wssawc:SPGridView runat="server" ID="grdAzureTenants" AutoGenerateColumns="false" OnRowDeleting="grdAzureTenants_RowDeleting">
+                    <wssawc:SPGridView runat="server" ID="grdAzureTenants" AutoGenerateColumns="false" OnRowDeleting="grdAzureTenants_RowDeleting" OnRowEditing="grdAzureTenants_RowEditing" OnRowCancelingEdit="grdAzureTenants_RowCancelingEdit" OnRowUpdating="grdAzureTenants_RowUpdating" OnRowDataBound="grdAzureTenants_RowDataBound">
                         <Columns>
                             <asp:BoundField DataField="Id" ItemStyle-CssClass="Entracp-HideCol" HeaderStyle-CssClass="Entracp-HideCol" />
-                            <asp:BoundField HeaderText="Tenant" DataField="TenantName" />
-                            <asp:BoundField HeaderText="Application ID" DataField="ClientID" />
-                            <asp:BoundField HeaderText="Authentication mode" DataField="AuthenticationMode" />
-                            <asp:BoundField HeaderText="Extension Attributes Application ID" DataField="ExtensionAttributesApplicationId" />
-                            <asp:CommandField HeaderText="Action" ButtonType="Button" DeleteText="Remove" ShowDeleteButton="True" />
+                            <asp:TemplateField HeaderText="Tenant + cloud instance">
+                                <ItemTemplate>
+                                    <asp:HyperLink id="grdAzureTenants_TenantNameLbl" NavigateUrl='<%# Eval("TenantName", "https://entra.microsoft.com/{0}/#view/Microsoft_AAD_IAM/TenantOverview.ReactView") %>' Text='<%# Bind("TenantName") %>' Target="_blank" runat="server"/><br />
+                                    (in
+                                    <asp:Label ID="grdAzureTenants_TenantCloudLbl" runat="server" Text='<%# Bind("AzureCloud") %>'></asp:Label>)
+                                </ItemTemplate>
+                                <EditItemTemplate>
+                                    <asp:HyperLink id="grdAzureTenants_TenantNameLbl" NavigateUrl='<%# Eval("TenantName", "https://entra.microsoft.com/{0}/#view/Microsoft_AAD_IAM/TenantOverview.ReactView") %>' Text='<%# Bind("TenantName") %>' Target="_blank" runat="server"/><br />
+                                    (in
+                                    <asp:Label ID="grdAzureTenants_TenantCloudLbl" runat="server" Text='<%# Bind("AzureCloud") %>'></asp:Label>)
+                                </EditItemTemplate>
+                            </asp:TemplateField>
+                            <asp:TemplateField HeaderText="Client ID">
+                                <ItemTemplate>
+                                    <asp:Label ID="grdAzureTenants_TenantClientIdLbl" runat="server" Text='<%# Bind("ClientID") %>'></asp:Label>
+                                </ItemTemplate>
+                                <EditItemTemplate>
+                                    <asp:Label runat="server" Text="New client ID:"></asp:Label><br />
+                                    <asp:TextBox ID="EditTenantNewClientID" runat="server" Text='<%# Bind("ClientID") %>' />
+                                </EditItemTemplate>
+                            </asp:TemplateField>
+                            <asp:TemplateField HeaderText="Credential">
+                                <ItemTemplate>
+                                    <asp:Label ID="grdAzureTenants_AuthenticationModeLbl" runat="server" Text='<%# Bind("AuthenticationMode") %>'></asp:Label>
+                                </ItemTemplate>
+                                <EditItemTemplate>
+                                    <asp:Label runat="server" Text="New secret  &#9432;:" ToolTip="Leave blank to keep the current secret or certificate"></asp:Label><br />
+                                    <asp:TextBox ID="EditTenantNewSecret" runat="server" ToolTip="New secret, or leave blank to keep the current secret or certificate" />
+                                </EditItemTemplate>
+                            </asp:TemplateField>
+                            <%--<asp:BoundField HeaderText="Extension Attributes Application ID" DataField="ExtensionAttributesApplicationId" />--%>
+                            <asp:CommandField HeaderText="Action" ButtonType="Button" ShowDeleteButton="True" DeleteText="Delete" ShowEditButton="true" EditText="Edit" />
                         </Columns>
                     </wssawc:SPGridView>
                 </td>
             </tr>
-        </template_inputformcontrols>
+        </Template_InputFormControls>
     </wssuc:InputFormSection>
     <wssuc:InputFormSection Title="Register a new Microsoft Entra ID tenant" runat="server">
-        <template_description>
+        <Template_Description>
             <wssawc:EncodedLiteral runat="server" Text="<p>EntraCP needs its own app registration to connect to your Microsoft Entra ID tenant, with permissions 'GroupMember.Read.All' and 'User.Read.All'.<br /><br />Read <a href='https://entracp.yvand.net/overview/register-application/' target='_blank'>this article</a> to find how to register the app in your tenant.<br /><br />EntraCP can authenticate using <a href='https://learn.microsoft.com/en-us/entra/identity-platform/v2-oauth2-client-creds-grant-flow#get-a-token' target='_blank'>either a secret or a certificate</a>.</p>" EncodeMethod='NoEncode' />
-        </template_description>
-        <template_inputformcontrols>
+        </Template_Description>
+        <Template_InputFormControls>
             <tr>
                 <td>
                     <div class="divfieldset">
@@ -223,10 +252,10 @@
                     </div>
                 </td>
             </tr>
-        </template_inputformcontrols>
+        </Template_InputFormControls>
     </wssuc:InputFormSection>
     <wssuc:InputFormSection runat="server" Title="Configuration for the user identifier">
-        <template_description>
+        <Template_Description>
             <sharepoint:encodedliteral runat="server" text="Specify the settings to search, create and display the permissions for users." encodemethod='HtmlEncodeAllowSimpleTextFormatting' />
             <br />
             <br />
@@ -239,8 +268,8 @@
             <sharepoint:encodedliteral runat="server" text="- For guests:" encodemethod='HtmlEncodeAllowSimpleTextFormatting' />
             <br />
             <b><span><%= UserIdentifierEncodedValuePrefix %><span id="lblGuestPermissionValuePreview"></span></span></b>
-        </template_description>
-        <template_inputformcontrols>
+        </Template_Description>
+        <Template_InputFormControls>
             <tr>
                 <td colspan="2">
                     <div class="divfieldset">
@@ -269,11 +298,11 @@
                     </div>
                 </td>
             </tr>
-        </template_inputformcontrols>
+        </Template_InputFormControls>
     </wssuc:InputFormSection>
 
     <wssuc:InputFormSection runat="server" Title="Configuration for the group identifier">
-        <template_description>
+        <Template_Description>
             <sharepoint:encodedliteral runat="server" text="Specify the settings to search, create and display the permissions for groups." encodemethod='HtmlEncodeAllowSimpleTextFormatting' />
             <br />
             <br />
@@ -283,8 +312,8 @@
             <br />
             <br />
             <sharepoint:encodedliteral runat="server" text="- Augmentation: If enabled, EntraCP gets the group membership of the users when they sign-in, or whenever SharePoint asks for it. If not enabled, permissions granted to Microsoft Entra ID groups may not work." encodemethod='HtmlEncodeAllowSimpleTextFormatting' />
-        </template_description>
-        <template_inputformcontrols>
+        </Template_Description>
+        <Template_InputFormControls>
             <tr>
                 <td colspan="2">
                     <div class="divfieldset">
@@ -319,11 +348,11 @@
                     </div>
                 </td>
             </tr>
-        </template_inputformcontrols>
+        </Template_InputFormControls>
     </wssuc:InputFormSection>
 
     <wssuc:InputFormSection runat="server" Title="Bypass Entra ID">
-        <template_description>
+        <Template_Description>
             <sharepoint:encodedliteral runat="server" text="Bypass the Entra ID tenant(s) registered and, depending on the context:" encodemethod='HtmlEncodeAllowSimpleTextFormatting' />
             <br />
             <sharepoint:encodedliteral runat="server" text="- Search: Uses the input as the claim's value, and return 1 entity per claim type." encodemethod='HtmlEncodeAllowSimpleTextFormatting' />
@@ -334,37 +363,59 @@
             <br />
             <br />
             <sharepoint:encodedliteral runat="server" text="It can be used as a mitigation if one or more SharePoint server(s) lost the connection with your Entra ID tenant(s), until it is restored." encodemethod='HtmlEncodeAllowSimpleTextFormatting' />
-        </template_description>
-        <template_inputformcontrols>
+        </Template_Description>
+        <Template_InputFormControls>
             <asp:CheckBox runat="server" Name="ChkAlwaysResolveUserInput" ID="ChkAlwaysResolveUserInput" Text="Bypass the Entra ID tenant(s) registered" />
-        </template_inputformcontrols>
+        </Template_InputFormControls>
     </wssuc:InputFormSection>
     <wssuc:InputFormSection runat="server" Title="Require exact match" Description="Enable this to return only results that match exactly the user input (case-insensitive).">
-        <template_inputformcontrols>
+        <Template_InputFormControls>
             <asp:CheckBox runat="server" Name="ChkFilterExactMatchOnly" ID="ChkFilterExactMatchOnly" Text="Require exact match when typing in the people picker" />
-        </template_inputformcontrols>
+        </Template_InputFormControls>
     </wssuc:InputFormSection>
 
     <wssuc:InputFormSection runat="server" Title="Proxy">
-        <template_description>
+        <Template_Description>
             <wssawc:EncodedLiteral runat="server" Text="Configure the proxy if it is needed for EntraCP to connect to Microsoft Graph." EncodeMethod='HtmlEncodeAllowSimpleTextFormatting' />
             <br />
             <br />
             <wssawc:EncodedLiteral runat="server" Text="Additional configuration in Windows may still be required. Read <a href='https://entracp.yvand.net/docs/configure-the-proxy/' target='_blank'>this article</a> to fully configure the proxy." EncodeMethod='NoEncode' />
-        </template_description>
-        <template_inputformcontrols>
+        </Template_Description>
+        <Template_InputFormControls>
             <label for="<%= InputProxyAddress.ClientID %>">Proxy address:</label><br />
             <wssawc:InputFormTextBox title="Proxy address" class="ms-input" ID="InputProxyAddress" Columns="50" runat="server" />
-        </template_inputformcontrols>
+        </Template_InputFormControls>
     </wssuc:InputFormSection>
+
+    <wssuc:InputFormSection runat="server" Title="Restrict searchable users">
+        <Template_Description>
+            <wssawc:EncodedLiteral runat="server" Text="Restrict the users who can be searched, by specifying a list of Entra groups. Only users members of any of those groups may be returned." EncodeMethod='NoEncode' />
+            <br />
+            <wssawc:EncodedLiteral runat="server" Text="You can specify up to 18 groups." EncodeMethod='NoEncode' />
+            <br />
+            <br />
+            <wssawc:EncodedLiteral runat="server" Text="For performance reasons, the members of those groups are stored in a local cache." EncodeMethod='NoEncode' />
+            <br />
+            <span>You can customize its lifetime (default value is <%= DefaultTenantDataCacheLifetimeInMinutes %> minutes), and the minimum possible value is 1 minute.</span>
+        </Template_Description>
+        <Template_InputFormControls>
+            <label for="<%= InputRestrictSearchableUsersByGroups.ClientID %>" title="Example: 1D6C19BB-DA3B-48D7-98FF-066CB9CA3F14,755D28C4-A2D8-4ACB-ADCE-68D4C6570938">List of groups ID separated by a comma &#9432;:</label><br />
+            <wssawc:InputFormTextBox title="Groups ID separated by a comma" class="ms-input" ID="InputRestrictSearchableUsersByGroups" Columns="50" runat="server" />
+            <br />
+            <br />
+            <label for="<%= InputTenantDataCacheLifetimeInMinutes.ClientID %>">Lifetime of the cache in minutes:</label><br />
+            <wssawc:InputFormTextBox class="ms-input" ID="InputTenantDataCacheLifetimeInMinutes" Columns="50" runat="server" />
+        </Template_InputFormControls>
+    </wssuc:InputFormSection>
+
     <wssuc:InputFormSection runat="server" Title="Reset EntraCP configuration" Description="Restore configuration to its default values. All changes, including in claim types mappings, will be lost.">
-        <template_inputformcontrols>
+        <Template_InputFormControls>
             <asp:Button runat="server" ID="BtnResetConfig" Text="Reset EntraCP configuration" OnClick="BtnResetConfig_Click" class="ms-ButtonHeightWidth" OnClientClick="return confirm('Do you really want to reset EntraCP configuration?');" />
-        </template_inputformcontrols>
+        </Template_InputFormControls>
     </wssuc:InputFormSection>
     <wssuc:ButtonSection runat="server">
-        <template_buttons>
+        <Template_Buttons>
             <asp:Button UseSubmitBehavior="false" runat="server" class="ms-ButtonHeightWidth" OnClick="BtnOK_Click" Text="<%$Resources:wss,multipages_okbutton_text%>" ID="BtnOK" AccessKey="<%$Resources:wss,okbutton_accesskey%>" />
-        </template_buttons>
+        </Template_Buttons>
     </wssuc:ButtonSection>
 </table>

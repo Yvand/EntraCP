@@ -48,6 +48,7 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="BasicConfigurationTests.cs" />
+    <Compile Include="FilterUsersBasedOnGroupsTests.cs" />
     <Compile Include="SecurityEnabledGroupsTests.cs" />
     <Compile Include="ExcludeAUserTypeTests.cs" />
     <Compile Include="ClaimsProviderTestsBase.cs" />
@@ -75,7 +76,7 @@
       <Version>4.1.0</Version>
     </PackageReference>
     <PackageReference Include="NUnit.Analyzers">
-      <Version>4.0.1</Version>
+      <Version>4.1.0</Version>
       <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
       <PrivateAssets>all</PrivateAssets>
     </PackageReference>

@@ -1,4 +1,5 @@
 ﻿using Azure.Identity;
+using Microsoft.Graph;
 using Microsoft.Identity.Client;
 using Microsoft.SharePoint.Administration;
 using Microsoft.SharePoint.Administration.Claims;
@@ -18,15 +19,39 @@ namespace Yvand.EntraClaimsProvider.Configuration
     {
         public static string CONFIGURATION_ID => "1DB24D85-B10E-4D06-B378-8CFD05A129F3";
         public static string CONFIGURATION_NAME => "EntraCPConfig";
-        /// <summary>
-        /// List of Microsoft Graph service root endpoints based on National Cloud as described on https://docs.microsoft.com/en-us/graph/deployments
-        /// </summary>
-        public static List<KeyValuePair<AzureCloudInstance, Uri>> AzureCloudEndpoints => new List<KeyValuePair<AzureCloudInstance, Uri>>()
-        {
-            new KeyValuePair<AzureCloudInstance, Uri>(AzureCloudInstance.AzurePublic, AzureAuthorityHosts.AzurePublicCloud),
-            new KeyValuePair<AzureCloudInstance, Uri>(AzureCloudInstance.AzureChina, AzureAuthorityHosts.AzureChina),
-            new KeyValuePair<AzureCloudInstance, Uri>(AzureCloudInstance.AzureGermany, AzureAuthorityHosts.AzureGermany),
-            new KeyValuePair<AzureCloudInstance, Uri>(AzureCloudInstance.AzureUsGovernment, AzureAuthorityHosts.AzureGovernment),
+        public static List<AzureCloudProperties> AzureClouds => new List<AzureCloudProperties>{
+            new AzureCloudProperties
+            {
+                Name = AzureCloudName.AzureGlobal,
+                NameInGraphCore = GraphClientFactory.Global_Cloud,
+                Authority = AzureAuthorityHosts.AzurePublicCloud.ToString(),
+                GraphScope = "https://graph.microsoft.com/.default",
+                GraphUrl = "https://graph.microsoft.com",
+            },
+            new AzureCloudProperties
+            {
+                Name = AzureCloudName.AzureUsGovernmentL4,
+                NameInGraphCore = GraphClientFactory.USGOV_Cloud,
+                Authority = AzureAuthorityHosts.AzureGovernment.ToString(),
+                GraphScope = "https://graph.microsoft.us/.default",
+                GraphUrl = "https://graph.microsoft.us",
+            },
+            new AzureCloudProperties
+            {
+                Name = AzureCloudName.AzureUsGovernmentL5,
+                NameInGraphCore = GraphClientFactory.USGOV_DOD_Cloud,
+                Authority = AzureAuthorityHosts.AzureGovernment.ToString(),
+                GraphScope = "https://dod-graph.microsoft.us/.default",
+                GraphUrl = "https://dod-graph.microsoft.us",
+            },
+            new AzureCloudProperties
+            {
+                Name = AzureCloudName.AzureChina,
+                NameInGraphCore = GraphClientFactory.China_Cloud,
+                Authority = AzureAuthorityHosts.AzureChina.ToString(),
+                GraphScope = "https://microsoftgraph.chinacloudapi.cn/.default",
+                GraphUrl = "https://microsoftgraph.chinacloudapi.cn",
+            },
         };
         public static string GroupClaimEntityType { get; set; } = SPClaimEntityTypes.FormsRole;
         public static bool EnforceOnly1ClaimTypeForGroup => true;     // In EntraCP, only 1 claim type can be used to create group permissions
@@ -74,6 +99,25 @@ namespace Yvand.EntraClaimsProvider.Configuration
 #else
         public static int DEFAULT_TIMEOUT = 15 * 1000;
 #endif
+
+        public static readonly int DefaultTenantDataCacheLifetimeInMinutes = 15;
+    }
+
+    public enum AzureCloudName
+    {
+        AzureGlobal,
+        AzureChina,
+        AzureUsGovernmentL4,
+        AzureUsGovernmentL5,
+    }
+
+    public class AzureCloudProperties
+    {
+        public AzureCloudName Name;
+        public string NameInGraphCore;
+        public string Authority;
+        public string GraphScope;
+        public string GraphUrl;
     }
 
     public enum DirectoryObjectProperty
@@ -197,7 +241,10 @@ namespace Yvand.EntraClaimsProvider.Configuration
         /// </summary>
         public List<ClaimTypeConfig> CurrentClaimTypeConfigList { get; private set; }
 
-        public List<EntraIDTenant> AzureTenants { get; private set; }
+        /// <summary>
+        /// List of the Azure tenants registered, in an object that is unique to this thread, so none of its changes will be shared with other threads
+        /// </summary>
+        public List<EntraIDTenant> AzureTenantsCopy { get; private set; }
 
         public OperationContext(ClaimsProviderSettings settings, OperationType currentRequestType, string input, SPClaim incomingEntity, Uri context, string[] entityTypes, string hierarchyNodeID, int maxCount)
         {
@@ -209,12 +256,12 @@ namespace Yvand.EntraClaimsProvider.Configuration
             this.MaxCount = maxCount;
 
             // settings.EntraIDTenants must be cloned locally to ensure its properties ($select / $filter) won't be updated by multiple threads
-            this.AzureTenants = new List<EntraIDTenant>(settings.EntraIDTenants.Count);
+            this.AzureTenantsCopy = new List<EntraIDTenant>(settings.EntraIDTenants.Count);
             foreach (EntraIDTenant tenant in settings.EntraIDTenants)
             {
                 EntraIDTenant copy = new EntraIDTenant();
                 Utils.CopyPublicProperties(typeof(EntraIDTenant), tenant, copy);
-                AzureTenants.Add(copy);
+                AzureTenantsCopy.Add(copy);
             }
 
             if (entityTypes != null)
@@ -270,7 +317,7 @@ namespace Yvand.EntraClaimsProvider.Configuration
         protected void InitializeValidation(List<ClaimTypeConfig> runtimeClaimTypesList)
         {
             if (this.IncomingEntity == null) { throw new ArgumentNullException(nameof(this.IncomingEntity)); }
-            
+
             // FirstOrDefault returns null if no result, while First throws an exception
             ClaimTypeConfig incomingEntityClaimTypeConfig = runtimeClaimTypesList.FirstOrDefault(x =>
                String.Equals(x.ClaimType, this.IncomingEntity.ClaimType, StringComparison.InvariantCultureIgnoreCase) &&

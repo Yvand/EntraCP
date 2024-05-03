@@ -25,6 +25,8 @@ namespace Yvand.EntraClaimsProvider.Administration
 {
     public partial class GlobalSettingsUserControl : EntraCPUserControl
     {
+        protected int DefaultTenantDataCacheLifetimeInMinutes = ClaimsProviderConstants.DefaultTenantDataCacheLifetimeInMinutes;
+
         readonly string TextErrorNewTenantFieldsMissing = "Some mandatory fields are missing.";
         readonly string TextErrorTestAzureADConnection = "Unable to get access token for tenant '{0}': {1}";
         readonly string TextConnectionSuccessful = "Connection successful.";
@@ -51,9 +53,9 @@ namespace Yvand.EntraClaimsProvider.Administration
             }
 
             LabelMessage.Text = String.Format(TextSummaryPersistedObjectInformation, Configuration.Name, Configuration.Version, Configuration.Id);
-            PopulateConnectionsGrid();
             if (!this.IsPostBack)
             {
+                PopulateConnectionsGrid();
                 PopulateGraphPropertiesLists();
                 PopulateFields();
             }
@@ -70,7 +72,7 @@ namespace Yvand.EntraClaimsProvider.Administration
                     {
                         continue;
                     }
-                    pcb.AddRow(tenant.Identifier, tenant.Name, tenant.ClientId, tenant.AuthenticationMode, tenant.ExtensionAttributesApplicationId);
+                    pcb.AddRow(tenant.Identifier, tenant.Name, tenant.ClientId, tenant.AuthenticationMode, tenant.AzureCloud.ToString());
                 }
                 pcb.BindGrid(grdAzureTenants);
             }
@@ -122,14 +124,15 @@ namespace Yvand.EntraClaimsProvider.Administration
             this.ChkAlwaysResolveUserInput.Checked = Settings.AlwaysResolveUserInput;
             this.ChkFilterExactMatchOnly.Checked = Settings.FilterExactMatchOnly;
             this.InputProxyAddress.Text = Settings.ProxyAddress;
+            this.InputRestrictSearchableUsersByGroups.Text = Settings.RestrictSearchableUsersByGroups;
+            this.InputTenantDataCacheLifetimeInMinutes.Text = Settings.TenantDataCacheLifetimeInMinutes.ToString();
 
-            AzureCloudInstance[] azureCloudInstanceValues = (AzureCloudInstance[])Enum.GetValues(typeof(AzureCloudInstance));
-            foreach (var azureCloudInstanceValue in azureCloudInstanceValues)
+            AzureCloudName[] azureCloudNames = (AzureCloudName[])Enum.GetValues(typeof(AzureCloudName));
+            foreach (var azureCloudName in azureCloudNames)
             {
-                if (azureCloudInstanceValue == AzureCloudInstance.None) { continue; }
-                this.DDLAzureCloudInstance.Items.Add(new System.Web.UI.WebControls.ListItem(azureCloudInstanceValue.ToString(), azureCloudInstanceValue.ToString()));
+                this.DDLAzureCloudInstance.Items.Add(new ListItem(azureCloudName.ToString(), azureCloudName.ToString()));
             }
-            this.DDLAzureCloudInstance.SelectedValue = AzureCloudInstance.AzurePublic.ToString();
+            this.DDLAzureCloudInstance.SelectedValue = AzureCloudName.AzureGlobal.ToString();
         }
 
         private void PopulateGraphPropertiesLists()
@@ -219,6 +222,8 @@ namespace Yvand.EntraClaimsProvider.Administration
             Settings.AlwaysResolveUserInput = this.ChkAlwaysResolveUserInput.Checked;
             Settings.FilterExactMatchOnly = this.ChkFilterExactMatchOnly.Checked;
             Settings.ProxyAddress = this.InputProxyAddress.Text;
+            Settings.RestrictSearchableUsersByGroups = this.InputRestrictSearchableUsersByGroups.Text;
+            Settings.TenantDataCacheLifetimeInMinutes = Convert.ToInt32(this.InputTenantDataCacheLifetimeInMinutes.Text);
 
             if (commitChanges) { CommitChanges(); }
             return true;
@@ -244,12 +249,11 @@ namespace Yvand.EntraClaimsProvider.Administration
                 this.LabelErrorTestLdapConnection.Text = TextErrorNewTenantCreds;
                 return;
             }
-            AzureCloudInstance cloudInstance = (AzureCloudInstance)Enum.Parse(typeof(AzureCloudInstance), this.DDLAzureCloudInstance.SelectedValue);
 
             EntraIDTenant newTenant = new EntraIDTenant
             {
                 Name = this.TxtTenantName.Text,
-                AzureAuthority = ClaimsProviderConstants.AzureCloudEndpoints.FirstOrDefault(item => item.Key == cloudInstance).Value,
+                AzureCloud = (AzureCloudName)Enum.Parse(typeof(AzureCloudName), this.DDLAzureCloudInstance.SelectedValue),
             };
 
             if (String.IsNullOrWhiteSpace(this.TxtClientSecret.Text))
@@ -268,7 +272,6 @@ namespace Yvand.EntraClaimsProvider.Administration
 
             try
             {
-                //Task<bool> taskTestConnection = newTenant.TestConnectionAsync(Settings.ProxyAddress);
                 Task<bool> taskTestConnection = Task.Run(async () => await newTenant.TestConnectionAsync(Settings.ProxyAddress));
                 taskTestConnection.Wait();
                 bool success = taskTestConnection.Result;
@@ -359,9 +362,6 @@ namespace Yvand.EntraClaimsProvider.Administration
                 }
             }
 
-            Uri cloudInstance = ClaimsProviderConstants.AzureCloudEndpoints.FirstOrDefault(item => item.Key == (AzureCloudInstance)Enum.Parse(typeof(AzureCloudInstance), this.DDLAzureCloudInstance.SelectedValue)).Value;
-
-
             if (Settings.EntraIDTenants == null)
             {
                 Settings.EntraIDTenants = new List<EntraIDTenant>();
@@ -370,8 +370,8 @@ namespace Yvand.EntraClaimsProvider.Administration
             var newTenant = new EntraIDTenant
             {
                 Name = this.TxtTenantName.Text,
+                AzureCloud = (AzureCloudName)Enum.Parse(typeof(AzureCloudName), this.DDLAzureCloudInstance.SelectedValue),
                 ExcludeGuestUsers = this.ChkMemberUserTypeOnly.Checked,
-                AzureAuthority = cloudInstance,
                 ExtensionAttributesApplicationId = string.IsNullOrWhiteSpace(this.TxtExtensionAttributesApplicationId.Text) ? Guid.Empty : Guid.Parse(this.TxtExtensionAttributesApplicationId.Text)
             };
 
@@ -395,7 +395,7 @@ namespace Yvand.EntraClaimsProvider.Administration
             this.TxtClientSecret.Text = String.Empty;
             this.InputClientCertPassword.Text = String.Empty;
             this.TxtExtensionAttributesApplicationId.Text = String.Empty;
-            this.DDLAzureCloudInstance.SelectedValue = AzureCloudInstance.AzurePublic.ToString();
+            this.DDLAzureCloudInstance.SelectedValue = AzureCloudName.AzureGlobal.ToString();
         }
 
         private bool ValidateUploadedCertFile(
@@ -450,6 +450,61 @@ namespace Yvand.EntraClaimsProvider.Administration
             }
             return true;
         }
+
+        protected void grdAzureTenants_RowEditing(object sender, GridViewEditEventArgs e)
+        {
+            grdAzureTenants.EditIndex = e.NewEditIndex;
+            PopulateConnectionsGrid();
+        }
+
+        protected void grdAzureTenants_RowCancelingEdit(object sender, GridViewCancelEditEventArgs e)
+        {
+            grdAzureTenants.EditIndex = -1;
+            PopulateConnectionsGrid();
+        }
+
+        protected void grdAzureTenants_RowUpdating(object sender, GridViewUpdateEventArgs e)
+        {
+            Guid tenantId = Guid.Parse(e.NewValues["Id"].ToString());
+            string newClientId = e.NewValues["ClientID"].ToString();
+            TextBox newSecretTextBox = (TextBox)grdAzureTenants.Rows[e.RowIndex].FindControl("EditTenantNewSecret");
+            string newSecret = newSecretTextBox.Text;
+
+            EntraIDTenant tenant = Settings.EntraIDTenants.First(x => x.Identifier == tenantId);
+            bool tenantUpdated = false;
+            if (String.IsNullOrWhiteSpace(newSecret))
+            {
+                if (tenant.ClientId != newClientId)
+                {
+                    tenant.ClientId = newClientId;
+                    tenantUpdated = true;
+                }
+            }
+            else
+            {
+                tenant.SetCredentials(newClientId, newSecret);
+                tenantUpdated = true;
+            }
+            if (tenantUpdated)
+            {
+                CommitChanges();
+            }
+            grdAzureTenants.EditIndex = -1;
+            PopulateConnectionsGrid();
+        }
+
+        protected void grdAzureTenants_RowDataBound(object sender, GridViewRowEventArgs e)
+        {
+            // Ask user for confirmation when cliking on button Delete - https://stackoverflow.com/questions/9026884/asp-net-gridview-delete-row-only-on-confirmation
+            if (e.Row.RowType == DataControlRowType.DataRow)
+            {
+                Button deleteButton = (Button)e.Row.Cells[4].Controls[2];
+                if (deleteButton != null && String.Equals(deleteButton.Text, "Delete", StringComparison.OrdinalIgnoreCase))
+                {
+                    deleteButton.OnClientClick = "if(!confirm('Are you sure you want to delete this tenant?')) return;";
+                }
+            }
+        }
     }
 
     public class PropertyCollectionBinder
@@ -462,10 +517,10 @@ namespace Yvand.EntraClaimsProvider.Administration
             PropertyCollection.Columns.Add("ClientID", typeof(string));
             //PropertyCollection.Columns.Add("MemberUserTypeOnly", typeof(bool));
             PropertyCollection.Columns.Add("AuthenticationMode", typeof(string));
-            PropertyCollection.Columns.Add("ExtensionAttributesApplicationId", typeof(Guid));
+            PropertyCollection.Columns.Add("AzureCloud", typeof(string));
         }
 
-        public void AddRow(Guid Id, string TenantName, string ClientID, string AuthenticationMode, Guid ExtensionAttributesApplicationId)
+        public void AddRow(Guid Id, string TenantName, string ClientID, string AuthenticationMode, string AzureCloud)
         {
             DataRow newRow = PropertyCollection.Rows.Add();
             newRow["Id"] = Id;
@@ -473,7 +528,7 @@ namespace Yvand.EntraClaimsProvider.Administration
             newRow["ClientID"] = ClientID;
             //newRow["MemberUserTypeOnly"] = MemberUserTypeOnly;
             newRow["AuthenticationMode"] = AuthenticationMode;
-            newRow["ExtensionAttributesApplicationId"] = ExtensionAttributesApplicationId;
+            newRow["AzureCloud"] = AzureCloud;
         }
 
         public void BindGrid(SPGridView grid)

@@ -1,5 +1,15 @@
 # Change log for ~~AzureCP~~ EntraCP
 
+## Unreleased
+
+* Update the global configuration page to give the possibility to update the credentials of tenants already registered - https://github.com/Yvand/EntraCP/pull/248
+* Fix an issue where tenant credentials could not be changed from a client certificate to a client secret - https://github.com/Yvand/EntraCP/pull/248
+* Prompt user for confirmation before actually deleting a tenant - https://github.com/Yvand/EntraCP/pull/248
+* New feature: It is now possible to configure EntraCP, to return only users that are members of some Entra groups, configured by the administrator - https://github.com/Yvand/EntraCP/pull/243
+* Fix the connection to Microsoft Graph not working when the tenant is hosted in a national cloud
+* Update Azure.Identity from 1.10.4 to 1.11.2
+* Update Microsoft.Graph from 5.44.0 to 5.49.0
+
 ## EntraCP v24.0.20240318.32 enhancements & bug-fixes - Published in March 18, 2024
 
 * Fix "Edit" links fail to work on the "Claim types configuration" page - https://github.com/Yvand/EntraCP/pull/220
