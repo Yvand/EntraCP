@@ -404,7 +404,7 @@ namespace Yvand.EntraClaimsProvider.Configuration
                 throw new ArgumentNullException(nameof(newClientSecret));
             }
 
-            EntraIDTenant tenant = this.EntraIDTenants.FirstOrDefault(x => x.Name.Equals(tenantName, StringComparison.InvariantCultureIgnoreCase));
+            EntraIDTenant tenant = GetTenantConfiguration(tenantName);
             if (tenant == null) { return false; }
             string clientId = String.IsNullOrWhiteSpace(newClientId) ? tenant.ClientId : newClientId;
             return tenant.SetCredentials(clientId, newClientSecret);
@@ -426,11 +426,44 @@ namespace Yvand.EntraClaimsProvider.Configuration
                 throw new ArgumentNullException(nameof(tenantName));
             }
 
-            EntraIDTenant tenant = this.EntraIDTenants.FirstOrDefault(x => x.Name.Equals(tenantName, StringComparison.InvariantCultureIgnoreCase));
+            EntraIDTenant tenant = GetTenantConfiguration(tenantName);
             if (tenant == null) { return false; }
 
             string clientId = String.IsNullOrWhiteSpace(newClientId) ? tenant.ClientId : newClientId;
             return tenant.SetCredentials(clientId, newClientCertificatePfxFilePath, newClientCertificatePfxPassword);
+        }
+
+        /// <summary>
+        /// Gets the tenant configuration
+        /// </summary>
+        /// <param name="tenantName">Name of the tenant</param>
+        /// <returns></returns>
+        /// <exception cref="ArgumentNullException"></exception>
+        public EntraIDTenant GetTenantConfiguration(string tenantName)
+        {
+            if (String.IsNullOrWhiteSpace(tenantName))
+            {
+                throw new ArgumentNullException(nameof(tenantName));
+            }
+            return this.EntraIDTenants.FirstOrDefault(x => x.Name.Equals(tenantName, StringComparison.OrdinalIgnoreCase));
+        }
+
+        /// <summary>
+        /// Deletes the tenant configuration
+        /// </summary>
+        /// <param name="tenantName">Name of the tenant</param>
+        /// <returns></returns>
+        /// <exception cref="ArgumentNullException"></exception>
+        public bool DeleteTenantConfiguration(string tenantName)
+        {
+            if (String.IsNullOrWhiteSpace(tenantName))
+            {
+                throw new ArgumentNullException(nameof(tenantName));
+            }
+
+            EntraIDTenant tenant = GetTenantConfiguration(tenantName);
+            if (tenant == null) { return false; }
+            return this.EntraIDTenants.Remove(tenant);
         }
 
         /// <summary>
