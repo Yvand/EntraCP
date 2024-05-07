@@ -3,6 +3,7 @@
 ## Unreleased
 
 * Fix an NullReferenceException in a very rare scenario where ClaimsPrincipal.Identity is null
+* Add helper methods to get/delete a tenant in the configuration
 
 ## EntraCP v25.0.20240503.33 enhancements & bug-fixes - Published in May 3, 2024
 
