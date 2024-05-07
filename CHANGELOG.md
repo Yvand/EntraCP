@@ -1,5 +1,9 @@
 # Change log for ~~AzureCP~~ EntraCP
 
+## Unreleased
+
+* Fix an NullReferenceException in a very rare scenario where ClaimsPrincipal.Identity is null
+
 ## EntraCP v25.0.20240503.33 enhancements & bug-fixes - Published in May 3, 2024
 
 * Update the global configuration page to give the possibility to update the credentials of tenants already registered - https://github.com/Yvand/EntraCP/pull/248
