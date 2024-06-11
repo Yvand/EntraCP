@@ -128,7 +128,7 @@
   <!-- NuGet packages -->
   <ItemGroup>
     <PackageReference Include="Azure.Identity">
-      <Version>1.11.2</Version>
+      <Version>1.11.4</Version>
     </PackageReference>
     <PackageReference Include="Microsoft.Graph">
       <Version>5.49.0</Version>
