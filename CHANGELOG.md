@@ -4,6 +4,8 @@
 
 * Fix an NullReferenceException in a very rare scenario where ClaimsPrincipal.Identity is null
 * Add helper methods to get/delete a tenant in the configuration
+* Update Azure.Identity from 1.11.2 to 1.12.0
+* Update Microsoft.Graph from 5.49.0 to 5.56.0
 
 ## EntraCP v25.0.20240503.33 enhancements & bug-fixes - Published in May 3, 2024
 
