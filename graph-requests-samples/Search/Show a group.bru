@@ -1,0 +1,19 @@
+meta {
+  name: Show a group
+  type: http
+  seq: 6
+}
+
+get {
+  url: https://graph.microsoft.com/v1.0/groups/{{groupId}}?$select=id, displayName
+  body: none
+  auth: none
+}
+
+params:query {
+  $select: id, displayName
+}
+
+headers {
+  Accept: application/json
+}

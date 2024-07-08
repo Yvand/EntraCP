@@ -1,0 +1,24 @@
+meta {
+  name: Create a claimsMappingPolicy for SAML claims Copy
+  type: http
+  seq: 2
+}
+
+post {
+  url: https://graph.microsoft.com/v1.0/policies/claimsMappingPolicies
+  body: json
+  auth: none
+}
+
+headers {
+  Content-type: application/json
+}
+
+body:json {
+  {
+      "definition": [
+          "{\"ClaimsMappingPolicy\": { \"Version\": 1, \"IncludeBasicClaimSet\": \"false\", \"ClaimsSchema\": [{ \"Source\": \"User\", \"ExtensionID\": \"extension_7ade56f812b0472ba923102874ee083a_extensionAttribute1\", \"SamlClaimType\": \"http://schemas.yvand.org/claims/type1\" }] }}"
+      ],
+      "displayName": "Yvand claims policy with extension attribute"
+  }
+}

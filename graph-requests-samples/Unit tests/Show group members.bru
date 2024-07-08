@@ -1,0 +1,19 @@
+meta {
+  name: Show group members
+  type: http
+  seq: 4
+}
+
+get {
+  url: https://graph.microsoft.com/v1.0/groups/{{groupId}}/members?$select=userPrincipalName
+  body: none
+  auth: none
+}
+
+params:query {
+  $select: userPrincipalName
+}
+
+headers {
+  Content-Type: application/json
+}

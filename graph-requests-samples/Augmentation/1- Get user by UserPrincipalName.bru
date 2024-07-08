@@ -1,0 +1,36 @@
+meta {
+  name: 1- Get user by UserPrincipalName
+  type: http
+  seq: 1
+}
+
+get {
+  url: https://graph.microsoft.com/v1.0/users?$select=UserType, Id, Mail, UserPrincipalName, DisplayName, GivenName, Surname, DisplayName, Mail, MobilePhone, JobTitle, Department, OfficeLocation&$filter=UserPrincipalName eq '{{entityUpn}}'
+  body: none
+  auth: none
+}
+
+params:query {
+  $select: UserType, Id, Mail, UserPrincipalName, DisplayName, GivenName, Surname, DisplayName, Mail, MobilePhone, JobTitle, Department, OfficeLocation
+  $filter: UserPrincipalName eq '{{entityUpn}}'
+  ~$filter: UserPrincipalName eq 'AdeleV@{{tenantPrefix}}.OnMicrosoft.com'
+  ~$filter: UserPrincipalName eq 'yvand_microsoft.com%23EXT%23@{{tenantPrefix}}.onmicrosoft.com'
+}
+
+vars:post-response {
+  userId: res.body.value[0].id
+}
+
+tests {
+  try {    
+      var json = JSON.parse(responseBody);
+      if (json.value.length === 1) {
+  //         postman.setEnvironmentVariable("userId", json.value[0].id);
+          console.log(`Set environment variable userId with value "${json.value[0].id}"`);
+      }
+  }
+  catch (e) {
+      console.log(e);
+  }
+  
+}

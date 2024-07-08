@@ -1,0 +1,40 @@
+meta {
+  name: replay search users and groups using batch
+  type: http
+  seq: 8
+}
+
+post {
+  url: https://graph.microsoft.com/v1.0/$batch
+  body: json
+  auth: bearer
+}
+
+auth:bearer {
+  token: eyJ0eXAiOiJKV1QiLCJub25jZSI6Ik1ZZGFuS0VYcUN6S3dhQU1QMkh6NjNVTldPSjBEMmlSTzJSTVkzbEpnRzQiLCJhbGciOiJSUzI1NiIsIng1dCI6IjlHbW55RlBraGMzaE91UjIybXZTdmduTG83WSIsImtpZCI6IjlHbW55RlBraGMzaE91UjIybXZTdmduTG83WSJ9.eyJhdWQiOiJodHRwczovL2dyYXBoLm1pY3Jvc29mdC5jb20iLCJpc3MiOiJodHRwczovL3N0cy53aW5kb3dzLm5ldC84MDBjNzBiYy1iMDUyLTQ0ZmYtOWNlOC0yYmFjNmI1OWYyNzIvIiwiaWF0IjoxNjk5MzcxMTQ4LCJuYmYiOjE2OTkzNzExNDgsImV4cCI6MTY5OTM3NTA0OCwiYWlvIjoiRTJWZ1lKQ011THhkNjludGQxZk5EK2w0K3Q1bUF3QT0iLCJhcHBfZGlzcGxheW5hbWUiOiJBenVyZUNQIG0zNjUiLCJhcHBpZCI6IjczYjE5OTU1LThhMWQtNDRjNS1iNWYwLTkwYzVkNmE4NGU0NiIsImFwcGlkYWNyIjoiMSIsImlkcCI6Imh0dHBzOi8vc3RzLndpbmRvd3MubmV0LzgwMGM3MGJjLWIwNTItNDRmZi05Y2U4LTJiYWM2YjU5ZjI3Mi8iLCJpZHR5cCI6ImFwcCIsIm9pZCI6ImRjMThmYTI0LWViN2YtNDJlOC1iODJlLTNjMmU0MjFmOTFjNCIsInJoIjoiMC5BWUlBdkhBTWdGS3dfMFNjNkN1c2ExbnljZ01BQUFBQUFBQUF3QUFBQUFBQUFBQ0NBQUEuIiwicm9sZXMiOlsiVXNlci5SZWFkLkFsbCIsIkdyb3VwTWVtYmVyLlJlYWQuQWxsIl0sInN1YiI6ImRjMThmYTI0LWViN2YtNDJlOC1iODJlLTNjMmU0MjFmOTFjNCIsInRlbmFudF9yZWdpb25fc2NvcGUiOiJFVSIsInRpZCI6IjgwMGM3MGJjLWIwNTItNDRmZi05Y2U4LTJiYWM2YjU5ZjI3MiIsInV0aSI6ImZRTXNwR2Fzd1VTNHN4aVpIb1VtQUEiLCJ2ZXIiOiIxLjAiLCJ3aWRzIjpbIjA5OTdhMWQwLTBkMWQtNGFjYi1iNDA4LWQ1Y2E3MzEyMWU5MCJdLCJ4bXNfdGNkdCI6MTYxNDc5NjE5NiwieG1zX3RkYnIiOiJFVSJ9.irWvBr2w-qSXe_h7QNhESNayQhKSEEcmDjGCzXijOutUBp7mU6S5WaLUEI_kcGkHiL3fEd7oz1p41zWb-QQIk-lSM2pt6DvKDUqAVK4cxlBUysGy-u4dN0NrGdKkGhxMHwGWCKm2EzuTqcls2tUdM5rYowh6hw8or4TG-WGIqOZGZO0YNGXcFdkkKbkL2PAWhqdgFNTqsugqCXHBdC5FIjS5580aLbyYyhzhM2eARZoxncCkP8TQTdBZXVLKaqgqH5hEDTsXFLXsgkO626cBdhoNQKdX37djDdxQs3XYYlMsQhUgPH9S2VD1T1uVkffbcIa29Y5syOTyWeEk4LtiTA
+}
+
+body:json {
+  {
+      "requests": [
+          {
+              "id": "9d99b7fa-428a-4025-acd5-8947f35dbffc",
+              "url": "/users?%24top=30\u0026%24filter=%28%20%28startswith%28UserPrincipalName%2C%20%27admini%27%29%20and%20UserType%20eq%20%27Member%27%29%20or%20%28startswith%28Mail%2C%20%27admini%27%29%20and%20UserType%20eq%20%27Guest%27%29%20%29%20or%20startswith%28DisplayName%2C%20%27admini%27%29%20or%20startswith%28GivenName%2C%20%27admini%27%29%20or%20startswith%28Surname%2C%20%27admini%27%29%20or%20startswith%28Mail%2C%20%27admini%27%29\u0026%24count=true\u0026%24select=UserType,Mail,UserPrincipalName,DisplayName,GivenName,Surname,Mail,DisplayName,Mail,MobilePhone,JobTitle,Department,OfficeLocation",
+              "method": "GET",
+              "headers": {
+                  "Accept": "application/json",
+                  "ConsistencyLevel": "eventual"
+              }
+          },
+          {
+              "id": "7937d970-ad05-42af-96bf-559fe776a986",
+              "url": "/groups?%24top=30\u0026%24filter=startswith%28DisplayName%2C%20%27admini%27%29\u0026%24count=true\u0026%24select=Id,securityEnabled,DisplayName,DisplayName,Mail",
+              "method": "GET",
+              "headers": {
+                  "Accept": "application/json",
+                  "ConsistencyLevel": "eventual"
+              }
+          }
+      ]
+  }
+}

@@ -1,0 +1,62 @@
+meta {
+  name: Get access token v2 -AzureCP 18--
+  type: http
+  seq: 1
+}
+
+get {
+  url: 
+  body: formUrlEncoded
+  auth: oauth2
+}
+
+headers {
+  Content-Type: application/x-www-form-urlencoded
+  SdkVersion: postman-graph/v1.0
+}
+
+auth:oauth2 {
+  grant_type: client_credentials
+  access_token_url: https://login.microsoftonline.com/{{tenantPrefix}}.onmicrosoft.com/oauth2/v2.0/token
+  client_id: {{clientId}}
+  client_secret: {{clientSecret}}
+  scope: https://graph.microsoft.com/.default
+}
+
+body:form-urlencoded {
+  grant_type: client_credentials
+  client_id: {{clientId}}
+  client_secret: {{clientSecret}}
+  scope: https://graph.microsoft.com/.default
+}
+
+vars:post-response {
+  accessToken: res.body.access_token
+}
+
+tests {
+  try {
+      if (bru.getEnvVar("ClientID") === "")
+      {
+          console.log("You need to enter *ClientID* environment variable first.");
+      }
+      if (bru.getEnvVar("ClientSecret") === "")
+      {
+          console.log("You need to enter *ClientSecret* environment variable first.");
+      }
+      if (bru.getEnvVar("TenantID") === "")
+      {
+          console.log("You need to enter *TenantID* environment variable first.");
+      }
+      else
+      {
+          var json = JSON.parse(responseBody);
+  //         postman.setEnvironmentVariable("AppAccessToken", json.access_token);
+      }
+  }
+  catch (e) {
+      console.log(e);
+  }
+  
+  
+}

@@ -1,0 +1,17 @@
+meta {
+  name: Validate group
+  type: http
+  seq: 2
+}
+
+get {
+  url: https://graph.microsoft.com/v1.0/groups?$select=Id, Id, DisplayName, Mail&$filter=Id eq '{{groupId}}'&$top=1
+  body: none
+  auth: none
+}
+
+params:query {
+  $select: Id, Id, DisplayName, Mail
+  $filter: Id eq '{{groupId}}'
+  $top: 1
+}

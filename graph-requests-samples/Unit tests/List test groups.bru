@@ -1,0 +1,20 @@
+meta {
+  name: List test groups
+  type: http
+  seq: 2
+}
+
+get {
+  url: https://graph.microsoft.com/v1.0/groups?$select=ID, displayName, groupTypes, securityEnabled&$filter=startswith(DisplayName, 'testentracp')
+  body: none
+  auth: none
+}
+
+params:query {
+  $select: ID, displayName, groupTypes, securityEnabled
+  $filter: startswith(DisplayName, 'testentracp')
+}
+
+headers {
+  Content-Type: application/json
+}

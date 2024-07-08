@@ -1,0 +1,24 @@
+meta {
+  name: Update a claimsMappingPolicy for SAML claims Copy
+  type: http
+  seq: 4
+}
+
+patch {
+  url: https://graph.microsoft.com/v1.0/policies/claimsMappingPolicies/fc3beba5-5869-4020-9366-8bf7d0e8d924
+  body: json
+  auth: none
+}
+
+headers {
+  Content-type: application/json
+}
+
+body:json {
+  {
+      "definition": [
+          "{\"ClaimsMappingPolicy\": { \"Version\": 1, \"IncludeBasicClaimSet\": \"false\", \"ClaimsSchema\": [{ \"Source\": \"User\", \"ExtensionID\": \"extension_7ade56f812b0472ba923102874ee083a_extensionAttribute1\", \"SamlClaimType\": \"http://schemas.yvand.org/claims/type1\" }, { \"Source\": \"User\", \"ID\": \"localuserprincipalname\", \"SamlClaimType\": \"http://schemas.xmlsoap.org/ws/2005/05/identity/claims/nameidentifier\" }, { \"Source\": \"User\", \"ID\": \"localuserprincipalname\", \"SamlClaimType\": \"http://schemas.xmlsoap.org/ws/2005/05/identity/claims/name\" }] }}"
+      ],
+      "displayName": "Yvand claims policy with extension attribute"
+  }
+}

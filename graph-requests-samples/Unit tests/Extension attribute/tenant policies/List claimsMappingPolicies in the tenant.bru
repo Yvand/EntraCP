@@ -1,0 +1,11 @@
+meta {
+  name: List claimsMappingPolicies in the tenant
+  type: http
+  seq: 1
+}
+
+get {
+  url: https://graph.microsoft.com/v1.0/policies/claimsMappingPolicies
+  body: json
+  auth: none
+}
