@@ -202,12 +202,13 @@ namespace Yvand.EntraClaimsProvider.Tests
     public class EntraIdTestGroupsSource
     {
         private static object _LockInitGroupsList = new object();
+        private static bool listInitialized = false;
         private static List<EntraIdTestGroup> _Groups;
         public static List<EntraIdTestGroup> Groups
         {
             get
             {
-                if (_Groups != null) { return _Groups; }
+                if (listInitialized) { return _Groups; }
                 lock (_LockInitGroupsList)
                 {
                     if (_Groups != null) { return _Groups; }
@@ -216,6 +217,7 @@ namespace Yvand.EntraClaimsProvider.Tests
                     {
                         _Groups.Add(group);
                     }
+                    listInitialized = true;
                     Trace.TraceInformation($"{DateTime.Now:s} [{typeof(EntraIdTestGroupsSource).Name}] Initialized List of {nameof(Groups)} with {_Groups.Count} items.");
                     return _Groups;
                 }
@@ -300,12 +302,13 @@ namespace Yvand.EntraClaimsProvider.Tests
     public class EntraIdTestUsersSource
     {
         private static object _LockInitList = new object();
+        private static bool listInitialized = false;
         private static List<EntraIdTestUser> _Users;
         public static List<EntraIdTestUser> Users
         {
             get
             {
-                if (_Users != null) { return _Users; }
+                if (listInitialized) { return _Users; }
                 lock (_LockInitList)
                 {
                     if (_Users != null) { return _Users; }
@@ -314,6 +317,7 @@ namespace Yvand.EntraClaimsProvider.Tests
                     {
                         _Users.Add(user);
                     }
+                    listInitialized = true;
                     Trace.TraceInformation($"{DateTime.Now:s} [{typeof(EntraIdTestUsersSource).Name}] Initialized List of {nameof(Users)} with {_Users.Count} items.");
                     return _Users;
                 }
