@@ -22,7 +22,7 @@ namespace Yvand.EntraClaimsProvider.Tests
             base.CheckSettingsTest();
         }
 
-        [Test, TestCaseSource(typeof(EntraIdTestUsersSource), nameof(EntraIdTestUsersSource.GetTestData), null)]
+        [Test, TestCaseSource(typeof(EntraIdTestUsersSource), nameof(EntraIdTestUsersSource.GetTestData), new object[] { UnitTestsHelper.MaxNumberOfUsersToTest })]
         public void TestAllTestUsers(EntraIdTestUser user)
         {
             base.TestSearchAndValidateForEntraIDUser(user);
@@ -52,7 +52,7 @@ namespace Yvand.EntraClaimsProvider.Tests
             Random rnd = new Random();
             for (int groupsCount = 1; groupsCount <= 18; groupsCount++)
             {
-                int randomIdx = rnd.Next(0, UnitTestsHelper.TestGroupsCount - 1);
+                int randomIdx = rnd.Next(0, EntraIdTestGroupsSource.Groups.Count - 1);
                 groupIdsList.Add(EntraIdTestGroupsSource.Groups[randomIdx].Id);
             }
             Settings.RestrictSearchableUsersByGroups = String.Join(",", groupIdsList);
@@ -67,7 +67,7 @@ namespace Yvand.EntraClaimsProvider.Tests
             base.CheckSettingsTest();
         }
 
-        [Test, TestCaseSource(typeof(EntraIdTestUsersSource), nameof(EntraIdTestUsersSource.GetTestData), null)]
+        [Test, TestCaseSource(typeof(EntraIdTestUsersSource), nameof(EntraIdTestUsersSource.GetTestData), new object[] { UnitTestsHelper.MaxNumberOfUsersToTest })]
         public void TestAllTestUsers(EntraIdTestUser user)
         {
             base.TestSearchAndValidateForEntraIDUser(user);

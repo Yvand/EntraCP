@@ -2,6 +2,7 @@
 using Microsoft.SharePoint;
 using Microsoft.SharePoint.Administration;
 using Microsoft.SharePoint.Administration.Claims;
+using Microsoft.Web.Hosting.Administration;
 using Newtonsoft.Json;
 using NUnit.Framework;
 using System;
@@ -36,8 +37,10 @@ namespace Yvand.EntraClaimsProvider.Tests
         public static string DataFile_EntraId_TestGroups => TestContext.Parameters["DataFile_EntraId_TestGroups"];
         public static string TestUsersAccountNamePrefix => TestContext.Parameters["UserAccountNamePrefix"];
         public static string TestGroupsAccountNamePrefix => TestContext.Parameters["GroupAccountNamePrefix"];
-        public const int TestUsersCount = 50 + 3; // 50 members + 3 guests
-        public const int TestGroupsCount = 50;
+        //public const int TotalNumberTestUsers = 999 + 3; // 999 members + 3 guests
+        //public const int TotalNumberTestGroups = 50;
+        public const int MaxNumberOfUsersToTest = 100;
+        public const int MaxNumberOfGroupsToTest = 100;
         static TextWriterTraceListener Logger { get; set; }
         public static EntraIDProviderConfiguration PersistedConfiguration;
         private static IEntraIDProviderSettings OriginalSettings;
@@ -213,7 +216,7 @@ namespace Yvand.EntraClaimsProvider.Tests
                 {
                     if (_Groups != null) { return _Groups; }
                     _Groups = new List<EntraIdTestGroup>();
-                    foreach (EntraIdTestGroup group in GetTestData(false))
+                    foreach (EntraIdTestGroup group in ReadDataSource(false))
                     {
                         _Groups.Add(group);
                     }
@@ -223,6 +226,8 @@ namespace Yvand.EntraClaimsProvider.Tests
                 }
             }
         }
+
+        private static Random RandomNumber = new Random();
 
         public static EntraIdTestGroup ASecurityEnabledGroup => Groups.First(x => x.SecurityEnabled);
         public static EntraIdTestGroup ANonSecurityEnabledGroup => Groups.First(x => !x.SecurityEnabled);
@@ -258,7 +263,7 @@ namespace Yvand.EntraClaimsProvider.Tests
             }
         }
 
-        public static IEnumerable<EntraIdTestGroup> GetTestData(bool securityEnabledGroupsOnly = false)
+        private static IEnumerable<EntraIdTestGroup> ReadDataSource(bool securityEnabledGroupsOnly = false)
         {
             string csvPath = UnitTestsHelper.DataFile_EntraId_TestGroups;
             DataTable dt = DataTable.New.ReadCsv(csvPath);
@@ -274,6 +279,20 @@ namespace Yvand.EntraClaimsProvider.Tests
                     continue;
                 }
                 yield return registrationData;
+            }
+        }
+
+        public static IEnumerable<EntraIdTestGroup> GetTestData(bool securityEnabledGroupsOnly, int count)
+        {
+            List<int> userIdxs = new List<int>(count);
+            for (int i = 0; i < count; i++)
+            {
+                userIdxs.Add(RandomNumber.Next(0, Groups.Count - 1));
+            }
+
+            foreach (int userIdx in userIdxs)
+            {
+                yield return Groups[userIdx];
             }
         }
     }
@@ -313,7 +332,7 @@ namespace Yvand.EntraClaimsProvider.Tests
                 {
                     if (_Users != null) { return _Users; }
                     _Users = new List<EntraIdTestUser>();
-                    foreach (EntraIdTestUser user in GetTestData())
+                    foreach (EntraIdTestUser user in ReadDataSource())
                     {
                         _Users.Add(user);
                     }
@@ -323,6 +342,8 @@ namespace Yvand.EntraClaimsProvider.Tests
                 }
             }
         }
+
+        private static Random RandomNumber = new Random();
 
         public static EntraIdTestUser AGuestUser => Users.FirstOrDefault(x => x.UserType == UserType.Guest);
         public static IEnumerable<EntraIdTestUser> AllGuestUsers => Users.Where(x => x.UserType == UserType.Guest);
@@ -353,7 +374,7 @@ namespace Yvand.EntraClaimsProvider.Tests
             }
         }
 
-        public static IEnumerable<EntraIdTestUser> GetTestData()
+        private static IEnumerable<EntraIdTestUser> ReadDataSource()
         {
             string csvPath = UnitTestsHelper.DataFile_EntraId_TestUsers;
             DataTable dt = DataTable.New.ReadCsv(csvPath);
@@ -367,6 +388,20 @@ namespace Yvand.EntraClaimsProvider.Tests
                 registrationData.Mail = row["mail"];
                 registrationData.GivenName = row["givenName"];
                 yield return registrationData;
+            }
+        }
+
+        public static IEnumerable<EntraIdTestUser> GetTestData(int count)
+        {
+            List<int> userIdxs = new List<int>(count);
+            for (int i = 0; i < count; i++)
+            {
+                userIdxs.Add(RandomNumber.Next(0, Users.Count - 1));
+            }
+
+            foreach (int userIdx in userIdxs)
+            {
+                yield return Users[userIdx];
             }
         }
     }

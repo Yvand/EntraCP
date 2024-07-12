@@ -20,31 +20,31 @@ namespace Yvand.EntraClaimsProvider.Tests
             base.CheckSettingsTest();
         }
 
-        [Test, TestCaseSource(typeof(EntraIdTestGroupsSource), nameof(EntraIdTestGroupsSource.GetTestData), new object[] { true })]
-        public void TestAllTestGroups(EntraIdTestGroup group)
+        [Test, TestCaseSource(typeof(EntraIdTestGroupsSource), nameof(EntraIdTestGroupsSource.GetTestData), new object[] { true, UnitTestsHelper.MaxNumberOfGroupsToTest })]
+        public void TestGroups(EntraIdTestGroup group)
         {
             TestSearchAndValidateForEntraIDGroup(group);
         }
 
-        [Test]
-        public void TestRandomTestGroups([Random(0, UnitTestsHelper.TestGroupsCount - 1, 5)] int idx)
-        {
-            EntraIdTestGroup group = EntraIdTestGroupsSource.Groups[idx];
-            TestSearchAndValidateForEntraIDGroup(group);
-        }
+        //[Test]
+        //public void TestRandomTestGroups([Random(0, UnitTestsHelper.TotalNumberTestGroups - 1, 5)] int idx)
+        //{
+        //    EntraIdTestGroup group = EntraIdTestGroupsSource.Groups[idx];
+        //    TestSearchAndValidateForEntraIDGroup(group);
+        //}
 
-        [Test, TestCaseSource(typeof(EntraIdTestUsersSource), nameof(EntraIdTestUsersSource.GetTestData), null)]
-        public void TestAllTestUsers(EntraIdTestUser user)
+        [Test, TestCaseSource(typeof(EntraIdTestUsersSource), nameof(EntraIdTestUsersSource.GetTestData), new object[] { UnitTestsHelper.MaxNumberOfUsersToTest })]
+        public void TestUsers(EntraIdTestUser user)
         {
             base.TestSearchAndValidateForEntraIDUser(user);
         }
 
-        [Test]
-        public void TestRandomTestUsers([Random(0, UnitTestsHelper.TestUsersCount - 1, 5)] int idx)
-        {
-            var user = EntraIdTestUsersSource.Users[idx];
-            base.TestSearchAndValidateForEntraIDUser(user);
-        }
+        //[Test]
+        //public void TestRandomTestUsers([Random(0, UnitTestsHelper.TotalNumberTestUsers - 1, 5)] int idx)
+        //{
+        //    var user = EntraIdTestUsersSource.Users[idx];
+        //    base.TestSearchAndValidateForEntraIDUser(user);
+        //}
 
         [Test]
         [Repeat(5)]
