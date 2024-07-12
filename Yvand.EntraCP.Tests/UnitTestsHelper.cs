@@ -187,12 +187,17 @@ namespace Yvand.EntraClaimsProvider.Tests
         }
     }
 
-    public class EntraIdTestGroup
+    public class EntraIdTestGroup : ICloneable
     {
         public string Id;
         public string DisplayName;
         public string GroupType;
         public bool SecurityEnabled = true;
+
+        public object Clone()
+        {
+            return this.MemberwiseClone();
+        }
     }
 
     public class EntraIdTestGroupSettings : EntraIdTestGroup
@@ -292,7 +297,7 @@ namespace Yvand.EntraClaimsProvider.Tests
 
             foreach (int userIdx in userIdxs)
             {
-                yield return Groups[userIdx];
+                yield return Groups[userIdx].Clone() as EntraIdTestGroup;
             }
         }
     }
@@ -303,7 +308,7 @@ namespace Yvand.EntraClaimsProvider.Tests
         Guest
     }
 
-    public class EntraIdTestUser
+    public class EntraIdTestUser : ICloneable
     {
         public string Id;
         public string DisplayName;
@@ -311,6 +316,11 @@ namespace Yvand.EntraClaimsProvider.Tests
         public UserType UserType;
         public string Mail;
         public string GivenName;
+
+        public object Clone()
+        {
+            return this.MemberwiseClone();
+        }
     }
 
     public class EntraIdTestUserSettings : EntraIdTestUser
@@ -406,7 +416,7 @@ namespace Yvand.EntraClaimsProvider.Tests
 
             foreach (int userIdx in userIdxs)
             {
-                yield return Users[userIdx];
+                yield return Users[userIdx].Clone() as EntraIdTestUser;
             }
         }
     }
