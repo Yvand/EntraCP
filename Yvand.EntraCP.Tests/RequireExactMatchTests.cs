@@ -21,7 +21,7 @@ namespace Yvand.EntraClaimsProvider.Tests
             base.CheckSettingsTest();
         }
 
-        [Test, TestCaseSource(typeof(EntraIdTestUsersSource), nameof(EntraIdTestUsersSource.GetTestData), new object[] { UnitTestsHelper.MaxNumberOfUsersToTest })]
+        [Test, TestCaseSource(typeof(EntraIdTestUsersSource), nameof(EntraIdTestUsersSource.GetSomeUsers), new object[] { UnitTestsHelper.MaxNumberOfUsersToTest })]
         public void TestUsers(EntraIdTestUser user)
         {
             // Input is not the full UPN value: it should not return any result

@@ -37,8 +37,6 @@ namespace Yvand.EntraClaimsProvider.Tests
         public static string DataFile_EntraId_TestGroups => TestContext.Parameters["DataFile_EntraId_TestGroups"];
         public static string TestUsersAccountNamePrefix => TestContext.Parameters["UserAccountNamePrefix"];
         public static string TestGroupsAccountNamePrefix => TestContext.Parameters["GroupAccountNamePrefix"];
-        //public const int TotalNumberTestUsers = 999 + 3; // 999 members + 3 guests
-        //public const int TotalNumberTestGroups = 50;
         public const int MaxNumberOfUsersToTest = 100;
         public const int MaxNumberOfGroupsToTest = 100;
         static TextWriterTraceListener Logger { get; set; }
@@ -229,9 +227,6 @@ namespace Yvand.EntraClaimsProvider.Tests
 
         private static Random RandomNumber = new Random();
 
-        public static EntraIdTestGroup ASecurityEnabledGroup => Groups.First(x => x.SecurityEnabled);
-        public static EntraIdTestGroup ANonSecurityEnabledGroup => Groups.First(x => !x.SecurityEnabled);
-
         private static object _LockInitGroupsSettingsList = new object();
         private static List<EntraIdTestGroupSettings> _GroupsSettings;
         public static List<EntraIdTestGroupSettings> GroupsSettings
@@ -282,8 +277,13 @@ namespace Yvand.EntraClaimsProvider.Tests
             }
         }
 
-        public static IEnumerable<EntraIdTestGroup> GetTestData(bool securityEnabledGroupsOnly, int count)
+        public static IEnumerable<EntraIdTestGroup> GetSomeGroups(bool securityEnabledGroupsOnly, int count)
         {
+            if (count > Groups.Count)
+            {
+                count = Groups.Count;
+            }
+
             List<int> userIdxs = new List<int>(count);
             for (int i = 0; i < count; i++)
             {
@@ -391,8 +391,13 @@ namespace Yvand.EntraClaimsProvider.Tests
             }
         }
 
-        public static IEnumerable<EntraIdTestUser> GetTestData(int count)
+        public static IEnumerable<EntraIdTestUser> GetSomeUsers(int count)
         {
+            if (count > Users.Count)
+            {
+                count = Users.Count;
+            }
+
             List<int> userIdxs = new List<int>(count);
             for (int i = 0; i < count; i++)
             {
