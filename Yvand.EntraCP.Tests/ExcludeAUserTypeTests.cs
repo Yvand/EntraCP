@@ -21,14 +21,14 @@ namespace Yvand.EntraClaimsProvider.Tests
             base.CheckSettingsTest();
         }
 
-        [Test, TestCaseSource(typeof(EntraIdTestGroupsSource), nameof(EntraIdTestGroupsSource.GetTestData), new object[] { true })]
-        public void TestAllEntraIDGroups(EntraIdTestGroup group)
+        [Test, TestCaseSource(typeof(EntraIdTestGroupsSource), nameof(EntraIdTestGroupsSource.GetSomeGroups), new object[] { true, UnitTestsHelper.MaxNumberOfGroupsToTest })]
+        public void TestGroups(EntraIdTestGroup group)
         {
             TestSearchAndValidateForEntraIDGroup(group);
         }
 
-        [Test, TestCaseSource(typeof(EntraIdTestUsersSource), nameof(EntraIdTestUsersSource.GetTestData), null)]
-        public void TestAllEntraIDUsers(EntraIdTestUser user)
+        [Test, TestCaseSource(typeof(EntraIdTestUsersSource), nameof(EntraIdTestUsersSource.GetSomeUsers), new object[] { UnitTestsHelper.MaxNumberOfUsersToTest })]
+        public void TestUsers(EntraIdTestUser user)
         {
             base.TestSearchAndValidateForEntraIDUser(user);
         }
@@ -60,14 +60,14 @@ namespace Yvand.EntraClaimsProvider.Tests
             base.CheckSettingsTest();
         }
 
-        [Test, TestCaseSource(typeof(EntraIdTestGroupsSource), nameof(EntraIdTestGroupsSource.GetTestData), new object[] { true })]
-        public void TestAllEntraIDGroups(EntraIdTestGroup group)
+        [Test, TestCaseSource(typeof(EntraIdTestGroupsSource), nameof(EntraIdTestGroupsSource.GetSomeGroups), new object[] { true, UnitTestsHelper.MaxNumberOfGroupsToTest })]
+        public void TestGroups(EntraIdTestGroup group)
         {
             TestSearchAndValidateForEntraIDGroup(group);
         }
 
-        [Test, TestCaseSource(typeof(EntraIdTestUsersSource), nameof(EntraIdTestUsersSource.GetTestData), null)]
-        public void TestAllEntraIDUsers(EntraIdTestUser user)
+        [Test, TestCaseSource(typeof(EntraIdTestUsersSource), nameof(EntraIdTestUsersSource.GetSomeUsers), new object[] { UnitTestsHelper.MaxNumberOfUsersToTest })]
+        public void TestUsers(EntraIdTestUser user)
         {
             base.TestSearchAndValidateForEntraIDUser(user);
         }
@@ -99,14 +99,14 @@ namespace Yvand.EntraClaimsProvider.Tests
             base.CheckSettingsTest();
         }
 
-        [Test, TestCaseSource(typeof(EntraIdTestGroupsSource), nameof(EntraIdTestGroupsSource.GetTestData), new object[] { true })]
-        public void TestAllEntraIDGroups(EntraIdTestGroup group)
+        [Test, TestCaseSource(typeof(EntraIdTestGroupsSource), nameof(EntraIdTestGroupsSource.GetSomeGroups), new object[] { true, UnitTestsHelper.MaxNumberOfGroupsToTest })]
+        public void TestGroups(EntraIdTestGroup group)
         {
             TestSearchAndValidateForEntraIDGroup(group);
         }
 
-        [Test, TestCaseSource(typeof(EntraIdTestUsersSource), nameof(EntraIdTestUsersSource.GetTestData), null)]
-        public void TestAllEntraIDUsers(EntraIdTestUser user)
+        [Test, TestCaseSource(typeof(EntraIdTestUsersSource), nameof(EntraIdTestUsersSource.GetSomeUsers), new object[] { UnitTestsHelper.MaxNumberOfUsersToTest })]
+        public void TestUsers(EntraIdTestUser user)
         {
             base.TestSearchAndValidateForEntraIDUser(user);
         }

@@ -24,8 +24,8 @@ namespace Yvand.EntraClaimsProvider.Tests
             base.CheckSettingsTest();
         }
 
-        [Test, TestCaseSource(typeof(EntraIdTestGroupsSource), nameof(EntraIdTestGroupsSource.GetTestData), new object[] { true })]
-        public void TestAllEntraIDGroups(EntraIdTestGroup group)
+        [Test, TestCaseSource(typeof(EntraIdTestGroupsSource), nameof(EntraIdTestGroupsSource.GetSomeGroups), new object[] { true, UnitTestsHelper.MaxNumberOfGroupsToTest })]
+        public void TestGroups(EntraIdTestGroup group)
         {
             TestSearchAndValidateForEntraIDGroup(group);
         }
@@ -57,8 +57,8 @@ namespace Yvand.EntraClaimsProvider.Tests
             base.CheckSettingsTest();
         }
 
-        [Test, TestCaseSource(typeof(EntraIdTestGroupsSource), nameof(EntraIdTestGroupsSource.GetTestData), new object[] { true })]
-        public void TestAllEntraIDGroups(EntraIdTestGroup group)
+        [Test, TestCaseSource(typeof(EntraIdTestGroupsSource), nameof(EntraIdTestGroupsSource.GetSomeGroups), new object[] { true, UnitTestsHelper.MaxNumberOfGroupsToTest })]
+        public void TestGroups(EntraIdTestGroup group)
         {
             TestSearchAndValidateForEntraIDGroup(group);
         }

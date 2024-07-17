@@ -1,4 +1,4 @@
-#Requires -Modules Microsoft.Graph.Identity.SignIns, Microsoft.Graph.Users
+#Requires -Modules Microsoft.Graph.Authentication, Microsoft.Graph.Identity.DirectoryManagement, Microsoft.Graph.Identity.SignIns, Microsoft.Graph.Users, Microsoft.Graph.Groups
 
 <#
 .SYNOPSIS
@@ -94,7 +94,7 @@ $passwordProfile = @{
 }
 
 # Bulk add users
-$totalUsers = 50
+$totalUsers = 1000
 for ($i = 1; $i -le $totalUsers; $i++) {
     $accountName = "$($memberUsersNamePrefix)$("{0:D3}" -f $i)"
     $userPrincipalName = "$($accountName)@$($tenantName)"
@@ -124,7 +124,7 @@ foreach ($guestUser in $guestUsersList) {
 }
 
 # groups
-$allMemberUsersInEntra = Get-MgUser -ConsistencyLevel eventual -Count userCount -Filter "startsWith(DisplayName, '$($memberUsersNamePrefix)')" -OrderBy UserPrincipalName
+$allMemberUsersInEntra = Get-MgUser -ConsistencyLevel eventual -Count userCount -Filter "startsWith(DisplayName, '$($memberUsersNamePrefix)')" -OrderBy UserPrincipalName -Top $totalUsers
 $usersMemberOfAllGroups = [System.Linq.Enumerable]::Where($usersWithSpecificSettings, [Func[object, bool]] { param($x) $x.IsMemberOfAllGroups -eq $true })
 
 # Bulk add groups

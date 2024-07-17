@@ -2,6 +2,7 @@
 using Microsoft.SharePoint;
 using Microsoft.SharePoint.Administration;
 using Microsoft.SharePoint.Administration.Claims;
+using Microsoft.Web.Hosting.Administration;
 using Newtonsoft.Json;
 using NUnit.Framework;
 using System;
@@ -36,8 +37,8 @@ namespace Yvand.EntraClaimsProvider.Tests
         public static string DataFile_EntraId_TestGroups => TestContext.Parameters["DataFile_EntraId_TestGroups"];
         public static string TestUsersAccountNamePrefix => TestContext.Parameters["UserAccountNamePrefix"];
         public static string TestGroupsAccountNamePrefix => TestContext.Parameters["GroupAccountNamePrefix"];
-        public const int TestUsersCount = 50 + 3; // 50 members + 3 guests
-        public const int TestGroupsCount = 50;
+        public const int MaxNumberOfUsersToTest = 100;
+        public const int MaxNumberOfGroupsToTest = 100;
         static TextWriterTraceListener Logger { get; set; }
         public static EntraIDProviderConfiguration PersistedConfiguration;
         private static IEntraIDProviderSettings OriginalSettings;
@@ -186,12 +187,17 @@ namespace Yvand.EntraClaimsProvider.Tests
         }
     }
 
-    public class EntraIdTestGroup
+    public class EntraIdTestGroup : ICloneable
     {
         public string Id;
         public string DisplayName;
         public string GroupType;
         public bool SecurityEnabled = true;
+
+        public object Clone()
+        {
+            return this.MemberwiseClone();
+        }
     }
 
     public class EntraIdTestGroupSettings : EntraIdTestGroup
@@ -202,28 +208,29 @@ namespace Yvand.EntraClaimsProvider.Tests
     public class EntraIdTestGroupsSource
     {
         private static object _LockInitGroupsList = new object();
+        private static bool listInitialized = false;
         private static List<EntraIdTestGroup> _Groups;
         public static List<EntraIdTestGroup> Groups
         {
             get
             {
-                if (_Groups != null) { return _Groups; }
+                if (listInitialized) { return _Groups; }
                 lock (_LockInitGroupsList)
                 {
                     if (_Groups != null) { return _Groups; }
                     _Groups = new List<EntraIdTestGroup>();
-                    foreach (EntraIdTestGroup group in GetTestData(false))
+                    foreach (EntraIdTestGroup group in ReadDataSource(false))
                     {
                         _Groups.Add(group);
                     }
+                    listInitialized = true;
                     Trace.TraceInformation($"{DateTime.Now:s} [{typeof(EntraIdTestGroupsSource).Name}] Initialized List of {nameof(Groups)} with {_Groups.Count} items.");
                     return _Groups;
                 }
             }
         }
 
-        public static EntraIdTestGroup ASecurityEnabledGroup => Groups.First(x => x.SecurityEnabled);
-        public static EntraIdTestGroup ANonSecurityEnabledGroup => Groups.First(x => !x.SecurityEnabled);
+        private static Random RandomNumber = new Random();
 
         private static object _LockInitGroupsSettingsList = new object();
         private static List<EntraIdTestGroupSettings> _GroupsSettings;
@@ -256,7 +263,7 @@ namespace Yvand.EntraClaimsProvider.Tests
             }
         }
 
-        public static IEnumerable<EntraIdTestGroup> GetTestData(bool securityEnabledGroupsOnly = false)
+        private static IEnumerable<EntraIdTestGroup> ReadDataSource(bool securityEnabledGroupsOnly = false)
         {
             string csvPath = UnitTestsHelper.DataFile_EntraId_TestGroups;
             DataTable dt = DataTable.New.ReadCsv(csvPath);
@@ -274,6 +281,25 @@ namespace Yvand.EntraClaimsProvider.Tests
                 yield return registrationData;
             }
         }
+
+        public static IEnumerable<EntraIdTestGroup> GetSomeGroups(bool securityEnabledGroupsOnly, int count)
+        {
+            if (count > Groups.Count)
+            {
+                count = Groups.Count;
+            }
+
+            List<int> userIdxs = new List<int>(count);
+            for (int i = 0; i < count; i++)
+            {
+                userIdxs.Add(RandomNumber.Next(0, Groups.Count - 1));
+            }
+
+            foreach (int userIdx in userIdxs)
+            {
+                yield return Groups[userIdx].Clone() as EntraIdTestGroup;
+            }
+        }
     }
 
     public enum UserType
@@ -282,7 +308,7 @@ namespace Yvand.EntraClaimsProvider.Tests
         Guest
     }
 
-    public class EntraIdTestUser
+    public class EntraIdTestUser : ICloneable
     {
         public string Id;
         public string DisplayName;
@@ -290,6 +316,11 @@ namespace Yvand.EntraClaimsProvider.Tests
         public UserType UserType;
         public string Mail;
         public string GivenName;
+
+        public object Clone()
+        {
+            return this.MemberwiseClone();
+        }
     }
 
     public class EntraIdTestUserSettings : EntraIdTestUser
@@ -300,25 +331,29 @@ namespace Yvand.EntraClaimsProvider.Tests
     public class EntraIdTestUsersSource
     {
         private static object _LockInitList = new object();
+        private static bool listInitialized = false;
         private static List<EntraIdTestUser> _Users;
         public static List<EntraIdTestUser> Users
         {
             get
             {
-                if (_Users != null) { return _Users; }
+                if (listInitialized) { return _Users; }
                 lock (_LockInitList)
                 {
                     if (_Users != null) { return _Users; }
                     _Users = new List<EntraIdTestUser>();
-                    foreach (EntraIdTestUser user in GetTestData())
+                    foreach (EntraIdTestUser user in ReadDataSource())
                     {
                         _Users.Add(user);
                     }
+                    listInitialized = true;
                     Trace.TraceInformation($"{DateTime.Now:s} [{typeof(EntraIdTestUsersSource).Name}] Initialized List of {nameof(Users)} with {_Users.Count} items.");
                     return _Users;
                 }
             }
         }
+
+        private static Random RandomNumber = new Random();
 
         public static EntraIdTestUser AGuestUser => Users.FirstOrDefault(x => x.UserType == UserType.Guest);
         public static IEnumerable<EntraIdTestUser> AllGuestUsers => Users.Where(x => x.UserType == UserType.Guest);
@@ -349,7 +384,7 @@ namespace Yvand.EntraClaimsProvider.Tests
             }
         }
 
-        public static IEnumerable<EntraIdTestUser> GetTestData()
+        private static IEnumerable<EntraIdTestUser> ReadDataSource()
         {
             string csvPath = UnitTestsHelper.DataFile_EntraId_TestUsers;
             DataTable dt = DataTable.New.ReadCsv(csvPath);
@@ -363,6 +398,25 @@ namespace Yvand.EntraClaimsProvider.Tests
                 registrationData.Mail = row["mail"];
                 registrationData.GivenName = row["givenName"];
                 yield return registrationData;
+            }
+        }
+
+        public static IEnumerable<EntraIdTestUser> GetSomeUsers(int count)
+        {
+            if (count > Users.Count)
+            {
+                count = Users.Count;
+            }
+
+            List<int> userIdxs = new List<int>(count);
+            for (int i = 0; i < count; i++)
+            {
+                userIdxs.Add(RandomNumber.Next(0, Users.Count - 1));
+            }
+
+            foreach (int userIdx in userIdxs)
+            {
+                yield return Users[userIdx].Clone() as EntraIdTestUser;
             }
         }
     }

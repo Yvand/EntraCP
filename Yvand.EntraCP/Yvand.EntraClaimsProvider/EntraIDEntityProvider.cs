@@ -461,11 +461,11 @@ namespace Yvand.EntraClaimsProvider
                     }
 
                     // List of groups that users must be member of, to be returned to SharePoint
-                    string[] restrictSearchableUsersByGroupsRequestsId = null;
-                    string restrictSearchableUsersByGroups = this.Settings.RestrictSearchableUsersByGroups;
+                    string[] allowedGroupMembersOfGroupsRequestsId = null;
+                    string allowedGroupsIDs = this.Settings.RestrictSearchableUsersByGroups;
                     //restrictSearchableUsersByGroups = "c9a94341-89b5-4109-a501-2a14027b5bf0"; // testEntraCPGroup_005 - everyone member
                     //restrictSearchableUsersByGroups = "cd5f135c-9fe5-4ec2-90d9-114e9ad2e236"; // testEntraCPGroup_004 - testEntraCPUser_001 and testEntraCPUser_010 members
-                    if (!String.IsNullOrWhiteSpace(restrictSearchableUsersByGroups) && cachedTenantData.SearchableUsersId == null)
+                    if (!String.IsNullOrWhiteSpace(allowedGroupsIDs) && cachedTenantData.SearchableUsersId == null)
                     {
                         await cachedTenantData.WriteDataLock.WaitAsync().ConfigureAwait(false);
                         lockToWriteInCachedDataWasTaken = true;
@@ -476,23 +476,25 @@ namespace Yvand.EntraClaimsProvider
                         }
                         else
                         {
-                            string[] groupsId = restrictSearchableUsersByGroups.Split(new char[] { ',' }, StringSplitOptions.RemoveEmptyEntries);
-                            restrictSearchableUsersByGroupsRequestsId = new string[groupsId.Length];
+                            string[] groupsId = allowedGroupsIDs.Split(new char[] { ',' }, StringSplitOptions.RemoveEmptyEntries);
+                            allowedGroupMembersOfGroupsRequestsId = new string[groupsId.Length];
                             int groupIdx = 0;
-                            foreach (string groupId in groupsId)
+                            foreach (string allowedGroupId in groupsId)
                             {
-                                RequestInformation usersMembersOfGroupRequest = tenant.GraphService.Groups[groupId].Members.GraphUser.ToGetRequestInformation(conf =>
+                                RequestInformation allowedGroupMembersRequest = tenant.GraphService.Groups[allowedGroupId].Members.GraphUser.ToGetRequestInformation(conf =>
                                 {
                                     conf.QueryParameters = new Microsoft.Graph.Groups.Item.Members.GraphUser.GraphUserRequestBuilder.GraphUserRequestBuilderGetQueryParameters
                                     {
                                         Select = new string[] { "Id" },
+                                        // max items count per page is 999: https://learn.microsoft.com/en-us/graph/api/group-list-members?view=graph-rest-1.0&tabs=http#optional-query-parameters
+                                        Top = 100,
                                     };
                                     conf.Options = new List<IRequestOption>
                                     {
                                         retryHandlerOption,
                                     };
                                 });
-                                restrictSearchableUsersByGroupsRequestsId[groupIdx] = await batchRequestContent.AddBatchRequestStepAsync(usersMembersOfGroupRequest).ConfigureAwait(false);
+                                allowedGroupMembersOfGroupsRequestsId[groupIdx] = await batchRequestContent.AddBatchRequestStepAsync(allowedGroupMembersRequest).ConfigureAwait(false);
                                 groupIdx++;
                             }
                         }
@@ -532,28 +534,39 @@ namespace Yvand.EntraClaimsProvider
                         }
                     }
 
-                    if (restrictSearchableUsersByGroupsRequestsId != null)
+                    if (allowedGroupMembersOfGroupsRequestsId != null)
                     {
                         // only need 1 list that contains unique user ids
                         cachedTenantData.SearchableUsersId = new List<string>();
-                        foreach (string restrictSearchableUsersByGroupsRequestId in restrictSearchableUsersByGroupsRequestsId)
+                        foreach (string allowedGroupMembersOfGroupRequestId in allowedGroupMembersOfGroupsRequestsId)
                         {
-                            HttpStatusCode restrictSearchableUsersByGroupsResponseStatus;
-                            UserCollectionResponse restrictSearchableUsersByGroupsResponse = null;
-                            if (requestsStatusInBatchResponse.TryGetValue(restrictSearchableUsersByGroupsRequestId, out restrictSearchableUsersByGroupsResponseStatus))
+                            HttpStatusCode allowedGroupMembersOfGroupResponseStatus;
+                            //UserCollectionResponse restrictSearchableUsersByGroupsResponse = null;
+                            if (requestsStatusInBatchResponse.TryGetValue(allowedGroupMembersOfGroupRequestId, out allowedGroupMembersOfGroupResponseStatus))
                             {
-                                if (restrictSearchableUsersByGroupsResponseStatus == HttpStatusCode.OK)
+                                if (allowedGroupMembersOfGroupResponseStatus == HttpStatusCode.OK)
                                 {
-                                    restrictSearchableUsersByGroupsResponse = await batchResponse.GetResponseByIdAsync<UserCollectionResponse>(restrictSearchableUsersByGroupsRequestId).ConfigureAwait(false);
-                                    cachedTenantData.SearchableUsersId.AddRange(restrictSearchableUsersByGroupsResponse.Value.Where(x => !cachedTenantData.SearchableUsersId.Contains(x.Id)).Select(x => x.Id).ToList());
+                                    UserCollectionResponse allowedGroupMembersOfGroupResponse = await batchResponse.GetResponseByIdAsync<UserCollectionResponse>(allowedGroupMembersOfGroupRequestId).ConfigureAwait(false);
+                                    PageIterator<User, UserCollectionResponse> allowedGroupMembersPageIterator = PageIterator<User, UserCollectionResponse>.CreatePageIterator(
+                                        tenant.GraphService,
+                                        allowedGroupMembersOfGroupResponse,
+                                        (user) =>
+                                        {
+                                            if (!cachedTenantData.SearchableUsersId.Contains(user.Id))
+                                            {
+                                                cachedTenantData.SearchableUsersId.Add(user.Id);
+                                            }
+                                            return true;
+                                        });
+                                    await allowedGroupMembersPageIterator.IterateAsync().ConfigureAwait(false);
                                 }
-                                else if (restrictSearchableUsersByGroupsResponseStatus == HttpStatusCode.NotFound)
+                                else if (allowedGroupMembersOfGroupResponseStatus == HttpStatusCode.NotFound)
                                 {
                                     Logger.Log($"[{ClaimsProviderName}] Request inside the batch to get the members of a group on tenant \"{tenant.Name}\" returned nothing (the group was not found).", TraceSeverity.Verbose, EventSeverity.Information, TraceCategory.Lookup);
                                 }
                                 else
                                 {
-                                    Logger.Log($"[{ClaimsProviderName}] Request inside the batch to get the members of a group on tenant \"{tenant.Name}\" returned unexpected status '{restrictSearchableUsersByGroupsResponseStatus}'", TraceSeverity.Unexpected, EventSeverity.Error, TraceCategory.Lookup);
+                                    Logger.Log($"[{ClaimsProviderName}] Request inside the batch to get the members of a group on tenant \"{tenant.Name}\" returned unexpected status '{allowedGroupMembersOfGroupResponseStatus}'", TraceSeverity.Unexpected, EventSeverity.Error, TraceCategory.Lookup);
                                 }
                             }
                         }

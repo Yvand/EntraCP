@@ -219,7 +219,7 @@ namespace Yvand.EntraClaimsProvider.Tests
         public virtual void TestAugmentationOfGoldUsersAgainstRandomGroups()
         {
             Random rnd = new Random();
-            int randomIdx = rnd.Next(0, UnitTestsHelper.TestGroupsCount - 1);
+            int randomIdx = rnd.Next(0, EntraIdTestGroupsSource.Groups.Count - 1);
             Trace.TraceInformation($"{DateTime.Now:s} [{this.GetType().Name}] TestAugmentationOfGoldUsersAgainstRandomGroups: Get group in EntraIdTestGroupsSource.Groups at index {randomIdx}.");
             EntraIdTestGroup randomGroup = null;
             try

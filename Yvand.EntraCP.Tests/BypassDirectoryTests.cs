@@ -9,8 +9,8 @@ namespace Yvand.EntraClaimsProvider.Tests
     [Parallelizable(ParallelScope.Children)]
     public class BypassDirectoryOnClaimTypesTests : ClaimsProviderTestsBase
     {
-        string PrefixBypassUserSearch = "bypass-user:";
-        string PrefixBypassGroupSearch = "bypass-group:";
+        const string PrefixBypassUserSearch = "bypass-user:";
+        const string PrefixBypassGroupSearch = "bypass-group:";
         public override void InitializeSettings()
         {
             base.InitializeSettings();
@@ -26,8 +26,8 @@ namespace Yvand.EntraClaimsProvider.Tests
             base.CheckSettingsTest();
         }
 
-        [Test, TestCaseSource(typeof(EntraIdTestUsersSource), nameof(EntraIdTestUsersSource.GetTestData), null)]
-        public void TestAllEntraIDUsers(EntraIdTestUser user)
+        [Test, TestCaseSource(typeof(EntraIdTestUsersSource), nameof(EntraIdTestUsersSource.GetSomeUsers), new object[] { UnitTestsHelper.MaxNumberOfUsersToTest })]
+        public void TestUsers(EntraIdTestUser user)
         {
             base.TestSearchAndValidateForEntraIDUser(user);
             user.UserPrincipalName = user.DisplayName;
@@ -36,8 +36,8 @@ namespace Yvand.EntraClaimsProvider.Tests
             base.TestSearchAndValidateForEntraIDUser(user);
         }
 
-        [Test, TestCaseSource(typeof(EntraIdTestGroupsSource), nameof(EntraIdTestGroupsSource.GetTestData), new object[] { true })]
-        public void TestAllEntraIDGroups(EntraIdTestGroup group)
+        [Test, TestCaseSource(typeof(EntraIdTestGroupsSource), nameof(EntraIdTestGroupsSource.GetSomeGroups), new object[] { true, UnitTestsHelper.MaxNumberOfGroupsToTest })]
+        public void TestGroups(EntraIdTestGroup group)
         {
             TestSearchAndValidateForEntraIDGroup(group);
             group.Id = group.DisplayName;
@@ -45,9 +45,9 @@ namespace Yvand.EntraClaimsProvider.Tests
             TestSearchAndValidateForEntraIDGroup(group);
         }
 
-        [TestCase("bypass-user:externalUser@contoso.com", 1, "externalUser@contoso.com")]
-        [TestCase("bypass-user:", 0, "")]
-        [TestCase("bypass-group:", 0, "")]
+        [TestCase(PrefixBypassUserSearch + "externalUser@contoso.com", 1, "externalUser@contoso.com")]
+        [TestCase(PrefixBypassUserSearch, 0, "")]
+        [TestCase(PrefixBypassGroupSearch, 0, "")]
         public void TestBypassDirectoryByClaimType(string inputValue, int expectedCount, string expectedClaimValue)
         {
             TestSearchOperation(inputValue, expectedCount, expectedClaimValue);
@@ -77,14 +77,14 @@ namespace Yvand.EntraClaimsProvider.Tests
             base.CheckSettingsTest();
         }
 
-        [Test, TestCaseSource(typeof(EntraIdTestGroupsSource), nameof(EntraIdTestGroupsSource.GetTestData), new object[] { true })]
-        public void TestAllEntraIDGroups(EntraIdTestGroup group)
+        [Test, TestCaseSource(typeof(EntraIdTestGroupsSource), nameof(EntraIdTestGroupsSource.GetSomeGroups), new object[] { true, UnitTestsHelper.MaxNumberOfGroupsToTest })]
+        public void TestGroups(EntraIdTestGroup group)
         {
             TestSearchAndValidateForEntraIDGroup(group);
         }
 
-        [Test, TestCaseSource(typeof(EntraIdTestUsersSource), nameof(EntraIdTestUsersSource.GetTestData), null)]
-        public void TestAllEntraIDUsers(EntraIdTestUser user)
+        [Test, TestCaseSource(typeof(EntraIdTestUsersSource), nameof(EntraIdTestUsersSource.GetSomeUsers), new object[] { UnitTestsHelper.MaxNumberOfUsersToTest })]
+        public void TestUsers(EntraIdTestUser user)
         {
             base.TestSearchAndValidateForEntraIDUser(user);
         }
