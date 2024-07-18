@@ -219,16 +219,16 @@ namespace Yvand.EntraClaimsProvider.Tests
         public virtual void TestAugmentationOfGoldUsersAgainstRandomGroups()
         {
             Random rnd = new Random();
-            int randomIdx = rnd.Next(0, TestEntitySourceManager.TestGroupsSource.Entities.Count - 1);
+            int randomIdx = rnd.Next(0, TestEntitySourceManager.AllTestGroups.Count - 1);
             Trace.TraceInformation($"{DateTime.Now:s} [{this.GetType().Name}] TestAugmentationOfGoldUsersAgainstRandomGroups: Get group in EntraIdTestGroupsSource.Groups at index {randomIdx}.");
             EntraIdTestGroup randomGroup = null;
             try
             {
-                randomGroup = TestEntitySourceManager.TestGroupsSource.Entities[randomIdx];
+                randomGroup = TestEntitySourceManager.AllTestGroups[randomIdx];
             }
             catch (ArgumentOutOfRangeException)
             {
-                string errorMessage = $"{DateTime.Now:s} [{this.GetType().Name}] TestAugmentationOfGoldUsersAgainstRandomGroups: Could not get group in EntraIdTestGroupsSource.Groups at index {randomIdx}. EntraIdTestGroupsSource.Groups has {TestEntitySourceManager.TestGroupsSource.Entities.Count} items.";
+                string errorMessage = $"{DateTime.Now:s} [{this.GetType().Name}] TestAugmentationOfGoldUsersAgainstRandomGroups: Could not get group in EntraIdTestGroupsSource.Groups at index {randomIdx}. EntraIdTestGroupsSource.Groups has {TestEntitySourceManager.AllTestGroups.Count} items.";
                 Trace.TraceError(errorMessage);
                 throw new ArgumentOutOfRangeException(errorMessage);
             }

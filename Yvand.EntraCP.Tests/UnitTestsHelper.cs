@@ -1,4 +1,5 @@
 ﻿using DataAccess;
+using Microsoft.Graph.Models;
 using Microsoft.SharePoint;
 using Microsoft.SharePoint.Administration;
 using Microsoft.SharePoint.Administration.Claims;
@@ -37,7 +38,7 @@ namespace Yvand.EntraClaimsProvider.Tests
         public static string DataFile_EntraId_TestGroups => TestContext.Parameters["DataFile_EntraId_TestGroups"];
         public static string TestUsersAccountNamePrefix => TestContext.Parameters["UserAccountNamePrefix"];
         public static string TestGroupsAccountNamePrefix => TestContext.Parameters["GroupAccountNamePrefix"];
-        
+
         static TextWriterTraceListener Logger { get; set; }
         public static EntraIDProviderConfiguration PersistedConfiguration;
         private static IEntraIDProviderSettings OriginalSettings;
@@ -197,7 +198,7 @@ namespace Yvand.EntraClaimsProvider.Tests
         }
     }
 
-    public class EntraIdTestGroup : TestEntity 
+    public class EntraIdTestGroup : TestEntity
     {
         public string GroupType;
         public bool SecurityEnabled = true;
@@ -206,36 +207,25 @@ namespace Yvand.EntraClaimsProvider.Tests
     public class EntraIdTestGroupSettings : EntraIdTestGroup
     {
         public bool AllTestUsersAreMembers = false;
-
-        private static object _LockInitGroupsSettingsList = new object();
-        private static List<EntraIdTestGroupSettings> _GroupsSettings;
-        public static List<EntraIdTestGroupSettings> GroupsSettings
+        public static List<EntraIdTestGroupSettings> GroupsSettings = new List<EntraIdTestGroupSettings>
         {
-            get
-            {
-                if (_GroupsSettings != null) { return _GroupsSettings; }
-                lock (_LockInitGroupsSettingsList)
-                {
-                    if (_GroupsSettings != null) { return _GroupsSettings; }
-                    _GroupsSettings = new List<EntraIdTestGroupSettings>
-                        {
-                            new EntraIdTestGroupSettings { DisplayName = $"{UnitTestsHelper.TestGroupsAccountNamePrefix}001" , SecurityEnabled = false, AllTestUsersAreMembers = true},
-                            new EntraIdTestGroupSettings { DisplayName = $"{UnitTestsHelper.TestGroupsAccountNamePrefix}005" , SecurityEnabled = true, AllTestUsersAreMembers = true },
-                            new EntraIdTestGroupSettings { DisplayName = $"{UnitTestsHelper.TestGroupsAccountNamePrefix}008" , SecurityEnabled = false, AllTestUsersAreMembers = false },
-                            new EntraIdTestGroupSettings { DisplayName = $"{UnitTestsHelper.TestGroupsAccountNamePrefix}018" , SecurityEnabled = false, AllTestUsersAreMembers = true },
-                            new EntraIdTestGroupSettings { DisplayName = $"{UnitTestsHelper.TestGroupsAccountNamePrefix}025" , SecurityEnabled = true, AllTestUsersAreMembers = true },
-                            new EntraIdTestGroupSettings { DisplayName = $"{UnitTestsHelper.TestGroupsAccountNamePrefix}028" , SecurityEnabled = false, AllTestUsersAreMembers = false, },
-                            new EntraIdTestGroupSettings { DisplayName = $"{UnitTestsHelper.TestGroupsAccountNamePrefix}038" , SecurityEnabled = false, AllTestUsersAreMembers = true, },
-                            new EntraIdTestGroupSettings { DisplayName = $"{UnitTestsHelper.TestGroupsAccountNamePrefix}048" , SecurityEnabled = false, AllTestUsersAreMembers = false, },
-                        };
-                    foreach (EntraIdTestGroupSettings groupsSetting in _GroupsSettings)
-                    {
-                        groupsSetting.Id = TestEntitySourceManager.TestGroupsSource.Entities.First(x => x.DisplayName == groupsSetting.DisplayName).Id;
-                    }
-                    Trace.TraceInformation($"{DateTime.Now:s} [{typeof(EntraIdTestGroupSettings).Name}] Initialized List of {nameof(GroupsSettings)} with {_GroupsSettings.Count} items.");
-                }
-                return _GroupsSettings;
-            }
+            new EntraIdTestGroupSettings { DisplayName = $"{UnitTestsHelper.TestGroupsAccountNamePrefix}001" , SecurityEnabled = false, AllTestUsersAreMembers = true},
+            new EntraIdTestGroupSettings { DisplayName = $"{UnitTestsHelper.TestGroupsAccountNamePrefix}005" , SecurityEnabled = true, AllTestUsersAreMembers = true },
+            new EntraIdTestGroupSettings { DisplayName = $"{UnitTestsHelper.TestGroupsAccountNamePrefix}008" , SecurityEnabled = false, AllTestUsersAreMembers = false },
+            new EntraIdTestGroupSettings { DisplayName = $"{UnitTestsHelper.TestGroupsAccountNamePrefix}018" , SecurityEnabled = false, AllTestUsersAreMembers = true },
+            new EntraIdTestGroupSettings { DisplayName = $"{UnitTestsHelper.TestGroupsAccountNamePrefix}025" , SecurityEnabled = true, AllTestUsersAreMembers = true },
+            new EntraIdTestGroupSettings { DisplayName = $"{UnitTestsHelper.TestGroupsAccountNamePrefix}028" , SecurityEnabled = false, AllTestUsersAreMembers = false, },
+            new EntraIdTestGroupSettings { DisplayName = $"{UnitTestsHelper.TestGroupsAccountNamePrefix}038" , SecurityEnabled = false, AllTestUsersAreMembers = true, },
+            new EntraIdTestGroupSettings { DisplayName = $"{UnitTestsHelper.TestGroupsAccountNamePrefix}048" , SecurityEnabled = false, AllTestUsersAreMembers = false, },
+            //TestEntitySourceManager.AllTestGroups.First(x => x.DisplayName == $"{UnitTestsHelper.TestGroupsAccountNamePrefix}001");
+        };
+
+        public EntraIdTestGroupSettings()
+        {
+            EntraIdTestGroupSettings group = TestEntitySourceManager.AllTestGroups.First(x => x.DisplayName == $"{UnitTestsHelper.TestGroupsAccountNamePrefix}001") as EntraIdTestGroupSettings;
+            group.SecurityEnabled = false;
+            group.AllTestUsersAreMembers = false;
+            GroupsSettings.Add( group );
         }
     }
 
@@ -250,38 +240,22 @@ namespace Yvand.EntraClaimsProvider.Tests
         public string UserPrincipalName;
         public UserType UserType;
         public string Mail;
-        public string GivenName;        
+        public string GivenName;
     }
 
     public class EntraIdTestUserSettings : EntraIdTestUser
     {
         public bool IsMemberOfAllGroups = false;
-
-        private static object _LockInitUsersWithSpecificSettingsList = new object();
-        private static List<EntraIdTestUserSettings> _UsersWithSpecificSettings;
-        public static List<EntraIdTestUserSettings> UsersWithSpecificSettings
+        public static List<EntraIdTestUserSettings> UsersWithSpecificSettings = new List<EntraIdTestUserSettings>
         {
-            get
-            {
-                if (_UsersWithSpecificSettings != null) { return _UsersWithSpecificSettings; }
-                lock (_LockInitUsersWithSpecificSettingsList)
-                {
-                    if (_UsersWithSpecificSettings != null) { return _UsersWithSpecificSettings; }
-                    _UsersWithSpecificSettings = new List<EntraIdTestUserSettings>
-                        {
-                            new EntraIdTestUserSettings { UserPrincipalName = $"{UnitTestsHelper.TestUsersAccountNamePrefix}001@{UnitTestsHelper.TenantConnection.Name}" , IsMemberOfAllGroups = true },
-                            new EntraIdTestUserSettings { UserPrincipalName = $"{UnitTestsHelper.TestUsersAccountNamePrefix}010@{UnitTestsHelper.TenantConnection.Name}" , IsMemberOfAllGroups = true },
-                            new EntraIdTestUserSettings { UserPrincipalName = $"{UnitTestsHelper.TestUsersAccountNamePrefix}011@{UnitTestsHelper.TenantConnection.Name}" , IsMemberOfAllGroups = true },
-                            new EntraIdTestUserSettings { UserPrincipalName = $"{UnitTestsHelper.TestUsersAccountNamePrefix}012@{UnitTestsHelper.TenantConnection.Name}" , IsMemberOfAllGroups = true },
-                            new EntraIdTestUserSettings { UserPrincipalName = $"{UnitTestsHelper.TestUsersAccountNamePrefix}013@{UnitTestsHelper.TenantConnection.Name}" , IsMemberOfAllGroups = true },
-                            new EntraIdTestUserSettings { UserPrincipalName = $"{UnitTestsHelper.TestUsersAccountNamePrefix}014@{UnitTestsHelper.TenantConnection.Name}" , IsMemberOfAllGroups = true },
-                            new EntraIdTestUserSettings { UserPrincipalName = $"{UnitTestsHelper.TestUsersAccountNamePrefix}015@{UnitTestsHelper.TenantConnection.Name}" , IsMemberOfAllGroups = true },
-                        };
-                }
-                Trace.TraceInformation($"{DateTime.Now:s} [{typeof(EntraIdTestUserSettings).Name}] Initialized List of {nameof(UsersWithSpecificSettings)} with {_UsersWithSpecificSettings.Count} items.");
-                return _UsersWithSpecificSettings;
-            }
-        }
+            new EntraIdTestUserSettings { UserPrincipalName = $"{UnitTestsHelper.TestUsersAccountNamePrefix}001@{UnitTestsHelper.TenantConnection.Name}" , IsMemberOfAllGroups = true },
+            new EntraIdTestUserSettings { UserPrincipalName = $"{UnitTestsHelper.TestUsersAccountNamePrefix}010@{UnitTestsHelper.TenantConnection.Name}" , IsMemberOfAllGroups = true },
+            new EntraIdTestUserSettings { UserPrincipalName = $"{UnitTestsHelper.TestUsersAccountNamePrefix}011@{UnitTestsHelper.TenantConnection.Name}" , IsMemberOfAllGroups = true },
+            new EntraIdTestUserSettings { UserPrincipalName = $"{UnitTestsHelper.TestUsersAccountNamePrefix}012@{UnitTestsHelper.TenantConnection.Name}" , IsMemberOfAllGroups = true },
+            new EntraIdTestUserSettings { UserPrincipalName = $"{UnitTestsHelper.TestUsersAccountNamePrefix}013@{UnitTestsHelper.TenantConnection.Name}" , IsMemberOfAllGroups = true },
+            new EntraIdTestUserSettings { UserPrincipalName = $"{UnitTestsHelper.TestUsersAccountNamePrefix}014@{UnitTestsHelper.TenantConnection.Name}" , IsMemberOfAllGroups = true },
+            new EntraIdTestUserSettings { UserPrincipalName = $"{UnitTestsHelper.TestUsersAccountNamePrefix}015@{UnitTestsHelper.TenantConnection.Name}" , IsMemberOfAllGroups = true },
+        };
     }
 
     public class TestEntitySource<T> where T : TestEntity, new()
@@ -365,13 +339,21 @@ namespace Yvand.EntraClaimsProvider.Tests
             {
                 yield return Entities[userIdx].Clone() as T;
             }
-        }        
+        }
     }
 
     public class TestEntitySourceManager
     {
-        public static TestEntitySource<EntraIdTestUser> TestUsersSource = new TestEntitySource<EntraIdTestUser>();
-        public static TestEntitySource<EntraIdTestGroup> TestGroupsSource = new TestEntitySource<EntraIdTestGroup>();
+        private static TestEntitySource<EntraIdTestUser> TestUsersSource = new TestEntitySource<EntraIdTestUser>();
+        public static List<EntraIdTestUser> AllTestUsers
+        {
+            get => TestUsersSource.Entities;
+        }
+        private static TestEntitySource<EntraIdTestGroup> TestGroupsSource = new TestEntitySource<EntraIdTestGroup>();
+        public static List<EntraIdTestGroup> AllTestGroups
+        {
+            get => TestGroupsSource.Entities;
+        }
         public const int MaxNumberOfUsersToTest = 100;
         public const int MaxNumberOfGroupsToTest = 100;
 
@@ -380,10 +362,20 @@ namespace Yvand.EntraClaimsProvider.Tests
             return TestUsersSource.GetSomeEntities(count, null);
         }
 
+        public static EntraIdTestUser GetOneUser(string upnPrefix)
+        {
+            return TestUsersSource.Entities.First(x => x.UserPrincipalName.StartsWith(upnPrefix)).Clone() as EntraIdTestUser;
+        }
+
         public static IEnumerable<EntraIdTestGroup> GetSomeGroups(int count, bool securityEnabledOnly)
         {
             Func<EntraIdTestGroup, bool> securityEnabledOnlyFilter = x => x.SecurityEnabled == securityEnabledOnly;
             return TestGroupsSource.GetSomeEntities(count, securityEnabledOnlyFilter);
+        }
+
+        public static EntraIdTestGroup GetOneGroup(bool securityEnabledOnly)
+        {
+            return TestGroupsSource.Entities.First(x => x.SecurityEnabled == securityEnabledOnly).Clone() as EntraIdTestGroup;
         }
     }
 }
