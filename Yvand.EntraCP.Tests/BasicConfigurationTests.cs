@@ -20,7 +20,7 @@ namespace Yvand.EntraClaimsProvider.Tests
             base.CheckSettingsTest();
         }
 
-        [Test, TestCaseSource(typeof(EntraIdTestGroupsSource), nameof(EntraIdTestGroupsSource.GetSomeGroups), new object[] { true, UnitTestsHelper.MaxNumberOfGroupsToTest })]
+        [Test, TestCaseSource(typeof(TestEntitySourceManager), nameof(TestEntitySourceManager.GetSomeGroups), new object[] { TestEntitySourceManager.MaxNumberOfGroupsToTest, true })]
         public void TestGroups(EntraIdTestGroup group)
         {
             TestSearchAndValidateForEntraIDGroup(group);
@@ -33,7 +33,7 @@ namespace Yvand.EntraClaimsProvider.Tests
         //    TestSearchAndValidateForEntraIDGroup(group);
         //}
 
-        [Test, TestCaseSource(typeof(EntraIdTestUsersSource), nameof(EntraIdTestUsersSource.GetSomeUsers), new object[] { UnitTestsHelper.MaxNumberOfUsersToTest })]
+        [Test, TestCaseSource(typeof(TestEntitySourceManager), nameof(TestEntitySourceManager.GetSomeUsers), new object[] { TestEntitySourceManager.MaxNumberOfUsersToTest })]
         public void TestUsers(EntraIdTestUser user)
         {
             base.TestSearchAndValidateForEntraIDUser(user);
@@ -58,7 +58,7 @@ namespace Yvand.EntraClaimsProvider.Tests
         [TestCase("testEntraCPUser_020")]
         public void DebugTestUser(string upnPrefix)
         {
-            EntraIdTestUser user = EntraIdTestUsersSource.Users.Find(x => x.UserPrincipalName.StartsWith(upnPrefix));
+            EntraIdTestUser user = TestEntitySourceManager.TestUsersSource.Entities.Find(x => x.UserPrincipalName.StartsWith(upnPrefix));
             base.TestSearchAndValidateForEntraIDUser(user);
         }
 
