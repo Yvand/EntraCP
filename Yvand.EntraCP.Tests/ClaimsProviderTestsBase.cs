@@ -172,8 +172,8 @@ namespace Yvand.EntraClaimsProvider.Tests
                         if (!groupWithAllTestUsersAreMembersFound)
                         {
 
-                            EntraIdTestUserSettings userSettings = EntraIdTestUserSettings.UsersWithSpecificSettings.FirstOrDefault(x => String.Equals(x.UserPrincipalName, entity.UserPrincipalName, StringComparison.InvariantCultureIgnoreCase));
-                            if (userSettings == null) { userSettings = new EntraIdTestUserSettings(); }
+                            EntraIdTestUser userSettings = TestEntitySourceManager.UsersWithCustomSettings.FirstOrDefault(x => String.Equals(x.UserPrincipalName, entity.UserPrincipalName, StringComparison.InvariantCultureIgnoreCase));
+                            if (userSettings == null) { userSettings = new EntraIdTestUser(); }
                             if (!userSettings.IsMemberOfAllGroups)
                             {
                                 shouldValidate = false;
@@ -234,7 +234,7 @@ namespace Yvand.EntraClaimsProvider.Tests
             }
             bool shouldBeMember = Settings.FilterSecurityEnabledGroupsOnly && !randomGroup.SecurityEnabled ? false : true;
 
-            foreach (string userPrincipalName in EntraIdTestUserSettings.UsersWithSpecificSettings.Where(x => x.IsMemberOfAllGroups).Select(x => x.UserPrincipalName))
+            foreach (string userPrincipalName in TestEntitySourceManager.UsersWithCustomSettings.Where(x => x.IsMemberOfAllGroups).Select(x => x.UserPrincipalName))
             {
                 TestAugmentationOperation(userPrincipalName, shouldBeMember, randomGroup.Id);
             }

@@ -217,21 +217,7 @@ namespace Yvand.EntraClaimsProvider.Tests
         public UserType UserType;
         public string Mail;
         public string GivenName;
-    }
-
-    public class EntraIdTestUserSettings : EntraIdTestUser
-    {
         public bool IsMemberOfAllGroups = false;
-        public static List<EntraIdTestUserSettings> UsersWithSpecificSettings = new List<EntraIdTestUserSettings>
-        {
-            new EntraIdTestUserSettings { UserPrincipalName = $"{UnitTestsHelper.TestUsersAccountNamePrefix}001@{UnitTestsHelper.TenantConnection.Name}" , IsMemberOfAllGroups = true },
-            new EntraIdTestUserSettings { UserPrincipalName = $"{UnitTestsHelper.TestUsersAccountNamePrefix}010@{UnitTestsHelper.TenantConnection.Name}" , IsMemberOfAllGroups = true },
-            new EntraIdTestUserSettings { UserPrincipalName = $"{UnitTestsHelper.TestUsersAccountNamePrefix}011@{UnitTestsHelper.TenantConnection.Name}" , IsMemberOfAllGroups = true },
-            new EntraIdTestUserSettings { UserPrincipalName = $"{UnitTestsHelper.TestUsersAccountNamePrefix}012@{UnitTestsHelper.TenantConnection.Name}" , IsMemberOfAllGroups = true },
-            new EntraIdTestUserSettings { UserPrincipalName = $"{UnitTestsHelper.TestUsersAccountNamePrefix}013@{UnitTestsHelper.TenantConnection.Name}" , IsMemberOfAllGroups = true },
-            new EntraIdTestUserSettings { UserPrincipalName = $"{UnitTestsHelper.TestUsersAccountNamePrefix}014@{UnitTestsHelper.TenantConnection.Name}" , IsMemberOfAllGroups = true },
-            new EntraIdTestUserSettings { UserPrincipalName = $"{UnitTestsHelper.TestUsersAccountNamePrefix}015@{UnitTestsHelper.TenantConnection.Name}" , IsMemberOfAllGroups = true },
-        };
     }
 
     public class TestEntitySource<T> where T : TestEntity, new()
@@ -320,6 +306,38 @@ namespace Yvand.EntraClaimsProvider.Tests
 
     public class TestEntitySourceManager
     {
+        private static EntraIdTestUser[] UsersWithSpecificSettingsDefinition = new[]
+        {
+            new EntraIdTestUser { UserPrincipalName = $"{UnitTestsHelper.TestUsersAccountNamePrefix}001@{UnitTestsHelper.TenantConnection.Name}" , IsMemberOfAllGroups = true },
+            new EntraIdTestUser { UserPrincipalName = $"{UnitTestsHelper.TestUsersAccountNamePrefix}010@{UnitTestsHelper.TenantConnection.Name}" , IsMemberOfAllGroups = true },
+            new EntraIdTestUser { UserPrincipalName = $"{UnitTestsHelper.TestUsersAccountNamePrefix}011@{UnitTestsHelper.TenantConnection.Name}" , IsMemberOfAllGroups = true },
+            new EntraIdTestUser { UserPrincipalName = $"{UnitTestsHelper.TestUsersAccountNamePrefix}012@{UnitTestsHelper.TenantConnection.Name}" , IsMemberOfAllGroups = true },
+            new EntraIdTestUser { UserPrincipalName = $"{UnitTestsHelper.TestUsersAccountNamePrefix}013@{UnitTestsHelper.TenantConnection.Name}" , IsMemberOfAllGroups = true },
+            new EntraIdTestUser { UserPrincipalName = $"{UnitTestsHelper.TestUsersAccountNamePrefix}014@{UnitTestsHelper.TenantConnection.Name}" , IsMemberOfAllGroups = true },
+            new EntraIdTestUser { UserPrincipalName = $"{UnitTestsHelper.TestUsersAccountNamePrefix}015@{UnitTestsHelper.TenantConnection.Name}" , IsMemberOfAllGroups = true },
+        };
+        private static object _LockInitUsersWithCustomSettings = new object();
+        private static List<EntraIdTestUser> _UsersWithCustomSettings;
+        public static List<EntraIdTestUser> UsersWithCustomSettings
+        {
+            get
+            {
+                if (_UsersWithCustomSettings != null) { return _UsersWithCustomSettings; }
+                lock (_LockInitGroupsWithCustomSettings)
+                {
+                    if (_UsersWithCustomSettings != null) { return _UsersWithCustomSettings; }
+                    _UsersWithCustomSettings = new List<EntraIdTestUser>();
+                    foreach (EntraIdTestUser userDefinition in UsersWithSpecificSettingsDefinition)
+                    {
+                        EntraIdTestUser user = AllTestUsers.First(x => String.Equals(x.UserPrincipalName, userDefinition.UserPrincipalName, StringComparison.OrdinalIgnoreCase));
+                        user.IsMemberOfAllGroups = userDefinition.IsMemberOfAllGroups;
+                        _UsersWithCustomSettings.Add(user);
+                    }
+                }
+                return _UsersWithCustomSettings;
+            }
+        }
+
         private static EntraIdTestGroup[] GroupsWithCustomSettingsDefinition = new[]
         {
             new EntraIdTestGroup { DisplayName = $"{UnitTestsHelper.TestGroupsAccountNamePrefix}001" , SecurityEnabled = false, AllTestUsersAreMembers = true},
