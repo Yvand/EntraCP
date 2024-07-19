@@ -24,7 +24,7 @@ namespace Yvand.EntraClaimsProvider.Tests
         }
 
         [Test, TestCaseSource(typeof(TestEntitySourceManager), nameof(TestEntitySourceManager.GetSomeUsers), new object[] { TestEntitySourceManager.MaxNumberOfUsersToTest })]
-        public void TestUsers(EntraIdTestUser user)
+        public void TestUsers(TestUser user)
         {
             base.TestSearchAndValidateForEntraIDUser(user);
         }
@@ -34,7 +34,7 @@ namespace Yvand.EntraClaimsProvider.Tests
         [TestCase("testEntraCPUser_020")]
         public void DebugTestUser(string upnPrefix)
         {
-            EntraIdTestUser user = TestEntitySourceManager.AllTestUsers.Find(x => x.UserPrincipalName.StartsWith(upnPrefix));
+            TestUser user = TestEntitySourceManager.AllTestUsers.Find(x => x.UserPrincipalName.StartsWith(upnPrefix));
             base.TestSearchAndValidateForEntraIDUser(user);
         }
 #endif
@@ -63,7 +63,7 @@ namespace Yvand.EntraClaimsProvider.Tests
         }
 
         [Test, TestCaseSource(typeof(TestEntitySourceManager), nameof(TestEntitySourceManager.GetSomeUsers), new object[] { TestEntitySourceManager.MaxNumberOfUsersToTest })]
-        public void TestUsers(EntraIdTestUser user)
+        public void TestUsers(TestUser user)
         {
             base.TestSearchAndValidateForEntraIDUser(user);
         }
@@ -73,7 +73,7 @@ namespace Yvand.EntraClaimsProvider.Tests
         [TestCase("testEntraCPUser_020")]
         public void DebugTestUser(string upnPrefix)
         {
-            EntraIdTestUser user = TestEntitySourceManager.GetOneUser(upnPrefix);
+            TestUser user = TestEntitySourceManager.GetOneUser(upnPrefix);
             base.TestSearchAndValidateForEntraIDUser(user);
         }
 #endif
@@ -96,14 +96,14 @@ namespace Yvand.EntraClaimsProvider.Tests
         [TestCase("testEntraCPUser_020")]
         public void DebugTestUser(string upnPrefix)
         {
-            EntraIdTestUser user = TestEntitySourceManager.GetOneUser(upnPrefix);
+            TestUser user = TestEntitySourceManager.GetOneUser(upnPrefix);
             base.TestSearchAndValidateForEntraIDUser(user);
         }
 
         [Test]
         public void DebugGuestUser()
         {
-            EntraIdTestUser user = TestEntitySourceManager.AllTestUsers.Find(x => x.Mail.StartsWith("testEntraCPGuestUser_001"));
+            TestUser user = TestEntitySourceManager.AllTestUsers.Find(x => x.Mail.StartsWith("testEntraCPGuestUser_001"));
             base.TestSearchAndValidateForEntraIDUser(user);
         }
     }

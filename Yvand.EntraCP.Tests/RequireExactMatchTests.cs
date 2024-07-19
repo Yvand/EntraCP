@@ -22,7 +22,7 @@ namespace Yvand.EntraClaimsProvider.Tests
         }
 
         [Test, TestCaseSource(typeof(TestEntitySourceManager), nameof(TestEntitySourceManager.GetSomeUsers), new object[] { TestEntitySourceManager.MaxNumberOfUsersToTest })]
-        public void TestUsers(EntraIdTestUser user)
+        public void TestUsers(TestUser user)
         {
             // Input is not the full UPN value: it should not return any result
             TestSearchOperation(user.UserPrincipalName.Substring(0, 5), 0, String.Empty);
