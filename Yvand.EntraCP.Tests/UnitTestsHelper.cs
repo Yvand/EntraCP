@@ -214,19 +214,18 @@ namespace Yvand.EntraClaimsProvider.Tests
     {
         Member,
         Guest
-    }    
+    }
 
-    public class TestEntitySource<T> where T : TestEntity, new()
+    public class TestEntitySource<T> where T : TestEntity
     {
-        private object _LockInitGroupsList = new object();
-        private bool listInitialized = false;
+        private object _LockInitEntitiesList = new object();
         private List<T> _Entities;
         public List<T> Entities
         {
             get
             {
-                if (listInitialized) { return _Entities; }
-                lock (_LockInitGroupsList)
+                if (_Entities != null) { return _Entities; }
+                lock (_LockInitEntitiesList)
                 {
                     if (_Entities != null) { return _Entities; }
                     _Entities = new List<T>();
@@ -234,12 +233,12 @@ namespace Yvand.EntraClaimsProvider.Tests
                     {
                         _Entities.Add(entity);
                     }
-                    listInitialized = true;
                     Trace.TraceInformation($"{DateTime.Now:s} [{typeof(T).Name}] Initialized List of {nameof(Entities)} with {Entities.Count} items.");
                     return _Entities;
                 }
             }
         }
+
         private Random RandomNumber = new Random();
 
 
@@ -257,26 +256,24 @@ namespace Yvand.EntraClaimsProvider.Tests
             DataTable dt = DataTable.New.ReadCsv(csvPath);
             foreach (Row row in dt.Rows)
             {
+                TestEntity registrationData;
                 if (typeof(T) == typeof(TestUser))
                 {
-                    TestUser registrationData = new T() as TestUser;
-                    registrationData.Id = row["id"];
-                    registrationData.DisplayName = row["displayName"];
-                    registrationData.UserPrincipalName = row["userPrincipalName"];
-                    registrationData.UserType = String.Equals(row["userType"], ClaimsProviderConstants.MEMBER_USERTYPE, StringComparison.InvariantCultureIgnoreCase) ? UserType.Member : UserType.Guest;
-                    registrationData.Mail = row["mail"];
-                    registrationData.GivenName = row["givenName"];
-                    yield return registrationData as T;
+                    registrationData = new TestUser();
+                    ((TestUser)registrationData).UserPrincipalName = row["userPrincipalName"];
+                    ((TestUser)registrationData).UserType = String.Equals(row["userType"], ClaimsProviderConstants.MEMBER_USERTYPE, StringComparison.InvariantCultureIgnoreCase) ? UserType.Member : UserType.Guest;
+                    ((TestUser)registrationData).Mail = row["mail"];
+                    ((TestUser)registrationData).GivenName = row["givenName"];
                 }
                 else
                 {
-                    TestGroup registrationData = new TestGroup();
-                    registrationData.Id = row["id"];
-                    registrationData.DisplayName = row["displayName"];
-                    registrationData.GroupType = row["groupType"];
-                    registrationData.SecurityEnabled = Convert.ToBoolean(row["SecurityEnabled"]);
-                    yield return registrationData as T;
+                    registrationData = new TestGroup();
+                    ((TestGroup)registrationData).GroupType = row["groupType"];
+                    ((TestGroup)registrationData).SecurityEnabled = Convert.ToBoolean(row["SecurityEnabled"]);
                 }
+                registrationData.Id = row["id"];
+                registrationData.DisplayName = row["displayName"];
+                yield return registrationData as T;
             }
         }
 
