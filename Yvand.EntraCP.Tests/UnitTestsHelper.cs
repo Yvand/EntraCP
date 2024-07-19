@@ -183,7 +183,7 @@ namespace Yvand.EntraClaimsProvider.Tests
         }
     }
 
-    public class TestEntity : ICloneable
+    public abstract class TestEntity : ICloneable
     {
         public string Id;
         public string DisplayName;
@@ -192,6 +192,8 @@ namespace Yvand.EntraClaimsProvider.Tests
         {
             return this.MemberwiseClone();
         }
+
+        public abstract TestEntity CreateEntityFromDataSourceRow(Row row);
     }
 
     public class TestUser : TestEntity
@@ -201,6 +203,17 @@ namespace Yvand.EntraClaimsProvider.Tests
         public string Mail;
         public string GivenName;
         public bool IsMemberOfAllGroups = false;
+
+        public override TestEntity CreateEntityFromDataSourceRow(Row row)
+        {
+            Id = row["id"];
+            DisplayName = row["displayName"];
+            UserPrincipalName = row["userPrincipalName"];
+            UserType = String.Equals(row["userType"], ClaimsProviderConstants.MEMBER_USERTYPE, StringComparison.InvariantCultureIgnoreCase) ? UserType.Member : UserType.Guest;
+            Mail = row["mail"];
+            GivenName = row["givenName"];
+            return this;
+        }
     }
 
     public class TestGroup : TestEntity
@@ -208,6 +221,15 @@ namespace Yvand.EntraClaimsProvider.Tests
         public string GroupType;
         public bool SecurityEnabled = true;
         public bool AllTestUsersAreMembers = false;
+
+        public override TestEntity CreateEntityFromDataSourceRow(Row row)
+        {
+            Id = row["id"];
+            DisplayName = row["displayName"];
+            GroupType = row["groupType"];
+            SecurityEnabled = Convert.ToBoolean(row["SecurityEnabled"]);
+            return this;
+        }
     }
 
     public enum UserType
@@ -216,7 +238,7 @@ namespace Yvand.EntraClaimsProvider.Tests
         Guest
     }
 
-    public class TestEntitySource<T> where T : TestEntity
+    public class TestEntitySource<T> where T : TestEntity, new()
     {
         private object _LockInitEntitiesList = new object();
         private List<T> _Entities;
@@ -240,40 +262,21 @@ namespace Yvand.EntraClaimsProvider.Tests
         }
 
         private Random RandomNumber = new Random();
+        private string DataSourceFilePath;
 
+        public TestEntitySource(string dataSourceFilePath)
+        {
+            DataSourceFilePath = dataSourceFilePath;
+        }
 
         private IEnumerable<T> ReadDataSource()
         {
-            string csvPath = String.Empty;
-            if (typeof(T) == typeof(TestUser))
-            {
-                csvPath = UnitTestsHelper.DataFile_EntraId_TestUsers;
-            }
-            else
-            {
-                csvPath = UnitTestsHelper.DataFile_EntraId_TestGroups;
-            }
-            DataTable dt = DataTable.New.ReadCsv(csvPath);
+            DataTable dt = DataTable.New.ReadCsv(DataSourceFilePath);
             foreach (Row row in dt.Rows)
             {
-                TestEntity registrationData;
-                if (typeof(T) == typeof(TestUser))
-                {
-                    registrationData = new TestUser();
-                    ((TestUser)registrationData).UserPrincipalName = row["userPrincipalName"];
-                    ((TestUser)registrationData).UserType = String.Equals(row["userType"], ClaimsProviderConstants.MEMBER_USERTYPE, StringComparison.InvariantCultureIgnoreCase) ? UserType.Member : UserType.Guest;
-                    ((TestUser)registrationData).Mail = row["mail"];
-                    ((TestUser)registrationData).GivenName = row["givenName"];
-                }
-                else
-                {
-                    registrationData = new TestGroup();
-                    ((TestGroup)registrationData).GroupType = row["groupType"];
-                    ((TestGroup)registrationData).SecurityEnabled = Convert.ToBoolean(row["SecurityEnabled"]);
-                }
-                registrationData.Id = row["id"];
-                registrationData.DisplayName = row["displayName"];
-                yield return registrationData as T;
+                T entity = new T();
+                entity = entity.CreateEntityFromDataSourceRow(row) as T;
+                yield return entity;
             }
         }
 
@@ -366,12 +369,12 @@ namespace Yvand.EntraClaimsProvider.Tests
             }
         }
 
-        private static TestEntitySource<TestUser> TestUsersSource = new TestEntitySource<TestUser>();
+        private static TestEntitySource<TestUser> TestUsersSource = new TestEntitySource<TestUser>(UnitTestsHelper.DataFile_EntraId_TestUsers);
         public static List<TestUser> AllTestUsers
         {
             get => TestUsersSource.Entities;
         }
-        private static TestEntitySource<TestGroup> TestGroupsSource = new TestEntitySource<TestGroup>();
+        private static TestEntitySource<TestGroup> TestGroupsSource = new TestEntitySource<TestGroup>(UnitTestsHelper.DataFile_EntraId_TestGroups);
         public static List<TestGroup> AllTestGroups
         {
             get => TestGroupsSource.Entities;
