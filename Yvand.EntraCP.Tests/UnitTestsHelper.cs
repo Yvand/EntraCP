@@ -193,7 +193,7 @@ namespace Yvand.EntraClaimsProvider.Tests
             return this.MemberwiseClone();
         }
 
-        public abstract TestEntity CreateEntityFromDataSourceRow(Row row);
+        public abstract void SetEntityFromDataSourceRow(Row row);
     }
 
     public class TestUser : TestEntity
@@ -204,7 +204,7 @@ namespace Yvand.EntraClaimsProvider.Tests
         public string GivenName;
         public bool IsMemberOfAllGroups = false;
 
-        public override TestEntity CreateEntityFromDataSourceRow(Row row)
+        public override void SetEntityFromDataSourceRow(Row row)
         {
             Id = row["id"];
             DisplayName = row["displayName"];
@@ -212,7 +212,6 @@ namespace Yvand.EntraClaimsProvider.Tests
             UserType = String.Equals(row["userType"], ClaimsProviderConstants.MEMBER_USERTYPE, StringComparison.InvariantCultureIgnoreCase) ? UserType.Member : UserType.Guest;
             Mail = row["mail"];
             GivenName = row["givenName"];
-            return this;
         }
     }
 
@@ -222,13 +221,12 @@ namespace Yvand.EntraClaimsProvider.Tests
         public bool SecurityEnabled = true;
         public bool AllTestUsersAreMembers = false;
 
-        public override TestEntity CreateEntityFromDataSourceRow(Row row)
+        public override void SetEntityFromDataSourceRow(Row row)
         {
             Id = row["id"];
             DisplayName = row["displayName"];
             GroupType = row["groupType"];
             SecurityEnabled = Convert.ToBoolean(row["SecurityEnabled"]);
-            return this;
         }
     }
 
@@ -275,7 +273,7 @@ namespace Yvand.EntraClaimsProvider.Tests
             foreach (Row row in dt.Rows)
             {
                 T entity = new T();
-                entity = entity.CreateEntityFromDataSourceRow(row) as T;
+                entity.SetEntityFromDataSourceRow(row);
                 yield return entity;
             }
         }
