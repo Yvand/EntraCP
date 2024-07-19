@@ -73,7 +73,7 @@ namespace Yvand.EntraClaimsProvider.Tests
         [TestCase("testEntraCPUser_020")]
         public void DebugTestUser(string upnPrefix)
         {
-            TestUser user = TestEntitySourceManager.GetOneUser(upnPrefix);
+            TestUser user = TestEntitySourceManager.FindUser(upnPrefix);
             base.TestSearchAndValidateForEntraIDUser(user);
         }
 #endif
@@ -96,7 +96,7 @@ namespace Yvand.EntraClaimsProvider.Tests
         [TestCase("testEntraCPUser_020")]
         public void DebugTestUser(string upnPrefix)
         {
-            TestUser user = TestEntitySourceManager.GetOneUser(upnPrefix);
+            TestUser user = TestEntitySourceManager.FindUser(upnPrefix);
             base.TestSearchAndValidateForEntraIDUser(user);
         }
 

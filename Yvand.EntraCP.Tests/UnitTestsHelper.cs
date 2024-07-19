@@ -385,7 +385,7 @@ namespace Yvand.EntraClaimsProvider.Tests
             return TestUsersSource.GetSomeEntities(count, null);
         }
 
-        public static TestUser GetOneUser(string upnPrefix)
+        public static TestUser FindUser(string upnPrefix)
         {
             return TestUsersSource.Entities.First(x => x.UserPrincipalName.StartsWith(upnPrefix)).Clone() as TestUser;
         }
@@ -398,7 +398,8 @@ namespace Yvand.EntraClaimsProvider.Tests
 
         public static TestGroup GetOneGroup(bool securityEnabledOnly)
         {
-            return TestGroupsSource.Entities.First(x => x.SecurityEnabled == securityEnabledOnly).Clone() as TestGroup;
+            Func<TestGroup, bool> securityEnabledOnlyFilter = x => x.SecurityEnabled == securityEnabledOnly;
+            return TestGroupsSource.GetSomeEntities(1, securityEnabledOnlyFilter).First();
         }
     }
 }
