@@ -202,31 +202,7 @@ namespace Yvand.EntraClaimsProvider.Tests
     {
         public string GroupType;
         public bool SecurityEnabled = true;
-    }
-
-    public class EntraIdTestGroupSettings : EntraIdTestGroup
-    {
         public bool AllTestUsersAreMembers = false;
-        public static List<EntraIdTestGroupSettings> GroupsSettings = new List<EntraIdTestGroupSettings>
-        {
-            new EntraIdTestGroupSettings { DisplayName = $"{UnitTestsHelper.TestGroupsAccountNamePrefix}001" , SecurityEnabled = false, AllTestUsersAreMembers = true},
-            new EntraIdTestGroupSettings { DisplayName = $"{UnitTestsHelper.TestGroupsAccountNamePrefix}005" , SecurityEnabled = true, AllTestUsersAreMembers = true },
-            new EntraIdTestGroupSettings { DisplayName = $"{UnitTestsHelper.TestGroupsAccountNamePrefix}008" , SecurityEnabled = false, AllTestUsersAreMembers = false },
-            new EntraIdTestGroupSettings { DisplayName = $"{UnitTestsHelper.TestGroupsAccountNamePrefix}018" , SecurityEnabled = false, AllTestUsersAreMembers = true },
-            new EntraIdTestGroupSettings { DisplayName = $"{UnitTestsHelper.TestGroupsAccountNamePrefix}025" , SecurityEnabled = true, AllTestUsersAreMembers = true },
-            new EntraIdTestGroupSettings { DisplayName = $"{UnitTestsHelper.TestGroupsAccountNamePrefix}028" , SecurityEnabled = false, AllTestUsersAreMembers = false, },
-            new EntraIdTestGroupSettings { DisplayName = $"{UnitTestsHelper.TestGroupsAccountNamePrefix}038" , SecurityEnabled = false, AllTestUsersAreMembers = true, },
-            new EntraIdTestGroupSettings { DisplayName = $"{UnitTestsHelper.TestGroupsAccountNamePrefix}048" , SecurityEnabled = false, AllTestUsersAreMembers = false, },
-            //TestEntitySourceManager.AllTestGroups.First(x => x.DisplayName == $"{UnitTestsHelper.TestGroupsAccountNamePrefix}001");
-        };
-
-        public EntraIdTestGroupSettings()
-        {
-            EntraIdTestGroupSettings group = TestEntitySourceManager.AllTestGroups.First(x => x.DisplayName == $"{UnitTestsHelper.TestGroupsAccountNamePrefix}001") as EntraIdTestGroupSettings;
-            group.SecurityEnabled = false;
-            group.AllTestUsersAreMembers = false;
-            GroupsSettings.Add( group );
-        }
     }
 
     public enum UserType
@@ -344,6 +320,40 @@ namespace Yvand.EntraClaimsProvider.Tests
 
     public class TestEntitySourceManager
     {
+        private static EntraIdTestGroup[] GroupsWithCustomSettingsDefinition = new[]
+        {
+            new EntraIdTestGroup { DisplayName = $"{UnitTestsHelper.TestGroupsAccountNamePrefix}001" , SecurityEnabled = false, AllTestUsersAreMembers = true},
+            new EntraIdTestGroup { DisplayName = $"{UnitTestsHelper.TestGroupsAccountNamePrefix}005" , SecurityEnabled = true, AllTestUsersAreMembers = true },
+            new EntraIdTestGroup { DisplayName = $"{UnitTestsHelper.TestGroupsAccountNamePrefix}008" , SecurityEnabled = false, AllTestUsersAreMembers = false },
+            new EntraIdTestGroup { DisplayName = $"{UnitTestsHelper.TestGroupsAccountNamePrefix}018" , SecurityEnabled = false, AllTestUsersAreMembers = true },
+            new EntraIdTestGroup { DisplayName = $"{UnitTestsHelper.TestGroupsAccountNamePrefix}025" , SecurityEnabled = true, AllTestUsersAreMembers = true },
+            new EntraIdTestGroup { DisplayName = $"{UnitTestsHelper.TestGroupsAccountNamePrefix}028" , SecurityEnabled = false, AllTestUsersAreMembers = false, },
+            new EntraIdTestGroup { DisplayName = $"{UnitTestsHelper.TestGroupsAccountNamePrefix}038" , SecurityEnabled = false, AllTestUsersAreMembers = true, },
+            new EntraIdTestGroup { DisplayName = $"{UnitTestsHelper.TestGroupsAccountNamePrefix}048" , SecurityEnabled = false, AllTestUsersAreMembers = false, },
+        };
+        private static object _LockInitGroupsWithCustomSettings = new object();
+        private static List<EntraIdTestGroup> _GroupsWithCustomSettings;
+        public static List<EntraIdTestGroup> GroupsWithCustomSettings
+        {
+            get
+            {
+                if (_GroupsWithCustomSettings != null) { return _GroupsWithCustomSettings; }
+                lock (_LockInitGroupsWithCustomSettings)
+                {
+                    if (_GroupsWithCustomSettings != null) { return _GroupsWithCustomSettings; }
+                    _GroupsWithCustomSettings = new List<EntraIdTestGroup>();
+                    foreach (EntraIdTestGroup groupDefinition in GroupsWithCustomSettingsDefinition)
+                    {
+                        EntraIdTestGroup group = AllTestGroups.First(x => x.DisplayName == groupDefinition.DisplayName);
+                        group.SecurityEnabled = groupDefinition.SecurityEnabled;
+                        group.AllTestUsersAreMembers = groupDefinition.AllTestUsersAreMembers;
+                        _GroupsWithCustomSettings.Add(group);
+                    }
+                }
+                return _GroupsWithCustomSettings;
+            }
+        }
+
         private static TestEntitySource<EntraIdTestUser> TestUsersSource = new TestEntitySource<EntraIdTestUser>();
         public static List<EntraIdTestUser> AllTestUsers
         {
@@ -356,6 +366,17 @@ namespace Yvand.EntraClaimsProvider.Tests
         }
         public const int MaxNumberOfUsersToTest = 100;
         public const int MaxNumberOfGroupsToTest = 100;
+
+        public TestEntitySourceManager()
+        {
+            foreach (EntraIdTestGroup groupDefinition in GroupsWithCustomSettingsDefinition)
+            {
+                EntraIdTestGroup group = AllTestGroups.First(x => x.DisplayName == $"{UnitTestsHelper.TestGroupsAccountNamePrefix}001") as EntraIdTestGroup;
+                group.SecurityEnabled = groupDefinition.SecurityEnabled;
+                group.AllTestUsersAreMembers = groupDefinition.AllTestUsersAreMembers;
+                GroupsWithCustomSettings.Add(group);
+            }
+        }
 
         public static IEnumerable<EntraIdTestUser> GetSomeUsers(int count)
         {

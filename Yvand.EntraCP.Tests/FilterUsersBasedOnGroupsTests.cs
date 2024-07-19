@@ -49,8 +49,9 @@ namespace Yvand.EntraClaimsProvider.Tests
             base.InitializeSettings();
 
             // Pick the Id of 18 (max possible) random groups, and set them in property RestrictSearchableUsersByGroups
-            //Settings.RestrictSearchableUsersByGroups = String.Join(",", TestEntitySourceManager.GetSomeGroups(18, true).Select(x => x.Id).ToArray());
-            Settings.RestrictSearchableUsersByGroups = "3c1c6c1a-2565-4cfd-b5f8-8ec732f93077,3c98541c-9601-47c0-aeea-fc0679b9d756,807c95cd-88de-49d9-a06e-12ce2329dfb7,807c95cd-88de-49d9-a06e-12ce2329dfb7,1beb24dd-0fae-46cb-b321-dd0baf5c9ecc,01572e9f-4a9a-4dd1-9314-05972d87d1c2,89d4f192-8eb0-4011-ada7-4a1d4f678b1c,bdd53ff1-866c-442b-b6d5-ac43b4306aa7,2d407401-192c-4a25-9f0e-3693cfad6f27,1c607c55-f1a0-408c-ae52-306cd89de742,1090383f-7ea5-4a16-9ba8-0551a061d7f9,874b1dcf-aa82-428a-b107-b71a09c3d452,1090383f-7ea5-4a16-9ba8-0551a061d7f9,1831bd90-e413-4b86-a8ab-5d26d8a75498,04ec1e1c-196d-4b85-85b2-c3b982644114,043e997e-0b2c-412c-b8f0-13253251569c,40d53a73-130b-48e1-946b-5fec5ec35d4f,3c98541c-9601-47c0-aeea-fc0679b9d756";
+            Settings.RestrictSearchableUsersByGroups = String.Join(",", TestEntitySourceManager.GetSomeGroups(18, true).Select(x => x.Id).ToArray());
+            //Settings.RestrictSearchableUsersByGroups = "3c1c6c1a-2565-4cfd-b5f8-8ec732f93077,3c98541c-9601-47c0-aeea-fc0679b9d756,807c95cd-88de-49d9-a06e-12ce2329dfb7,807c95cd-88de-49d9-a06e-12ce2329dfb7,1beb24dd-0fae-46cb-b321-dd0baf5c9ecc,01572e9f-4a9a-4dd1-9314-05972d87d1c2,89d4f192-8eb0-4011-ada7-4a1d4f678b1c,bdd53ff1-866c-442b-b6d5-ac43b4306aa7,2d407401-192c-4a25-9f0e-3693cfad6f27,1c607c55-f1a0-408c-ae52-306cd89de742,1090383f-7ea5-4a16-9ba8-0551a061d7f9,874b1dcf-aa82-428a-b107-b71a09c3d452,1090383f-7ea5-4a16-9ba8-0551a061d7f9,1831bd90-e413-4b86-a8ab-5d26d8a75498,04ec1e1c-196d-4b85-85b2-c3b982644114,043e997e-0b2c-412c-b8f0-13253251569c,40d53a73-130b-48e1-946b-5fec5ec35d4f,3c98541c-9601-47c0-aeea-fc0679b9d756";
+            //Settings.RestrictSearchableUsersByGroups = "3c98541c-9601-47c0-aeea-fc0679b9d756";
             Trace.TraceInformation($"{DateTime.Now:s} [{this.GetType().Name}] Set property RestrictSearchableUsersByGroups: \"{Settings.RestrictSearchableUsersByGroups}\".");
             base.ApplySettings();
         }
@@ -68,7 +69,7 @@ namespace Yvand.EntraClaimsProvider.Tests
         }
 
 #if DEBUG
-        //[TestCase("testEntraCPUser_001")]
+        [TestCase("testEntraCPUser_001")]
         [TestCase("testEntraCPUser_020")]
         public void DebugTestUser(string upnPrefix)
         {

@@ -49,8 +49,8 @@ namespace Yvand.EntraClaimsProvider.Tests
 
         private object _LockVerifyIfCurrentUserShouldBeFound = new object();
         private object _LockInitGroupsWhichUsersMustBeMemberOfAny = new object();
-        private List<EntraIdTestGroupSettings> _GroupsWhichUsersMustBeMemberOfAny;
-        protected List<EntraIdTestGroupSettings> GroupsWhichUsersMustBeMemberOfAny
+        private List<EntraIdTestGroup> _GroupsWhichUsersMustBeMemberOfAny;
+        protected List<EntraIdTestGroup> GroupsWhichUsersMustBeMemberOfAny
         {
             get
             {
@@ -58,15 +58,15 @@ namespace Yvand.EntraClaimsProvider.Tests
                 lock (_LockInitGroupsWhichUsersMustBeMemberOfAny)
                 {
                     if (_GroupsWhichUsersMustBeMemberOfAny != null) { return _GroupsWhichUsersMustBeMemberOfAny; }
-                    _GroupsWhichUsersMustBeMemberOfAny = new List<EntraIdTestGroupSettings>();
+                    _GroupsWhichUsersMustBeMemberOfAny = new List<EntraIdTestGroup>();
                     string groupsWhichUsersMustBeMemberOfAny = Settings.RestrictSearchableUsersByGroups;
                     if (!String.IsNullOrWhiteSpace(groupsWhichUsersMustBeMemberOfAny))
                     {
                         string[] groupIds = groupsWhichUsersMustBeMemberOfAny.Split(new char[] { ',' }, StringSplitOptions.RemoveEmptyEntries);
                         foreach (string groupId in groupIds)
                         {
-                            EntraIdTestGroupSettings groupSettings = EntraIdTestGroupSettings.GroupsSettings.FirstOrDefault(x => x.Id == groupId);
-                            if (groupSettings == null) { groupSettings = new EntraIdTestGroupSettings(); }
+                            EntraIdTestGroup groupSettings = TestEntitySourceManager.GroupsWithCustomSettings.FirstOrDefault(x => x.Id == groupId);
+                            if (groupSettings == null) { groupSettings = new EntraIdTestGroup(); }
                             _GroupsWhichUsersMustBeMemberOfAny.Add(groupSettings);
                         }
                     }
