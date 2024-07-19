@@ -1,73 +1,73 @@
-﻿//using Microsoft.SharePoint.Administration.Claims;
-//using NUnit.Framework;
-//using System.Security.Claims;
-//using Yvand.EntraClaimsProvider.Configuration;
+﻿using Microsoft.SharePoint.Administration.Claims;
+using NUnit.Framework;
+using System.Security.Claims;
+using Yvand.EntraClaimsProvider.Configuration;
 
-//namespace Yvand.EntraClaimsProvider.Tests
-//{
-//    [TestFixture]
-//    [Parallelizable(ParallelScope.Children)]
-//    public class WithSecurityEnabledGroupsOnlyTests : ClaimsProviderTestsBase
-//    {
-//        public override void InitializeSettings()
-//        {
-//            base.InitializeSettings();
-//            Settings.EnableAugmentation = true;
-//            Settings.FilterSecurityEnabledGroupsOnly = true;
-//            Settings.ClaimTypes.UpdateGroupIdentifier(DirectoryObjectProperty.Id);
-//            base.ApplySettings();
-//        }
+namespace Yvand.EntraClaimsProvider.Tests
+{
+    [TestFixture]
+    [Parallelizable(ParallelScope.Children)]
+    public class WithSecurityEnabledGroupsOnlyTests : ClaimsProviderTestsBase
+    {
+        public override void InitializeSettings()
+        {
+            base.InitializeSettings();
+            Settings.EnableAugmentation = true;
+            Settings.FilterSecurityEnabledGroupsOnly = true;
+            Settings.ClaimTypes.UpdateGroupIdentifier(DirectoryObjectProperty.Id);
+            base.ApplySettings();
+        }
 
-//        [Test]
-//        public override void CheckSettingsTest()
-//        {
-//            base.CheckSettingsTest();
-//        }
+        [Test]
+        public override void CheckSettingsTest()
+        {
+            base.CheckSettingsTest();
+        }
 
-//        [Test, TestCaseSource(typeof(EntraIdTestGroupsSource), nameof(EntraIdTestGroupsSource.GetSomeEntities), new object[] { true, UnitTestsHelper.MaxNumberOfGroupsToTest })]
-//        public void TestGroups(EntraIdTestGroup group)
-//        {
-//            TestSearchAndValidateForEntraIDGroup(group);
-//        }
+        [Test, TestCaseSource(typeof(TestEntitySourceManager), nameof(TestEntitySourceManager.GetSomeGroups), new object[] { TestEntitySourceManager.MaxNumberOfGroupsToTest, true })]
+        public void TestGroups(EntraIdTestGroup group)
+        {
+            TestSearchAndValidateForEntraIDGroup(group);
+        }
 
-//        [Test]
-//        [Repeat(5)]
-//        public override void TestAugmentationOfGoldUsersAgainstRandomGroups()
-//        {
-//            base.TestAugmentationOfGoldUsersAgainstRandomGroups();
-//        }
-//    }
+        [Test]
+        [Repeat(5)]
+        public override void TestAugmentationOfGoldUsersAgainstRandomGroups()
+        {
+            base.TestAugmentationOfGoldUsersAgainstRandomGroups();
+        }
+    }
 
-//    [TestFixture]
-//    [Parallelizable(ParallelScope.Children)]
-//    public class WithoutSecurityEnabledGroupsOnlyTests : ClaimsProviderTestsBase
-//    {
-//        public override void InitializeSettings()
-//        {
-//            base.InitializeSettings();
-//            Settings.EnableAugmentation = true;
-//            Settings.FilterSecurityEnabledGroupsOnly = false;
-//            Settings.ClaimTypes.UpdateGroupIdentifier(DirectoryObjectProperty.Id);
-//            base.ApplySettings();
-//        }
+    [TestFixture]
+    [Parallelizable(ParallelScope.Children)]
+    public class WithoutSecurityEnabledGroupsOnlyTests : ClaimsProviderTestsBase
+    {
+        public override void InitializeSettings()
+        {
+            base.InitializeSettings();
+            Settings.EnableAugmentation = true;
+            Settings.FilterSecurityEnabledGroupsOnly = false;
+            Settings.ClaimTypes.UpdateGroupIdentifier(DirectoryObjectProperty.Id);
+            base.ApplySettings();
+        }
 
-//        [Test]
-//        public override void CheckSettingsTest()
-//        {
-//            base.CheckSettingsTest();
-//        }
+        [Test]
+        public override void CheckSettingsTest()
+        {
+            base.CheckSettingsTest();
+        }
 
-//        [Test, TestCaseSource(typeof(EntraIdTestGroupsSource), nameof(EntraIdTestGroupsSource.GetSomeEntities), new object[] { true, UnitTestsHelper.MaxNumberOfGroupsToTest })]
-//        public void TestGroups(EntraIdTestGroup group)
-//        {
-//            TestSearchAndValidateForEntraIDGroup(group);
-//        }
+        [Test, TestCaseSource(typeof(TestEntitySourceManager), nameof(TestEntitySourceManager.GetSomeGroups), new object[] { TestEntitySourceManager.MaxNumberOfGroupsToTest, true })]
+        public void TestGroups(EntraIdTestGroup group)
+        {
+            TestSearchAndValidateForEntraIDGroup(group);
+        }
 
-//        [Test]
-//        [Repeat(5)]
-//        public override void TestAugmentationOfGoldUsersAgainstRandomGroups()
-//        {
-//            base.TestAugmentationOfGoldUsersAgainstRandomGroups();
-//        }
-//    }
-//}
+        [Test]
+        [Repeat(5)]
+        public override void TestAugmentationOfGoldUsersAgainstRandomGroups()
+        {
+            base.TestAugmentationOfGoldUsersAgainstRandomGroups();
+        }
+    }
+}
