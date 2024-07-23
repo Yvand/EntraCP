@@ -5,6 +5,7 @@
 * Ensure that all group members are retrieved when only users members of specified groups can be found in SharePoint
 * Update the script that provisions tenant with test users and groups, to be more reliable and provision 999 users (instead of 50), so tests are more realistics
 * Improve tests
+* Publish a sample project that developers can use to create a custom version of EntraCP, for specific needs
 
 ## EntraCP v26.0.20240627.35 enhancements & bug-fixes - Published in June 27, 2024
 
