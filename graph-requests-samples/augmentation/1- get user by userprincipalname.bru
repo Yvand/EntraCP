@@ -21,16 +21,3 @@ vars:post-response {
   userId: res.body.value[0].id
 }
 
-tests {
-  try {    
-      var json = JSON.parse(responseBody);
-      if (json.value.length === 1) {
-  //         postman.setEnvironmentVariable("userId", json.value[0].id);
-          console.log(`Set environment variable userId with value "${json.value[0].id}"`);
-      }
-  }
-  catch (e) {
-      console.log(e);
-  }
-  
-}
