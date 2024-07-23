@@ -1,0 +1,44 @@
+meta {
+  name: Run a batch request
+  type: http
+  seq: 7
+}
+
+post {
+  url: https://graph.microsoft.com/v1.0/$batch
+  body: json
+  auth: inherit
+}
+
+body:json {
+  {
+      "requests": [
+          {
+              "id": "9d99b7fa-428a-4025-acd5-8947f35dbffc",
+              "url": "/users?%24top=30\u0026%24filter=%28%20%28startswith%28UserPrincipalName%2C%20%27{{entityStartsWithValue}}%27%29%20and%20UserType%20eq%20%27Member%27%29%20or%20%28startswith%28Mail%2C%20%27{{entityStartsWithValue}}%27%29%20and%20UserType%20eq%20%27Guest%27%29%20%29%20or%20startswith%28DisplayName%2C%20%27{{entityStartsWithValue}}%27%29%20or%20startswith%28GivenName%2C%20%27{{entityStartsWithValue}}%27%29%20or%20startswith%28Surname%2C%20%27{{entityStartsWithValue}}%27%29%20or%20startswith%28Mail%2C%20%27{{entityStartsWithValue}}%27%29\u0026%24count=true\u0026%24select=UserType,Mail,UserPrincipalName,DisplayName,GivenName,Surname,Mail,DisplayName,Mail,MobilePhone,JobTitle,Department,OfficeLocation",
+              "method": "GET",
+              "headers": {
+                  "Accept": "application/json",
+                  "ConsistencyLevel": "eventual"
+              }
+          },
+          {
+              "id": "7937d970-ad05-42af-96bf-559fe776a986",
+              "url": "/groups?%24top=30\u0026%24filter=startswith%28DisplayName%2C%20%27{{entityStartsWithValue}}%27%29\u0026%24count=true\u0026%24select=Id,securityEnabled,DisplayName,DisplayName,Mail",
+              "method": "GET",
+              "headers": {
+                  "Accept": "application/json",
+                  "ConsistencyLevel": "eventual"
+              }
+          },
+          {
+              "id": "b762c874-eccd-4fd9-abf8-0334561bfd5b",
+              "url": "/groups/{{groupId}}/members/microsoft.graph.user?$select=id, userPrincipalName, mail",
+              "method": "GET",
+              "headers": {
+                  "Accept": "application/json"
+              }
+          }
+      ]
+  }
+}

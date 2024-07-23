@@ -1,0 +1,22 @@
+meta {
+  name: get access token
+  type: http
+  seq: 1
+}
+
+get {
+  url: 
+  auth: oauth2
+}
+
+auth:oauth2 {
+  grant_type: client_credentials
+  access_token_url: https://login.microsoftonline.com/{{tenantPrefix}}.onmicrosoft.com/oauth2/v2.0/token
+  client_id: {{clientId}}
+  client_secret: {{clientSecret}}
+  scope: https://graph.microsoft.com/.default
+}
+
+vars:post-response {
+  accessToken: res.body.access_token
+}

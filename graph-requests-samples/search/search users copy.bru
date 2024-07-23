@@ -1,0 +1,27 @@
+meta {
+  name: Search users Copy
+  type: http
+  seq: 3
+}
+
+get {
+  url: https://graph.microsoft.com/v1.0/users?$filter=startswith(UserPrincipalName, 'onprem')
+  body: none
+  auth: inherit
+}
+
+params:query {
+  $filter: startswith(UserPrincipalName, 'onprem')
+  ~$top: 30
+  ~$count: true
+  ~$select: UserType,Mail,UserPrincipalName,BusinessPhones,DisplayName,GivenName,Surname,Mail,DisplayName,Mail,MobilePhone,JobTitle,Department,OfficeLocation
+  ~$filter: ( (startswith(UserPrincipalName, '+1 ') and UserType eq 'Member') or (startswith(Mail, '+1 ') and UserType eq 'Guest') ) or startswith(BusinessPhones, '+1 ') or startswith(DisplayName, '+1 ') or startswith(GivenName, '+1 ') or startswith(Surname, '+1 ') or startswith(Mail, '+1 ')
+  ~$filter: businessPhones/any(p:startsWith(p, '%2B1'))
+  ~$filter: businessPhones/any(s:s eq '1234')
+  ~$filter: identities/any(c:c/issuerAssignedId:startsWith(c:c/issuerAssignedId, 'admin'))
+  ~$filter: identities/any(c:c/issuerAssignedId eq 'admin@{{tenantPrefix}}.onmicrosoft.com' and c/issuer eq '{{tenantPrefix}}.onmicrosoft.com')
+}
+
+headers {
+  ConsistencyLevel: Eventual
+}
