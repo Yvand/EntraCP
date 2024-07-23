@@ -6,25 +6,12 @@ meta {
 
 get {
   url: 
-  body: formUrlEncoded
   auth: oauth2
-}
-
-headers {
-  Content-Type: application/x-www-form-urlencoded
-  SdkVersion: postman-graph/v1.0
 }
 
 auth:oauth2 {
   grant_type: client_credentials
   access_token_url: https://login.microsoftonline.com/{{tenantPrefix}}.onmicrosoft.com/oauth2/v2.0/token
-  client_id: {{clientId}}
-  client_secret: {{clientSecret}}
-  scope: https://graph.microsoft.com/.default
-}
-
-body:form-urlencoded {
-  grant_type: client_credentials
   client_id: {{clientId}}
   client_secret: {{clientSecret}}
   scope: https://graph.microsoft.com/.default
