@@ -1,6 +1,6 @@
-# Replay the Graph requests executed by EntraCP
+# Replay the requests sent to Microsoft Graph by EntraCP
 
-This is the root folder of a [Bruno](https://www.usebruno.com/) collection (an alternative API debugger to Postman), that contains the typical requests ran by EntraCP.
+This is the root folder of a [Bruno](https://www.usebruno.com/) collection (an alternative API debugger to Postman), that contains the typical requests sent to Microsoft Graph by EntraCP.
 
 To use it:
 
