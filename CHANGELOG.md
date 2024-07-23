@@ -1,5 +1,9 @@
 # Change log for ~~AzureCP~~ EntraCP
 
+## Unreleased
+
+* Add a [Bruno](https://www.usebruno.com/) collection to replay the requests sent to Microsoft Graph by EntraCP
+
 ## EntraCP v26.0.20240627.35 enhancements & bug-fixes - Published in June 27, 2024
 
 * Fix an NullReferenceException in a very rare scenario where ClaimsPrincipal.Identity is null
