@@ -7,7 +7,7 @@ meta {
 get {
   url: https://graph.microsoft.com/v1.0/users?$select=UserType, Id, Mail, UserPrincipalName, DisplayName, GivenName, Surname, DisplayName, Mail, MobilePhone, JobTitle, Department, OfficeLocation&$filter=UserPrincipalName eq '{{entityUpn}}'
   body: none
-  auth: none
+  auth: inherit
 }
 
 params:query {

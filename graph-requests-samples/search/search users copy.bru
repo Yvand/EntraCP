@@ -7,7 +7,7 @@ meta {
 get {
   url: https://graph.microsoft.com/v1.0/users?$filter=startswith(UserPrincipalName, 'onprem')
   body: none
-  auth: none
+  auth: inherit
 }
 
 params:query {

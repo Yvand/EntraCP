@@ -7,7 +7,7 @@ meta {
 get {
   url: https://graph.microsoft.com/v1.0/groups/{{groupId}}/members/microsoft.graph.user?$select=id, userPrincipalName, mail
   body: none
-  auth: none
+  auth: inherit
 }
 
 params:query {

@@ -7,7 +7,7 @@ meta {
 get {
   url: https://graph.microsoft.com/v1.0/users?$select=id, displayName, userPrincipalName, UserType, mail, givenName, extension_7ade56f812b0472ba923102874ee083a_extensionAttribute1&$filter=startswith(userPrincipalName, 'testEntraCPUser_001')
   body: none
-  auth: none
+  auth: inherit
 }
 
 params:query {

@@ -7,7 +7,7 @@ meta {
 get {
   url: https://graph.microsoft.com/v1.0/groups?$select=Id, DisplayName&$filter=startswith(DisplayName,'{{entityStartsWithValue}}')
   body: none
-  auth: none
+  auth: inherit
 }
 
 params:query {
