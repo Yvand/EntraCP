@@ -49,8 +49,8 @@ namespace Yvand.EntraClaimsProvider.Tests
 
         private object _LockVerifyIfCurrentUserShouldBeFound = new object();
         private object _LockInitGroupsWhichUsersMustBeMemberOfAny = new object();
-        private List<EntraIdTestGroupSettings> _GroupsWhichUsersMustBeMemberOfAny;
-        protected List<EntraIdTestGroupSettings> GroupsWhichUsersMustBeMemberOfAny
+        private List<TestGroup> _GroupsWhichUsersMustBeMemberOfAny;
+        protected List<TestGroup> GroupsWhichUsersMustBeMemberOfAny
         {
             get
             {
@@ -58,15 +58,15 @@ namespace Yvand.EntraClaimsProvider.Tests
                 lock (_LockInitGroupsWhichUsersMustBeMemberOfAny)
                 {
                     if (_GroupsWhichUsersMustBeMemberOfAny != null) { return _GroupsWhichUsersMustBeMemberOfAny; }
-                    _GroupsWhichUsersMustBeMemberOfAny = new List<EntraIdTestGroupSettings>();
+                    _GroupsWhichUsersMustBeMemberOfAny = new List<TestGroup>();
                     string groupsWhichUsersMustBeMemberOfAny = Settings.RestrictSearchableUsersByGroups;
                     if (!String.IsNullOrWhiteSpace(groupsWhichUsersMustBeMemberOfAny))
                     {
                         string[] groupIds = groupsWhichUsersMustBeMemberOfAny.Split(new char[] { ',' }, StringSplitOptions.RemoveEmptyEntries);
                         foreach (string groupId in groupIds)
                         {
-                            EntraIdTestGroupSettings groupSettings = EntraIdTestGroupsSource.GroupsSettings.FirstOrDefault(x => x.Id == groupId);
-                            if (groupSettings == null) { groupSettings = new EntraIdTestGroupSettings(); }
+                            TestGroup groupSettings = TestEntitySourceManager.GroupsWithCustomSettings.FirstOrDefault(x => x.Id == groupId);
+                            if (groupSettings == null) { groupSettings = new TestGroup(); }
                             _GroupsWhichUsersMustBeMemberOfAny.Add(groupSettings);
                         }
                     }
@@ -116,7 +116,7 @@ namespace Yvand.EntraClaimsProvider.Tests
             }
         }
 
-        public void TestSearchAndValidateForEntraIDGroup(EntraIdTestGroup entity)
+        public void TestSearchAndValidateForEntraIDGroup(TestGroup entity)
         {
             string inputValue = entity.DisplayName;
             int expectedCount = 1;
@@ -137,7 +137,7 @@ namespace Yvand.EntraClaimsProvider.Tests
             TestValidationOperation(GroupIdentifierClaimType, entity.Id, shouldValidate);
         }
 
-        public void TestSearchAndValidateForEntraIDUser(EntraIdTestUser entity)
+        public void TestSearchAndValidateForEntraIDUser(TestUser entity)
         {
             int expectedCount = 1;
             string inputValue = entity.DisplayName;
@@ -172,8 +172,8 @@ namespace Yvand.EntraClaimsProvider.Tests
                         if (!groupWithAllTestUsersAreMembersFound)
                         {
 
-                            EntraIdTestUserSettings userSettings = EntraIdTestUsersSource.UsersWithSpecificSettings.FirstOrDefault(x => String.Equals(x.UserPrincipalName, entity.UserPrincipalName, StringComparison.InvariantCultureIgnoreCase));
-                            if (userSettings == null) { userSettings = new EntraIdTestUserSettings(); }
+                            TestUser userSettings = TestEntitySourceManager.UsersWithCustomSettings.FirstOrDefault(x => String.Equals(x.UserPrincipalName, entity.UserPrincipalName, StringComparison.InvariantCultureIgnoreCase));
+                            if (userSettings == null) { userSettings = new TestUser(); }
                             if (!userSettings.IsMemberOfAllGroups)
                             {
                                 shouldValidate = false;
@@ -219,22 +219,22 @@ namespace Yvand.EntraClaimsProvider.Tests
         public virtual void TestAugmentationOfGoldUsersAgainstRandomGroups()
         {
             Random rnd = new Random();
-            int randomIdx = rnd.Next(0, UnitTestsHelper.TestGroupsCount - 1);
+            int randomIdx = rnd.Next(0, TestEntitySourceManager.AllTestGroups.Count - 1);
             Trace.TraceInformation($"{DateTime.Now:s} [{this.GetType().Name}] TestAugmentationOfGoldUsersAgainstRandomGroups: Get group in EntraIdTestGroupsSource.Groups at index {randomIdx}.");
-            EntraIdTestGroup randomGroup = null;
+            TestGroup randomGroup = null;
             try
             {
-                randomGroup = EntraIdTestGroupsSource.Groups[randomIdx];
+                randomGroup = TestEntitySourceManager.AllTestGroups[randomIdx];
             }
             catch (ArgumentOutOfRangeException)
             {
-                string errorMessage = $"{DateTime.Now:s} [{this.GetType().Name}] TestAugmentationOfGoldUsersAgainstRandomGroups: Could not get group in EntraIdTestGroupsSource.Groups at index {randomIdx}. EntraIdTestGroupsSource.Groups has {EntraIdTestGroupsSource.Groups.Count} items.";
+                string errorMessage = $"{DateTime.Now:s} [{this.GetType().Name}] TestAugmentationOfGoldUsersAgainstRandomGroups: Could not get group in EntraIdTestGroupsSource.Groups at index {randomIdx}. EntraIdTestGroupsSource.Groups has {TestEntitySourceManager.AllTestGroups.Count} items.";
                 Trace.TraceError(errorMessage);
                 throw new ArgumentOutOfRangeException(errorMessage);
             }
             bool shouldBeMember = Settings.FilterSecurityEnabledGroupsOnly && !randomGroup.SecurityEnabled ? false : true;
 
-            foreach (string userPrincipalName in EntraIdTestUsersSource.UsersWithSpecificSettings.Where(x => x.IsMemberOfAllGroups).Select(x => x.UserPrincipalName))
+            foreach (string userPrincipalName in TestEntitySourceManager.UsersWithCustomSettings.Where(x => x.IsMemberOfAllGroups).Select(x => x.UserPrincipalName))
             {
                 TestAugmentationOperation(userPrincipalName, shouldBeMember, randomGroup.Id);
             }

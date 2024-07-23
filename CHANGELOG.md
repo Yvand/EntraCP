@@ -1,7 +1,11 @@
 # Change log for ~~AzureCP~~ EntraCP
 
-## Unreleased
+## EntraCP v27.0 - Unreleased
 
+* Ensure that all group members are retrieved when only users members of specified groups can be found in SharePoint
+* Update the script that provisions tenant with test users and groups, to be more reliable and provision 999 users (instead of 50), so tests are more realistics
+* Improve tests
+* Publish a sample project that developers can use to create a custom version of EntraCP, for specific needs
 * Add a [Bruno](https://www.usebruno.com/) collection to replay the requests sent to Microsoft Graph by EntraCP
 
 ## EntraCP v26.0.20240627.35 enhancements & bug-fixes - Published in June 27, 2024
