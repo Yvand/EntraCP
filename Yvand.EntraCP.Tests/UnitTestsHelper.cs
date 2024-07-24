@@ -285,10 +285,11 @@ namespace Yvand.EntraClaimsProvider.Tests
                 count = Entities.Count;
             }
 
+            int randomNumberMaxValue = Entities.Where(filter ?? (x => true)).Count() - 1;
             List<int> entitiesIdxs = new List<int>(count);
             for (int i = 0; i < count; i++)
             {
-                entitiesIdxs.Add(RandomNumber.Next(0, Entities.Where(filter ?? (x => true)).Count() - 1));
+                entitiesIdxs.Add(RandomNumber.Next(0, randomNumberMaxValue));
             }
 
             foreach (int userIdx in entitiesIdxs)
