@@ -280,22 +280,11 @@ namespace Yvand.EntraClaimsProvider.Tests
 
         public IEnumerable<T> GetSomeEntities(int count, Func<T, bool> filter = null)
         {
-            if (count > Entities.Count)
-            {
-                count = Entities.Count;
-            }
-
-            int randomNumberMaxValue = Entities.Where(filter ?? (x => true)).Count() - 1;
-            List<int> entitiesIdxs = new List<int>(count);
-            for (int i = 0; i < count; i++)
-            {
-                entitiesIdxs.Add(RandomNumber.Next(0, randomNumberMaxValue));
-            }
-
-            foreach (int userIdx in entitiesIdxs)
-            {
-                yield return Entities[userIdx].Clone() as T;
-            }
+            if (count > Entities.Count) { count = Entities.Count; }
+            IEnumerable<T> entitiesFiltered = Entities.Where(filter ?? (x => true));
+            int randomNumberMaxValue = entitiesFiltered.Count() - 1;
+            int randomIdx = RandomNumber.Next(0, randomNumberMaxValue);
+            yield return entitiesFiltered.ElementAt(randomIdx).Clone() as T;
         }
     }
 
@@ -395,6 +384,11 @@ namespace Yvand.EntraClaimsProvider.Tests
         {
             Func<TestGroup, bool> securityEnabledOnlyFilter = x => x.SecurityEnabled == securityEnabledOnly;
             return TestGroupsSource.GetSomeEntities(count, securityEnabledOnlyFilter);
+        }
+
+        public static TestGroup GetOneGroup()
+        {
+            return TestGroupsSource.GetSomeEntities(1, null).First();
         }
 
         public static TestGroup GetOneGroup(bool securityEnabledOnly)

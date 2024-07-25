@@ -218,22 +218,8 @@ namespace Yvand.EntraClaimsProvider.Tests
         /// </summary>
         public virtual void TestAugmentationOfGoldUsersAgainstRandomGroups()
         {
-            Random rnd = new Random();
-            int randomIdx = rnd.Next(0, TestEntitySourceManager.AllTestGroups.Count - 1);
-            Trace.TraceInformation($"{DateTime.Now:s} [{this.GetType().Name}] TestAugmentationOfGoldUsersAgainstRandomGroups: Get group in EntraIdTestGroupsSource.Groups at index {randomIdx}.");
-            TestGroup randomGroup = null;
-            try
-            {
-                randomGroup = TestEntitySourceManager.AllTestGroups[randomIdx];
-            }
-            catch (ArgumentOutOfRangeException)
-            {
-                string errorMessage = $"{DateTime.Now:s} [{this.GetType().Name}] TestAugmentationOfGoldUsersAgainstRandomGroups: Could not get group in EntraIdTestGroupsSource.Groups at index {randomIdx}. EntraIdTestGroupsSource.Groups has {TestEntitySourceManager.AllTestGroups.Count} items.";
-                Trace.TraceError(errorMessage);
-                throw new ArgumentOutOfRangeException(errorMessage);
-            }
+            TestGroup randomGroup = TestEntitySourceManager.GetOneGroup();
             bool shouldBeMember = Settings.FilterSecurityEnabledGroupsOnly && !randomGroup.SecurityEnabled ? false : true;
-
             foreach (string userPrincipalName in TestEntitySourceManager.UsersWithCustomSettings.Where(x => x.IsMemberOfAllGroups).Select(x => x.UserPrincipalName))
             {
                 TestAugmentationOperation(userPrincipalName, shouldBeMember, randomGroup.Id);
