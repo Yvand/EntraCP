@@ -37,6 +37,7 @@ namespace Yvand.EntraClaimsProvider.Tests
         public void TestUsers(TestUser user)
         {
             base.TestSearchAndValidateForTestUser(user);
+            base.TestAugmentationAgainst1RandomGroup(user);
         }
 
         //[Test]
@@ -55,11 +56,12 @@ namespace Yvand.EntraClaimsProvider.Tests
 
 #if DEBUG
         [TestCase("testEntraCPUser_001")]
-        [TestCase("testEntraCPUser_020")]
+        [TestCase("testEntraCPUser_747")]
         public void DebugTestUser(string upnPrefix)
         {
             TestUser user = TestEntitySourceManager.AllTestUsers.First(x => x.UserPrincipalName.StartsWith(upnPrefix));
             base.TestSearchAndValidateForTestUser(user);
+            base.TestAugmentationAgainst1RandomGroup(user);
         }
 
         [TestCase(@"testentracp", 30, "")]

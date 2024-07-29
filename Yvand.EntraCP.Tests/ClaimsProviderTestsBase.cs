@@ -1,4 +1,5 @@
 ﻿using Microsoft.SharePoint.Administration.Claims;
+using Microsoft.SharePoint.ApplicationPages.Calendar;
 using Microsoft.SharePoint.WebControls;
 using Newtonsoft.Json;
 using NUnit.Framework;
@@ -228,12 +229,22 @@ namespace Yvand.EntraClaimsProvider.Tests
         /// </summary>
         public virtual void TestAugmentationOfGoldUsersAgainstRandomGroups()
         {
+            foreach (TestUser user in TestEntitySourceManager.UsersWithCustomSettings.Where(x => x.IsMemberOfAllGroups))
+            {
+                TestAugmentationAgainst1RandomGroup(user);
+            }
+        }
+
+        /// <summary>
+        /// Pick a random group, and check if the claims provider returns the expected membership (should or should not be member) for this group
+        /// </summary>
+        /// <param name="user"></param>
+        public void TestAugmentationAgainst1RandomGroup(TestUser user)
+        {
             TestGroup randomGroup = TestEntitySourceManager.GetOneGroup();
             bool shouldBeMember = Settings.FilterSecurityEnabledGroupsOnly && !randomGroup.SecurityEnabled ? false : true;
-            foreach (string userPrincipalName in TestEntitySourceManager.UsersWithCustomSettings.Where(x => x.IsMemberOfAllGroups).Select(x => x.UserPrincipalName))
-            {
-                TestAugmentationOperation(userPrincipalName, shouldBeMember, randomGroup.Id);
-            }
+            Trace.TraceInformation($"{DateTime.Now:s} [{this.GetType().Name}] TestAugmentationAgainst1RandomGroup for user \"{user.UserPrincipalName}\", IsMemberOfAllGroupsp: {user.IsMemberOfAllGroups} against group \"{randomGroup.DisplayName}\". userShouldBeMember: {shouldBeMember}");
+            TestAugmentationOperation(user.UserPrincipalName, shouldBeMember, randomGroup.Id);
         }
 
         /// <summary>

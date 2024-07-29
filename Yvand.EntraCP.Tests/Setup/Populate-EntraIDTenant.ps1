@@ -1,4 +1,6 @@
-#Requires -Modules Microsoft.Graph.Authentication, Microsoft.Graph.Identity.DirectoryManagement, Microsoft.Graph.Identity.SignIns, Microsoft.Graph.Users, Microsoft.Graph.Groups
+
+
+#### #Requires -Modules Microsoft.Graph.Authentication, Microsoft.Graph.Identity.DirectoryManagement, Microsoft.Graph.Identity.SignIns, Microsoft.Graph.Users, Microsoft.Graph.Groups
 
 <#
 .SYNOPSIS
@@ -11,6 +13,9 @@
 
 Connect-MgGraph -Scopes "User.ReadWrite.All", "Group.ReadWrite.All" -UseDeviceCode
 $tenantName = (Get-MgOrganization).VerifiedDomains[0].Name
+
+$exportedUsersFullFilePath = "C:\YvanData\dev\EntraCP_Tests_Users.csv"
+$exportedGroupsFullFilePath = "C:\YvanData\dev\EntraCP_Tests_Groups.csv"
 
 $memberUsersNamePrefix = "testEntraCPUser_"
 $guestUsersNamePrefix = "testEntraCPGuestUser_"
@@ -43,11 +48,11 @@ $groupsWithSpecificSettings = @(
     @{
         GroupName              = "$($groupNamePrefix)001"
         SecurityEnabled        = $false
-        AllTestUsersAreMembers = $true
+        EveryoneIsMember = $true
     },
     @{
         GroupName              = "$($groupNamePrefix)005"
-        AllTestUsersAreMembers = $true
+        EveryoneIsMember = $true
     },
     @{
         GroupName       = "$($groupNamePrefix)008"
@@ -56,11 +61,11 @@ $groupsWithSpecificSettings = @(
     @{
         GroupName              = "$($groupNamePrefix)018"
         SecurityEnabled        = $false
-        AllTestUsersAreMembers = $true
+        EveryoneIsMember = $true
     },
     @{
         GroupName              = "$($groupNamePrefix)025"
-        AllTestUsersAreMembers = $true
+        EveryoneIsMember = $true
     },
     @{
         GroupName       = "$($groupNamePrefix)028"
@@ -69,7 +74,7 @@ $groupsWithSpecificSettings = @(
     @{
         GroupName              = "$($groupNamePrefix)038"
         SecurityEnabled        = $false
-        AllTestUsersAreMembers = $true
+        EveryoneIsMember = $true
     },
     @{
         GroupName       = "$($groupNamePrefix)048"
@@ -95,10 +100,11 @@ $passwordProfile = @{
 
 # Bulk add users
 $totalUsers = 1000
+$allUsers = @()
 for ($i = 1; $i -le $totalUsers; $i++) {
     $accountName = "$($memberUsersNamePrefix)$("{0:D3}" -f $i)"
     $userPrincipalName = "$($accountName)@$($tenantName)"
-    $user = Get-MgUser -Filter "UserPrincipalName eq '$userPrincipalName'"
+    $user = Get-MgUser -Filter "UserPrincipalName eq '$userPrincipalName'" -Property Id, UserPrincipalName, Mail, UserType, DisplayName, GivenName
     if ($null -eq $user) {
         $additionalUserAttributes = New-Object -TypeName HashTable
         $userHasSpecificAttributes = [System.Linq.Enumerable]::FirstOrDefault($usersWithSpecificSettings, [Func[object, bool]] { param($x) $x.UserPrincipalName -like $userPrincipalName })
@@ -106,21 +112,23 @@ for ($i = 1; $i -le $totalUsers; $i++) {
             $additionalUserAttributes = $userHasSpecificAttributes.UserAttributes
         }
 
-        New-MgUser -DisplayName $accountName -PasswordProfile $passwordProfile -AccountEnabled -MailNickName $accountName -UserPrincipalName $userPrincipalName @additionalUserAttributes
+        New-MgUser -UserPrincipalName $userPrincipalName -DisplayName $accountName -PasswordProfile $passwordProfile -AccountEnabled -MailNickName $accountName @additionalUserAttributes
         Write-Host "Created user '$userPrincipalName'" -ForegroundColor Green
+        $user = Get-MgUser -Filter "UserPrincipalName eq '$userPrincipalName'" -Property Id, UserPrincipalName, Mail, UserType, DisplayName, GivenName
     }
+    $allUsers += $user
 }
 
 # Add the guest users
 foreach ($guestUser in $guestUsersList) {
-    $guestUserInGraph = Get-MgUser -Filter "Mail eq '$($guestUser.Mail)'"
-    if ($null -eq $guestUserInGraph) {
+    $user = Get-MgUser -Filter "Mail eq '$($guestUser.Mail)'" -Property Id, UserPrincipalName, Mail, UserType, DisplayName, GivenName
+    if ($null -eq $user) {
         $invitedUser = New-MgInvitation -InvitedUserDisplayName $guestUser.Mail -InvitedUserEmailAddress $guestUser.Mail -SendInvitationMessage:$false -InviteRedirectUrl "https://myapplications.microsoft.com"
         Write-Host "Invited guest user $($invitedUser.InvitedUserEmailAddress)" -ForegroundColor Green
-        $guestUserInGraph = $invitedUser.InvitedUser
+        $user = $invitedUser.InvitedUser
+        $user = Get-MgUser -Filter "Mail eq '$($guestUser.Mail)'" -Property Id, UserPrincipalName, Mail, UserType, DisplayName, GivenName
     }
-    $guestUser.Id = $guestUserInGraph.Id
-    $guestUser.UserPrincipalName = $guestUserInGraph.UserPrincipalName
+    $allUsers += $user
 }
 
 # groups
@@ -128,7 +136,7 @@ $allMemberUsersInEntra = Get-MgUser -ConsistencyLevel eventual -Count userCount 
 $usersMemberOfAllGroups = [System.Linq.Enumerable]::Where($usersWithSpecificSettings, [Func[object, bool]] { param($x) $x.IsMemberOfAllGroups -eq $true })
 
 # Bulk add groups
-$totalGroups = 50
+$totalGroups = 2
 for ($i = 1; $i -le $totalGroups; $i++) {
     $groupName = "$($groupNamePrefix)$("{0:D3}" -f $i)"
     $groupSettings = [System.Linq.Enumerable]::FirstOrDefault($groupsWithSpecificSettings, [Func[object, bool]] { param($x) $x.GroupName -like $groupName })
@@ -150,7 +158,7 @@ for ($i = 1; $i -le $totalGroups; $i++) {
 
     if ($false -eq $entraGroupJustCreated) {
         # Remove all members
-        $existingGroupMembers = Get-MgGroupMember -GroupId $entraGroup.Id
+        $existingGroupMembers = Get-MgGroupMember -GroupId $entraGroup.Id -All
         foreach ($groupMember in $existingGroupMembers) {
             Remove-MgGroupMemberByRef -GroupId $entraGroup.Id -DirectoryObjectId $groupMember.Id
         }
@@ -160,7 +168,7 @@ for ($i = 1; $i -le $totalGroups; $i++) {
     # Set membership
     $newGroupMembers = $usersMemberOfAllGroups | Select-Object -ExpandProperty UserPrincipalName
     $newGroupMemberIds = New-Object -TypeName "System.Collections.Generic.List[System.String]"
-    if ($null -ne $groupSettings -and $groupSettings.ContainsKey("AllTestUsersAreMembers") -and $groupSettings["AllTestUsersAreMembers"] -eq $true) {
+    if ($null -ne $groupSettings -and $groupSettings.ContainsKey("EveryoneIsMember") -and $groupSettings["EveryoneIsMember"] -eq $true) {
         $newGroupMembers = $allMemberUsersInEntra.UserPrincipalName
 
         foreach ($guestUser in $guestUsersList) {
@@ -179,3 +187,15 @@ for ($i = 1; $i -le $totalGroups; $i++) {
     }
     Write-Host "Added $($newGroupMemberIds.Count) member(s) to group $($entraGroup.DisplayName)" -ForegroundColor Green
 }
+
+# export users and groups to their CSV file
+$allUsers | 
+Select-Object -Property Id, UserPrincipalName, Mail, UserType, DisplayName, GivenName, @{ Name = "IsMemberOfAllGroups"; Expression = { if ([System.Linq.Enumerable]::FirstOrDefault($usersWithSpecificSettings, [Func[object, bool]] { param($x) $x.UserPrincipalName -like $_.UserPrincipalName }).IsMemberOfAllGroups) { $true } else { $false } } } |
+Export-Csv -Path $exportedUsersFullFilePath -NoTypeInformation
+Write-Host "Exported test users to CSV file $($exportedUsersFullFilePath)" -ForegroundColor Green
+
+$allGroups | 
+Select-Object -Property Id, DisplayName, SecurityEnabled, 
+@{ Name = "EveryoneIsMember"; Expression = { if ([System.Linq.Enumerable]::FirstOrDefault($groupsWithSpecificSettings, [Func[object, bool]] { param($x) $x.GroupName -like $_.SamAccountName }).EveryoneIsMember) { $true } else { $false } } } |
+Export-Csv -Path $exportedGroupsFullFilePath -NoTypeInformation
+Write-Host "Exported test groups to CSV file $($exportedGroupsFullFilePath)" -ForegroundColor Green
