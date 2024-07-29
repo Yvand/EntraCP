@@ -29,20 +29,20 @@ namespace Yvand.EntraClaimsProvider.Tests
         [Test, TestCaseSource(typeof(TestEntitySourceManager), nameof(TestEntitySourceManager.GetSomeUsers), new object[] { TestEntitySourceManager.MaxNumberOfUsersToTest })]
         public void TestUsers(TestUser user)
         {
-            base.TestSearchAndValidateForEntraIDUser(user);
+            base.TestSearchAndValidateForTestUser(user);
             user.UserPrincipalName = user.DisplayName;
             user.Mail = user.DisplayName;
             user.DisplayName = $"{PrefixBypassUserSearch}{user.DisplayName}";
-            base.TestSearchAndValidateForEntraIDUser(user);
+            base.TestSearchAndValidateForTestUser(user);
         }
 
         [Test, TestCaseSource(typeof(TestEntitySourceManager), nameof(TestEntitySourceManager.GetSomeGroups), new object[] { TestEntitySourceManager.MaxNumberOfGroupsToTest, true })]
         public void TestGroups(TestGroup group)
         {
-            TestSearchAndValidateForEntraIDGroup(group);
+            TestSearchAndValidateForTestGroup(group);
             group.Id = group.DisplayName;
             group.DisplayName = $"{PrefixBypassGroupSearch}{group.DisplayName}";
-            TestSearchAndValidateForEntraIDGroup(group);
+            TestSearchAndValidateForTestGroup(group);
         }
 
         [TestCase(PrefixBypassUserSearch + "externalUser@contoso.com", 1, "externalUser@contoso.com")]
@@ -80,13 +80,13 @@ namespace Yvand.EntraClaimsProvider.Tests
         [Test, TestCaseSource(typeof(TestEntitySourceManager), nameof(TestEntitySourceManager.GetSomeGroups), new object[] { TestEntitySourceManager.MaxNumberOfGroupsToTest, true })]
         public void TestGroups(TestGroup group)
         {
-            TestSearchAndValidateForEntraIDGroup(group);
+            TestSearchAndValidateForTestGroup(group);
         }
 
         [Test, TestCaseSource(typeof(TestEntitySourceManager), nameof(TestEntitySourceManager.GetSomeUsers), new object[] { TestEntitySourceManager.MaxNumberOfUsersToTest })]
         public void TestUsers(TestUser user)
         {
-            base.TestSearchAndValidateForEntraIDUser(user);
+            base.TestSearchAndValidateForTestUser(user);
         }
 
         [Test]

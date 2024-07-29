@@ -27,7 +27,7 @@ namespace Yvand.EntraClaimsProvider.Tests
         [Test, TestCaseSource(typeof(TestEntitySourceManager), nameof(TestEntitySourceManager.GetSomeGroups), new object[] { TestEntitySourceManager.MaxNumberOfGroupsToTest, true })]
         public void TestGroups(TestGroup group)
         {
-            TestSearchAndValidateForEntraIDGroup(group);
+            TestSearchAndValidateForTestGroup(group);
         }
 
         [Test]
@@ -60,7 +60,7 @@ namespace Yvand.EntraClaimsProvider.Tests
         [Test, TestCaseSource(typeof(TestEntitySourceManager), nameof(TestEntitySourceManager.GetSomeGroups), new object[] { TestEntitySourceManager.MaxNumberOfGroupsToTest, true })]
         public void TestGroups(TestGroup group)
         {
-            TestSearchAndValidateForEntraIDGroup(group);
+            TestSearchAndValidateForTestGroup(group);
         }
 
         [Test]

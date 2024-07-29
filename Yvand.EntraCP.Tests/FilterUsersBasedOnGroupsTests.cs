@@ -26,7 +26,7 @@ namespace Yvand.EntraClaimsProvider.Tests
         [Test, TestCaseSource(typeof(TestEntitySourceManager), nameof(TestEntitySourceManager.GetSomeUsers), new object[] { TestEntitySourceManager.MaxNumberOfUsersToTest })]
         public void TestUsers(TestUser user)
         {
-            base.TestSearchAndValidateForEntraIDUser(user);
+            base.TestSearchAndValidateForTestUser(user);
         }
 
 #if DEBUG
@@ -35,7 +35,7 @@ namespace Yvand.EntraClaimsProvider.Tests
         public void DebugTestUser(string upnPrefix)
         {
             TestUser user = TestEntitySourceManager.AllTestUsers.Find(x => x.UserPrincipalName.StartsWith(upnPrefix));
-            base.TestSearchAndValidateForEntraIDUser(user);
+            base.TestSearchAndValidateForTestUser(user);
         }
 #endif
     }
@@ -65,7 +65,7 @@ namespace Yvand.EntraClaimsProvider.Tests
         [Test, TestCaseSource(typeof(TestEntitySourceManager), nameof(TestEntitySourceManager.GetSomeUsers), new object[] { TestEntitySourceManager.MaxNumberOfUsersToTest })]
         public void TestUsers(TestUser user)
         {
-            base.TestSearchAndValidateForEntraIDUser(user);
+            base.TestSearchAndValidateForTestUser(user);
         }
 
 #if DEBUG
@@ -74,7 +74,7 @@ namespace Yvand.EntraClaimsProvider.Tests
         public void DebugTestUser(string upnPrefix)
         {
             TestUser user = TestEntitySourceManager.FindUser(upnPrefix);
-            base.TestSearchAndValidateForEntraIDUser(user);
+            base.TestSearchAndValidateForTestUser(user);
         }
 #endif
     }
@@ -97,14 +97,14 @@ namespace Yvand.EntraClaimsProvider.Tests
         public void DebugTestUser(string upnPrefix)
         {
             TestUser user = TestEntitySourceManager.FindUser(upnPrefix);
-            base.TestSearchAndValidateForEntraIDUser(user);
+            base.TestSearchAndValidateForTestUser(user);
         }
 
         [Test]
         public void DebugGuestUser()
         {
             TestUser user = TestEntitySourceManager.AllTestUsers.Find(x => x.Mail.StartsWith("testEntraCPGuestUser_001"));
-            base.TestSearchAndValidateForEntraIDUser(user);
+            base.TestSearchAndValidateForTestUser(user);
         }
     }
 #endif

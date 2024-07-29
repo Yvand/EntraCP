@@ -116,28 +116,12 @@ namespace Yvand.EntraClaimsProvider.Tests
             }
         }
 
-        public void TestSearchAndValidateForEntraIDGroup(TestGroup entity)
-        {
-            string inputValue = entity.DisplayName;
-            int expectedCount = 1;
-            bool shouldValidate = true;
-
-            if (Settings.AlwaysResolveUserInput)
-            {
-                inputValue = entity.Id;
-                expectedCount = Settings.ClaimTypes.GetConfigsMappedToClaimType().Count();
-            }
-            if (Settings.FilterSecurityEnabledGroupsOnly && entity.SecurityEnabled == false)
-            {
-                expectedCount = 0;
-                shouldValidate = false;
-            }
-
-            TestSearchOperation(inputValue, expectedCount, entity.Id);
-            TestValidationOperation(GroupIdentifierClaimType, entity.Id, shouldValidate);
-        }
-
-        public void TestSearchAndValidateForEntraIDUser(TestUser entity)
+        /// <summary>
+        /// Tests the search and validation operations for the user specified and against the current configuration.
+        /// The property DisplayName is used as the people picker input
+        /// </summary>
+        /// <param name="entity"></param>
+        public void TestSearchAndValidateForTestUser(TestUser entity)
         {
             int expectedCount = 1;
             string inputValue = entity.DisplayName;
@@ -146,8 +130,7 @@ namespace Yvand.EntraClaimsProvider.Tests
 
             if (Settings.AlwaysResolveUserInput)
             {
-                inputValue = entity.UserPrincipalName;
-                claimValue = entity.UserPrincipalName;
+                claimValue = inputValue;
                 expectedCount = Settings.ClaimTypes.GetConfigsMappedToClaimType().Count();
             }
             else
@@ -211,6 +194,33 @@ namespace Yvand.EntraClaimsProvider.Tests
             }
             TestSearchOperation(inputValue, expectedCount, claimValue);
             TestValidationOperation(UserIdentifierClaimType, claimValue, shouldValidate);
+        }
+
+        /// <summary>
+        /// Tests the search and validation operations for the group specified and against the current configuration.
+        /// The property DisplayName is used as the people picker input
+        /// </summary>
+        /// <param name="entity"></param>
+        public void TestSearchAndValidateForTestGroup(TestGroup entity)
+        {
+            string inputValue = entity.DisplayName;
+            string claimValue = entity.Id;
+            int expectedCount = 1;
+            bool shouldValidate = true;
+
+            if (Settings.AlwaysResolveUserInput)
+            {
+                claimValue = inputValue;
+                expectedCount = Settings.ClaimTypes.GetConfigsMappedToClaimType().Count();
+            }
+            if (Settings.FilterSecurityEnabledGroupsOnly && entity.SecurityEnabled == false)
+            {
+                expectedCount = 0;
+                shouldValidate = false;
+            }
+
+            TestSearchOperation(inputValue, expectedCount, claimValue);
+            TestValidationOperation(GroupIdentifierClaimType, claimValue, shouldValidate);
         }
 
         /// <summary>
@@ -337,10 +347,11 @@ namespace Yvand.EntraClaimsProvider.Tests
         /// </summary>
         /// <param name="claimValue"></param>
         /// <param name="isMemberOfTrustedGroup"></param>
-        protected void TestAugmentationOperation(string claimValue, bool isMemberOfTrustedGroup, string groupNameToTestInGroupMembership)
+        /// <param name="groupClaimValueToTest"></param>
+        protected void TestAugmentationOperation(string claimValue, bool isMemberOfTrustedGroup, string groupClaimValueToTest)
         {
             string claimType = UserIdentifierClaimType;
-            SPClaim groupClaimToTestInGroupMembership = new SPClaim(GroupIdentifierClaimType, groupNameToTestInGroupMembership, ClaimValueTypes.String, SPOriginalIssuers.Format(SPOriginalIssuerType.TrustedProvider, UnitTestsHelper.SPTrust.Name));
+            SPClaim groupClaimToTestInGroupMembership = new SPClaim(GroupIdentifierClaimType, groupClaimValueToTest, ClaimValueTypes.String, SPOriginalIssuers.Format(SPOriginalIssuerType.TrustedProvider, UnitTestsHelper.SPTrust.Name));
             try
             {
                 Stopwatch timer = new Stopwatch();
@@ -358,11 +369,11 @@ namespace Yvand.EntraClaimsProvider.Tests
 
                 if (isMemberOfTrustedGroup)
                 {
-                    Assert.That(groupFound, Is.True, $"Entity \"{claimValue}\" should be member of group \"{groupNameToTestInGroupMembership}\", but this group was not found in the claims returned by the claims provider.");
+                    Assert.That(groupFound, Is.True, $"Entity \"{claimValue}\" should be member of group \"{groupClaimValueToTest}\", but this group was not found in the claims returned by the claims provider.");
                 }
                 else
                 {
-                    Assert.That(groupFound, Is.False, $"Entity \"{claimValue}\" should NOT be member of group \"{groupNameToTestInGroupMembership}\", but this group was found in the claims returned by the claims provider.");
+                    Assert.That(groupFound, Is.False, $"Entity \"{claimValue}\" should NOT be member of group \"{groupClaimValueToTest}\", but this group was found in the claims returned by the claims provider.");
                 }
                 timer.Stop();
                 Trace.TraceInformation($"{DateTime.Now:s} TestAugmentationOperation finished in {timer.ElapsedMilliseconds} ms. Parameters: claimType: '{claimType}', claimValue: '{claimValue}', isMemberOfTrustedGroup: '{isMemberOfTrustedGroup}'.");
