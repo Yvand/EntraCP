@@ -1,5 +1,4 @@
 ﻿using Microsoft.SharePoint.Administration.Claims;
-using Microsoft.SharePoint.ApplicationPages.Calendar;
 using Microsoft.SharePoint.WebControls;
 using Newtonsoft.Json;
 using NUnit.Framework;
@@ -10,6 +9,7 @@ using System.Linq;
 using System.Security.Claims;
 using System.Text;
 using Yvand.EntraClaimsProvider.Configuration;
+using static Azure.Core.HttpHeader;
 
 namespace Yvand.EntraClaimsProvider.Tests
 {
@@ -48,34 +48,33 @@ namespace Yvand.EntraClaimsProvider.Tests
 
         protected EntraIDProviderSettings Settings = new EntraIDProviderSettings();
 
-        private object _LockVerifyIfCurrentUserShouldBeFound = new object();
         private object _LockInitGroupsWhichUsersMustBeMemberOfAny = new object();
-        private List<TestGroup> _GroupsWhichUsersMustBeMemberOfAny;
+        private bool GroupsWhichUsersMustBeMemberOfAnyReady = false;
+        private List<TestGroup> _GroupsWhichUsersMustBeMemberOfAny = new List<TestGroup>();
         protected List<TestGroup> GroupsWhichUsersMustBeMemberOfAny
         {
             get
             {
-                if (_GroupsWhichUsersMustBeMemberOfAny != null) { return _GroupsWhichUsersMustBeMemberOfAny; }
+                if (GroupsWhichUsersMustBeMemberOfAnyReady) { return _GroupsWhichUsersMustBeMemberOfAny; }
                 lock (_LockInitGroupsWhichUsersMustBeMemberOfAny)
                 {
-                    if (_GroupsWhichUsersMustBeMemberOfAny != null) { return _GroupsWhichUsersMustBeMemberOfAny; }
-                    _GroupsWhichUsersMustBeMemberOfAny = new List<TestGroup>();
+                    if (GroupsWhichUsersMustBeMemberOfAnyReady) { return _GroupsWhichUsersMustBeMemberOfAny; }
                     string groupsWhichUsersMustBeMemberOfAny = Settings.RestrictSearchableUsersByGroups;
                     if (!String.IsNullOrWhiteSpace(groupsWhichUsersMustBeMemberOfAny))
                     {
                         string[] groupIds = groupsWhichUsersMustBeMemberOfAny.Split(new char[] { ',' }, StringSplitOptions.RemoveEmptyEntries);
                         foreach (string groupId in groupIds)
                         {
-                            TestGroup groupSettings = TestEntitySourceManager.GroupsWithCustomSettings.FirstOrDefault(x => x.Id == groupId);
-                            if (groupSettings == null) { groupSettings = new TestGroup(); }
-                            _GroupsWhichUsersMustBeMemberOfAny.Add(groupSettings);
+                            TestGroup group = TestEntitySourceManager.AllTestGroups.First(x => x.Id == groupId);
+                            _GroupsWhichUsersMustBeMemberOfAny.Add(group);
                         }
                     }
+                    GroupsWhichUsersMustBeMemberOfAnyReady = true;
+                    Trace.TraceInformation($"{DateTime.Now:s} [{this.GetType().Name}] Initialized List of {nameof(GroupsWhichUsersMustBeMemberOfAny)} with {GroupsWhichUsersMustBeMemberOfAny.Count} items: {String.Join(", ", GroupsWhichUsersMustBeMemberOfAny.Select(x => x.Id).ToArray())}");
                     return _GroupsWhichUsersMustBeMemberOfAny;
                 }
             }
         }
-
 
         /// <summary>
         /// Initialize settings
@@ -138,38 +137,24 @@ namespace Yvand.EntraClaimsProvider.Tests
             {
                 if (!String.IsNullOrWhiteSpace(Settings.RestrictSearchableUsersByGroups))
                 {
-                    lock (_LockVerifyIfCurrentUserShouldBeFound) // TODO: understand why this lock is necessary
+                    // Test 1: Does Settings.RestrictSearchableUsersByGroups contain any group where all test users are members?
+                    bool groupEveryoneIsMemberOfFound = GroupsWhichUsersMustBeMemberOfAny.Any(x => x.EveryoneIsMember == true);
+                    Trace.TraceInformation($"{DateTime.Now:s} [{this.GetType().Name}] User \"{entity.UserPrincipalName}\" may be found because at least 1 of the groups in Settings.RestrictSearchableUsersByGroups has property EveryoneIsMember true.");
+
+                    // Test 2: If test 1 is false, is current entity member of all the test groups?
+                    if (!groupEveryoneIsMemberOfFound)
                     {
-                        // Test 1: Does Settings.RestrictSearchableUsersByGroups contain any group where all test users are members?
-                        bool groupWithAllTestUsersAreMembersFound = false;
-                        foreach (var groupSettings in GroupsWhichUsersMustBeMemberOfAny)
+                        if (!entity.IsMemberOfAllGroups)
                         {
-                            if (groupSettings.AllTestUsersAreMembers)
-                            {
-                                groupWithAllTestUsersAreMembersFound = true;
-                                Trace.TraceInformation($"{DateTime.Now:s} [{this.GetType().Name}] User \"{entity.UserPrincipalName}\" may be found because Settings.RestrictSearchableUsersByGroups contains group: \"{groupSettings.DisplayName}\" with AllTestUsersAreMembers {groupSettings.AllTestUsersAreMembers}.");
-                                break;  // No need to change shouldValidate, which is true by default, or process other groups
-                            }
-                        }
-
-                        // Test 2: If test 1 is false, is current entity member of all the test groups?
-                        if (!groupWithAllTestUsersAreMembersFound)
-                        {
-
-                            TestUser userSettings = TestEntitySourceManager.UsersWithCustomSettings.FirstOrDefault(x => String.Equals(x.UserPrincipalName, entity.UserPrincipalName, StringComparison.InvariantCultureIgnoreCase));
-                            if (userSettings == null) { userSettings = new TestUser(); }
-                            if (!userSettings.IsMemberOfAllGroups)
-                            {
-                                shouldValidate = false;
-                                expectedCount = 0;
-                                Trace.TraceInformation($"{DateTime.Now:s} [{this.GetType().Name}] User \"{entity.UserPrincipalName}\" should not be found because it has IsMemberOfAllGroups {userSettings.IsMemberOfAllGroups} and no group set in Settings.RestrictSearchableUsersByGroups has AllTestUsersAreMembers set to true.");
-                            }
+                            shouldValidate = false;
+                            expectedCount = 0;
+                            Trace.TraceInformation($"{DateTime.Now:s} [{this.GetType().Name}] User \"{entity.UserPrincipalName}\" should not be found because it has IsMemberOfAllGroups {entity.IsMemberOfAllGroups} and no group set in Settings.RestrictSearchableUsersByGroups has AllTestUsersAreMembers set to true.");
                         }
                     }
                 }
                 else
                 {
-                    Trace.TraceInformation($"{DateTime.Now:s} [{this.GetType().Name}] Property Settings.RestrictSearchableUsersByGroups IsNullOrWhiteSpace.");
+                    Trace.TraceInformation($"{DateTime.Now:s} [{this.GetType().Name}] Property Settings.RestrictSearchableUsersByGroups is not set.");
                 }
 
                 // If shouldValidate is false, user should not be found anyway so no need to do additional checks
@@ -229,7 +214,7 @@ namespace Yvand.EntraClaimsProvider.Tests
         /// </summary>
         public virtual void TestAugmentationOfGoldUsersAgainstRandomGroups()
         {
-            foreach (TestUser user in TestEntitySourceManager.UsersWithCustomSettings.Where(x => x.IsMemberOfAllGroups))
+            foreach (TestUser user in TestEntitySourceManager.GetUsersMembersOfAllGroups())
             {
                 TestAugmentationAgainst1RandomGroup(user);
             }
@@ -241,10 +226,10 @@ namespace Yvand.EntraClaimsProvider.Tests
         /// <param name="user"></param>
         public void TestAugmentationAgainst1RandomGroup(TestUser user)
         {
-            TestGroup randomGroup = TestEntitySourceManager.GetOneGroup();
-            bool shouldBeMember = Settings.FilterSecurityEnabledGroupsOnly && !randomGroup.SecurityEnabled ? false : true;
-            Trace.TraceInformation($"{DateTime.Now:s} [{this.GetType().Name}] TestAugmentationAgainst1RandomGroup for user \"{user.UserPrincipalName}\", IsMemberOfAllGroupsp: {user.IsMemberOfAllGroups} against group \"{randomGroup.DisplayName}\". userShouldBeMember: {shouldBeMember}");
-            TestAugmentationOperation(user.UserPrincipalName, shouldBeMember, randomGroup.Id);
+            TestGroup randomGroup = TestEntitySourceManager.GetOneGroup(Settings.FilterSecurityEnabledGroupsOnly);
+            bool userShouldBeMember = user.IsMemberOfAllGroups || randomGroup.EveryoneIsMember ? true : false;
+            Trace.TraceInformation($"{DateTime.Now:s} [{this.GetType().Name}] TestAugmentationAgainst1RandomGroup for user \"{user.UserPrincipalName}\", IsMemberOfAllGroupsp: {user.IsMemberOfAllGroups} against group \"{randomGroup.DisplayName}\". userShouldBeMember: {userShouldBeMember}");
+            TestAugmentationOperation(user.UserPrincipalName, userShouldBeMember, randomGroup.Id);
         }
 
         /// <summary>

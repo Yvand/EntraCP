@@ -26,13 +26,6 @@ namespace Yvand.EntraClaimsProvider.Tests
             TestSearchAndValidateForTestGroup(group);
         }
 
-        //[Test]
-        //public void TestRandomTestGroups([Random(0, UnitTestsHelper.TotalNumberTestGroups - 1, 5)] int idx)
-        //{
-        //    EntraIdTestGroup group = EntraIdTestGroupsSource.Groups[idx];
-        //    TestSearchAndValidateForTestGroup(group);
-        //}
-
         [Test, TestCaseSource(typeof(TestEntitySourceManager), nameof(TestEntitySourceManager.GetSomeUsers), new object[] { TestEntitySourceManager.MaxNumberOfUsersToTest })]
         public void TestUsers(TestUser user)
         {
@@ -40,8 +33,15 @@ namespace Yvand.EntraClaimsProvider.Tests
             base.TestAugmentationAgainst1RandomGroup(user);
         }
 
+        [Test]
+        public void TestAGuestUser()
+        {
+            TestUser user = TestEntitySourceManager.GetOneUser(UserType.Guest);
+            base.TestSearchAndValidateForTestUser(user);
+        }
+
         //[Test]
-        //public void TestRandomTestUsers([Random(0, UnitTestsHelper.TotalNumberTestUsers - 1, 5)] int idx)
+        //public void TestRandomUsers([Random(0, UnitTestsHelper.TotalNumberTestUsers - 1, 5)] int idx)
         //{
         //    var user = EntraIdTestUsersSource.Users[idx];
         //    base.TestSearchAndValidateForTestUser(user);
@@ -56,10 +56,10 @@ namespace Yvand.EntraClaimsProvider.Tests
 
 #if DEBUG
         [TestCase("testEntraCPUser_001")]
-        [TestCase("testEntraCPUser_747")]
+        [TestCase("testEntraCPUser_326")]
         public void DebugTestUser(string upnPrefix)
         {
-            TestUser user = TestEntitySourceManager.AllTestUsers.First(x => x.UserPrincipalName.StartsWith(upnPrefix));
+            TestUser user = TestEntitySourceManager.FindUser(upnPrefix);
             base.TestSearchAndValidateForTestUser(user);
             base.TestAugmentationAgainst1RandomGroup(user);
         }

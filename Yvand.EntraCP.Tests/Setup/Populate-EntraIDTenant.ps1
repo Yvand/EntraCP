@@ -192,6 +192,7 @@ Write-Host "Exported Entra users to CSV file $($exportedUsersFullFilePath)" -For
 
 $allGroupsInEntra | 
 Select-Object -Property Id, DisplayName, SecurityEnabled, 
-@{ Name = "EveryoneIsMember"; Expression = { if ([System.Linq.Enumerable]::FirstOrDefault($groupsWithSpecificSettings, [Func[object, bool]] { param($x) $x.GroupName -like $_.DisplayName }).EveryoneIsMember) { $true } else { $false } } } |
+@{ Name = "EveryoneIsMember"; Expression = { if ([System.Linq.Enumerable]::FirstOrDefault($groupsWithSpecificSettings, [Func[object, bool]] { param($x) $x.GroupName -like $_.DisplayName }).EveryoneIsMember) { $true } else { $false } } }, 
+@{ Name = "GroupType"; Expression = { $_.GroupTypes[0] } } |
 Export-Csv -Path $exportedGroupsFullFilePath -NoTypeInformation
 Write-Host "Exported Entra groups to CSV file $($exportedGroupsFullFilePath)" -ForegroundColor Green
