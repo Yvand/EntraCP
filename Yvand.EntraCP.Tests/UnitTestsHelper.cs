@@ -283,11 +283,14 @@ namespace Yvand.EntraClaimsProvider.Tests
 
         public IEnumerable<T> GetSomeEntities(int count, Func<T, bool> filter = null)
         {
-            if (count > Entities.Count) { count = Entities.Count; }
             IEnumerable<T> entitiesFiltered = Entities.Where(filter ?? (x => true));
             int randomNumberMaxValue = entitiesFiltered.Count() - 1;
-            int randomIdx = RandomNumber.Next(0, randomNumberMaxValue);
-            yield return entitiesFiltered.ElementAt(randomIdx).Clone() as T;
+            if (count > randomNumberMaxValue + 1) { count = randomNumberMaxValue + 1; }
+            for (int i = 0; i < count; i++)
+            {
+                int randomIdx = RandomNumber.Next(0, randomNumberMaxValue);
+                yield return entitiesFiltered.ElementAt(randomIdx).Clone() as T;
+            }
         }
     }
 

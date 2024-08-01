@@ -97,7 +97,7 @@ $passwordProfile = @{
 }
 
 # Bulk add users
-$totalUsers = 1000
+$totalUsers = 999
 $allUsersInEntra = @()
 for ($i = 1; $i -le $totalUsers; $i++) {
     $accountName = "$($memberUsersNamePrefix)$("{0:D3}" -f $i)"

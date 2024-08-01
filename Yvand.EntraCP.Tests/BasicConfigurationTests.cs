@@ -48,7 +48,7 @@ namespace Yvand.EntraClaimsProvider.Tests
         //}
 
         [Test]
-        [Repeat(5)]
+        [Repeat(1)]
         public override void TestAugmentationOfGoldUsersAgainstRandomGroups()
         {
             base.TestAugmentationOfGoldUsersAgainstRandomGroups();
