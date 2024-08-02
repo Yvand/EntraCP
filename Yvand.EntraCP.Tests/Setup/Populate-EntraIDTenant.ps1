@@ -18,6 +18,8 @@ $exportedGroupsFullFilePath = "C:\YvanData\dev\EntraCP_Tests_Groups.csv"
 $memberUsersNamePrefix = "testEntraCPUser_"
 $guestUsersNamePrefix = "testEntraCPGuestUser_"
 $groupNamePrefix = "testEntraCPGroup_"
+$usersCount = 999
+$groupsCount = 50
 
 $confirmation = Read-Host "Connected to tenant '$tenantName' and about to process users starting with '$memberUsersNamePrefix' and groups starting with '$groupNamePrefix'. Are you sure you want to proceed? [y/n]"
 if ($confirmation -ne 'y') {
@@ -25,7 +27,6 @@ if ($confirmation -ne 'y') {
     return
 }
 
-# Set specific attributes for some users
 $usersWithSpecificSettings = @( 
     @{ UserPrincipalName = "$($memberUsersNamePrefix)001@$($tenantName)"; IsMemberOfAllGroups = $true }
     @{ UserPrincipalName = "$($memberUsersNamePrefix)002@$($tenantName)"; UserAttributes = @{ "GivenName" = "firstname 002" } }
@@ -97,9 +98,8 @@ $passwordProfile = @{
 }
 
 # Bulk add users
-$totalUsers = 999
 $allUsersInEntra = @()
-for ($i = 1; $i -le $totalUsers; $i++) {
+for ($i = 1; $i -le $usersCount; $i++) {
     $accountName = "$($memberUsersNamePrefix)$("{0:D3}" -f $i)"
     $userPrincipalName = "$($accountName)@$($tenantName)"
     $user = Get-MgUser -Filter "UserPrincipalName eq '$userPrincipalName'" -Property Id, UserPrincipalName, Mail, UserType, DisplayName, GivenName
@@ -130,9 +130,8 @@ foreach ($guestUser in $guestUsersList) {
 }
 
 # Bulk add groups and set their membership
-$totalGroups = 50
 $allGroupsInEntra = @()
-for ($i = 1; $i -le $totalGroups; $i++) {
+for ($i = 1; $i -le $groupsCount; $i++) {
     $groupName = "$($groupNamePrefix)$("{0:D3}" -f $i)"
     $groupSettings = [System.Linq.Enumerable]::FirstOrDefault($groupsWithSpecificSettings, [Func[object, bool]] { param($x) $x.GroupName -like $groupName })
     $entraGroup = Get-MgGroup -Filter "DisplayName eq '$($groupName)'"
