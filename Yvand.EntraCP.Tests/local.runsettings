@@ -8,8 +8,8 @@
     <Parameter name="FarmAdmin" value="i:0#.w|contoso\yvand" />
     <Parameter name="TestSiteCollectionName" value="EntraCP.UnitTests" />
     <Parameter name="AzureTenantsJsonFile" value="C:\YvanData\Dev\EntraCP_Tenants.json" />
-    <Parameter name="DataFile_EntraId_TestUsers" value="C:\YvanData\Dev\EntraCP_Tests_EntraID_Users.csv" />
-    <Parameter name="DataFile_EntraId_TestGroups" value="C:\YvanData\Dev\EntraCP_Tests_EntraID_Groups.csv" />
+    <Parameter name="DataFile_EntraId_TestUsers" value="C:\YvanData\dev\EntraCP_Tests_Users.csv" />
+    <Parameter name="DataFile_EntraId_TestGroups" value="C:\YvanData\dev\EntraCP_Tests_Groups.csv" />
     <Parameter name="UserAccountNamePrefix" value="testEntraCPUser_" />
     <Parameter name="GroupAccountNamePrefix" value="testEntraCPGroup_" />
     <Parameter name="ClaimsProviderConfigName" value="EntraCPConfig" />

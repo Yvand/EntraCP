@@ -24,13 +24,13 @@ namespace Yvand.EntraClaimsProvider.Tests
         [Test, TestCaseSource(typeof(TestEntitySourceManager), nameof(TestEntitySourceManager.GetSomeGroups), new object[] { TestEntitySourceManager.MaxNumberOfGroupsToTest, true })]
         public void TestGroups(TestGroup group)
         {
-            TestSearchAndValidateForEntraIDGroup(group);
+            TestSearchAndValidateForTestGroup(group);
         }
 
         [Test, TestCaseSource(typeof(TestEntitySourceManager), nameof(TestEntitySourceManager.GetSomeUsers), new object[] { TestEntitySourceManager.MaxNumberOfUsersToTest })]
         public void TestUsers(TestUser user)
         {
-            base.TestSearchAndValidateForEntraIDUser(user);
+            base.TestSearchAndValidateForTestUser(user);
         }
 
         [Test]
@@ -63,13 +63,13 @@ namespace Yvand.EntraClaimsProvider.Tests
         [Test, TestCaseSource(typeof(TestEntitySourceManager), nameof(TestEntitySourceManager.GetSomeGroups), new object[] { TestEntitySourceManager.MaxNumberOfGroupsToTest, true })]
         public void TestGroups(TestGroup group)
         {
-            TestSearchAndValidateForEntraIDGroup(group);
+            TestSearchAndValidateForTestGroup(group);
         }
 
         [Test, TestCaseSource(typeof(TestEntitySourceManager), nameof(TestEntitySourceManager.GetSomeUsers), new object[] { TestEntitySourceManager.MaxNumberOfUsersToTest })]
         public void TestUsers(TestUser user)
         {
-            base.TestSearchAndValidateForEntraIDUser(user);
+            base.TestSearchAndValidateForTestUser(user);
         }
 
         [Test]
@@ -102,13 +102,13 @@ namespace Yvand.EntraClaimsProvider.Tests
         [Test, TestCaseSource(typeof(TestEntitySourceManager), nameof(TestEntitySourceManager.GetSomeGroups), new object[] { TestEntitySourceManager.MaxNumberOfGroupsToTest, true })]
         public void TestGroups(TestGroup group)
         {
-            TestSearchAndValidateForEntraIDGroup(group);
+            TestSearchAndValidateForTestGroup(group);
         }
 
         [Test, TestCaseSource(typeof(TestEntitySourceManager), nameof(TestEntitySourceManager.GetSomeUsers), new object[] { TestEntitySourceManager.MaxNumberOfUsersToTest })]
         public void TestUsers(TestUser user)
         {
-            base.TestSearchAndValidateForEntraIDUser(user);
+            base.TestSearchAndValidateForTestUser(user);
         }
 
         [Test]

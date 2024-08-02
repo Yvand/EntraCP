@@ -1,4 +1,4 @@
-#Requires -Modules Microsoft.Graph.Authentication, Microsoft.Graph.Identity.DirectoryManagement, Microsoft.Graph.Identity.SignIns, Microsoft.Graph.Users, Microsoft.Graph.Groups
+#Requires -Modules Microsoft.Graph.Authentication, Microsoft.Graph.Identity.DirectoryManagement, Microsoft.Graph.Users, Microsoft.Graph.Groups
 
 <#
 .SYNOPSIS
@@ -12,9 +12,14 @@
 Connect-MgGraph -Scopes "User.ReadWrite.All", "Group.ReadWrite.All" -UseDeviceCode
 $tenantName = (Get-MgOrganization).VerifiedDomains[0].Name
 
+$exportedUsersFullFilePath = "C:\YvanData\dev\EntraCP_Tests_Users.csv"
+$exportedGroupsFullFilePath = "C:\YvanData\dev\EntraCP_Tests_Groups.csv"
+
 $memberUsersNamePrefix = "testEntraCPUser_"
 $guestUsersNamePrefix = "testEntraCPGuestUser_"
 $groupNamePrefix = "testEntraCPGroup_"
+$usersCount = 999
+$groupsCount = 50
 
 $confirmation = Read-Host "Connected to tenant '$tenantName' and about to process users starting with '$memberUsersNamePrefix' and groups starting with '$groupNamePrefix'. Are you sure you want to proceed? [y/n]"
 if ($confirmation -ne 'y') {
@@ -22,7 +27,6 @@ if ($confirmation -ne 'y') {
     return
 }
 
-# Set specific attributes for some users
 $usersWithSpecificSettings = @( 
     @{ UserPrincipalName = "$($memberUsersNamePrefix)001@$($tenantName)"; IsMemberOfAllGroups = $true }
     @{ UserPrincipalName = "$($memberUsersNamePrefix)002@$($tenantName)"; UserAttributes = @{ "GivenName" = "firstname 002" } }
@@ -38,16 +42,16 @@ $guestUsersList = @(
     @{ Mail = "$($guestUsersNamePrefix)002@contoso.local"; Id = ""; UserPrincipalName = "" }
     @{ Mail = "$($guestUsersNamePrefix)003@contoso.local"; Id = ""; UserPrincipalName = "" }
 )
-#$guestUsers = @("$($guestUsersNamePrefix)001@contoso.local", "$($guestUsersNamePrefix)002@contoso.local", "$($guestUsersNamePrefix)003@contoso.local")
+$usersMemberOfAllGroups = [System.Linq.Enumerable]::Where($usersWithSpecificSettings, [Func[object, bool]] { param($x) $x.IsMemberOfAllGroups -eq $true })
 $groupsWithSpecificSettings = @(
     @{
         GroupName              = "$($groupNamePrefix)001"
         SecurityEnabled        = $false
-        AllTestUsersAreMembers = $true
+        EveryoneIsMember = $true
     },
     @{
         GroupName              = "$($groupNamePrefix)005"
-        AllTestUsersAreMembers = $true
+        EveryoneIsMember = $true
     },
     @{
         GroupName       = "$($groupNamePrefix)008"
@@ -56,11 +60,11 @@ $groupsWithSpecificSettings = @(
     @{
         GroupName              = "$($groupNamePrefix)018"
         SecurityEnabled        = $false
-        AllTestUsersAreMembers = $true
+        EveryoneIsMember = $true
     },
     @{
         GroupName              = "$($groupNamePrefix)025"
-        AllTestUsersAreMembers = $true
+        EveryoneIsMember = $true
     },
     @{
         GroupName       = "$($groupNamePrefix)028"
@@ -69,7 +73,7 @@ $groupsWithSpecificSettings = @(
     @{
         GroupName              = "$($groupNamePrefix)038"
         SecurityEnabled        = $false
-        AllTestUsersAreMembers = $true
+        EveryoneIsMember = $true
     },
     @{
         GroupName       = "$($groupNamePrefix)048"
@@ -94,11 +98,11 @@ $passwordProfile = @{
 }
 
 # Bulk add users
-$totalUsers = 1000
-for ($i = 1; $i -le $totalUsers; $i++) {
+$allUsersInEntra = @()
+for ($i = 1; $i -le $usersCount; $i++) {
     $accountName = "$($memberUsersNamePrefix)$("{0:D3}" -f $i)"
     $userPrincipalName = "$($accountName)@$($tenantName)"
-    $user = Get-MgUser -Filter "UserPrincipalName eq '$userPrincipalName'"
+    $user = Get-MgUser -Filter "UserPrincipalName eq '$userPrincipalName'" -Property Id, UserPrincipalName, Mail, UserType, DisplayName, GivenName
     if ($null -eq $user) {
         $additionalUserAttributes = New-Object -TypeName HashTable
         $userHasSpecificAttributes = [System.Linq.Enumerable]::FirstOrDefault($usersWithSpecificSettings, [Func[object, bool]] { param($x) $x.UserPrincipalName -like $userPrincipalName })
@@ -106,30 +110,28 @@ for ($i = 1; $i -le $totalUsers; $i++) {
             $additionalUserAttributes = $userHasSpecificAttributes.UserAttributes
         }
 
-        New-MgUser -DisplayName $accountName -PasswordProfile $passwordProfile -AccountEnabled -MailNickName $accountName -UserPrincipalName $userPrincipalName @additionalUserAttributes
+        New-MgUser -UserPrincipalName $userPrincipalName -DisplayName $accountName -PasswordProfile $passwordProfile -AccountEnabled -MailNickName $accountName @additionalUserAttributes
         Write-Host "Created user '$userPrincipalName'" -ForegroundColor Green
+        $user = Get-MgUser -Filter "UserPrincipalName eq '$userPrincipalName'" -Property Id, UserPrincipalName, Mail, UserType, DisplayName, GivenName
     }
+    $allUsersInEntra += $user
 }
 
 # Add the guest users
 foreach ($guestUser in $guestUsersList) {
-    $guestUserInGraph = Get-MgUser -Filter "Mail eq '$($guestUser.Mail)'"
-    if ($null -eq $guestUserInGraph) {
+    $user = Get-MgUser -Filter "Mail eq '$($guestUser.Mail)'" -Property Id, UserPrincipalName, Mail, UserType, DisplayName, GivenName
+    if ($null -eq $user) {
         $invitedUser = New-MgInvitation -InvitedUserDisplayName $guestUser.Mail -InvitedUserEmailAddress $guestUser.Mail -SendInvitationMessage:$false -InviteRedirectUrl "https://myapplications.microsoft.com"
         Write-Host "Invited guest user $($invitedUser.InvitedUserEmailAddress)" -ForegroundColor Green
-        $guestUserInGraph = $invitedUser.InvitedUser
+        $user = $invitedUser.InvitedUser
+        $user = Get-MgUser -Filter "Mail eq '$($guestUser.Mail)'" -Property Id, UserPrincipalName, Mail, UserType, DisplayName, GivenName
     }
-    $guestUser.Id = $guestUserInGraph.Id
-    $guestUser.UserPrincipalName = $guestUserInGraph.UserPrincipalName
+    $allUsersInEntra += $user
 }
 
-# groups
-$allMemberUsersInEntra = Get-MgUser -ConsistencyLevel eventual -Count userCount -Filter "startsWith(DisplayName, '$($memberUsersNamePrefix)')" -OrderBy UserPrincipalName -Top $totalUsers
-$usersMemberOfAllGroups = [System.Linq.Enumerable]::Where($usersWithSpecificSettings, [Func[object, bool]] { param($x) $x.IsMemberOfAllGroups -eq $true })
-
-# Bulk add groups
-$totalGroups = 50
-for ($i = 1; $i -le $totalGroups; $i++) {
+# Bulk add groups and set their membership
+$allGroupsInEntra = @()
+for ($i = 1; $i -le $groupsCount; $i++) {
     $groupName = "$($groupNamePrefix)$("{0:D3}" -f $i)"
     $groupSettings = [System.Linq.Enumerable]::FirstOrDefault($groupsWithSpecificSettings, [Func[object, bool]] { param($x) $x.GroupName -like $groupName })
     $entraGroup = Get-MgGroup -Filter "DisplayName eq '$($groupName)'"
@@ -147,30 +149,31 @@ for ($i = 1; $i -le $totalGroups; $i++) {
         Write-Host "Created group $groupName" -ForegroundColor Green
         $entraGroupJustCreated = $true
     }
+    $allGroupsInEntra += $entraGroup
 
     if ($false -eq $entraGroupJustCreated) {
         # Remove all members
-        $existingGroupMembers = Get-MgGroupMember -GroupId $entraGroup.Id
+        $existingGroupMembers = Get-MgGroupMember -GroupId $entraGroup.Id -All
         foreach ($groupMember in $existingGroupMembers) {
             Remove-MgGroupMemberByRef -GroupId $entraGroup.Id -DirectoryObjectId $groupMember.Id
         }
         Write-Host "Removed all members of existing group $($entraGroup.DisplayName)." -ForegroundColor Green
     }
 
-    # Set membership
-    $newGroupMembers = $usersMemberOfAllGroups | Select-Object -ExpandProperty UserPrincipalName
+    # Set group membership
     $newGroupMemberIds = New-Object -TypeName "System.Collections.Generic.List[System.String]"
-    if ($null -ne $groupSettings -and $groupSettings.ContainsKey("AllTestUsersAreMembers") -and $groupSettings["AllTestUsersAreMembers"] -eq $true) {
-        $newGroupMembers = $allMemberUsersInEntra.UserPrincipalName
-
-        foreach ($guestUser in $guestUsersList) {
-            $newGroupMemberIds.Add($guestUser.Id)
+    if ($null -ne $groupSettings -and $groupSettings.ContainsKey("EveryoneIsMember") -and $groupSettings["EveryoneIsMember"] -eq $true) {
+        # Everyone is mmember of this group
+        foreach($userInEntra in $allUsersInEntra) {
+            $newGroupMemberIds.Add($userInEntra.Id)
         }
-    }
-
-    foreach ($groupMember in $newGroupMembers) {
-        $entraUser = [System.Linq.Enumerable]::FirstOrDefault($allMemberUsersInEntra, [Func[object, bool]] { param($x) $x.UserPrincipalName -like $groupMember })
-        $newGroupMemberIds.Add($entraUser.Id)
+    } else {
+        # Only users with IsMemberOfAllGroups true are members of this group
+        foreach($upnOfUserMemberOfAllGroups in $usersMemberOfAllGroups | Select-Object -ExpandProperty UserPrincipalName) {
+            $upnOfUserMemberOfAllGroups
+            $userInEntra = [System.Linq.Enumerable]::First($allUsersInEntra, [Func[object, bool]] { param($x) $x.UserPrincipalName -like $upnOfUserMemberOfAllGroups })
+            $newGroupMemberIds.Add($userInEntra.Id)
+        }
     }
 
     # $newGroupMemberIds = $newGroupMemberIds | Select-Object -Unique
@@ -179,3 +182,16 @@ for ($i = 1; $i -le $totalGroups; $i++) {
     }
     Write-Host "Added $($newGroupMemberIds.Count) member(s) to group $($entraGroup.DisplayName)" -ForegroundColor Green
 }
+
+# export users and groups to their CSV file
+$allUsersInEntra | 
+Select-Object -Property Id, UserPrincipalName, Mail, UserType, DisplayName, GivenName, @{ Name = "IsMemberOfAllGroups"; Expression = { if ([System.Linq.Enumerable]::FirstOrDefault($usersWithSpecificSettings, [Func[object, bool]] { param($x) $x.UserPrincipalName -like $_.UserPrincipalName }).IsMemberOfAllGroups) { $true } else { $false } } } |
+Export-Csv -Path $exportedUsersFullFilePath -NoTypeInformation
+Write-Host "Exported Entra users to CSV file $($exportedUsersFullFilePath)" -ForegroundColor Green
+
+$allGroupsInEntra | 
+Select-Object -Property Id, DisplayName, SecurityEnabled, 
+@{ Name = "EveryoneIsMember"; Expression = { if ([System.Linq.Enumerable]::FirstOrDefault($groupsWithSpecificSettings, [Func[object, bool]] { param($x) $x.GroupName -like $_.DisplayName }).EveryoneIsMember) { $true } else { $false } } }, 
+@{ Name = "GroupType"; Expression = { $_.GroupTypes[0] } } |
+Export-Csv -Path $exportedGroupsFullFilePath -NoTypeInformation
+Write-Host "Exported Entra groups to CSV file $($exportedGroupsFullFilePath)" -ForegroundColor Green

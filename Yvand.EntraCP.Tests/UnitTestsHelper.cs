@@ -212,6 +212,7 @@ namespace Yvand.EntraClaimsProvider.Tests
             UserType = String.Equals(row["userType"], ClaimsProviderConstants.MEMBER_USERTYPE, StringComparison.InvariantCultureIgnoreCase) ? UserType.Member : UserType.Guest;
             Mail = row["mail"];
             GivenName = row["givenName"];
+            IsMemberOfAllGroups = Convert.ToBoolean(row["IsMemberOfAllGroups"]);
         }
     }
 
@@ -219,7 +220,7 @@ namespace Yvand.EntraClaimsProvider.Tests
     {
         public string GroupType;
         public bool SecurityEnabled = true;
-        public bool AllTestUsersAreMembers = false;
+        public bool EveryoneIsMember;
 
         public override void SetEntityFromDataSourceRow(Row row)
         {
@@ -227,6 +228,7 @@ namespace Yvand.EntraClaimsProvider.Tests
             DisplayName = row["displayName"];
             GroupType = row["groupType"];
             SecurityEnabled = Convert.ToBoolean(row["SecurityEnabled"]);
+            EveryoneIsMember = Convert.ToBoolean(row["EveryoneIsMember"]);
         }
     }
 
@@ -239,20 +241,21 @@ namespace Yvand.EntraClaimsProvider.Tests
     public class TestEntitySource<T> where T : TestEntity, new()
     {
         private object _LockInitEntitiesList = new object();
-        private List<T> _Entities;
+        private bool EntitiesReady = false;
+        private List<T> _Entities = new List<T>();
         public List<T> Entities
         {
             get
             {
-                if (_Entities != null) { return _Entities; }
+                if (EntitiesReady) { return _Entities; }
                 lock (_LockInitEntitiesList)
                 {
-                    if (_Entities != null) { return _Entities; }
-                    _Entities = new List<T>();
+                    if (EntitiesReady) { return _Entities; }
                     foreach (T entity in ReadDataSource())
                     {
                         _Entities.Add(entity);
                     }
+                    EntitiesReady = true;
                     Trace.TraceInformation($"{DateTime.Now:s} [{typeof(T).Name}] Initialized List of {nameof(Entities)} with {Entities.Count} items.");
                     return _Entities;
                 }
@@ -280,94 +283,19 @@ namespace Yvand.EntraClaimsProvider.Tests
 
         public IEnumerable<T> GetSomeEntities(int count, Func<T, bool> filter = null)
         {
-            if (count > Entities.Count)
-            {
-                count = Entities.Count;
-            }
-
-            int randomNumberMaxValue = Entities.Where(filter ?? (x => true)).Count() - 1;
-            List<int> entitiesIdxs = new List<int>(count);
+            IEnumerable<T> entitiesFiltered = Entities.Where(filter ?? (x => true));
+            int entitiesFilteredCount = entitiesFiltered.Count();
+            if (count > entitiesFilteredCount) { count = entitiesFilteredCount; }
             for (int i = 0; i < count; i++)
             {
-                entitiesIdxs.Add(RandomNumber.Next(0, randomNumberMaxValue));
-            }
-
-            foreach (int userIdx in entitiesIdxs)
-            {
-                yield return Entities[userIdx].Clone() as T;
+                int randomIdx = RandomNumber.Next(0, entitiesFilteredCount);
+                yield return entitiesFiltered.ElementAt(randomIdx).Clone() as T;
             }
         }
     }
 
     public class TestEntitySourceManager
     {
-        private static TestUser[] UsersWithCustomSettingsDefinition = new[]
-        {
-            new TestUser { UserPrincipalName = $"{UnitTestsHelper.TestUsersAccountNamePrefix}001@{UnitTestsHelper.TenantConnection.Name}" , IsMemberOfAllGroups = true },
-            new TestUser { UserPrincipalName = $"{UnitTestsHelper.TestUsersAccountNamePrefix}010@{UnitTestsHelper.TenantConnection.Name}" , IsMemberOfAllGroups = true },
-            new TestUser { UserPrincipalName = $"{UnitTestsHelper.TestUsersAccountNamePrefix}011@{UnitTestsHelper.TenantConnection.Name}" , IsMemberOfAllGroups = true },
-            new TestUser { UserPrincipalName = $"{UnitTestsHelper.TestUsersAccountNamePrefix}012@{UnitTestsHelper.TenantConnection.Name}" , IsMemberOfAllGroups = true },
-            new TestUser { UserPrincipalName = $"{UnitTestsHelper.TestUsersAccountNamePrefix}013@{UnitTestsHelper.TenantConnection.Name}" , IsMemberOfAllGroups = true },
-            new TestUser { UserPrincipalName = $"{UnitTestsHelper.TestUsersAccountNamePrefix}014@{UnitTestsHelper.TenantConnection.Name}" , IsMemberOfAllGroups = true },
-            new TestUser { UserPrincipalName = $"{UnitTestsHelper.TestUsersAccountNamePrefix}015@{UnitTestsHelper.TenantConnection.Name}" , IsMemberOfAllGroups = true },
-        };
-        private static TestGroup[] GroupsWithCustomSettingsDefinition = new[]
-        {
-            new TestGroup { DisplayName = $"{UnitTestsHelper.TestGroupsAccountNamePrefix}001" , SecurityEnabled = false, AllTestUsersAreMembers = true},
-            new TestGroup { DisplayName = $"{UnitTestsHelper.TestGroupsAccountNamePrefix}005" , SecurityEnabled = true, AllTestUsersAreMembers = true },
-            new TestGroup { DisplayName = $"{UnitTestsHelper.TestGroupsAccountNamePrefix}008" , SecurityEnabled = false, AllTestUsersAreMembers = false },
-            new TestGroup { DisplayName = $"{UnitTestsHelper.TestGroupsAccountNamePrefix}018" , SecurityEnabled = false, AllTestUsersAreMembers = true },
-            new TestGroup { DisplayName = $"{UnitTestsHelper.TestGroupsAccountNamePrefix}025" , SecurityEnabled = true, AllTestUsersAreMembers = true },
-            new TestGroup { DisplayName = $"{UnitTestsHelper.TestGroupsAccountNamePrefix}028" , SecurityEnabled = false, AllTestUsersAreMembers = false, },
-            new TestGroup { DisplayName = $"{UnitTestsHelper.TestGroupsAccountNamePrefix}038" , SecurityEnabled = false, AllTestUsersAreMembers = true, },
-            new TestGroup { DisplayName = $"{UnitTestsHelper.TestGroupsAccountNamePrefix}048" , SecurityEnabled = false, AllTestUsersAreMembers = false, },
-        };
-
-        private static object _LockInitUsersWithCustomSettings = new object();
-        private static List<TestUser> _UsersWithCustomSettings;
-        public static List<TestUser> UsersWithCustomSettings
-        {
-            get
-            {
-                if (_UsersWithCustomSettings != null) { return _UsersWithCustomSettings; }
-                lock (_LockInitGroupsWithCustomSettings)
-                {
-                    if (_UsersWithCustomSettings != null) { return _UsersWithCustomSettings; }
-                    _UsersWithCustomSettings = new List<TestUser>();
-                    foreach (TestUser userDefinition in UsersWithCustomSettingsDefinition)
-                    {
-                        TestUser user = AllTestUsers.First(x => String.Equals(x.UserPrincipalName, userDefinition.UserPrincipalName, StringComparison.OrdinalIgnoreCase));
-                        user.IsMemberOfAllGroups = userDefinition.IsMemberOfAllGroups;
-                        _UsersWithCustomSettings.Add(user);
-                    }
-                }
-                return _UsersWithCustomSettings;
-            }
-        }
-
-        private static object _LockInitGroupsWithCustomSettings = new object();
-        private static List<TestGroup> _GroupsWithCustomSettings;
-        public static List<TestGroup> GroupsWithCustomSettings
-        {
-            get
-            {
-                if (_GroupsWithCustomSettings != null) { return _GroupsWithCustomSettings; }
-                lock (_LockInitGroupsWithCustomSettings)
-                {
-                    if (_GroupsWithCustomSettings != null) { return _GroupsWithCustomSettings; }
-                    _GroupsWithCustomSettings = new List<TestGroup>();
-                    foreach (TestGroup groupDefinition in GroupsWithCustomSettingsDefinition)
-                    {
-                        TestGroup group = AllTestGroups.First(x => x.DisplayName == groupDefinition.DisplayName);
-                        group.SecurityEnabled = groupDefinition.SecurityEnabled;
-                        group.AllTestUsersAreMembers = groupDefinition.AllTestUsersAreMembers;
-                        _GroupsWithCustomSettings.Add(group);
-                    }
-                }
-                return _GroupsWithCustomSettings;
-            }
-        }
-
         private static TestEntitySource<TestUser> TestUsersSource = new TestEntitySource<TestUser>(UnitTestsHelper.DataFile_EntraId_TestUsers);
         public static List<TestUser> AllTestUsers
         {
@@ -386,21 +314,39 @@ namespace Yvand.EntraClaimsProvider.Tests
             return TestUsersSource.GetSomeEntities(count, null);
         }
 
+        public static IEnumerable<TestUser> GetUsersMembersOfAllGroups()
+        {
+            Func<TestUser, bool> filter = x => x.IsMemberOfAllGroups == true;
+            return TestUsersSource.GetSomeEntities(Int16.MaxValue, filter);
+        }
+
         public static TestUser FindUser(string upnPrefix)
         {
-            return TestUsersSource.Entities.First(x => x.UserPrincipalName.StartsWith(upnPrefix)).Clone() as TestUser;
+            Func<TestUser, bool> filter = x => x.UserPrincipalName.StartsWith(upnPrefix);
+            return TestUsersSource.GetSomeEntities(1, filter).First();
+        }
+
+        public static TestUser GetOneUser(UserType userType)
+        {
+            Func<TestUser, bool> filter = x => x.UserType == userType;
+            return TestUsersSource.GetSomeEntities(1, filter).First();
         }
 
         public static IEnumerable<TestGroup> GetSomeGroups(int count, bool securityEnabledOnly)
         {
-            Func<TestGroup, bool> securityEnabledOnlyFilter = x => x.SecurityEnabled == securityEnabledOnly;
-            return TestGroupsSource.GetSomeEntities(count, securityEnabledOnlyFilter);
+            Func<TestGroup, bool> filter = x => x.SecurityEnabled == securityEnabledOnly;
+            return TestGroupsSource.GetSomeEntities(count, filter);
+        }
+
+        public static TestGroup GetOneGroup()
+        {
+            return TestGroupsSource.GetSomeEntities(1, null).First();
         }
 
         public static TestGroup GetOneGroup(bool securityEnabledOnly)
         {
-            Func<TestGroup, bool> securityEnabledOnlyFilter = x => x.SecurityEnabled == securityEnabledOnly;
-            return TestGroupsSource.GetSomeEntities(1, securityEnabledOnlyFilter).First();
+            Func<TestGroup, bool> filter = x => x.SecurityEnabled == securityEnabledOnly;
+            return TestGroupsSource.GetSomeEntities(1, filter).First();
         }
     }
 }
