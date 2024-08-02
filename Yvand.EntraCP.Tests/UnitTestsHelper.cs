@@ -284,11 +284,11 @@ namespace Yvand.EntraClaimsProvider.Tests
         public IEnumerable<T> GetSomeEntities(int count, Func<T, bool> filter = null)
         {
             IEnumerable<T> entitiesFiltered = Entities.Where(filter ?? (x => true));
-            int randomNumberMaxValue = entitiesFiltered.Count() - 1;
-            if (count > randomNumberMaxValue + 1) { count = randomNumberMaxValue + 1; }
+            int entitiesFilteredCount = entitiesFiltered.Count();
+            if (count > entitiesFilteredCount) { count = entitiesFilteredCount; }
             for (int i = 0; i < count; i++)
             {
-                int randomIdx = RandomNumber.Next(0, randomNumberMaxValue);
+                int randomIdx = RandomNumber.Next(0, entitiesFilteredCount - 1);
                 yield return entitiesFiltered.ElementAt(randomIdx).Clone() as T;
             }
         }
@@ -316,25 +316,26 @@ namespace Yvand.EntraClaimsProvider.Tests
 
         public static IEnumerable<TestUser> GetUsersMembersOfAllGroups()
         {
-            Func<TestUser, bool> onlyMembersOfAllGroupsFilter = x => x.IsMemberOfAllGroups == true;
-            return TestUsersSource.GetSomeEntities(Int16.MaxValue, onlyMembersOfAllGroupsFilter);
+            Func<TestUser, bool> filter = x => x.IsMemberOfAllGroups == true;
+            return TestUsersSource.GetSomeEntities(Int16.MaxValue, filter);
         }
 
         public static TestUser FindUser(string upnPrefix)
         {
-            return TestUsersSource.Entities.First(x => x.UserPrincipalName.StartsWith(upnPrefix)).Clone() as TestUser;
+            Func<TestUser, bool> filter = x => x.UserPrincipalName.StartsWith(upnPrefix);
+            return TestUsersSource.GetSomeEntities(1, filter).First();
         }
 
         public static TestUser GetOneUser(UserType userType)
         {
-            Func<TestUser, bool> userTypeFilter = x => x.UserType == userType;
-            return TestUsersSource.GetSomeEntities(1, userTypeFilter).First();
+            Func<TestUser, bool> filter = x => x.UserType == userType;
+            return TestUsersSource.GetSomeEntities(1, filter).First();
         }
 
         public static IEnumerable<TestGroup> GetSomeGroups(int count, bool securityEnabledOnly)
         {
-            Func<TestGroup, bool> securityEnabledOnlyFilter = x => x.SecurityEnabled == securityEnabledOnly;
-            return TestGroupsSource.GetSomeEntities(count, securityEnabledOnlyFilter);
+            Func<TestGroup, bool> filter = x => x.SecurityEnabled == securityEnabledOnly;
+            return TestGroupsSource.GetSomeEntities(count, filter);
         }
 
         public static TestGroup GetOneGroup()
@@ -344,8 +345,8 @@ namespace Yvand.EntraClaimsProvider.Tests
 
         public static TestGroup GetOneGroup(bool securityEnabledOnly)
         {
-            Func<TestGroup, bool> securityEnabledOnlyFilter = x => x.SecurityEnabled == securityEnabledOnly;
-            return TestGroupsSource.GetSomeEntities(1, securityEnabledOnlyFilter).First();
+            Func<TestGroup, bool> filter = x => x.SecurityEnabled == securityEnabledOnly;
+            return TestGroupsSource.GetSomeEntities(1, filter).First();
         }
     }
 }
