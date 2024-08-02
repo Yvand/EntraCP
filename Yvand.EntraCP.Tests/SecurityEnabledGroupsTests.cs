@@ -1,6 +1,4 @@
-﻿using Microsoft.SharePoint.Administration.Claims;
-using NUnit.Framework;
-using System.Security.Claims;
+﻿using NUnit.Framework;
 using Yvand.EntraClaimsProvider.Configuration;
 
 namespace Yvand.EntraClaimsProvider.Tests

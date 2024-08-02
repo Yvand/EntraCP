@@ -288,7 +288,7 @@ namespace Yvand.EntraClaimsProvider.Tests
             if (count > entitiesFilteredCount) { count = entitiesFilteredCount; }
             for (int i = 0; i < count; i++)
             {
-                int randomIdx = RandomNumber.Next(0, entitiesFilteredCount - 1);
+                int randomIdx = RandomNumber.Next(0, entitiesFilteredCount);
                 yield return entitiesFiltered.ElementAt(randomIdx).Clone() as T;
             }
         }

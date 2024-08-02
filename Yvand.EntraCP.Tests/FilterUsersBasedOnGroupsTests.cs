@@ -1,6 +1,5 @@
 ﻿using NUnit.Framework;
 using System;
-using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
 
@@ -48,7 +47,7 @@ namespace Yvand.EntraClaimsProvider.Tests
         [TestCase("testEntraCPUser_020")]
         public void DebugTestUser(string upnPrefix)
         {
-            TestUser user = TestEntitySourceManager.AllTestUsers.Find(x => x.UserPrincipalName.StartsWith(upnPrefix));
+            TestUser user = TestEntitySourceManager.FindUser(upnPrefix);
             base.TestSearchAndValidateForTestUser(user);
         }
 #endif
