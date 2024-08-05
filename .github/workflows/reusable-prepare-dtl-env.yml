@@ -83,6 +83,9 @@ on:
         required: true
         description: 'Azure storage account file share name where unit test files are located'
 
+permissions:
+  id-token: write
+
 jobs:
   create-test-environment:
     if: inputs.skip-create-environment != true
