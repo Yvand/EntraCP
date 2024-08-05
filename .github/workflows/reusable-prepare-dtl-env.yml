@@ -67,9 +67,15 @@ on:
         type: string
         description: 'Relative path to the unit test files in the Azure storage file share'
     secrets:
-      AZURE_CREDENTIALS:
+      AZURE_CLIENT_ID:
         required: true
-        description: 'Azure credentials which contains the service principal, to connect to the DevTest Labs service'
+        description: 'Azure credentials'
+      AZURE_SUBSCRIPTION_ID:
+        required: true
+        description: 'Azure credentials'
+      AZURE_TENANT_ID:
+        required: true
+        description: 'Azure credentials'
       azdevops-pat-registerAgent:
         required: true
         description: 'Personal access token to register a VSTS agent in an agent pool'
