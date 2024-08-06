@@ -5,11 +5,11 @@ using NUnit.Framework;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.IO;
 using System.Linq;
 using System.Security.Claims;
 using System.Text;
 using Yvand.EntraClaimsProvider.Configuration;
-using static Azure.Core.HttpHeader;
 
 namespace Yvand.EntraClaimsProvider.Tests
 {
@@ -90,7 +90,9 @@ namespace Yvand.EntraClaimsProvider.Tests
             Settings.Timeout = 99999;
 #endif
 
-            Settings.EntraIDTenants = new List<EntraIDTenant> { UnitTestsHelper.TenantConnection };
+            string json = File.ReadAllText(UnitTestsHelper.AzureTenantsJsonFile);
+            List<EntraIDTenant> azureTenants = JsonConvert.DeserializeObject<List<EntraIDTenant>>(json);
+            Settings.EntraIDTenants = azureTenants;
             foreach (EntraIDTenant tenant in Settings.EntraIDTenants)
             {
                 tenant.ExcludeMemberUsers = ExcludeMemberUsers;

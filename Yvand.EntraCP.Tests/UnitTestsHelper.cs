@@ -2,14 +2,13 @@
 using Microsoft.SharePoint;
 using Microsoft.SharePoint.Administration;
 using Microsoft.SharePoint.Administration.Claims;
-using Newtonsoft.Json;
 using NUnit.Framework;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
-using System.IO;
 using System.Linq;
 using System.Reflection;
+using System.Security.Claims;
 using Yvand.EntraClaimsProvider.Configuration;
 
 namespace Yvand.EntraClaimsProvider.Tests
@@ -17,10 +16,11 @@ namespace Yvand.EntraClaimsProvider.Tests
     [SetUpFixture]
     public class UnitTestsHelper
     {
-        public static readonly EntraCP ClaimsProvider = new EntraCP(TestContext.Parameters["ClaimsProviderName"]);
-        public static SPTrustedLoginProvider SPTrust => Utils.GetSPTrustAssociatedWithClaimsProvider(TestContext.Parameters["ClaimsProviderName"]);
+        public static readonly string ClaimsProviderName = TestContext.Parameters["ClaimsProviderName"];
+        public static readonly EntraCP ClaimsProvider = new EntraCP(ClaimsProviderName);
+        public static SPTrustedLoginProvider SPTrust => Utils.GetSPTrustAssociatedWithClaimsProvider(ClaimsProviderName);
         public static Uri TestSiteCollUri;
-        public static string TestSiteRelativePath => $"/sites/{TestContext.Parameters["TestSiteCollectionName"]}";
+        public static string TestSiteRelativePath => $"/sites/{ClaimsProviderName}.UnitTests";
         public const int MaxTime = 50000;
         public const int TestRepeatCount = 1;
         public static string FarmAdmin => TestContext.Parameters["FarmAdmin"];
@@ -32,44 +32,30 @@ namespace Yvand.EntraClaimsProvider.Tests
         public static string AzureTenantsJsonFile => TestContext.Parameters["AzureTenantsJsonFile"];
         public static string DataFile_EntraId_TestUsers => TestContext.Parameters["DataFile_EntraId_TestUsers"];
         public static string DataFile_EntraId_TestGroups => TestContext.Parameters["DataFile_EntraId_TestGroups"];
-        public static string TestUsersAccountNamePrefix => TestContext.Parameters["UserAccountNamePrefix"];
-        public static string TestGroupsAccountNamePrefix => TestContext.Parameters["GroupAccountNamePrefix"];
+        public static string GroupsClaimType => TestContext.Parameters["GroupsClaimType"];
 
         static TextWriterTraceListener Logger { get; set; }
         public static EntraIDProviderConfiguration PersistedConfiguration;
         private static IEntraIDProviderSettings OriginalSettings;
 
-        private static EntraIDTenant _TenantConnection;
-        public static EntraIDTenant TenantConnection
-        {
-            get
-            {
-                if (_TenantConnection != null) { return _TenantConnection; }
-                string json = File.ReadAllText(UnitTestsHelper.AzureTenantsJsonFile);
-                List<EntraIDTenant> azureTenants = JsonConvert.DeserializeObject<List<EntraIDTenant>>(json);
-                _TenantConnection = azureTenants.First();
-                return _TenantConnection;
-            }
-        }
-
         [OneTimeSetUp]
         public static void InitializeSiteCollection()
         {
-            Logger = new TextWriterTraceListener(TestContext.Parameters["TestLogFileName"]);
+            Logger = new TextWriterTraceListener($"{ClaimsProviderName}IntegrationTests.log");
             Trace.Listeners.Add(Logger);
             Trace.AutoFlush = true;
-            Trace.TraceInformation($"{DateTime.Now:s} Start integration tests of {EntraCP.ClaimsProviderName} {FileVersionInfo.GetVersionInfo(Assembly.GetAssembly(typeof(EntraCP)).Location).FileVersion}.");
-            Trace.TraceInformation($"{DateTime.Now:s} DataFile_EntraId_TestGroups: {DataFile_EntraId_TestGroups}");
-            Trace.TraceInformation($"{DateTime.Now:s} DataFile_EntraId_TestUsers: {DataFile_EntraId_TestUsers}");
-            Trace.TraceInformation($"{DateTime.Now:s} TestSiteCollectionName: {TestContext.Parameters["TestSiteCollectionName"]}");
+            Trace.TraceInformation($"{DateTime.Now:s} [SETUP] Start integration tests of {EntraCP.ClaimsProviderName} {FileVersionInfo.GetVersionInfo(Assembly.GetAssembly(typeof(EntraCP)).Location).FileVersion}.");
+            Trace.TraceInformation($"{DateTime.Now:s} [SETUP] DataFile_EntraId_TestGroups: {DataFile_EntraId_TestGroups}");
+            Trace.TraceInformation($"{DateTime.Now:s} [SETUP] DataFile_EntraId_TestUsers: {DataFile_EntraId_TestUsers}");
+            Trace.TraceInformation($"{DateTime.Now:s} [SETUP] TestSiteCollectionName: {TestContext.Parameters["TestSiteCollectionName"]}");
 
             if (SPTrust == null)
             {
-                Trace.TraceError($"{DateTime.Now:s} SPTrust: is null");
+                Trace.TraceError($"{DateTime.Now:s} [SETUP] SPTrust: is null");
             }
             else
             {
-                Trace.TraceInformation($"{DateTime.Now:s} SPTrust: {SPTrust.Name}");
+                Trace.TraceInformation($"{DateTime.Now:s} [SETUP] SPTrust: {SPTrust.Name}");
             }
 
             PersistedConfiguration = EntraCP.GetConfiguration(true);
@@ -86,7 +72,7 @@ namespace Yvand.EntraClaimsProvider.Tests
 
 #if DEBUG
             TestSiteCollUri = new Uri($"http://spsites{TestSiteRelativePath}");
-            return; // Uncommented when debugging from unit tests
+            //return; // Uncommented when debugging from unit tests
 #endif
 
             var service = SPFarm.Local.Services.GetValue<SPWebService>(String.Empty);
@@ -106,16 +92,17 @@ namespace Yvand.EntraClaimsProvider.Tests
             });
             if (wa == null)
             {
-                Trace.TraceError($"{DateTime.Now:s} Web application was NOT found.");
+                Trace.TraceError($"{DateTime.Now:s} [SETUP] Web application was NOT found.");
                 return;
             }
 
-            Trace.TraceInformation($"{DateTime.Now:s} Web application {wa.Name} found.");
+            Trace.TraceInformation($"{DateTime.Now:s} [SETUP] Web application {wa.Name} found.");
             Uri waRootAuthority = wa.AlternateUrls[0].Uri;
             TestSiteCollUri = new Uri($"{waRootAuthority.GetLeftPart(UriPartial.Authority)}{TestSiteRelativePath}");
             SPClaimProviderManager claimMgr = SPClaimProviderManager.Local;
-            //string encodedClaim = claimMgr.EncodeClaim(TrustedGroup);
-            //SPUserInfo userInfo = new SPUserInfo { LoginName = encodedClaim, Name = TrustedGroupToAdd_ClaimValue };
+            string trustedGroupName = TestEntitySourceManager.GetOneGroup().Id;
+            string encodedGroupClaim = claimMgr.EncodeClaim(new SPClaim(GroupsClaimType, trustedGroupName, ClaimValueTypes.String, SPOriginalIssuers.Format(SPOriginalIssuerType.TrustedProvider, UnitTestsHelper.SPTrust.Name)));
+            SPUserInfo groupInfo = new SPUserInfo { LoginName = encodedGroupClaim, Name = trustedGroupName };
 
             FileVersionInfo spAssemblyVersion = FileVersionInfo.GetVersionInfo(Assembly.GetAssembly(typeof(SPSite)).Location);
             string spSiteTemplate = "STS#3"; // modern team site template
@@ -128,23 +115,23 @@ namespace Yvand.EntraClaimsProvider.Tests
             // The root site may not exist, but it must be present for tests to run
             if (!SPSite.Exists(waRootAuthority))
             {
-                Trace.TraceInformation($"{DateTime.Now:s} Creating root site collection {waRootAuthority.AbsoluteUri}...");
+                Trace.TraceInformation($"{DateTime.Now:s} [SETUP] Creating root site collection {waRootAuthority.AbsoluteUri}...");
                 SPSite spSite = wa.Sites.Add(waRootAuthority.AbsoluteUri, "root", "root", 1033, spSiteTemplate, FarmAdmin, String.Empty, String.Empty);
                 spSite.RootWeb.CreateDefaultAssociatedGroups(FarmAdmin, FarmAdmin, spSite.RootWeb.Title);
 
                 SPGroup membersGroup = spSite.RootWeb.AssociatedMemberGroup;
-                //membersGroup.AddUser(userInfo.LoginName, userInfo.Email, userInfo.Name, userInfo.Notes);
+                membersGroup.AddUser(groupInfo.LoginName, groupInfo.Email, groupInfo.Name, groupInfo.Notes);
                 spSite.Dispose();
             }
 
             if (!SPSite.Exists(TestSiteCollUri))
             {
-                Trace.TraceInformation($"{DateTime.Now:s} Creating site collection {TestSiteCollUri.AbsoluteUri} with template '{spSiteTemplate}'...");
+                Trace.TraceInformation($"{DateTime.Now:s} [SETUP] Creating site collection {TestSiteCollUri.AbsoluteUri} with template '{spSiteTemplate}'...");
                 SPSite spSite = wa.Sites.Add(TestSiteCollUri.AbsoluteUri, EntraCP.ClaimsProviderName, EntraCP.ClaimsProviderName, 1033, spSiteTemplate, FarmAdmin, String.Empty, String.Empty);
                 spSite.RootWeb.CreateDefaultAssociatedGroups(FarmAdmin, FarmAdmin, spSite.RootWeb.Title);
 
                 SPGroup membersGroup = spSite.RootWeb.AssociatedMemberGroup;
-                //membersGroup.AddUser(userInfo.LoginName, userInfo.Email, userInfo.Name, userInfo.Notes);
+                membersGroup.AddUser(groupInfo.LoginName, groupInfo.Email, groupInfo.Name, groupInfo.Notes);
                 spSite.Dispose();
             }
             else
@@ -152,7 +139,7 @@ namespace Yvand.EntraClaimsProvider.Tests
                 using (SPSite spSite = new SPSite(TestSiteCollUri.AbsoluteUri))
                 {
                     SPGroup membersGroup = spSite.RootWeb.AssociatedMemberGroup;
-                    //membersGroup.AddUser(userInfo.LoginName, userInfo.Email, userInfo.Name, userInfo.Notes);
+                    membersGroup.AddUser(groupInfo.LoginName, groupInfo.Email, groupInfo.Name, groupInfo.Notes);
                 }
             }
         }
