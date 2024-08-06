@@ -110,8 +110,9 @@ jobs:
         subscription-id: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
 
     - name: Create DevTest Labs environment
-      uses: azure/CLI@v1
+      uses: azure/cli@v2
       with:
+        azcliversion: latest
         inlineScript: |
           az lab environment create --lab-name ${{ inputs.dtl-serviceName }} --name ${{ inputs.dtl-environmentName }} --resource-group ${{ inputs.dtl-rgName }} --artifact-source-name "Public Repo" \
           --arm-template "/subscriptions/${{ inputs.dtl-subscriptionId }}/resourceGroups/${{ inputs.dtl-rgName }}/providers/Microsoft.DevTestLab/labs/${{ inputs.dtl-serviceName }}/artifactSources/Public Environment Repo/armTemplates/SharePoint-AllVersions" \
@@ -152,8 +153,9 @@ jobs:
         subscription-id: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
 
     - name: Apply artifact - Register current VM as a VSTS agent in DevOps agent pools
-      uses: azure/CLI@v1
+      uses: azure/cli@v2
       with:
+        azcliversion: latest
         inlineScript: |
           artifactId="/subscriptions/${{ inputs.dtl-subscriptionId }}/resourceGroups/${{ inputs.dtl-rgName }}/providers/Microsoft.DevTestLab/labs/${{ inputs.dtl-serviceName }}/artifactSources/public repo/artifacts/windows-vsts-build-agent"
           artifactApplied=$(az lab vm show --lab-name ${{ inputs.dtl-serviceName }} --resource-group ${{ inputs.dtl-rgName }} --name ${{ env.vm_name }} --expand 'properties($expand=artifacts)' --query "artifacts[?artifactId=='$artifactId' && status == 'Succeeded'].status" --output tsv)
@@ -164,8 +166,9 @@ jobs:
           fi
 
     - name: Apply artifact - Run a PowerShell script to download and install claims provider in current VM
-      uses: azure/CLI@v1
+      uses: azure/cli@v2
       with:
+        azcliversion: latest
         inlineScript: |
           artifactId="/subscriptions/${{ inputs.dtl-subscriptionId }}/resourceGroups/${{ inputs.dtl-rgName }}/providers/Microsoft.DevTestLab/labs/${{ inputs.dtl-serviceName }}/artifactSources/public repo/artifacts/windows-run-powershell"
           artifactApplied=$(az lab vm show --lab-name ${{ inputs.dtl-serviceName }} --resource-group ${{ inputs.dtl-rgName }} --name ${{ env.vm_name }} --expand 'properties($expand=artifacts)' --query "artifacts[?artifactId=='$artifactId' && status == 'Succeeded'].status" --output tsv)
