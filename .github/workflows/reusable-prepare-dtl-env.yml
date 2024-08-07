@@ -62,7 +62,7 @@ on:
         required: true
         type: string
         description: 'URL of the claims provider solution package to test'
-      unittestfiles-storageAccountSourceRelativePath:
+      unittestfiles_azure_storage_share_relative_path:
         required: true
         type: string
         description: 'Relative path to the unit test files in the Azure storage file share'
@@ -82,10 +82,10 @@ on:
       DTL_ACCOUNTSPASSWORD:
         required: true
         description: 'Password for the accounts in the SharePoint environment'
-      UNITTESTFILES_STORAGEACCOUNTENDPOINT:
+      UNITTESTFILES_AZURE_STORAGE_CONNECTION_STRING:
         required: true
         description: 'Azure storage account endpoint where unit test files are located'
-      UNITTESTFILES_STORAGEACCOUNTSHARENAME:
+      UNITTESTFILES_AZURE_STORAGE_SHARE_NAME:
         required: true
         description: 'Azure storage account file share name where unit test files are located'
 
@@ -182,5 +182,5 @@ jobs:
             unitTestsProjectUri=${claimsProviderPackageUri/$uriLeafPart/$projectName-unit-tests.zip}
             echo $unitTestsProjectUri
             az lab vm apply-artifacts --lab-name ${{ inputs.dtl-serviceName }} --name ${{ env.vm_name }} --resource-group ${{ inputs.dtl-rgName }} \
-            --artifacts "[ { \"artifactId\": \"$artifactId\", \"parameters\": [ { \"name\": \"scriptFileUris\", \"value\": \" ${{ inputs.test-prepareSharePointVmScriptUris }} \" }, { \"name\": \"scriptToRun\", \"value\": \"ConfigureLab.ps1\" }, { \"name\": \"scriptArguments\", \"value\": \"-claimsProviderPackageUri '$claimsProviderPackageUri' -claimsProviderUnitTestsUri '$unitTestsProjectUri' -spTrustName 'contoso.local' -adminUserName '${{ format('contoso\{0}', inputs.dtl-env-adminUserName) }}' -adminPassword '${{ secrets.DTL_ACCOUNTSPASSWORD }}' -storageAccountEndpoint '${{ secrets.UNITTESTFILES_STORAGEACCOUNTENDPOINT }}' -storageAccountShareName '${{ secrets.UNITTESTFILES_STORAGEACCOUNTSHARENAME }}' -storageAccountSourceRelativePath '${{ inputs.unittestfiles-storageAccountSourceRelativePath }}'\" } ] } ]"
+            --artifacts "[ { \"artifactId\": \"$artifactId\", \"parameters\": [ { \"name\": \"scriptFileUris\", \"value\": \" ${{ inputs.test-prepareSharePointVmScriptUris }} \" }, { \"name\": \"scriptToRun\", \"value\": \"ConfigureLab.ps1\" }, { \"name\": \"scriptArguments\", \"value\": \"-claimsProviderPackageUri '$claimsProviderPackageUri' -claimsProviderUnitTestsUri '$unitTestsProjectUri' -spTrustName 'contoso.local' -adminUserName '${{ format('contoso\{0}', inputs.dtl-env-adminUserName) }}' -adminPassword '${{ secrets.DTL_ACCOUNTSPASSWORD }}' -storageAccountEndpoint '${{ secrets.UNITTESTFILES_AZURE_STORAGE_CONNECTION_STRING }}' -storageAccountShareName '${{ secrets.UNITTESTFILES_AZURE_STORAGE_SHARE_NAME }}' -storageAccountSourceRelativePath '${{ inputs.unittestfiles_azure_storage_share_relative_path }}'\" } ] } ]"
           fi
