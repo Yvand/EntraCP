@@ -1,4 +1,4 @@
-name: Prepare SharPoint environment in DevTest Labs (reusable)
+name: Prepare SharPoint test environment in DevTest Labs (reusable)
 on:
   workflow_call:
     inputs:
@@ -66,6 +66,10 @@ on:
         required: true
         type: string
         description: 'Relative path to the unit test files in the Azure storage file share'
+      test_registerRunner_scriptUrl:
+        required: true
+        type: string
+        description: 'URL of the script that adds the DTL server as a self-hosted runner on the GitHub repository'
     secrets:
       AZURE_CLIENT_ID:
         required: true
@@ -88,6 +92,9 @@ on:
       UNITTESTFILES_AZURE_STORAGE_SHARE_NAME:
         required: true
         description: 'Azure storage account file share name where unit test files are located'
+      GH_TOKEN_ADD_RUNNER:
+        required: true
+        description: 'GitHub token to register the DTL server as a self-hosted runner'
 
 permissions:
   id-token: write
@@ -185,7 +192,7 @@ jobs:
             --artifacts "[ { \"artifactId\": \"$artifactId\", \"parameters\": [ { \"name\": \"scriptFileUris\", \"value\": \" ${{ inputs.test-prepareSharePointVmScriptUris }} \" }, { \"name\": \"scriptToRun\", \"value\": \"ConfigureLab.ps1\" }, { \"name\": \"scriptArguments\", \"value\": \"-claimsProviderPackageUri '$claimsProviderPackageUri' -claimsProviderUnitTestsUri '$unitTestsProjectUri' -spTrustName 'contoso.local' -adminUserName '${{ format('contoso\{0}', inputs.dtl-env-adminUserName) }}' -adminPassword '${{ secrets.DTL_ACCOUNTSPASSWORD }}' -storageAccountEndpoint '${{ secrets.UNITTESTFILES_AZURE_STORAGE_CONNECTION_STRING }}' -storageAccountShareName '${{ secrets.UNITTESTFILES_AZURE_STORAGE_SHARE_NAME }}' -storageAccountSourceRelativePath '${{ inputs.unittestfiles_azure_storage_share_relative_path }}'\" } ] } ]"
           fi
 
-    - name: Apply artifact - Run a PowerShell script to add self-hosted runner to the reposiroty
+    - name: Apply artifact - Run a PowerShell script to add self-hosted runner to the repository
       uses: azure/cli@v2
       with:
         azcliversion: latest
@@ -195,7 +202,8 @@ jobs:
           gh_token=${{ secrets.GH_TOKEN_ADD_RUNNER }}
           gh_repo_owner_name=${{ github.repository }}
           gh_repo_url="https://github.com/$gh_repo_owner_name"
-          scriptFileUris=${{ inputs.test-addRunnerToRepo-scriptUrl }}
+          scriptFileUris=${{ inputs.test_registerRunner_scriptUrl }}
+          scriptToRun="Add-RunnerToRepo.ps1"
           echo $gh_repo_url
           
           az lab vm apply-artifacts --lab-name ${{ inputs.dtl-serviceName }} --name ${{ env.vm_name }} --resource-group ${{ inputs.dtl-rgName }} \

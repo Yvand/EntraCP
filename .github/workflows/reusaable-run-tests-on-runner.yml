@@ -1,0 +1,23 @@
+name: Run Visual Studio tests (reusable)
+on:
+  workflow_call:
+    inputs:
+      test_project_folder_name:
+        required: true
+        type: string
+        description: 'Folder name of the NUnit test project'
+jobs:
+  run-tests:
+    runs-on: self-hosted
+    name: Run Visual Studio tests
+    env:
+      test_folder_path: 'C:/drop/unit-tests'
+    steps:
+    - name: Run tests
+      uses: microsoft-approved-actions/vstest@main
+      with:
+        searchFolder: '${{ env.test_folder_path }}/${{ inputs.test_project_folder_name }}/release'
+        platform: 'x64'
+        configuration: 'release'
+        runSettingsFile: '${{ env.test_folder_path }}/DTLServer.runsettings'
+        codeCoverageEnabled: false
