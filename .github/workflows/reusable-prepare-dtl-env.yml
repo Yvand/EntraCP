@@ -1,4 +1,4 @@
-name: Prepare SharPoint test environment in DevTest Labs (reusable)
+name: (reusable) Prepare SharPoint test environment in DevTest Labs
 on:
   workflow_call:
     inputs:
