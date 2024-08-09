@@ -14,10 +14,10 @@ jobs:
       test_folder_path: 'C:/drop/unit-tests'
     steps:
     - name: Run tests
-      uses: microsoft/vstest-action@main
+      uses: MarkusLN/vstest-action@main
       with:
         searchFolder: '${{ env.test_folder_path }}/${{ inputs.test_project_folder_name }}/release'
+        testAssembly: '*tests*.dll'
         platform: 'x64'
-        configuration: 'release'
         runSettingsFile: '${{ env.test_folder_path }}/DTLServer.runsettings'
         codeCoverageEnabled: false
