@@ -13,7 +13,7 @@ namespace Yvand.EntraClaimsProvider.Tests
             ClaimTypeConfig ctConfigExtensionAttribute = new ClaimTypeConfig
             {
                 ClaimType = TestContext.Parameters["MultiPurposeCustomClaimType"],
-                ClaimTypeDisplayName = "extattr1",
+                ClaimTypeDisplayName = "extrattr1",
                 EntityProperty = DirectoryObjectProperty.extensionAttribute1,
                 EntityType = DirectoryObjectType.User,
                 SharePointEntityType = ClaimsProviderConstants.GroupClaimEntityType,
