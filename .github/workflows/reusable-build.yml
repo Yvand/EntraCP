@@ -136,7 +136,7 @@ jobs:
 
     # Build the application
     - name: Build the application and create the solution package
-      run: msbuild "${{ env.project-name }}.sln" /p:Configuration=$env:Configuration /p:IsPackaging=true /p:platform="x64" /p:ContinuousIntegrationBuild=true
+      run: msbuild "${{ env.project-name }}.sln" /p:Configuration=$env:Configuration /p:IsPackaging=true /p:platform="Any CPU" /p:ContinuousIntegrationBuild=true
       env:
         Configuration: ${{ matrix.configuration }}
     
