@@ -1,7 +1,6 @@
 ﻿using Microsoft.SharePoint.Administration.Claims;
 using NUnit.Framework;
 using System.Security.Claims;
-using Yvand.EntraClaimsProvider.Configuration;
 
 namespace Yvand.EntraClaimsProvider.Tests
 {
@@ -9,8 +8,8 @@ namespace Yvand.EntraClaimsProvider.Tests
     [Parallelizable(ParallelScope.Children)]
     public class BypassDirectoryOnClaimTypesTests : ClaimsProviderTestsBase
     {
-        string PrefixBypassUserSearch = "bypass-user:";
-        string PrefixBypassGroupSearch = "bypass-group:";
+        const string PrefixBypassUserSearch = "bypass-user:";
+        const string PrefixBypassGroupSearch = "bypass-group:";
         public override void InitializeSettings()
         {
             base.InitializeSettings();
@@ -26,28 +25,28 @@ namespace Yvand.EntraClaimsProvider.Tests
             base.CheckSettingsTest();
         }
 
-        [Test, TestCaseSource(typeof(EntraIdTestUsersSource), nameof(EntraIdTestUsersSource.GetTestData), null)]
-        public void TestAllEntraIDUsers(EntraIdTestUser user)
+        [Test, TestCaseSource(typeof(TestEntitySourceManager), nameof(TestEntitySourceManager.GetSomeUsers), new object[] { TestEntitySourceManager.MaxNumberOfUsersToTest })]
+        public void TestUsers(TestUser user)
         {
-            base.TestSearchAndValidateForEntraIDUser(user);
+            base.TestSearchAndValidateForTestUser(user);
             user.UserPrincipalName = user.DisplayName;
             user.Mail = user.DisplayName;
             user.DisplayName = $"{PrefixBypassUserSearch}{user.DisplayName}";
-            base.TestSearchAndValidateForEntraIDUser(user);
+            base.TestSearchAndValidateForTestUser(user);
         }
 
-        [Test, TestCaseSource(typeof(EntraIdTestGroupsSource), nameof(EntraIdTestGroupsSource.GetTestData), new object[] { true })]
-        public void TestAllEntraIDGroups(EntraIdTestGroup group)
+        [Test, TestCaseSource(typeof(TestEntitySourceManager), nameof(TestEntitySourceManager.GetSomeGroups), new object[] { TestEntitySourceManager.MaxNumberOfGroupsToTest, true })]
+        public void TestGroups(TestGroup group)
         {
-            TestSearchAndValidateForEntraIDGroup(group);
+            TestSearchAndValidateForTestGroup(group);
             group.Id = group.DisplayName;
             group.DisplayName = $"{PrefixBypassGroupSearch}{group.DisplayName}";
-            TestSearchAndValidateForEntraIDGroup(group);
+            TestSearchAndValidateForTestGroup(group);
         }
 
-        [TestCase("bypass-user:externalUser@contoso.com", 1, "externalUser@contoso.com")]
-        [TestCase("bypass-user:", 0, "")]
-        [TestCase("bypass-group:", 0, "")]
+        [TestCase(PrefixBypassUserSearch + "externalUser@contoso.com", 1, "externalUser@contoso.com")]
+        [TestCase(PrefixBypassUserSearch, 0, "")]
+        [TestCase(PrefixBypassGroupSearch, 0, "")]
         public void TestBypassDirectoryByClaimType(string inputValue, int expectedCount, string expectedClaimValue)
         {
             TestSearchOperation(inputValue, expectedCount, expectedClaimValue);
@@ -77,16 +76,16 @@ namespace Yvand.EntraClaimsProvider.Tests
             base.CheckSettingsTest();
         }
 
-        [Test, TestCaseSource(typeof(EntraIdTestGroupsSource), nameof(EntraIdTestGroupsSource.GetTestData), new object[] { true })]
-        public void TestAllEntraIDGroups(EntraIdTestGroup group)
+        [Test, TestCaseSource(typeof(TestEntitySourceManager), nameof(TestEntitySourceManager.GetSomeGroups), new object[] { TestEntitySourceManager.MaxNumberOfGroupsToTest, true })]
+        public void TestGroups(TestGroup group)
         {
-            TestSearchAndValidateForEntraIDGroup(group);
+            TestSearchAndValidateForTestGroup(group);
         }
 
-        [Test, TestCaseSource(typeof(EntraIdTestUsersSource), nameof(EntraIdTestUsersSource.GetTestData), null)]
-        public void TestAllEntraIDUsers(EntraIdTestUser user)
+        [Test, TestCaseSource(typeof(TestEntitySourceManager), nameof(TestEntitySourceManager.GetSomeUsers), new object[] { TestEntitySourceManager.MaxNumberOfUsersToTest })]
+        public void TestUsers(TestUser user)
         {
-            base.TestSearchAndValidateForEntraIDUser(user);
+            base.TestSearchAndValidateForTestUser(user);
         }
 
         [Test]

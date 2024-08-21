@@ -1,0 +1,9 @@
+{
+  "version": "1",
+  "name": "EntraCP",
+  "type": "collection",
+  "ignore": [
+    "node_modules",
+    ".git"
+  ]
+}

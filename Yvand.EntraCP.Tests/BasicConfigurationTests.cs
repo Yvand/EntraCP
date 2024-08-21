@@ -1,6 +1,5 @@
 ﻿using NUnit.Framework;
 using System;
-using System.Linq;
 
 namespace Yvand.EntraClaimsProvider.Tests
 {
@@ -20,31 +19,32 @@ namespace Yvand.EntraClaimsProvider.Tests
             base.CheckSettingsTest();
         }
 
-        [Test, TestCaseSource(typeof(EntraIdTestGroupsSource), nameof(EntraIdTestGroupsSource.GetTestData), new object[] { true })]
-        public void TestAllTestGroups(EntraIdTestGroup group)
+        [Test, TestCaseSource(typeof(TestEntitySourceManager), nameof(TestEntitySourceManager.GetSomeGroups), new object[] { TestEntitySourceManager.MaxNumberOfGroupsToTest, true })]
+        public void TestGroups(TestGroup group)
         {
-            TestSearchAndValidateForEntraIDGroup(group);
+            TestSearchAndValidateForTestGroup(group);
+        }
+
+        [Test, TestCaseSource(typeof(TestEntitySourceManager), nameof(TestEntitySourceManager.GetSomeUsers), new object[] { TestEntitySourceManager.MaxNumberOfUsersToTest })]
+        public void TestUsers(TestUser user)
+        {
+            base.TestSearchAndValidateForTestUser(user);
+            base.TestAugmentationAgainst1RandomGroup(user);
         }
 
         [Test]
-        public void TestRandomTestGroups([Random(0, UnitTestsHelper.TestGroupsCount - 1, 5)] int idx)
+        public void TestAGuestUser()
         {
-            EntraIdTestGroup group = EntraIdTestGroupsSource.Groups[idx];
-            TestSearchAndValidateForEntraIDGroup(group);
+            TestUser user = TestEntitySourceManager.GetOneUser(UserType.Guest);
+            base.TestSearchAndValidateForTestUser(user);
         }
 
-        [Test, TestCaseSource(typeof(EntraIdTestUsersSource), nameof(EntraIdTestUsersSource.GetTestData), null)]
-        public void TestAllTestUsers(EntraIdTestUser user)
-        {
-            base.TestSearchAndValidateForEntraIDUser(user);
-        }
-
-        [Test]
-        public void TestRandomTestUsers([Random(0, UnitTestsHelper.TestUsersCount - 1, 5)] int idx)
-        {
-            var user = EntraIdTestUsersSource.Users[idx];
-            base.TestSearchAndValidateForEntraIDUser(user);
-        }
+        //[Test]
+        //public void TestRandomUsers([Random(0, UnitTestsHelper.TotalNumberTestUsers - 1, 5)] int idx)
+        //{
+        //    var user = EntraIdTestUsersSource.Users[idx];
+        //    base.TestSearchAndValidateForTestUser(user);
+        //}
 
         [Test]
         [Repeat(5)]
@@ -55,11 +55,12 @@ namespace Yvand.EntraClaimsProvider.Tests
 
 #if DEBUG
         [TestCase("testEntraCPUser_001")]
-        [TestCase("testEntraCPUser_020")]
+        [TestCase("testEntraCPUser_326")]
         public void DebugTestUser(string upnPrefix)
         {
-            EntraIdTestUser user = EntraIdTestUsersSource.Users.Find(x => x.UserPrincipalName.StartsWith(upnPrefix));
-            base.TestSearchAndValidateForEntraIDUser(user);
+            TestUser user = TestEntitySourceManager.FindUser(upnPrefix);
+            base.TestSearchAndValidateForTestUser(user);
+            base.TestAugmentationAgainst1RandomGroup(user);
         }
 
         [TestCase(@"testentracp", 30, "")]
