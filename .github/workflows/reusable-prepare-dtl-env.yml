@@ -1,4 +1,4 @@
-name: Prepare SharPoint environment in DevTest Labs (reusable)
+name: (reusable) Prepare SharPoint test environment in DevTest Labs
 on:
   workflow_call:
     inputs:
@@ -62,30 +62,43 @@ on:
         required: true
         type: string
         description: 'URL of the claims provider solution package to test'
-      unittestfiles-storageAccountSourceRelativePath:
+      unittestfiles_azure_storage_share_relative_path:
         required: true
         type: string
         description: 'Relative path to the unit test files in the Azure storage file share'
-    secrets:
-      AZURE_CREDENTIALS:
+      test_registerRunner_scriptUrl:
         required: true
-        description: 'Azure credentials which contains the service principal, to connect to the DevTest Labs service'
-      azdevops-pat-registerAgent:
+        type: string
+        description: 'URL of the script that adds the DTL server as a self-hosted runner on the GitHub repository'
+    secrets:
+      AZURE_CLIENT_ID:
+        required: true
+        description: 'Azure credentials'
+      AZURE_SUBSCRIPTION_ID:
+        required: true
+        description: 'Azure credentials'
+      AZURE_TENANT_ID:
+        required: true
+        description: 'Azure credentials'
+      ADO_PAT_REGISTERAGENT:
         required: true
         description: 'Personal access token to register a VSTS agent in an agent pool'
-      dtl-env-accountsPassword:
+      DTL_ACCOUNTSPASSWORD:
         required: true
         description: 'Password for the accounts in the SharePoint environment'
-      unittestfiles-storageAccountEndpoint:
+      UNITTESTFILES_AZURE_STORAGE_CONNECTION_STRING:
         required: true
         description: 'Azure storage account endpoint where unit test files are located'
-      unittestfiles-storageAccountShareName:
+      UNITTESTFILES_AZURE_STORAGE_SHARE_NAME:
         required: true
         description: 'Azure storage account file share name where unit test files are located'
+      GH_TOKEN_ADD_RUNNER:
+        required: true
+        description: 'GitHub token to register the DTL server as a self-hosted runner'
 
 permissions:
   id-token: write
-
+  
 jobs:
   create-test-environment:
     if: inputs.skip-create-environment != true
@@ -98,18 +111,19 @@ jobs:
     steps:
     - name: Azure Login
       uses: azure/login@v2
-        with:
-          client-id: ${{ secrets.AZURE_CLIENT_ID }}
-          tenant-id: ${{ secrets.AZURE_TENANT_ID }}
-          subscription-id: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
+      with:
+        client-id: ${{ secrets.AZURE_CLIENT_ID }}
+        tenant-id: ${{ secrets.AZURE_TENANT_ID }}
+        subscription-id: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
 
     - name: Create DevTest Labs environment
-      uses: azure/CLI@v1
+      uses: azure/cli@v2
       with:
+        azcliversion: latest
         inlineScript: |
           az lab environment create --lab-name ${{ inputs.dtl-serviceName }} --name ${{ inputs.dtl-environmentName }} --resource-group ${{ inputs.dtl-rgName }} --artifact-source-name "Public Repo" \
           --arm-template "/subscriptions/${{ inputs.dtl-subscriptionId }}/resourceGroups/${{ inputs.dtl-rgName }}/providers/Microsoft.DevTestLab/labs/${{ inputs.dtl-serviceName }}/artifactSources/Public Environment Repo/armTemplates/SharePoint-AllVersions" \
-          --parameters "[ { \"name\": \"provisionSharePoint2016\", \"value\": \"${{ env.dtl_provisionSharePoint2016 }}\" }, { \"name\": \"provisionSharePoint2019\", \"value\": \"${{ env.dtl_provisionSharePoint2019 }}\" }, { \"name\": \"provisionSharePointSubscription\", \"value\": \"${{ env.dtl_provisionSharePointSubscription }}\" }, { \"name\": \"configureADFS\", \"value\": \"true\" }, { \"name\": \"enableHybridBenefitServerLicenses\", \"value\": \"true\" }, { \"name\": \"enableAutomaticUpdates\", \"value\": \"false\" }, { \"name\": \"adminUserName\", \"value\": \"${{ inputs.dtl-env-adminUserName }}\" }, { \"name\": \"adminPassword\", \"value\": \"${{ secrets.dtl-env-accountsPassword }}\" }, { \"name\": \"serviceAccountsPassword\", \"value\": \"${{ secrets.dtl-env-accountsPassword }}\" }, { \"name\": \"addPublicIPAddress\", \"value\": \"${{ inputs.dtl-env-addPublicIPAddress }}\" }, { \"name\": \"RDPTrafficAllowed\", \"value\": \"${{ inputs.dtl-env-rdpTrafficAllowed }}\" }, { \"name\": \"addAzureBastion\", \"value\": \"${{ inputs.dtl-env-addAzureBastion }}\" } ]"
+          --parameters "[ { \"name\": \"provisionSharePoint2016\", \"value\": \"${{ env.dtl_provisionSharePoint2016 }}\" }, { \"name\": \"provisionSharePoint2019\", \"value\": \"${{ env.dtl_provisionSharePoint2019 }}\" }, { \"name\": \"provisionSharePointSubscription\", \"value\": \"${{ env.dtl_provisionSharePointSubscription }}\" }, { \"name\": \"configureADFS\", \"value\": \"true\" }, { \"name\": \"enableHybridBenefitServerLicenses\", \"value\": \"true\" }, { \"name\": \"enableAutomaticUpdates\", \"value\": \"false\" }, { \"name\": \"adminUserName\", \"value\": \"${{ inputs.dtl-env-adminUserName }}\" }, { \"name\": \"adminPassword\", \"value\": \"${{ secrets.DTL_ACCOUNTSPASSWORD }}\" }, { \"name\": \"serviceAccountsPassword\", \"value\": \"${{ secrets.DTL_ACCOUNTSPASSWORD }}\" }, { \"name\": \"addPublicIPAddress\", \"value\": \"${{ inputs.dtl-env-addPublicIPAddress }}\" }, { \"name\": \"RDPTrafficAllowed\", \"value\": \"${{ inputs.dtl-env-rdpTrafficAllowed }}\" }, { \"name\": \"addAzureBastion\", \"value\": \"${{ inputs.dtl-env-addAzureBastion }}\" } ]"
           
   #apply-artifacts-spse:
   apply-artifacts:
@@ -139,25 +153,29 @@ jobs:
       project_name: ${{ inputs.project-name }}
     steps:
     - name: Azure Login
-      uses: azure/login@v1
+      uses: azure/login@v2
       with:
-        creds: ${{ secrets.AZURE_CREDENTIALS }}
+        client-id: ${{ secrets.AZURE_CLIENT_ID }}
+        tenant-id: ${{ secrets.AZURE_TENANT_ID }}
+        subscription-id: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
 
     - name: Apply artifact - Register current VM as a VSTS agent in DevOps agent pools
-      uses: azure/CLI@v1
+      uses: azure/cli@v2
       with:
+        azcliversion: latest
         inlineScript: |
           artifactId="/subscriptions/${{ inputs.dtl-subscriptionId }}/resourceGroups/${{ inputs.dtl-rgName }}/providers/Microsoft.DevTestLab/labs/${{ inputs.dtl-serviceName }}/artifactSources/public repo/artifacts/windows-vsts-build-agent"
           artifactApplied=$(az lab vm show --lab-name ${{ inputs.dtl-serviceName }} --resource-group ${{ inputs.dtl-rgName }} --name ${{ env.vm_name }} --expand 'properties($expand=artifacts)' --query "artifacts[?artifactId=='$artifactId' && status == 'Succeeded'].status" --output tsv)
           echo $artifactApplied
           if [ -z $artifactApplied ]; then
             az lab vm apply-artifacts --lab-name ${{ inputs.dtl-serviceName }} --name ${{ env.vm_name }} --resource-group ${{ inputs.dtl-rgName }} \
-            --artifacts "[ { \"artifactId\": \"$artifactId\", \"parameters\": [ { \"name\": \"vstsAccount\", \"value\": \"${{ inputs.azdevops-organizationName }}\" }, { \"name\": \"vstsPassword\", \"value\": \"${{ secrets.azdevops-pat-registerAgent }}\" }, { \"name\": \"poolName\", \"value\": \"${{ env.dtl_poolName }}\" }, { \"name\": \"windowsLogonAccount\", \"value\": \"${{ format('{0}@contoso.local', inputs.dtl-env-adminUserName) }}\" }, { \"name\": \"windowsLogonPassword\", \"value\": \"${{ secrets.dtl-env-accountsPassword }}\" }, { \"name\": \"agentName\", \"value\": \"${{ env.vm_name }}\" }, { \"name\": \"agentNameSuffix\", \"value\": \"${{ format('-{0}', github.sha) }}\" }, { \"name\": \"RunAsAutoLogon\", \"value\": \"false\" }, { \"name\": \"driveLetter\", \"value\": \"C\" }, { \"name\": \"workDirectory\", \"value\": \"\" } ] } ]"
+            --artifacts "[ { \"artifactId\": \"$artifactId\", \"parameters\": [ { \"name\": \"vstsAccount\", \"value\": \"${{ inputs.azdevops-organizationName }}\" }, { \"name\": \"vstsPassword\", \"value\": \"${{ secrets.ADO_PAT_REGISTERAGENT }}\" }, { \"name\": \"poolName\", \"value\": \"${{ env.dtl_poolName }}\" }, { \"name\": \"windowsLogonAccount\", \"value\": \"${{ format('{0}@contoso.local', inputs.dtl-env-adminUserName) }}\" }, { \"name\": \"windowsLogonPassword\", \"value\": \"${{ secrets.DTL_ACCOUNTSPASSWORD }}\" }, { \"name\": \"agentName\", \"value\": \"${{ env.vm_name }}\" }, { \"name\": \"agentNameSuffix\", \"value\": \"${{ format('-{0}', github.sha) }}\" }, { \"name\": \"RunAsAutoLogon\", \"value\": \"false\" }, { \"name\": \"driveLetter\", \"value\": \"C\" }, { \"name\": \"workDirectory\", \"value\": \"\" } ] } ]"
           fi
 
     - name: Apply artifact - Run a PowerShell script to download and install claims provider in current VM
-      uses: azure/CLI@v1
+      uses: azure/cli@v2
       with:
+        azcliversion: latest
         inlineScript: |
           artifactId="/subscriptions/${{ inputs.dtl-subscriptionId }}/resourceGroups/${{ inputs.dtl-rgName }}/providers/Microsoft.DevTestLab/labs/${{ inputs.dtl-serviceName }}/artifactSources/public repo/artifacts/windows-run-powershell"
           artifactApplied=$(az lab vm show --lab-name ${{ inputs.dtl-serviceName }} --resource-group ${{ inputs.dtl-rgName }} --name ${{ env.vm_name }} --expand 'properties($expand=artifacts)' --query "artifacts[?artifactId=='$artifactId' && status == 'Succeeded'].status" --output tsv)
@@ -171,5 +189,22 @@ jobs:
             unitTestsProjectUri=${claimsProviderPackageUri/$uriLeafPart/$projectName-unit-tests.zip}
             echo $unitTestsProjectUri
             az lab vm apply-artifacts --lab-name ${{ inputs.dtl-serviceName }} --name ${{ env.vm_name }} --resource-group ${{ inputs.dtl-rgName }} \
-            --artifacts "[ { \"artifactId\": \"$artifactId\", \"parameters\": [ { \"name\": \"scriptFileUris\", \"value\": \" ${{ inputs.test-prepareSharePointVmScriptUris }} \" }, { \"name\": \"scriptToRun\", \"value\": \"ConfigureLab.ps1\" }, { \"name\": \"scriptArguments\", \"value\": \"-claimsProviderPackageUri '$claimsProviderPackageUri' -claimsProviderUnitTestsUri '$unitTestsProjectUri' -spTrustName 'contoso.local' -adminUserName '${{ format('contoso\{0}', inputs.dtl-env-adminUserName) }}' -adminPassword '${{ secrets.dtl-env-accountsPassword }}' -storageAccountEndpoint '${{ secrets.unittestfiles-storageAccountEndpoint }}' -storageAccountShareName '${{ secrets.unittestfiles-storageAccountShareName }}' -storageAccountSourceRelativePath '${{ inputs.unittestfiles-storageAccountSourceRelativePath }}'\" } ] } ]"
+            --artifacts "[ { \"artifactId\": \"$artifactId\", \"parameters\": [ { \"name\": \"scriptFileUris\", \"value\": \" ${{ inputs.test-prepareSharePointVmScriptUris }} \" }, { \"name\": \"scriptToRun\", \"value\": \"ConfigureLab.ps1\" }, { \"name\": \"scriptArguments\", \"value\": \"-claimsProviderPackageUri '$claimsProviderPackageUri' -claimsProviderUnitTestsUri '$unitTestsProjectUri' -spTrustName 'contoso.local' -adminUserName '${{ format('contoso\{0}', inputs.dtl-env-adminUserName) }}' -adminPassword '${{ secrets.DTL_ACCOUNTSPASSWORD }}' -storageAccountEndpoint '${{ secrets.UNITTESTFILES_AZURE_STORAGE_CONNECTION_STRING }}' -storageAccountShareName '${{ secrets.UNITTESTFILES_AZURE_STORAGE_SHARE_NAME }}' -storageAccountSourceRelativePath '${{ inputs.unittestfiles_azure_storage_share_relative_path }}'\" } ] } ]"
           fi
+
+    - name: Apply artifact - Run a PowerShell script to add self-hosted runner to the repository
+      uses: azure/cli@v2
+      with:
+        azcliversion: latest
+        inlineScript: |
+          artifactId="/subscriptions/${{ inputs.dtl-subscriptionId }}/resourceGroups/${{ inputs.dtl-rgName }}/providers/Microsoft.DevTestLab/labs/${{ inputs.dtl-serviceName }}/artifactSources/public repo/artifacts/windows-run-powershell"
+          
+          gh_token=${{ secrets.GH_TOKEN_ADD_RUNNER }}
+          gh_repo_owner_name=${{ github.repository }}
+          gh_repo_url="https://github.com/$gh_repo_owner_name"
+          scriptFileUris=${{ inputs.test_registerRunner_scriptUrl }}
+          scriptToRun="Add-RunnerToRepo.ps1"
+          echo $gh_repo_url
+          
+          az lab vm apply-artifacts --lab-name ${{ inputs.dtl-serviceName }} --name ${{ env.vm_name }} --resource-group ${{ inputs.dtl-rgName }} \
+          --artifacts "[ { \"artifactId\": \"$artifactId\", \"parameters\": [ { \"name\": \"scriptFileUris\", \"value\": \"$scriptFileUris\" }, { \"name\": \"scriptToRun\", \"value\": \"Add-RunnerToRepo.ps1\" }, { \"name\": \"scriptArguments\", \"value\": \"-gh_repo_url '$gh_repo_url' -gh_token '$gh_token' \" } ] } ]"

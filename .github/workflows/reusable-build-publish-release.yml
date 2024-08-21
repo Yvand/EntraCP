@@ -1,4 +1,4 @@
-name: Build project and publish release (reusable)
+name: (reusable) Build project and publish release
 on:
   workflow_call:
     inputs:

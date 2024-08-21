@@ -1,0 +1,23 @@
+name: (reusable) Run Visual Studio tests
+on:
+  workflow_call:
+    inputs:
+      test_project_folder_name:
+        required: true
+        type: string
+        description: 'Folder name of the NUnit test project'
+jobs:
+  run-tests:
+    runs-on: self-hosted
+    name: Run Visual Studio tests
+    env:
+      test_folder_path: 'C:\drop\unit-tests'
+    steps:
+    - name: Run tests
+      uses: rusty-bender/vstest-action@main
+      with:
+        searchFolder: '${{ env.test_folder_path }}\${{ inputs.test_project_folder_name }}\release\'
+        testAssembly: '*tests*.dll'
+        platform: 'x64'
+        runSettingsFile: '${{ env.test_folder_path }}\DTLServer.runsettings'
+        codeCoverageEnabled: false

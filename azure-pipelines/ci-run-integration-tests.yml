@@ -36,10 +36,10 @@ jobs:
       vsTestVersion: toolsInstaller
       runSettingsFile: '$(RootLocalPath)/$(TestsPathName)/DTLServer.runsettings'
       overrideTestrunParameters: '$(Tests.OverrideTestrunParameters)'
-      codeCoverageEnabled: $(Tests.CodeCoverageEnabled)
-      otherConsoleOptions: '/Platform:x64'
+      codeCoverageEnabled: false
       testRunTitle: '$(Tests.ProjectName)-Tests-SP$(sharePointVersion)'
-      platform: '$(BuildPlatform)'
-      configuration: $(Tests.BuildConfiguration)
+      platform: 'x64'
+      configuration: 'release'
+      testSelector: 'testAssemblies'
       testAssemblyVer2: |
         **\$(Tests.ProjectName)*test*.dll
