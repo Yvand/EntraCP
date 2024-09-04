@@ -4,7 +4,7 @@
 
 * Ensure that restrict searchable users feature works for all members, instead of only 100 members maximum - https://github.com/Yvand/EntraCP/issues/264
 * Update the script that provisions tenant with test users and groups, to be more reliable and provision 999 users (instead of 50), so tests are more realistics
-* Improve tests
+* Improve tests, to make them much easier to replay from a new test environment, and with many more users and groups
 * Publish a sample project that developers can use to create a custom version of EntraCP, for specific needs
 * Add a [Bruno](https://www.usebruno.com/) collection to replay the requests sent to Microsoft Graph by EntraCP
 
