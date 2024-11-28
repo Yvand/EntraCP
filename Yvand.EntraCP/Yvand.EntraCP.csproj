@@ -59,6 +59,9 @@
   </PropertyGroup>
   <ItemGroup>
     <PackageReference Include="Microsoft.SourceLink.GitHub" Version="8.0.0" PrivateAssets="all" />
+    <PackageReference Include="System.Text.Json">
+      <Version>6.0.11</Version>
+    </PackageReference>
   </ItemGroup>
   <!-- Project references -->
   <ItemGroup>

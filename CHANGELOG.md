@@ -1,5 +1,9 @@
 # Change log for ~~AzureCP~~ EntraCP
 
+## EntraCP v28.0 - enhancements & bug-fixes - Unreleased
+
+* Address [security advisory CVE-2024-43485](https://github.com/advisories/GHSA-8g4q-xg66-9fp4) by adding an explicit reference to System.Text.Json 6.0.11 (as a quick remediation)
+
 ## EntraCP v27.0.20240820.36 - enhancements & bug-fixes - Published in August 21, 2024
 
 * Ensure that restrict searchable users feature works for all members, instead of only 100 members maximum - https://github.com/Yvand/EntraCP/issues/264
