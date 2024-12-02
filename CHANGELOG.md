@@ -2,10 +2,10 @@
 
 ## EntraCP v28.0 - enhancements & bug-fixes - Published in December 12, 2024
 
-* Address security advisory CVE-2024-43485 (related to `System.Text.Json` 6.0.0) by bumping dependencies `Azure.Identity` and `Microsoft.Graph` to their latest version
-* Fix a validation issue that impacted guest users, when the identifier property for guest users is the UserPrincipalName
-* Fix the noisy logs of category "Azure Identity" due to new level `LogMsalAlways`, by recording logs with level `LogMsalAlways` as `VerboseEx`
-* Remove the parameter EventSeverity in method Log(), as it can be deducted from parameter TraceSeverity
+* Address security advisory CVE-2024-43485 (related to `System.Text.Json` 6.0.0) by bumping dependencies `Azure.Identity` and `Microsoft.Graph` to their latest version - https://github.com/Yvand/EntraCP/pull/294
+* Fix a validation issue that impacted guest users, when the identifier property for guest users is the UserPrincipalName - https://github.com/Yvand/EntraCP/pull/295
+* Fix the noisy logs of category "Azure Identity" due to new level `LogMsalAlways`, by recording logs with level `LogMsalAlways` as `VerboseEx` - https://github.com/Yvand/EntraCP/pull/296
+* Remove the parameter EventSeverity in method Log(), as it can be deducted from parameter TraceSeverity - https://github.com/Yvand/EntraCP/pull/296
 
 ## EntraCP v27.0.20240820.36 - enhancements & bug-fixes - Published in August 21, 2024
 
