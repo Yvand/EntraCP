@@ -332,7 +332,6 @@ namespace Yvand.EntraClaimsProvider.Configuration
                 incomingEntityClaimTypeConfig,
             };
             this.ExactSearch = true;
-            this.Input = this.IncomingEntity.Value;
         }
 
         /// <summary>
