@@ -1,5 +1,9 @@
 # Change log for ~~AzureCP~~ EntraCP
 
+## EntraCP v28.0 - enhancements & bug-fixes - Unreleased
+
+* Fix a validation issue that impacted guest users, when the identifier property for guest users is the UserPrincipalName
+
 ## EntraCP v27.0.20240820.36 - enhancements & bug-fixes - Published in August 21, 2024
 
 * Ensure that restrict searchable users feature works for all members, instead of only 100 members maximum - https://github.com/Yvand/EntraCP/issues/264

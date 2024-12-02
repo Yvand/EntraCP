@@ -39,6 +39,17 @@ namespace Yvand.EntraClaimsProvider.Tests
             base.TestSearchAndValidateForTestUser(user);
         }
 
+        [Test]
+        [Repeat(5)]
+        public void TestValidationOfGuestUser()
+        {
+            TestUser user = TestEntitySourceManager.GetOneUser(UserType.Guest);
+            // Test below must NOT validate, because DirectoryObjectPropertyForGuestUsers is mail, NOT UserPrincipalName
+            base.TestValidationOperation(UserIdentifierClaimType, user.UserPrincipalName, false);
+            // Test below must validate, because DirectoryObjectPropertyForGuestUsers is mail
+            base.TestValidationOperation(UserIdentifierClaimType, user.Mail, true);
+        }
+
         //[Test]
         //public void TestRandomUsers([Random(0, UnitTestsHelper.TotalNumberTestUsers - 1, 5)] int idx)
         //{
