@@ -1,4 +1,5 @@
 ﻿using NUnit.Framework;
+using System;
 using Yvand.EntraClaimsProvider.Configuration;
 
 namespace Yvand.EntraClaimsProvider.Tests
@@ -42,5 +43,33 @@ namespace Yvand.EntraClaimsProvider.Tests
         {
             base.TestAugmentationOfGoldUsersAgainstRandomGroups();
         }
+
+        [Test]
+        [Repeat(5)]
+        public void TestAGuestUser()
+        {
+            TestUser user = TestEntitySourceManager.GetOneUser(UserType.Guest);
+            base.TestSearchAndValidateForTestUser(user);
+        }
+
+        [Test]
+        [Repeat(5)]
+        public void TestValidationOfGuestUser()
+        {
+            TestUser user = TestEntitySourceManager.GetOneUser(UserType.Guest);
+            // Test below must validate, because DirectoryObjectPropertyForGuestUsers UserPrincipalName
+            base.TestValidationOperation(UserIdentifierClaimType, user.UserPrincipalName, true);
+            // Test below must NOT validate, because DirectoryObjectPropertyForGuestUsers UserPrincipalName, NOT mail
+            base.TestValidationOperation(UserIdentifierClaimType, user.Mail, false);
+        }
+
+#if DEBUG
+        [Test]
+        public void DebugAugmentTestUser()
+        {
+            TestUser user = TestEntitySourceManager.GetOneUser(UserType.Guest);
+            base.TestAugmentationOperation(user.UserPrincipalName, user.IsMemberOfAllGroups, String.Empty);
+        }
+#endif
     }
 }

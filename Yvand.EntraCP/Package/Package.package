@@ -4,6 +4,7 @@
     <customAssembly location="Azure.Core.dll" deploymentTarget="GlobalAssemblyCache" sourcePath="bin\Azure.Core.dll" />
     <customAssembly location="Azure.Identity.dll" deploymentTarget="GlobalAssemblyCache" sourcePath="bin\Azure.Identity.dll" />
     <customAssembly location="Microsoft.Bcl.AsyncInterfaces.dll" deploymentTarget="GlobalAssemblyCache" sourcePath="bin\Microsoft.Bcl.AsyncInterfaces.dll" />
+    <customAssembly location="Microsoft.Bcl.TimeProvider.dll" deploymentTarget="GlobalAssemblyCache" sourcePath="bin\Microsoft.Bcl.TimeProvider.dll" />
     <customAssembly location="Microsoft.Graph.Core.dll" deploymentTarget="GlobalAssemblyCache" sourcePath="bin\Microsoft.Graph.Core.dll" />
     <customAssembly location="Microsoft.Graph.dll" deploymentTarget="GlobalAssemblyCache" sourcePath="bin\Microsoft.Graph.dll" />
     <customAssembly location="Microsoft.Identity.Client.dll" deploymentTarget="GlobalAssemblyCache" sourcePath="bin\Microsoft.Identity.Client.dll" />
@@ -14,6 +15,7 @@
     <customAssembly location="Microsoft.IdentityModel.Protocols.dll" deploymentTarget="GlobalAssemblyCache" sourcePath="bin\Microsoft.IdentityModel.Protocols.dll" />
     <customAssembly location="Microsoft.IdentityModel.Protocols.OpenIdConnect.dll" deploymentTarget="GlobalAssemblyCache" sourcePath="bin\Microsoft.IdentityModel.Protocols.OpenIdConnect.dll" />
     <customAssembly location="Microsoft.IdentityModel.Tokens.dll" deploymentTarget="GlobalAssemblyCache" sourcePath="bin\Microsoft.IdentityModel.Tokens.dll" />
+    <customAssembly location="Microsoft.IdentityModel.Validators.dll" deploymentTarget="GlobalAssemblyCache" sourcePath="bin\Microsoft.IdentityModel.Validators.dll" />
     <customAssembly location="Microsoft.Kiota.Abstractions.dll" deploymentTarget="GlobalAssemblyCache" sourcePath="bin\Microsoft.Kiota.Abstractions.dll" />
     <customAssembly location="Microsoft.Kiota.Authentication.Azure.dll" deploymentTarget="GlobalAssemblyCache" sourcePath="bin\Microsoft.Kiota.Authentication.Azure.dll" />
     <customAssembly location="Microsoft.Kiota.Http.HttpClientLibrary.dll" deploymentTarget="GlobalAssemblyCache" sourcePath="bin\Microsoft.Kiota.Http.HttpClientLibrary.dll" />

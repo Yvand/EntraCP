@@ -324,7 +324,7 @@ namespace Yvand.EntraClaimsProvider.Configuration
                !x.UseMainClaimTypeOfDirectoryObject);
             if (incomingEntityClaimTypeConfig == null)
             {
-                Logger.Log($"[{EntraCP.ClaimsProviderName}] Unable to validate entity \"{this.IncomingEntity.Value}\" because its claim type \"{this.IncomingEntity.ClaimType}\" was not found in the ClaimTypes list of current configuration.", TraceSeverity.Unexpected, EventSeverity.Error, TraceCategory.Configuration);
+                Logger.Log($"[{EntraCP.ClaimsProviderName}] Unable to validate entity \"{this.IncomingEntity.Value}\" because its claim type \"{this.IncomingEntity.ClaimType}\" was not found in the ClaimTypes list of current configuration.", TraceSeverity.Unexpected, TraceCategory.Configuration);
                 throw new InvalidOperationException($"[{EntraCP.ClaimsProviderName}] Unable validate entity \"{this.IncomingEntity.Value}\" because its claim type \"{this.IncomingEntity.ClaimType}\" was not found in the ClaimTypes list of current configuration.");
             }
             this.CurrentClaimTypeConfigList = new List<ClaimTypeConfig>(1)
@@ -332,7 +332,6 @@ namespace Yvand.EntraClaimsProvider.Configuration
                 incomingEntityClaimTypeConfig,
             };
             this.ExactSearch = true;
-            this.Input = this.IncomingEntity.Value;
         }
 
         /// <summary>

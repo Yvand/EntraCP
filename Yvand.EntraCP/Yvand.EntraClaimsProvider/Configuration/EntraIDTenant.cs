@@ -178,17 +178,17 @@ namespace Yvand.EntraClaimsProvider.Configuration
         {
             if (String.IsNullOrWhiteSpace(this.ClientSecret) && this.ClientCertificateWithPrivateKey == null)
             {
-                Logger.Log($"[{EntraCP.ClaimsProviderName}] Cannot initialize authentication for tenant {this.Name} because both properties {nameof(ClientSecret)} and {nameof(ClientCertificateWithPrivateKey)} are not set.", TraceSeverity.Unexpected, EventSeverity.Error, TraceCategory.Configuration);
+                Logger.Log($"[{EntraCP.ClaimsProviderName}] Cannot initialize authentication for tenant {this.Name} because both properties {nameof(ClientSecret)} and {nameof(ClientCertificateWithPrivateKey)} are not set.", TraceSeverity.Unexpected, TraceCategory.Configuration);
                 return;
             }
             if (String.IsNullOrWhiteSpace(this.ClientId))
             {
-                Logger.Log($"[{EntraCP.ClaimsProviderName}] Cannot initialize authentication for tenant {this.Name} because the property {nameof(ClientId)} is not set.", TraceSeverity.Unexpected, EventSeverity.Error, TraceCategory.Configuration);
+                Logger.Log($"[{EntraCP.ClaimsProviderName}] Cannot initialize authentication for tenant {this.Name} because the property {nameof(ClientId)} is not set.", TraceSeverity.Unexpected, TraceCategory.Configuration);
                 return;
             }
             if (String.IsNullOrWhiteSpace(this.Name))
             {
-                Logger.Log($"[{EntraCP.ClaimsProviderName}] Cannot initialize authentication because the property {nameof(Name)} of current tenant is not set.", TraceSeverity.Unexpected, EventSeverity.Error, TraceCategory.Configuration);
+                Logger.Log($"[{EntraCP.ClaimsProviderName}] Cannot initialize authentication because the property {nameof(Name)} of current tenant is not set.", TraceSeverity.Unexpected, TraceCategory.Configuration);
                 return;
             }
 
@@ -250,7 +250,7 @@ namespace Yvand.EntraClaimsProvider.Configuration
             HttpClient httpClient = GraphClientFactory.Create(handlers: handlers, proxy: webProxy, nationalCloud: cloudInstanceSettings.NameInGraphCore);
             httpClient.Timeout = TimeSpan.FromMilliseconds(requestsTimeout);
             this.GraphService = new GraphServiceClient(httpClient, tokenCredential, new[] { cloudInstanceSettings.GraphScope });
-            Logger.Log($"[{EntraCP.ClaimsProviderName}] Initialized authentication for tenant \"{this.Name}\" on cloud instance \"{cloudInstanceSettings.Name}\" (authority \"{cloudInstanceSettings.Authority}\" and scope \"{cloudInstanceSettings.GraphScope}\").", TraceSeverity.High, EventSeverity.Information, TraceCategory.Configuration);
+            Logger.Log($"[{EntraCP.ClaimsProviderName}] Initialized authentication for tenant \"{this.Name}\" on cloud instance \"{cloudInstanceSettings.Name}\" (authority \"{cloudInstanceSettings.Authority}\" and scope \"{cloudInstanceSettings.GraphScope}\").", TraceSeverity.High, TraceCategory.Configuration);
         }
 
         public async Task<bool> TestConnectionAsync(string proxyAddress)

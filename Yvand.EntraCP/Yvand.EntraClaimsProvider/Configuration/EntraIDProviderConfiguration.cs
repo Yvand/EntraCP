@@ -128,7 +128,7 @@ namespace Yvand.EntraClaimsProvider.Configuration
             SPTrustedLoginProvider spTrust = Utils.GetSPTrustAssociatedWithClaimsProvider(claimsProviderName);
             if (spTrust == null)
             {
-                Logger.Log($"No SPTrustedLoginProvider associated with claims provider '{claimsProviderName}' was found.", TraceSeverity.Unexpected, EventSeverity.Error, TraceCategory.Core);
+                Logger.Log($"No SPTrustedLoginProvider associated with claims provider '{claimsProviderName}' was found.", TraceSeverity.Unexpected, TraceCategory.Core);
                 return null;
             }
 
@@ -473,7 +473,7 @@ namespace Yvand.EntraClaimsProvider.Configuration
         {
             this.ValidateConfiguration();
             base.Update();
-            Logger.Log($"Successfully updated configuration '{this.Name}' with Id {this.Id}", TraceSeverity.High, EventSeverity.Information, TraceCategory.Core);
+            Logger.Log($"Successfully updated configuration '{this.Name}' with Id {this.Id}", TraceSeverity.High, TraceCategory.Core);
         }
 
         /// <summary>
@@ -484,7 +484,7 @@ namespace Yvand.EntraClaimsProvider.Configuration
         {
             this.ValidateConfiguration();
             base.Update(ensure);
-            Logger.Log($"Successfully updated configuration '{this.Name}' with Id {this.Id}", TraceSeverity.High, EventSeverity.Information, TraceCategory.Core);
+            Logger.Log($"Successfully updated configuration '{this.Name}' with Id {this.Id}", TraceSeverity.High, TraceCategory.Core);
         }
 
         /// <summary>
@@ -581,7 +581,7 @@ namespace Yvand.EntraClaimsProvider.Configuration
         public override void Delete()
         {
             base.Delete();
-            Logger.Log($"Successfully deleted configuration '{this.Name}' with Id {this.Id}", TraceSeverity.High, EventSeverity.Information, TraceCategory.Core);
+            Logger.Log($"Successfully deleted configuration '{this.Name}' with Id {this.Id}", TraceSeverity.High, TraceCategory.Core);
         }
 
         /// <summary>
@@ -663,7 +663,7 @@ namespace Yvand.EntraClaimsProvider.Configuration
             ClaimTypes.Clear();
             ClaimTypes = ReturnDefaultClaimTypesConfig();
             Logger.Log($"Claim types list of configuration '{Name}' was successfully reset to default configuration",
-                TraceSeverity.High, EventSeverity.Information, TraceCategory.Core);
+                TraceSeverity.High, TraceCategory.Core);
         }
 
         /// <summary>
@@ -699,11 +699,11 @@ namespace Yvand.EntraClaimsProvider.Configuration
             EntraIDProviderConfiguration configuration = GetGlobalConfiguration(configurationId);
             if (configuration == null)
             {
-                Logger.Log($"Configuration ID '{configurationId}' was not found in configuration database", TraceSeverity.Medium, EventSeverity.Error, TraceCategory.Core);
+                Logger.Log($"Configuration ID '{configurationId}' was not found in configuration database", TraceSeverity.Medium, TraceCategory.Core);
                 return;
             }
             configuration.Delete();
-            Logger.Log($"Configuration ID '{configurationId}' was successfully deleted from configuration database", TraceSeverity.High, EventSeverity.Information, TraceCategory.Core);
+            Logger.Log($"Configuration ID '{configurationId}' was successfully deleted from configuration database", TraceSeverity.High, TraceCategory.Core);
         }
 
         /// <summary>
@@ -734,7 +734,7 @@ namespace Yvand.EntraClaimsProvider.Configuration
                 DeleteGlobalConfiguration(configurationID);
             }
 
-            Logger.Log($"Creating configuration '{configurationName}' with Id {configurationID}...", TraceSeverity.VerboseEx, EventSeverity.Error, TraceCategory.Core);
+            Logger.Log($"Creating configuration '{configurationName}' with Id {configurationID}...", TraceSeverity.VerboseEx, TraceCategory.Core);
             //ConstructorInfo ctorWithParameters = T.GetConstructor(new[] { typeof(string), typeof(SPFarm), typeof(string) });
             //EntraIDProviderConfiguration globalConfiguration = (EntraIDProviderConfiguration)ctorWithParameters.Invoke(new object[] { configurationName, SPFarm.Local, claimsProviderName });
             //TSettings defaultSettings = globalConfiguration.GetDefaultSettings();
@@ -743,7 +743,7 @@ namespace Yvand.EntraClaimsProvider.Configuration
             globalConfiguration.ApplySettings(defaultSettings, false);
             globalConfiguration.Id = configurationID;
             globalConfiguration.Update(true);
-            Logger.Log($"Created configuration '{configurationName}' with Id {globalConfiguration.Id}", TraceSeverity.High, EventSeverity.Information, TraceCategory.Core);
+            Logger.Log($"Created configuration '{configurationName}' with Id {globalConfiguration.Id}", TraceSeverity.High, TraceCategory.Core);
             return globalConfiguration;
         }
     }
