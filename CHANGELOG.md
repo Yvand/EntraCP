@@ -1,6 +1,6 @@
 # Change log for ~~AzureCP~~ EntraCP
 
-## EntraCP v28.0 - enhancements & bug-fixes - Unreleased
+## EntraCP v28.0 - enhancements & bug-fixes - Published in December 12, 2024
 
 * Address security advisory CVE-2024-43485 (related to `System.Text.Json` 6.0.0) by bumping dependencies `Azure.Identity` and `Microsoft.Graph` to their latest version
 * Fix a validation issue that impacted guest users, when the identifier property for guest users is the UserPrincipalName
