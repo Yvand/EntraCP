@@ -39,7 +39,7 @@ namespace Yvand.EntraClaimsProvider.Administration
                 try
                 {
                     Logger svc = Logger.Local;
-                    Logger.Log($"[{EntraCP.ClaimsProviderName}] Activating farm-scoped feature for claims provider \"{EntraCP.ClaimsProviderName}\"", TraceSeverity.High, EventSeverity.Information, TraceCategory.Configuration);
+                    Logger.Log($"[{EntraCP.ClaimsProviderName}] Activating farm-scoped feature for claims provider \"{EntraCP.ClaimsProviderName}\"", TraceSeverity.High, TraceCategory.Configuration);
                     //EntraCPConfig existingConfig = EntraCPConfig.GetConfiguration(ClaimsProviderConstants.CONFIG_NAME);
                     //if (existingConfig == null)
                     //{
@@ -47,7 +47,7 @@ namespace Yvand.EntraClaimsProvider.Administration
                     //}
                     //else
                     //{
-                    //    ClaimsProviderLogging.Log($"[{EntraCP._ProviderInternalName}] Use configuration \"{ClaimsProviderConstants.CONFIG_NAME}\" found in the configuration database", TraceSeverity.High, EventSeverity.Information, ClaimsProviderLogging.TraceCategory.Configuration);
+                    //    ClaimsProviderLogging.Log($"[{EntraCP._ProviderInternalName}] Use configuration \"{ClaimsProviderConstants.CONFIG_NAME}\" found in the configuration database", TraceSeverity.High, ClaimsProviderLogging.TraceCategory.Configuration);
                     //}
                 }
                 catch (Exception ex)
@@ -63,7 +63,7 @@ namespace Yvand.EntraClaimsProvider.Administration
             {
                 try
                 {
-                    Logger.Log($"[{EntraCP.ClaimsProviderName}] Uninstalling farm-scoped feature for claims provider \"{EntraCP.ClaimsProviderName}\": Deleting configuration from the farm", TraceSeverity.High, EventSeverity.Information, TraceCategory.Configuration);
+                    Logger.Log($"[{EntraCP.ClaimsProviderName}] Uninstalling farm-scoped feature for claims provider \"{EntraCP.ClaimsProviderName}\": Deleting configuration from the farm", TraceSeverity.High, TraceCategory.Configuration);
                     //EntraCPConfig.DeleteConfiguration(ClaimsProviderConstants.CONFIG_NAME);
                     Logger.Unregister();
                 }
@@ -80,7 +80,7 @@ namespace Yvand.EntraClaimsProvider.Administration
             {
                 try
                 {
-                    Logger.Log($"[{EntraCP.ClaimsProviderName}] Deactivating farm-scoped feature for claims provider \"{EntraCP.ClaimsProviderName}\": Removing claims provider from the farm (but not its configuration)", TraceSeverity.High, EventSeverity.Information, TraceCategory.Configuration);
+                    Logger.Log($"[{EntraCP.ClaimsProviderName}] Deactivating farm-scoped feature for claims provider \"{EntraCP.ClaimsProviderName}\": Removing claims provider from the farm (but not its configuration)", TraceSeverity.High, TraceCategory.Configuration);
                     base.RemoveClaimProvider((string)EntraCP.ClaimsProviderName);
                 }
                 catch (Exception ex)

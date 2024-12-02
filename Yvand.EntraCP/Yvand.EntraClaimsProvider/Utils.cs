@@ -35,9 +35,9 @@ namespace Yvand.EntraClaimsProvider
 
             if (lp != null && lp.Count() > 1)
             {
-                Logger.Log($"[{claimProviderName}] Cannot continue because '{claimProviderName}' is set with multiple SPTrustedIdentityTokenIssuer", TraceSeverity.Unexpected, EventSeverity.Error, TraceCategory.Core);
+                Logger.Log($"[{claimProviderName}] Cannot continue because '{claimProviderName}' is set with multiple SPTrustedIdentityTokenIssuer", TraceSeverity.Unexpected, TraceCategory.Core);
             }
-            Logger.Log($"[{claimProviderName}] Cannot continue because '{claimProviderName}' is not set with any SPTrustedIdentityTokenIssuer.\r\nVisit {ClaimsProviderConstants.PUBLICSITEURL} for more information.", TraceSeverity.High, EventSeverity.Warning, TraceCategory.Core);
+            Logger.Log($"[{claimProviderName}] Cannot continue because '{claimProviderName}' is not set with any SPTrustedIdentityTokenIssuer.\r\nVisit {ClaimsProviderConstants.PUBLICSITEURL} for more information.", TraceSeverity.High, TraceCategory.Core);
             return null;
         }
 
@@ -221,30 +221,30 @@ namespace Yvand.EntraClaimsProvider
             return propertyValue == null ? String.Empty : propertyValue.ToString();
         }
 
-        public static EventLevel TraceSeverityToEventLevel(TraceSeverity level)
+        public static EventSeverity TraceSeverityToEventLevel(TraceSeverity level)
         {
-            EventLevel retLevel;
+            EventSeverity retLevel;
             switch (level)
             {
                 case TraceSeverity.Unexpected:
-                    retLevel = EventLevel.Critical;
+                    retLevel = EventSeverity.ErrorCritical;
                     break;
 
                 case TraceSeverity.High:
-                    retLevel = EventLevel.Error;
+                    retLevel = EventSeverity.Error;
                     break;
 
                 case TraceSeverity.Medium:
-                    retLevel = EventLevel.Warning;
+                    retLevel = EventSeverity.Warning;
                     break;
 
                 case TraceSeverity.VerboseEx:
                 case TraceSeverity.Verbose:
-                    retLevel = EventLevel.Informational;
+                    retLevel = EventSeverity.Verbose;
                     break;
 
                 default:
-                    retLevel = EventLevel.Warning;
+                    retLevel = EventSeverity.Error;
                     break;
             }
             return retLevel;
@@ -267,6 +267,8 @@ namespace Yvand.EntraClaimsProvider
                     retLevel = TraceSeverity.Medium;
                     break;
 
+                // Treat LogAlways based on https://learn.microsoft.com/en-us/dotnet/azure/sdk/logging#map-to-aspnet-core-logging
+                case EventLevel.LogAlways:
                 case EventLevel.Informational:
                 case EventLevel.Verbose:
                     // Set to VerboseEx instead of Verbose, because it generates very noisy messages

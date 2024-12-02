@@ -150,11 +150,11 @@ namespace Yvand.EntraClaimsProvider
             }
             if (groupsInTenant != null)
             {
-                Logger.Log($"[{ClaimsProviderName}] Got {groupsInTenant.Count} groups in {timer.ElapsedMilliseconds} ms for user '{currentContext.IncomingEntity.Value}' from tenant '{tenant.Name}'", TraceSeverity.Verbose, EventSeverity.Information, TraceCategory.Augmentation);
+                Logger.Log($"[{ClaimsProviderName}] Got {groupsInTenant.Count} groups in {timer.ElapsedMilliseconds} ms for user '{currentContext.IncomingEntity.Value}' from tenant '{tenant.Name}'", TraceSeverity.Verbose, TraceCategory.Augmentation);
             }
             else
             {
-                Logger.Log($"[{ClaimsProviderName}] Got no group in {timer.ElapsedMilliseconds} ms for user '{currentContext.IncomingEntity.Value}' from tenant '{tenant.Name}'", TraceSeverity.Verbose, EventSeverity.Information, TraceCategory.Augmentation);
+                Logger.Log($"[{ClaimsProviderName}] Got no group in {timer.ElapsedMilliseconds} ms for user '{currentContext.IncomingEntity.Value}' from tenant '{tenant.Name}'", TraceSeverity.Verbose, TraceCategory.Augmentation);
             }
             return groupsInTenant;
         }
@@ -341,11 +341,11 @@ namespace Yvand.EntraClaimsProvider
                     timer.Stop();
                     if (tenantResults != null)
                     {
-                        Logger.Log($"[{ClaimsProviderName}] Got {tenantResults.Count} users/groups in {timer.ElapsedMilliseconds.ToString()} ms from '{tenant.Name}' with input '{currentContext.Input}'", TraceSeverity.Medium, EventSeverity.Information, TraceCategory.Lookup);
+                        Logger.Log($"[{ClaimsProviderName}] Got {tenantResults.Count} users/groups in {timer.ElapsedMilliseconds.ToString()} ms from '{tenant.Name}' with input '{currentContext.Input}'", TraceSeverity.Medium, TraceCategory.Lookup);
                     }
                     else
                     {
-                        Logger.Log($"[{ClaimsProviderName}] Got no result from \"{tenant.Name}\" with input '{currentContext.Input}', search took {timer.ElapsedMilliseconds.ToString()} ms", TraceSeverity.Medium, EventSeverity.Information, TraceCategory.Lookup);
+                        Logger.Log($"[{ClaimsProviderName}] Got no result from \"{tenant.Name}\" with input '{currentContext.Input}', search took {timer.ElapsedMilliseconds.ToString()} ms", TraceSeverity.Medium, TraceCategory.Lookup);
                     }
                     return tenantResults;
                 }
@@ -375,11 +375,11 @@ namespace Yvand.EntraClaimsProvider
 
             if (tenant.GraphService == null)
             {
-                Logger.Log($"[{ClaimsProviderName}] Cannot query Microsoft Entra ID tenant '{tenant.Name}' because it was not initialized", TraceSeverity.Unexpected, EventSeverity.Error, TraceCategory.Lookup);
+                Logger.Log($"[{ClaimsProviderName}] Cannot query Microsoft Entra ID tenant '{tenant.Name}' because it was not initialized", TraceSeverity.Unexpected, TraceCategory.Lookup);
                 return tenantResults;
             }
 
-            Logger.Log($"[{ClaimsProviderName}] Querying Microsoft Entra ID tenant '{tenant.Name}' for users and groups, with input '{currentContext.Input}'", TraceSeverity.VerboseEx, EventSeverity.Information, TraceCategory.Lookup);
+            Logger.Log($"[{ClaimsProviderName}] Querying Microsoft Entra ID tenant '{tenant.Name}' for users and groups, with input '{currentContext.Input}'", TraceSeverity.VerboseEx, TraceCategory.Lookup);
             object lockAddResultToCollection = new object();
             int timeout = this.Settings.Timeout;
             int maxRetry = currentContext.OperationType == OperationType.Validation ? 3 : 2;
@@ -518,7 +518,7 @@ namespace Yvand.EntraClaimsProvider
                         }
                         else
                         {
-                            Logger.Log($"[{ClaimsProviderName}] Query to tenant '{tenant.Name}' returned unexpected status '{usersRequestStatus}' for users request with filter \"{tenant.UserFilter}\"", TraceSeverity.Unexpected, EventSeverity.Error, TraceCategory.Lookup);
+                            Logger.Log($"[{ClaimsProviderName}] Query to tenant '{tenant.Name}' returned unexpected status '{usersRequestStatus}' for users request with filter \"{tenant.UserFilter}\"", TraceSeverity.Unexpected, TraceCategory.Lookup);
                         }
                     }
 
@@ -533,7 +533,7 @@ namespace Yvand.EntraClaimsProvider
                         }
                         else
                         {
-                            Logger.Log($"[{ClaimsProviderName}] Query to tenant '{tenant.Name}' returned unexpected status '{groupRequestStatus}' for groups request with filter \"{tenant.GroupFilter}\"", TraceSeverity.Unexpected, EventSeverity.Error, TraceCategory.Lookup);
+                            Logger.Log($"[{ClaimsProviderName}] Query to tenant '{tenant.Name}' returned unexpected status '{groupRequestStatus}' for groups request with filter \"{tenant.GroupFilter}\"", TraceSeverity.Unexpected, TraceCategory.Lookup);
                         }
                     }
 
@@ -565,11 +565,11 @@ namespace Yvand.EntraClaimsProvider
                                 }
                                 else if (allowedGroupMembersOfGroupResponseStatus == HttpStatusCode.NotFound)
                                 {
-                                    Logger.Log($"[{ClaimsProviderName}] Request inside the batch to get the members of a group on tenant \"{tenant.Name}\" returned nothing (the group was not found).", TraceSeverity.Verbose, EventSeverity.Information, TraceCategory.Lookup);
+                                    Logger.Log($"[{ClaimsProviderName}] Request inside the batch to get the members of a group on tenant \"{tenant.Name}\" returned nothing (the group was not found).", TraceSeverity.Verbose, TraceCategory.Lookup);
                                 }
                                 else
                                 {
-                                    Logger.Log($"[{ClaimsProviderName}] Request inside the batch to get the members of a group on tenant \"{tenant.Name}\" returned unexpected status '{allowedGroupMembersOfGroupResponseStatus}'", TraceSeverity.Unexpected, EventSeverity.Error, TraceCategory.Lookup);
+                                    Logger.Log($"[{ClaimsProviderName}] Request inside the batch to get the members of a group on tenant \"{tenant.Name}\" returned unexpected status '{allowedGroupMembersOfGroupResponseStatus}'", TraceSeverity.Unexpected, TraceCategory.Lookup);
                                 }
                             }
                         }
@@ -577,7 +577,7 @@ namespace Yvand.EntraClaimsProvider
                         lockToWriteInCachedDataWasTaken = false;
                     }
 
-                    Logger.Log($"[{ClaimsProviderName}] Query to tenant '{tenant.Name}' returned {(userCollectionResult?.Value == null ? 0 : userCollectionResult.Value.Count)} user(s) with filter \"{tenant.UserFilter}\" and {(groupCollectionResult?.Value == null ? 0 : groupCollectionResult.Value.Count)} group(s) with filter \"{tenant.GroupFilter}\"", TraceSeverity.VerboseEx, EventSeverity.Information, TraceCategory.Lookup);
+                    Logger.Log($"[{ClaimsProviderName}] Query to tenant '{tenant.Name}' returned {(userCollectionResult?.Value == null ? 0 : userCollectionResult.Value.Count)} user(s) with filter \"{tenant.UserFilter}\" and {(groupCollectionResult?.Value == null ? 0 : groupCollectionResult.Value.Count)} group(s) with filter \"{tenant.GroupFilter}\"", TraceSeverity.VerboseEx, TraceCategory.Lookup);
                     // Process users result
                     if (userCollectionResult?.Value != null)
                     {
@@ -664,7 +664,7 @@ namespace Yvand.EntraClaimsProvider
             }
             catch (OperationCanceledException)
             {
-                Logger.Log($"[{ClaimsProviderName}] Operation on Entra ID for tenant '{tenant.Name}' exceeded the timeout of {timeout} ms and was cancelled.", TraceSeverity.Unexpected, EventSeverity.Error, TraceCategory.Lookup);
+                Logger.Log($"[{ClaimsProviderName}] Operation on Entra ID for tenant '{tenant.Name}' exceeded the timeout of {timeout} ms and was cancelled.", TraceSeverity.Unexpected, TraceCategory.Lookup);
             }
             catch (AuthenticationFailedException ex)
             {

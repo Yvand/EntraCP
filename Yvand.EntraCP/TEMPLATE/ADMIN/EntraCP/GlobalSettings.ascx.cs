@@ -183,7 +183,7 @@ namespace Yvand.EntraClaimsProvider.Administration
             {
                 Settings.EntraIDTenants.Remove(tenantToRemove);
                 CommitChanges();
-                Logger.Log($"Microsoft Entra ID tenant '{tenantToRemove.Name}' was successfully removed from configuration '{ConfigurationName}'", TraceSeverity.Medium, EventSeverity.Information, TraceCategory.Configuration);
+                Logger.Log($"Microsoft Entra ID tenant '{tenantToRemove.Name}' was successfully removed from configuration '{ConfigurationName}'", TraceSeverity.Medium, TraceCategory.Configuration);
                 LabelMessage.Text = String.Format(TextSummaryPersistedObjectInformation, Configuration.Name, Configuration.Version, Configuration.Id);
                 PopulateConnectionsGrid();
             }
@@ -386,7 +386,7 @@ namespace Yvand.EntraClaimsProvider.Administration
             this.Settings.EntraIDTenants.Add(newTenant);
 
             CommitChanges();
-            Logger.Log($"Microsoft Entra ID tenant '{this.TxtTenantName.Text}' was successfully added to configuration '{ConfigurationName}'", TraceSeverity.Medium, EventSeverity.Information, TraceCategory.Configuration);
+            Logger.Log($"Microsoft Entra ID tenant '{this.TxtTenantName.Text}' was successfully added to configuration '{ConfigurationName}'", TraceSeverity.Medium, TraceCategory.Configuration);
             LabelMessage.Text = String.Format(TextSummaryPersistedObjectInformation, Configuration.Name, Configuration.Version, Configuration.Id);
 
             PopulateConnectionsGrid();

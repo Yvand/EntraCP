@@ -99,7 +99,7 @@ namespace Yvand.EntraClaimsProvider.Logging
                         });
         }
 
-        public static void Log(string message, TraceSeverity traceSeverity, EventSeverity eventSeverity, TraceCategory category)
+        public static void Log(string message, TraceSeverity traceSeverity, TraceCategory category)
         {
             try
             {

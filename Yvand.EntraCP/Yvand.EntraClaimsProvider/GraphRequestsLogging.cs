@@ -31,12 +31,12 @@ namespace Yvand.EntraClaimsProvider
             {
                 // httpRequest.Content is null if httpRequest is a GET (e.g. during augmentation)
                 string requestBody = httpRequest.Content == null ? string.Empty : await httpRequest.Content.ReadAsStringAsync().ConfigureAwait(false);
-                Logger.Log($"[{EntraCP.ClaimsProviderName}] Graph returned error {response.StatusCode} {response.ReasonPhrase} on request \"{httpRequest.RequestUri}\" with JSON payload \"{requestBody}\"", TraceSeverity.Unexpected, EventSeverity.Error, TraceCategory.GraphRequests);
+                Logger.Log($"[{EntraCP.ClaimsProviderName}] Graph returned error {response.StatusCode} {response.ReasonPhrase} on request \"{httpRequest.RequestUri}\" with JSON payload \"{requestBody}\"", TraceSeverity.Unexpected, TraceCategory.GraphRequests);
             }
             else
             {
                 // Log in VerboseEx because as is, those messages aren't really useful
-                Logger.Log($"[{EntraCP.ClaimsProviderName}] Graph returned success {response.StatusCode} on request \"{httpRequest.RequestUri}\"", TraceSeverity.VerboseEx, EventSeverity.Verbose, TraceCategory.GraphRequests);
+                Logger.Log($"[{EntraCP.ClaimsProviderName}] Graph returned success {response.StatusCode} on request \"{httpRequest.RequestUri}\"", TraceSeverity.VerboseEx, TraceCategory.GraphRequests);
             }
             return response;
         }
