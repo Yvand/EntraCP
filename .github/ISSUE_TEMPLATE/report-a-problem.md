@@ -1,14 +1,11 @@
 ---
-name: Problem with using EntraCP
+name: Report a problem
 about: EntraCP throws an error, or causes an error in SharePoint, or cannot be configured
 title: ''
 labels: ''
 assignees: ''
 
 ---
-
-Problem with using EntraCP
-EntraCP throws an error, or causes an error in SharePoint, or cannot be configured
 
 **Describe the problem**
 A clear and concise description of what the problem is.
