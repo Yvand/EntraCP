@@ -293,6 +293,10 @@
                                     <label for="<%= DdlUserGraphPropertyToDisplay.ClientID %>" title="Property displayed in the results list in the people picker (leave blank to use the user identifier attribute)">Property as display text &#9432;</label>
                                     <asp:DropDownList runat="server" ID="DdlUserGraphPropertyToDisplay" class="ms-input" />
                                 </li>
+                                 <li>
+                                    <label for="<%= ChkFilterAccountsEnabledOnly.ClientID %>">Return only enabled user accounts</label>
+                                    <asp:CheckBox runat="server" Name="ChkFilterAccountsEnabledOnly" ID="ChkFilterAccountsEnabledOnly" />
+                                </li>
                             </ol>
                         </fieldset>
                     </div>
@@ -336,7 +340,7 @@
                                     <asp:DropDownList runat="server" ID="DdlGroupGraphPropertyToDisplay" class="ms-input" />
                                 </li>
                                 <li>
-                                    <label for="<%= ChkFilterSecurityEnabledGroupsOnly.ClientID %>">Enable augmentation</label>
+                                    <label for="<%= ChkAugmentAADRoles.ClientID %>">Enable augmentation</label>
                                     <asp:CheckBox runat="server" Name="ChkAugmentAADRoles" ID="ChkAugmentAADRoles" />
                                 </li>
                                 <li>

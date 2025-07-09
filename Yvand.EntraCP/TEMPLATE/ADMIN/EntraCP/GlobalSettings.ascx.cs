@@ -92,6 +92,7 @@ namespace Yvand.EntraClaimsProvider.Administration
             }
             this.DdlUserIdDirectoryPropertyMembers.Items.FindByValue(((int)IdentityCTConfig.EntityProperty).ToString()).Selected = true;
             this.DdlUserIdDirectoryPropertyGuests.Items.FindByValue(((int)IdentityCTConfig.DirectoryObjectPropertyForGuestUsers).ToString()).Selected = true;
+            this.ChkFilterAccountsEnabledOnly.Checked = Settings.FilterAccountsEnabledOnly;
 
             // Group identifier settings
             var possibleGroupClaimTypes = SPTrust.ClaimTypeInformation
@@ -204,6 +205,7 @@ namespace Yvand.EntraClaimsProvider.Administration
             {
                 Settings.ClaimTypes.UserIdentifierConfig.EntityPropertyToUseAsDisplayText = DirectoryObjectProperty.NotSet;
             }
+            Settings.FilterAccountsEnabledOnly = this.ChkFilterAccountsEnabledOnly.Checked;
 
             // Group identifier settings
             Settings.ClaimTypes.UpdateGroupIdentifier((DirectoryObjectProperty)Convert.ToInt32(this.DdlGroupDirectoryProperty.SelectedValue));

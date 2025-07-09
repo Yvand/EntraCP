@@ -178,7 +178,7 @@ namespace Yvand.EntraClaimsProvider
 
         protected virtual void BuildFilter(OperationContext currentContext, List<EntraIDTenant> azureTenants)
         {
-            bool accountEnabledOnly = true;
+            bool accountEnabledOnly = this.Settings.FilterAccountsEnabledOnly;
             string searchPatternEquals = accountEnabledOnly ? "({0} eq '{1}' and accountEnabled eq true)" : "{0} eq '{1}'";
             string searchPatternStartsWith = accountEnabledOnly ? "(startswith({0}, '{1}') and accountEnabled eq true)" : "startswith({0}, '{1}')";
             string identityConfigSearchPatternEquals = accountEnabledOnly ? "({0} eq '{1}' and UserType eq '{2}' and accountEnabled eq true)" : "({0} eq '{1}' and UserType eq '{2}')";
