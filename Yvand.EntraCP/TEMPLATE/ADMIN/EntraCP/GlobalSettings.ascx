@@ -106,7 +106,7 @@
             var entityPermissionValue = $("#" + inputIdentifierAttributeId + " :selected").text();
 
             // Set the label control to preview a group's value
-            var entityPermissionValuePreview = "<" + entityPermissionValue + "_from_EntraID>";
+            var entityPermissionValuePreview = "<" + entityPermissionValue + "_in_EntraID>";
             $("#" + lblResultId).text(entityPermissionValuePreview);
         }
     };
@@ -294,7 +294,7 @@
                                     <asp:DropDownList runat="server" ID="DdlUserGraphPropertyToDisplay" class="ms-input" />
                                 </li>
                                  <li>
-                                    <label for="<%= ChkFilterAccountsEnabledOnly.ClientID %>">Return only enabled user accounts</label>
+                                    <label for="<%= ChkFilterAccountsEnabledOnly.ClientID %>" title="Filter user accounts based on their property 'accountEnabled'">Return only enabled accounts &#9432;</label>
                                     <asp:CheckBox runat="server" Name="ChkFilterAccountsEnabledOnly" ID="ChkFilterAccountsEnabledOnly" />
                                 </li>
                             </ol>
