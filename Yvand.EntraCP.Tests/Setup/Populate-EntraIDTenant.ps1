@@ -36,6 +36,11 @@ $usersWithSpecificSettings = @(
     @{ UserPrincipalName = "$($memberUsersNamePrefix)013@$($tenantName)"; IsMemberOfAllGroups = $true }
     @{ UserPrincipalName = "$($memberUsersNamePrefix)014@$($tenantName)"; IsMemberOfAllGroups = $true }
     @{ UserPrincipalName = "$($memberUsersNamePrefix)015@$($tenantName)"; IsMemberOfAllGroups = $true }
+    @{ UserPrincipalName = "$($memberUsersNamePrefix)031@$($tenantName)"; AccountEnabled = $false }
+    @{ UserPrincipalName = "$($memberUsersNamePrefix)032@$($tenantName)"; AccountEnabled = $false }
+    @{ UserPrincipalName = "$($memberUsersNamePrefix)033@$($tenantName)"; AccountEnabled = $false }
+    @{ UserPrincipalName = "$($memberUsersNamePrefix)034@$($tenantName)"; AccountEnabled = $false }
+    @{ UserPrincipalName = "$($memberUsersNamePrefix)035@$($tenantName)"; AccountEnabled = $false }
 )
 $guestUsersList = @(
     @{ Mail = "$($guestUsersNamePrefix)001@contoso.local"; Id = ""; UserPrincipalName = "" }
@@ -102,29 +107,33 @@ $allUsersInEntra = @()
 for ($i = 1; $i -le $usersCount; $i++) {
     $accountName = "$($memberUsersNamePrefix)$("{0:D3}" -f $i)"
     $userPrincipalName = "$($accountName)@$($tenantName)"
-    $user = Get-MgUser -Filter "UserPrincipalName eq '$userPrincipalName'" -Property Id, UserPrincipalName, Mail, UserType, DisplayName, GivenName
+    $user = Get-MgUser -Filter "UserPrincipalName eq '$userPrincipalName'" -Property Id, UserPrincipalName, Mail, UserType, DisplayName, GivenName, AccountEnabled
     if ($null -eq $user) {
         $additionalUserAttributes = New-Object -TypeName HashTable
         $userHasSpecificAttributes = [System.Linq.Enumerable]::FirstOrDefault($usersWithSpecificSettings, [Func[object, bool]] { param($x) $x.UserPrincipalName -like $userPrincipalName })
         if ($null -ne $userHasSpecificAttributes.UserAttributes) {
             $additionalUserAttributes = $userHasSpecificAttributes.UserAttributes
         }
+        $accountEnabled = $true
+        if ($null -ne $userHasSpecificAttributes.AccountEnabled) {
+            $accountEnabled = $userHasSpecificAttributes.AccountEnabled
+        }
 
-        New-MgUser -UserPrincipalName $userPrincipalName -DisplayName $accountName -PasswordProfile $passwordProfile -AccountEnabled -MailNickName $accountName @additionalUserAttributes
+        New-MgUser -UserPrincipalName $userPrincipalName -DisplayName $accountName -PasswordProfile $passwordProfile -AccountEnabled:$accountEnabled -MailNickName $accountName @additionalUserAttributes
         Write-Host "Created user '$userPrincipalName'" -ForegroundColor Green
-        $user = Get-MgUser -Filter "UserPrincipalName eq '$userPrincipalName'" -Property Id, UserPrincipalName, Mail, UserType, DisplayName, GivenName
+        $user = Get-MgUser -Filter "UserPrincipalName eq '$userPrincipalName'" -Property Id, UserPrincipalName, Mail, UserType, DisplayName, GivenName, AccountEnabled
     }
     $allUsersInEntra += $user
 }
 
 # Add the guest users
 foreach ($guestUser in $guestUsersList) {
-    $user = Get-MgUser -Filter "Mail eq '$($guestUser.Mail)'" -Property Id, UserPrincipalName, Mail, UserType, DisplayName, GivenName
+    $user = Get-MgUser -Filter "Mail eq '$($guestUser.Mail)'" -Property Id, UserPrincipalName, Mail, UserType, DisplayName, GivenName, AccountEnabled
     if ($null -eq $user) {
         $invitedUser = New-MgInvitation -InvitedUserDisplayName $guestUser.Mail -InvitedUserEmailAddress $guestUser.Mail -SendInvitationMessage:$false -InviteRedirectUrl "https://myapplications.microsoft.com"
         Write-Host "Invited guest user $($invitedUser.InvitedUserEmailAddress)" -ForegroundColor Green
         $user = $invitedUser.InvitedUser
-        $user = Get-MgUser -Filter "Mail eq '$($guestUser.Mail)'" -Property Id, UserPrincipalName, Mail, UserType, DisplayName, GivenName
+        $user = Get-MgUser -Filter "Mail eq '$($guestUser.Mail)'" -Property Id, UserPrincipalName, Mail, UserType, DisplayName, GivenName, AccountEnabled
     }
     $allUsersInEntra += $user
 }
@@ -185,7 +194,7 @@ for ($i = 1; $i -le $groupsCount; $i++) {
 
 # export users and groups to their CSV file
 $allUsersInEntra | 
-Select-Object -Property Id, UserPrincipalName, Mail, UserType, DisplayName, GivenName, @{ Name = "IsMemberOfAllGroups"; Expression = { if ([System.Linq.Enumerable]::FirstOrDefault($usersWithSpecificSettings, [Func[object, bool]] { param($x) $x.UserPrincipalName -like $_.UserPrincipalName }).IsMemberOfAllGroups) { $true } else { $false } } } |
+Select-Object -Property Id, UserPrincipalName, Mail, UserType, DisplayName, GivenName, AccountEnabled, @{ Name = "IsMemberOfAllGroups"; Expression = { if ([System.Linq.Enumerable]::FirstOrDefault($usersWithSpecificSettings, [Func[object, bool]] { param($x) $x.UserPrincipalName -like $_.UserPrincipalName }).IsMemberOfAllGroups) { $true } else { $false } } } |
 Export-Csv -Path $exportedUsersFullFilePath -NoTypeInformation
 Write-Host "Exported Entra users to CSV file $($exportedUsersFullFilePath)" -ForegroundColor Green
 
