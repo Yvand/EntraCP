@@ -190,6 +190,7 @@ namespace Yvand.EntraClaimsProvider.Tests
         public string Mail;
         public string GivenName;
         public bool IsMemberOfAllGroups = false;
+        public bool AccountEnabled = false;
 
         public override void SetEntityFromDataSourceRow(Row row)
         {
@@ -200,6 +201,7 @@ namespace Yvand.EntraClaimsProvider.Tests
             Mail = row["mail"];
             GivenName = row["givenName"];
             IsMemberOfAllGroups = Convert.ToBoolean(row["IsMemberOfAllGroups"]);
+            AccountEnabled = Convert.ToBoolean(row["AccountEnabled"]);
         }
     }
 
