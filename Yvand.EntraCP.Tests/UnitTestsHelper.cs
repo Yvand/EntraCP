@@ -303,6 +303,12 @@ namespace Yvand.EntraClaimsProvider.Tests
             return TestUsersSource.GetSomeEntities(count, null);
         }
 
+        public static IEnumerable<TestUser> GetSomeDisabledUsers(int count)
+        {
+            Func<TestUser, bool> filter = x => x.AccountEnabled == false;
+            return TestUsersSource.GetSomeEntities(count, null);
+        }
+
         public static IEnumerable<TestUser> GetUsersMembersOfAllGroups()
         {
             Func<TestUser, bool> filter = x => x.IsMemberOfAllGroups == true;
