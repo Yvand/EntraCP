@@ -137,8 +137,7 @@ foreach ($guestUser in $guestUsersList) {
     if ($null -eq $user) {
         $invitedUser = New-MgInvitation -InvitedUserDisplayName $guestUser.Mail -InvitedUserEmailAddress $guestUser.Mail -SendInvitationMessage:$false -InviteRedirectUrl "https://myapplications.microsoft.com"
         Write-Host "Invited guest user $($invitedUser.InvitedUserEmailAddress)" -ForegroundColor Green
-        $user = $invitedUser.InvitedUser
-        $user = Get-MgUser -Filter "Mail eq '$($guestUser.Mail)'" -Property Id, UserPrincipalName, Mail, UserType, DisplayName, GivenName, AccountEnabled
+        $user = Get-MgUser -UserId $invitedUser.InvitedUser.Id -Property Id, UserPrincipalName, Mail, UserType, DisplayName, GivenName, AccountEnabled
     }
     $allUsersInEntra += $user
 }
