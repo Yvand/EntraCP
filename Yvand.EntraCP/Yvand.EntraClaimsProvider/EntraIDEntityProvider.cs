@@ -178,10 +178,11 @@ namespace Yvand.EntraClaimsProvider
 
         protected virtual void BuildFilter(OperationContext currentContext, List<EntraIDTenant> azureTenants)
         {
-            string searchPatternEquals = "{0} eq '{1}'";
-            string searchPatternStartsWith = "startswith({0}, '{1}')";
-            string identityConfigSearchPatternEquals = "({0} eq '{1}' and UserType eq '{2}')";
-            string identityConfigSearchPatternStartsWith = "(startswith({0}, '{1}') and UserType eq '{2}')";
+            bool accountEnabledOnly = this.Settings.FilterAccountsEnabledOnly;
+            string searchPatternEquals = accountEnabledOnly ? "({0} eq '{1}' and accountEnabled eq true)" : "{0} eq '{1}'";
+            string searchPatternStartsWith = accountEnabledOnly ? "(startswith({0}, '{1}') and accountEnabled eq true)" : "startswith({0}, '{1}')";
+            string identityConfigSearchPatternEquals = accountEnabledOnly ? "({0} eq '{1}' and UserType eq '{2}' and accountEnabled eq true)" : "({0} eq '{1}' and UserType eq '{2}')";
+            string identityConfigSearchPatternStartsWith = accountEnabledOnly ? "(startswith({0}, '{1}') and UserType eq '{2}' and accountEnabled eq true)" : "(startswith({0}, '{1}') and UserType eq '{2}')";
             string groupSearchPatternSGOnlyEquals = "({0} eq '{1}' and securityEnabled eq true)";
             string groupSearchPatternSGOnlyStartsWith = "(startswith({0}, '{1}') and securityEnabled eq true)";
 

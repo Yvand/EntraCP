@@ -159,6 +159,13 @@ namespace Yvand.EntraClaimsProvider.Tests
                     Trace.TraceInformation($"{DateTime.Now:s} [{this.GetType().Name}] Property Settings.RestrictSearchableUsersByGroups is not set.");
                 }
 
+                if (Settings.FilterAccountsEnabledOnly && entity.AccountEnabled == false)
+                {
+                    shouldValidate = false;
+                    expectedCount = 0;
+                    Trace.TraceInformation($"{DateTime.Now:s} [{this.GetType().Name}] User \"{entity.UserPrincipalName}\" should not be found because it has AccountEnabled {entity.AccountEnabled} and Settings.FilterAccountsEnabledOnly is set to true.");
+                }
+
                 // If shouldValidate is false, user should not be found anyway so no need to do additional checks
                 if (shouldValidate)
                 {

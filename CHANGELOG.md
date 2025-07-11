@@ -1,4 +1,8 @@
-# Change log for ~~AzureCP~~ EntraCP
+# Change log for EntraCP (~~AzureCP~~)
+
+## Unreleased
+
+* Add property FilterAccountsEnabledOnly, to return only enabled user accounts
 
 ## EntraCP v28.0 - enhancements & bug-fixes - Published in December 12, 2024
 

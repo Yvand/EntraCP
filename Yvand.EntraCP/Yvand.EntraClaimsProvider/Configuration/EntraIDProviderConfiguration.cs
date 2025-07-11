@@ -79,6 +79,12 @@ namespace Yvand.EntraClaimsProvider.Configuration
         /// Gets the lifetime in minutes of the cache which stores data from Entra ID which may be time-consuming to retrieve with each request
         /// </summary>
         int TenantDataCacheLifetimeInMinutes { get; }
+
+        /// <summary>
+        /// Gets if only enabled user accounts should be returned
+        /// </summary>
+        bool FilterAccountsEnabledOnly { get; }
+
         #endregion
     }
 
@@ -101,6 +107,7 @@ namespace Yvand.EntraClaimsProvider.Configuration
         public bool FilterSecurityEnabledGroupsOnly { get; set; } = false;
         public string RestrictSearchableUsersByGroups { get; set; }
         public int TenantDataCacheLifetimeInMinutes { get; set; } = ClaimsProviderConstants.DefaultTenantDataCacheLifetimeInMinutes;
+        public bool FilterAccountsEnabledOnly { get; set; }
         #endregion
 
         public EntraIDProviderSettings() { }
@@ -308,6 +315,17 @@ namespace Yvand.EntraClaimsProvider.Configuration
         }
         [Persisted]
         private int _TenantDataCacheLifetimeInMinutes = ClaimsProviderConstants.DefaultTenantDataCacheLifetimeInMinutes;
+
+        /// <summary>
+        /// Gets or sets if only enabled user accounts should be returned
+        /// </summary>
+        public bool FilterAccountsEnabledOnly
+        {
+            get => _FilterAccountsEnabledOnly;
+            private set => _FilterAccountsEnabledOnly = value;
+        }
+        [Persisted]
+        private bool _FilterAccountsEnabledOnly = false;
         #endregion
 
         #region "Other properties"
@@ -378,6 +396,7 @@ namespace Yvand.EntraClaimsProvider.Configuration
                 EntraIDTenants = this.EntraIDTenants,
                 ProxyAddress = this.ProxyAddress,
                 FilterSecurityEnabledGroupsOnly = this.FilterSecurityEnabledGroupsOnly,
+                FilterAccountsEnabledOnly = this.FilterAccountsEnabledOnly,
                 RestrictSearchableUsersByGroups = this.RestrictSearchableUsersByGroups,
                 TenantDataCacheLifetimeInMinutes = this.TenantDataCacheLifetimeInMinutes,
             };
@@ -619,6 +638,7 @@ namespace Yvand.EntraClaimsProvider.Configuration
             }
             this.AlwaysResolveUserInput = settings.AlwaysResolveUserInput;
             this.FilterExactMatchOnly = settings.FilterExactMatchOnly;
+            this.FilterAccountsEnabledOnly = settings.FilterAccountsEnabledOnly;
             this.EnableAugmentation = settings.EnableAugmentation;
             this.EntityDisplayTextPrefix = settings.EntityDisplayTextPrefix;
             this.Timeout = settings.Timeout;

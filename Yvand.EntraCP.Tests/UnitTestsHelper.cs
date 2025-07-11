@@ -190,6 +190,7 @@ namespace Yvand.EntraClaimsProvider.Tests
         public string Mail;
         public string GivenName;
         public bool IsMemberOfAllGroups = false;
+        public bool AccountEnabled = false;
 
         public override void SetEntityFromDataSourceRow(Row row)
         {
@@ -200,6 +201,7 @@ namespace Yvand.EntraClaimsProvider.Tests
             Mail = row["mail"];
             GivenName = row["givenName"];
             IsMemberOfAllGroups = Convert.ToBoolean(row["IsMemberOfAllGroups"]);
+            AccountEnabled = Convert.ToBoolean(row["AccountEnabled"]);
         }
     }
 
@@ -299,6 +301,12 @@ namespace Yvand.EntraClaimsProvider.Tests
         public static IEnumerable<TestUser> GetSomeUsers(int count)
         {
             return TestUsersSource.GetSomeEntities(count, null);
+        }
+
+        public static IEnumerable<TestUser> GetSomeDisabledUsers(int count)
+        {
+            Func<TestUser, bool> filter = x => x.AccountEnabled == false;
+            return TestUsersSource.GetSomeEntities(count, filter);
         }
 
         public static IEnumerable<TestUser> GetUsersMembersOfAllGroups()
