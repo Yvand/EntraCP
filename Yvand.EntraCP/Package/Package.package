@@ -4,7 +4,10 @@
     <customAssembly location="Azure.Core.dll" deploymentTarget="GlobalAssemblyCache" sourcePath="bin\Azure.Core.dll" />
     <customAssembly location="Azure.Identity.dll" deploymentTarget="GlobalAssemblyCache" sourcePath="bin\Azure.Identity.dll" />
     <customAssembly location="Microsoft.Bcl.AsyncInterfaces.dll" deploymentTarget="GlobalAssemblyCache" sourcePath="bin\Microsoft.Bcl.AsyncInterfaces.dll" />
+    <customAssembly location="Microsoft.Bcl.Memory.dll" deploymentTarget="GlobalAssemblyCache" sourcePath="bin\Microsoft.Bcl.Memory.dll" />
     <customAssembly location="Microsoft.Bcl.TimeProvider.dll" deploymentTarget="GlobalAssemblyCache" sourcePath="bin\Microsoft.Bcl.TimeProvider.dll" />
+    <customAssembly location="Microsoft.Extensions.DependencyInjection.Abstractions.dll" deploymentTarget="GlobalAssemblyCache" sourcePath="bin\Microsoft.Extensions.DependencyInjection.Abstractions.dll" />
+    <customAssembly location="Microsoft.Extensions.Logging.Abstractions.dll" deploymentTarget="GlobalAssemblyCache" sourcePath="bin\Microsoft.Extensions.Logging.Abstractions.dll" />
     <customAssembly location="Microsoft.Graph.Core.dll" deploymentTarget="GlobalAssemblyCache" sourcePath="bin\Microsoft.Graph.Core.dll" />
     <customAssembly location="Microsoft.Graph.dll" deploymentTarget="GlobalAssemblyCache" sourcePath="bin\Microsoft.Graph.dll" />
     <customAssembly location="Microsoft.Identity.Client.dll" deploymentTarget="GlobalAssemblyCache" sourcePath="bin\Microsoft.Identity.Client.dll" />
