@@ -1,4 +1,4 @@
-#Requires -Modules Microsoft.Graph.Authentication, Microsoft.Graph.Identity.DirectoryManagement, Microsoft.Graph.Users, Microsoft.Graph.Groups
+#Requires -Modules Microsoft.Graph.Authentication, Microsoft.Graph.Identity.DirectoryManagement, Microsoft.Graph.Users, Microsoft.Graph.Groups, Microsoft.Graph.Identity.SignIns
 
 <#
 .SYNOPSIS
@@ -9,7 +9,7 @@
     https://github.com/Yvand/EntraCP/
 #>
 
-Connect-MgGraph -Scopes "User.ReadWrite.All", "Group.ReadWrite.All" -UseDeviceCode
+Connect-MgGraph -Scopes "User.ReadWrite.All", "Group.ReadWrite.All"
 $tenantName = (Get-MgOrganization).VerifiedDomains[0].Name
 
 $exportedUsersFullFilePath = "C:\YvanData\dev\EntraCP_Tests_Users.csv"
@@ -21,7 +21,7 @@ $groupNamePrefix = "testEntraCPGroup_"
 $usersCount = 999
 $groupsCount = 50
 
-$confirmation = Read-Host "Connected to tenant '$tenantName' and about to process users starting with '$memberUsersNamePrefix' and groups starting with '$groupNamePrefix'. Are you sure you want to proceed? [y/n]"
+$confirmation = Read-Host "Connected to tenant '$tenantName', about to create $usersCount users starting with '$memberUsersNamePrefix' and $groupsCount groups starting with '$groupNamePrefix'. Are you sure you want to proceed? [y/n]"
 if ($confirmation -ne 'y') {
     Write-Warning -Message "Aborted."
     return
@@ -41,6 +41,11 @@ $usersWithSpecificSettings = @(
     @{ UserPrincipalName = "$($memberUsersNamePrefix)033@$($tenantName)"; AccountEnabled = $false }
     @{ UserPrincipalName = "$($memberUsersNamePrefix)034@$($tenantName)"; AccountEnabled = $false }
     @{ UserPrincipalName = "$($memberUsersNamePrefix)035@$($tenantName)"; AccountEnabled = $false }
+    @{ UserPrincipalName = "$($memberUsersNamePrefix)036@$($tenantName)"; AccountEnabled = $false }
+    @{ UserPrincipalName = "$($memberUsersNamePrefix)037@$($tenantName)"; AccountEnabled = $false }
+    @{ UserPrincipalName = "$($memberUsersNamePrefix)038@$($tenantName)"; AccountEnabled = $false }
+    @{ UserPrincipalName = "$($memberUsersNamePrefix)039@$($tenantName)"; AccountEnabled = $false }
+    @{ UserPrincipalName = "$($memberUsersNamePrefix)040@$($tenantName)"; AccountEnabled = $false }
 )
 $guestUsersList = @(
     @{ Mail = "$($guestUsersNamePrefix)001@contoso.local"; Id = ""; UserPrincipalName = "" }
@@ -102,7 +107,7 @@ $passwordProfile = @{
     ForceChangePasswordNextSignIn = $true
 }
 
-# Bulk add users
+# Bulk add member users
 $allUsersInEntra = @()
 for ($i = 1; $i -le $usersCount; $i++) {
     $accountName = "$($memberUsersNamePrefix)$("{0:D3}" -f $i)"
@@ -119,14 +124,14 @@ for ($i = 1; $i -le $usersCount; $i++) {
             $accountEnabled = $userHasSpecificAttributes.AccountEnabled
         }
 
-        New-MgUser -UserPrincipalName $userPrincipalName -DisplayName $accountName -PasswordProfile $passwordProfile -AccountEnabled:$accountEnabled -MailNickName $accountName @additionalUserAttributes
+        New-MgUser -UserPrincipalName $userPrincipalName -DisplayName $accountName -PasswordProfile $passwordProfile -AccountEnabled:$accountEnabled -MailNickName $accountName @additionalUserAttributes | Out-Null
         Write-Host "Created user '$userPrincipalName'" -ForegroundColor Green
         $user = Get-MgUser -Filter "UserPrincipalName eq '$userPrincipalName'" -Property Id, UserPrincipalName, Mail, UserType, DisplayName, GivenName, AccountEnabled
     }
     $allUsersInEntra += $user
 }
 
-# Add the guest users
+# Bulk add guest users
 foreach ($guestUser in $guestUsersList) {
     $user = Get-MgUser -Filter "Mail eq '$($guestUser.Mail)'" -Property Id, UserPrincipalName, Mail, UserType, DisplayName, GivenName, AccountEnabled
     if ($null -eq $user) {

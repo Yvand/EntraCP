@@ -16,7 +16,7 @@ $groupNamePrefix = "testEntraCPGroup_"
 $usersCount = 999
 $groupsCount = 50
 
-$confirmation = Read-Host "Connected to tenant '$tenantName' and about to remove all users starting with '$memberUsersNamePrefix' and groups starting with '$groupNamePrefix'. Are you sure you want to proceed? [y/n]"
+$confirmation = Read-Host "Connected to tenant '$tenantName', about to remove $usersCount users starting with '$memberUsersNamePrefix' and $groupsCount groups starting with '$groupNamePrefix'. Are you sure you want to proceed? [y/n]"
 if ($confirmation -ne 'y') {
     Write-Warning -Message "Aborted."
     return
@@ -54,7 +54,7 @@ for ($i = 1; $i -le $groupsCount; $i++) {
     $entraGroup = Get-MgGroup -Filter "DisplayName eq '$($groupName)'"
     if ($null -ne $entraGroup) {
         Remove-MgGroup -GroupId $entraGroup.Id
-        Write-Host "Created group $groupName" -ForegroundColor Green
+        Write-Host "Removed group $groupName" -ForegroundColor Green
     }    
 }
 
