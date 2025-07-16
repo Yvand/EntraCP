@@ -159,7 +159,7 @@ namespace Yvand.EntraClaimsProvider.Tests
                     Trace.TraceInformation($"{DateTime.Now:s} [{this.GetType().Name}] Property Settings.RestrictSearchableUsersByGroups is not set.");
                 }
 
-                if (Settings.FilterAccountsEnabledOnly && entity.AccountEnabled == false)
+                if (Settings.FilterUserAccountsEnabledOnly && entity.AccountEnabled == false)
                 {
                     shouldValidate = false;
                     expectedCount = 0;

@@ -10,7 +10,7 @@ namespace Yvand.EntraClaimsProvider.Tests
         public override void InitializeSettings()
         {
             base.InitializeSettings();
-            Settings.FilterAccountsEnabledOnly = true;
+            Settings.FilterUserAccountsEnabledOnly = true;
             base.ApplySettings();
         }
 

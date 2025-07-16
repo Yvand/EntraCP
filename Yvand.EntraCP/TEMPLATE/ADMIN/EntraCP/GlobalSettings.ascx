@@ -294,8 +294,8 @@
                                     <asp:DropDownList runat="server" ID="DdlUserGraphPropertyToDisplay" class="ms-input" />
                                 </li>
                                  <li>
-                                    <label for="<%= ChkFilterAccountsEnabledOnly.ClientID %>" title="Filter user accounts based on their property 'accountEnabled'">Return only enabled accounts &#9432;</label>
-                                    <asp:CheckBox runat="server" Name="ChkFilterAccountsEnabledOnly" ID="ChkFilterAccountsEnabledOnly" />
+                                    <label for="<%= ChkFilterUserAccountsEnabledOnly.ClientID %>" title="Filter user accounts based on their property 'accountEnabled'">Return only enabled accounts &#9432;</label>
+                                    <asp:CheckBox runat="server" Name="ChkFilterUserAccountsEnabledOnly" ID="ChkFilterUserAccountsEnabledOnly" />
                                 </li>
                             </ol>
                         </fieldset>
