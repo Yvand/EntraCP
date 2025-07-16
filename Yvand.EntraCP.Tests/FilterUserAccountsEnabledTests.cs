@@ -5,12 +5,12 @@ namespace Yvand.EntraClaimsProvider.Tests
 {
     [TestFixture]
     [Parallelizable(ParallelScope.Children)]
-    public class FilterAccountEnabledTests : ClaimsProviderTestsBase
+    public class FilterUserAccountsEnabledTests : ClaimsProviderTestsBase
     {
         public override void InitializeSettings()
         {
             base.InitializeSettings();
-            Settings.FilterAccountsEnabledOnly = true;
+            Settings.FilterUserAccountsEnabledOnly = true;
             base.ApplySettings();
         }
 
@@ -32,6 +32,19 @@ namespace Yvand.EntraClaimsProvider.Tests
         {
             base.TestSearchAndValidateForTestUser(user);
             base.TestAugmentationAgainst1RandomGroup(user);
+        }
+
+        [Test, TestCaseSource(typeof(TestEntitySourceManager), nameof(TestEntitySourceManager.GetSomeGroups), new object[] { TestEntitySourceManager.MaxNumberOfGroupsToTest, true })]
+        public void TestGroups(TestGroup group)
+        {
+            TestSearchAndValidateForTestGroup(group);
+        }
+
+        [Test]
+        public void TestAGuestUser()
+        {
+            TestUser user = TestEntitySourceManager.GetOneUser(UserType.Guest);
+            base.TestSearchAndValidateForTestUser(user);
         }
     }
 }

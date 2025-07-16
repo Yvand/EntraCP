@@ -178,13 +178,13 @@ namespace Yvand.EntraClaimsProvider
 
         protected virtual void BuildFilter(OperationContext currentContext, List<EntraIDTenant> azureTenants)
         {
-            bool accountEnabledOnly = this.Settings.FilterAccountsEnabledOnly;
-            string searchPatternEquals = accountEnabledOnly ? "({0} eq '{1}' and accountEnabled eq true)" : "{0} eq '{1}'";
-            string searchPatternStartsWith = accountEnabledOnly ? "(startswith({0}, '{1}') and accountEnabled eq true)" : "startswith({0}, '{1}')";
-            string identityConfigSearchPatternEquals = accountEnabledOnly ? "({0} eq '{1}' and UserType eq '{2}' and accountEnabled eq true)" : "({0} eq '{1}' and UserType eq '{2}')";
-            string identityConfigSearchPatternStartsWith = accountEnabledOnly ? "(startswith({0}, '{1}') and UserType eq '{2}' and accountEnabled eq true)" : "(startswith({0}, '{1}') and UserType eq '{2}')";
-            string groupSearchPatternSGOnlyEquals = "({0} eq '{1}' and securityEnabled eq true)";
-            string groupSearchPatternSGOnlyStartsWith = "(startswith({0}, '{1}') and securityEnabled eq true)";
+            bool userAccountEnabledOnly = this.Settings.FilterUserAccountsEnabledOnly;
+            string userSearchPatternEquals = userAccountEnabledOnly ? "({0} eq '{1}' and accountEnabled eq true)" : "{0} eq '{1}'";
+            string userSearchPatternStartsWith = userAccountEnabledOnly ? "(startswith({0}, '{1}') and accountEnabled eq true)" : "startswith({0}, '{1}')";
+            string identityConfigSearchPatternEquals = userAccountEnabledOnly ? "({0} eq '{1}' and UserType eq '{2}' and accountEnabled eq true)" : "({0} eq '{1}' and UserType eq '{2}')";
+            string identityConfigSearchPatternStartsWith = userAccountEnabledOnly ? "(startswith({0}, '{1}') and UserType eq '{2}' and accountEnabled eq true)" : "(startswith({0}, '{1}') and UserType eq '{2}')";
+            string groupSearchPatternEquals = this.Settings.FilterSecurityEnabledGroupsOnly ? "({0} eq '{1}' and securityEnabled eq true)" : "{0} eq '{1}'";
+            string groupSearchPatternStartsWith = this.Settings.FilterSecurityEnabledGroupsOnly ? "(startswith({0}, '{1}') and securityEnabled eq true)" : "startswith({0}, '{1}')";
 
             List<string> userFilterBuilder = new List<string>();
             List<string> groupFilterBuilder = new List<string>();
@@ -236,11 +236,11 @@ namespace Yvand.EntraClaimsProvider
                     }
                     else if (currentContext.ExactSearch || !ctConfig.DirectoryPropertySupportsWildcard)
                     {
-                        filterForCurrentProp = String.Format(searchPatternEquals, currentPropertyString, input);
+                        filterForCurrentProp = String.Format(userSearchPatternEquals, currentPropertyString, input);
                     }
                     else
                     {
-                        filterForCurrentProp = String.Format(searchPatternStartsWith, currentPropertyString, input);
+                        filterForCurrentProp = String.Format(userSearchPatternStartsWith, currentPropertyString, input);
                     }
 
                     userFilterBuilder.Add(filterForCurrentProp);
@@ -251,13 +251,11 @@ namespace Yvand.EntraClaimsProvider
                     // else assume it's a Group
                     if (currentContext.ExactSearch || !ctConfig.DirectoryPropertySupportsWildcard)
                     {
-                        string filterPatternForCurrentProp = this.Settings.FilterSecurityEnabledGroupsOnly ? groupSearchPatternSGOnlyEquals : searchPatternEquals;
-                        filterForCurrentProp = String.Format(filterPatternForCurrentProp, currentPropertyString, input);
+                        filterForCurrentProp = String.Format(groupSearchPatternEquals, currentPropertyString, input);
                     }
                     else
                     {
-                        string filterPatternForCurrentProp = this.Settings.FilterSecurityEnabledGroupsOnly ? groupSearchPatternSGOnlyStartsWith : searchPatternStartsWith;
-                        filterForCurrentProp = String.Format(filterPatternForCurrentProp, currentPropertyString, input);
+                        filterForCurrentProp = String.Format(groupSearchPatternStartsWith, currentPropertyString, input);
                     }
 
                     groupFilterBuilder.Add(filterForCurrentProp);

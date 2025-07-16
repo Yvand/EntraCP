@@ -50,7 +50,7 @@
   <ItemGroup>
     <Compile Include="BasicConfigurationTests.cs" />
     <Compile Include="FilterUsersBasedOnGroupsTests.cs" />
-    <Compile Include="FilterAccountEnabledTests.cs" />
+    <Compile Include="FilterUserAccountsEnabledTests.cs" />
     <Compile Include="SecurityEnabledGroupsTests.cs" />
     <Compile Include="ExcludeAUserTypeTests.cs" />
     <Compile Include="ClaimsProviderTestsBase.cs" />
