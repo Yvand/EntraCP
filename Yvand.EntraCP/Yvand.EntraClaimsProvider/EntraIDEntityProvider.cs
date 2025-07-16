@@ -183,8 +183,8 @@ namespace Yvand.EntraClaimsProvider
             string userSearchPatternStartsWith = userAccountEnabledOnly ? "(startswith({0}, '{1}') and accountEnabled eq true)" : "startswith({0}, '{1}')";
             string identityConfigSearchPatternEquals = userAccountEnabledOnly ? "({0} eq '{1}' and UserType eq '{2}' and accountEnabled eq true)" : "({0} eq '{1}' and UserType eq '{2}')";
             string identityConfigSearchPatternStartsWith = userAccountEnabledOnly ? "(startswith({0}, '{1}') and UserType eq '{2}' and accountEnabled eq true)" : "(startswith({0}, '{1}') and UserType eq '{2}')";
-            string groupSearchPatternEquals = this.Settings.FilterSecurityEnabledGroupsOnly ? "{0} eq '{1}'" : "({0} eq '{1}' and securityEnabled eq true)";
-            string groupSearchPatternStartsWith = this.Settings.FilterSecurityEnabledGroupsOnly ? "startswith({0}, '{1}')" : "(startswith({0}, '{1}') and securityEnabled eq true)";
+            string groupSearchPatternEquals = this.Settings.FilterSecurityEnabledGroupsOnly ? "({0} eq '{1}' and securityEnabled eq true)" : "{0} eq '{1}'";
+            string groupSearchPatternStartsWith = this.Settings.FilterSecurityEnabledGroupsOnly ? "(startswith({0}, '{1}') and securityEnabled eq true)" : "startswith({0}, '{1}')";
 
             List<string> userFilterBuilder = new List<string>();
             List<string> groupFilterBuilder = new List<string>();
