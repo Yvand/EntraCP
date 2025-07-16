@@ -23,7 +23,13 @@ namespace Yvand.EntraClaimsProvider.Tests
         }
 
         [Test, TestCaseSource(typeof(TestEntitySourceManager), nameof(TestEntitySourceManager.GetSomeGroups), new object[] { TestEntitySourceManager.MaxNumberOfGroupsToTest, true })]
-        public void TestGroups(TestGroup group)
+        public void TestOnlySecurityEnabledGroups(TestGroup group)
+        {
+            TestSearchAndValidateForTestGroup(group);
+        }
+
+        [Test, TestCaseSource(typeof(TestEntitySourceManager), nameof(TestEntitySourceManager.GetSomeGroups), new object[] { TestEntitySourceManager.MaxNumberOfGroupsToTest, false })]
+        public void TestOnlyNoSecurityEnabledGroups(TestGroup group)
         {
             TestSearchAndValidateForTestGroup(group);
         }
@@ -56,7 +62,13 @@ namespace Yvand.EntraClaimsProvider.Tests
         }
 
         [Test, TestCaseSource(typeof(TestEntitySourceManager), nameof(TestEntitySourceManager.GetSomeGroups), new object[] { TestEntitySourceManager.MaxNumberOfGroupsToTest, true })]
-        public void TestGroups(TestGroup group)
+        public void TestOnlySecurityEnabledGroups(TestGroup group)
+        {
+            TestSearchAndValidateForTestGroup(group);
+        }
+
+        [Test, TestCaseSource(typeof(TestEntitySourceManager), nameof(TestEntitySourceManager.GetSomeGroups), new object[] { TestEntitySourceManager.MaxNumberOfGroupsToTest, false })]
+        public void TestOnlyNoSecurityEnabledGroups(TestGroup group)
         {
             TestSearchAndValidateForTestGroup(group);
         }
