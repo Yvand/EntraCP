@@ -21,9 +21,9 @@
         public static class Config
         {
             // REPLACE ONLY THOSE VALUES BELOW TO RUN THE TESTS AGAINST YOUR TENANT
-            public static string TenantName = String.Empty;
-            public static string TenantClientId = String.Empty;
-            public static string TenantClientSecret = String.Empty;
+            public static string TenantName = "TOREPLACE";
+            public static string TenantClientId = "TOREPLACE";
+            public static string TenantClientSecret = "TOREPLACE";
             public static string Proxy = "";
             public static string Input = "yvand";
 
@@ -44,12 +44,14 @@
             if (String.IsNullOrWhiteSpace(Config.TenantName))
             {
                 LblTestsResult.Text += "<br/>" + Config.IconWarning + "Search of users and groups skipped, edit this page in notepad to set the tenant and credentials.";
+                LblTestsResult.Text += "<br/>" + Config.IconWarning + "Augmentation skipped, edit this page in notepad to set the tenant and credentials.";
             }
             else
             {
                 if (tenant == null)
                 {
                     LblTestsResult.Text += "<br/>" + Config.IconWarning + "Search of users and groups skipped, could not get a valid tenant.";
+                    LblTestsResult.Text += "<br/>" + Config.IconWarning + "Augmentation skipped, could not get a valid tenant.";
                 }
                 else
                 {
@@ -100,7 +102,7 @@
         {
             EntraIDTenant tenant = null;
             bool success = false;
-            bool hasDefaultValue = String.IsNullOrWhiteSpace(tenantName);
+            bool hasDefaultValue = String.Equals(tenantName, "TOREPLACE", StringComparison.InvariantCultureIgnoreCase);
             try
             {
                 // Calling constructor of EntraIDTenant may throw FileNotFoundException on Azure.Identity
@@ -136,32 +138,42 @@
             }
             catch (FileNotFoundException ex)
             {
-                LblTestsResult.Text += "<br/>" + Config.IconError + String.Format("Loading of the dependencies. Check your assembly bindings in the machine.config file. Exception: '{0}'", ex.Message);
+                LblTestsResult.Text += "<br/>" + Config.IconError + String.Format("Loading of the dependencies failed, check your assembly bindings in the machine.config file. Exception: '{0}'", ex.Message);
             }
             // An exception in an async task is always wrapped and returned in an AggregateException
             catch (AggregateException ex)
             {
                 if (ex.InnerException is FileNotFoundException)
                 {
-                    LblTestsResult.Text += String.Format("<br/>Test loading of dependencies: Failed. Check your assembly bindings in the machine.config file. Exception: '{0}'", ex.InnerException.Message);
+                    FileNotFoundException fnfEx = ex.InnerException as FileNotFoundException;
+                    LblTestsResult.Text += "<br/>" + Config.IconError + String.Format("Loading of the dependencies failed, check your assembly bindings in the machine.config file. Exception: '{0}'", fnfEx.Message);
                 }
                 else
                 {
-                    LblTestsResult.Text += String.Format("<br/>Test loading of dependencies: OK");
                     // Azure.Identity.AuthenticationFailedException is expected if credentials are not valid
                     if (String.Equals(ex.InnerException.GetType().FullName, "Azure.Identity.AuthenticationFailedException", StringComparison.InvariantCultureIgnoreCase))
                     {
+                        LblTestsResult.Text += "<br/>" + Config.IconSuccess + "Loading of the dependencies";
                         LblTestsResult.Text += String.Format("<br/>Test connection to tenant '{0}' failed due to invalid credentials: {1}", tenant.Name, ex.InnerException.Message);
                     }
                     else
                     {
+                        LblTestsResult.Text += "<br/>" + Config.IconWarning + "Loading of the dependencies might not be successful";
                         LblTestsResult.Text += String.Format("<br/>Test connection to tenant '{0}' failed for an unknown reason: {1}", tenant.Name, ex.InnerException.GetType().Name + " - " + ex.InnerException.Message);
                     }
                 }
             }
+            catch (TargetInvocationException ex)
+            {
+                if (ex.InnerException is TypeInitializationException && ex.InnerException.InnerException is FileNotFoundException)
+                {
+                    FileNotFoundException fnfEx = ex.InnerException.InnerException as FileNotFoundException;
+                    LblTestsResult.Text += "<br/>" + Config.IconError + String.Format("Loading of the dependencies failed, check your assembly bindings in the machine.config file. Exception: '{0}'", fnfEx.Message);
+                }
+            }
             catch (Exception ex)
             {
-                LblTestsResult.Text += String.Format("<br/>Unexpected error {0}: {1}", ex.GetType().Name, ex.Message);
+                LblTestsResult.Text += "<br/>" + Config.IconError + String.Format("Unexpected error {0}: {1}", ex.GetType().Name, ex.Message);
             }
             return success ? tenant : null;
         }
