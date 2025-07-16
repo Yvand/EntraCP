@@ -20,16 +20,18 @@
     <script runat="server" language="C#">
         public static class Config
         {
-            public static string TenantName = "ReplaceWithYourOwnValue";
-            public static string TenantClientId = "ReplaceWithYourOwnValue";
-            public static string TenantClientSecret = "ReplaceWithYourOwnValue";
+            // REPLACE ONLY THOSE VALUES BELOW TO RUN THE TESTS AGAINST YOUR TENANT
+            public static string TenantName = String.Empty;
+            public static string TenantClientId = String.Empty;
+            public static string TenantClientSecret = String.Empty;
             public static string Proxy = "";
             public static string Input = "yvand";
-            public static string context = SPContext.Current.Web.Url;
 
+            public static string context = SPContext.Current.Web.Url;
             public static string ClaimsProviderName = "EntraCP";
             public static string IconSuccess = "<span class='ms-status-iconSpan'><img src='/_layouts/15/images/kpinormal-0.gif'></span>";
-            public static string IconError = "<span class='ms-status-iconSpan'><img src='/_layouts/15/images/kpinormal-0.gif'></span>";
+            public static string IconWarning = "<span class='ms-status-iconSpan'><img src='/_layouts/15/images/kpinormal-1.gif'></span>";
+            public static string IconError = "<span class='ms-status-iconSpan'><img src='/_layouts/15/images/kpinormal-2.gif'></span>";
         }
 
         protected override void OnLoad(EventArgs e)
@@ -39,14 +41,25 @@
             TestConnectionToEntraId();
 
             EntraIDTenant tenant = TestTenantConnectionAndAssemblyBindings(Config.TenantName, Config.TenantClientId, Config.TenantClientSecret, Config.Proxy);
-            if (tenant != null)
+            if (String.IsNullOrWhiteSpace(Config.TenantName))
             {
-                ClaimsProviderSettings settings = ClaimsProviderSettings.GetDefaultSettings(Config.ClaimsProviderName);
-                settings.EntraIDTenants.Add(tenant);
-                settings.ProxyAddress = Config.Proxy;
-                EntraCP claimsProvider = new EntraCP(Config.ClaimsProviderName, settings);
-                TestClaimsProviderSearch(claimsProvider, Config.context, Config.Input);
-                TestClaimsProviderAugmentation(claimsProvider, Config.context, Config.Input);
+                LblTestsResult.Text += "<br/>" + Config.IconWarning + "Search of users and groups skipped, edit this page in notepad to set the tenant and credentials.";
+            }
+            else
+            {
+                if (tenant == null)
+                {
+                    LblTestsResult.Text += "<br/>" + Config.IconWarning + "Search of users and groups skipped, could not get a valid tenant.";
+                }
+                else
+                {
+                    ClaimsProviderSettings settings = ClaimsProviderSettings.GetDefaultSettings(Config.ClaimsProviderName);
+                    settings.EntraIDTenants.Add(tenant);
+                    settings.ProxyAddress = Config.Proxy;
+                    EntraCP claimsProvider = new EntraCP(Config.ClaimsProviderName, settings);
+                    TestClaimsProviderSearch(claimsProvider, Config.context, Config.Input);
+                    TestClaimsProviderAugmentation(claimsProvider, Config.context, Config.Input);
+                }
             }
 
             ShowCurrentUserSessionInfo();
@@ -77,7 +90,7 @@
                 catch (Exception ex)
                 {
                     timer.Stop();
-                    LblTestsResult.Text += "<br/><span class='ms-status-iconSpan'><img src='/_layouts/15/images/kpinormal-2.gif'></span>" + String.Format("Connection to '{0}' through proxy '{1}' failed after {2} ms: {3}", url, proxyAddress, timer.ElapsedMilliseconds, ex.GetType().Name + " - " + ex.Message);
+                    LblTestsResult.Text += "<br/>" + Config.IconError + String.Format("Connection to '{0}' through proxy '{1}' failed after {2} ms: {3}", url, proxyAddress, timer.ElapsedMilliseconds, ex.GetType().Name + " - " + ex.Message);
                 }
             }
             return true;
@@ -87,6 +100,7 @@
         {
             EntraIDTenant tenant = null;
             bool success = false;
+            bool hasDefaultValue = String.IsNullOrWhiteSpace(tenantName);
             try
             {
                 // Calling constructor of EntraIDTenant may throw FileNotFoundException on Azure.Identity
@@ -103,12 +117,26 @@
                 Task<bool> taskTestConnection = Task.Run(async () => await tenant.TestConnectionAsync(proxy));
                 taskTestConnection.Wait();
                 success = taskTestConnection.Result;
-                LblTestsResult.Text += String.Format("<br/>Test loading of dependencies: OK");
-                LblTestsResult.Text += String.Format("<br/>Test connection to tenant '{0}': {1}", tenant.Name, success ? "OK" : "Failed");
+                LblTestsResult.Text += "<br/>" + Config.IconSuccess + "Loading of the dependencies";
+                if (hasDefaultValue)
+                {
+                    LblTestsResult.Text += "<br/>" + Config.IconWarning + "Authentication to tenant skipped, edit this page in notepad to set the tenant and credentials.";
+                }
+                else
+                {
+                    if (success)
+                    {
+                        LblTestsResult.Text += "<br/>" + Config.IconSuccess + String.Format("Authentication to tenant '{0}' using client ID '{1}'", tenant.Name, tenantClientId);
+                    }
+                    else
+                    {
+                        LblTestsResult.Text += "<br/>" + Config.IconError + String.Format("Authentication to tenant '{0}' using client ID '{1}'", tenant.Name, tenantClientId);
+                    }
+                }
             }
             catch (FileNotFoundException ex)
             {
-                LblTestsResult.Text += String.Format("<br/>Test loading of dependencies: Failed. Check your assembly bindings in the machine.config file. Exception: '{0}'", ex.Message);
+                LblTestsResult.Text += "<br/>" + Config.IconError + String.Format("Loading of the dependencies. Check your assembly bindings in the machine.config file. Exception: '{0}'", ex.Message);
             }
             // An exception in an async task is always wrapped and returned in an AggregateException
             catch (AggregateException ex)
@@ -190,7 +218,6 @@
                 LblCurrentUserClaims.Text += String.Format("The token of current user \"{0}\" {1} contains {2} claims:", claimsIdentity.Name, sessionLifetime, claimsIdentity.Claims.Count());
                 foreach (Claim claim in claimsIdentity.Claims)
                 {
-                    //LblCurrentUserClaims.Text += String.Format("<br/>Claim type \"{0}\" with value \"{1}\" issued by \"{2}\".", claim.Type, claim.Value, claim.OriginalIssuer);
                     LblCurrentUserClaimsList.Text += String.Format("<tr><td>{0}</td><td>{1}</td><td>{2}</td></tr>", claim.Type, claim.Value, claim.OriginalIssuer);
                 }
             }
@@ -206,11 +233,12 @@
     It is located in &quot;16\template\admin\EntraCP\TroubleshootEntraCP.aspx&quot;, and it is written with inline code, so you can edit it using notepad<br />
     <br />
     <h2>How-to use it</h2>
-    It may be used with no change, but you can also edit it using notepad, to replace the hardcoded values &quot;ReplaceWithYourOwnValue&quot; with your own, and make a full test.<br />
+    It may be used with no change, but you can edit it using the notepad, to set the values to connect to your tenant, and run all the tests.<br />
     You can also copy it anywhere under &quot;16\template\LAYOUTS folder&quot;, to call it from any SharePoint site. This can be very useful in some scenarios, for example if you want to verify what claims an Entra user has in SharePoint.<br />
     <br />
     <h2>Tests</h2>
     <asp:Literal ID="LblTestsResult" runat="server" Text="" />
+    <br />
     <br />
     <h2>Claims of the current user</h2>
     <asp:Literal ID="LblCurrentUserClaims" runat="server" Text="" />
