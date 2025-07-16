@@ -75,15 +75,15 @@
       <Version>13.0.3</Version>
     </PackageReference>
     <PackageReference Include="NUnit">
-      <Version>4.2.2</Version>
+      <Version>4.3.2</Version>
     </PackageReference>
     <PackageReference Include="NUnit.Analyzers">
-      <Version>4.4.0</Version>
+      <Version>4.9.2</Version>
       <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
       <PrivateAssets>all</PrivateAssets>
     </PackageReference>
     <PackageReference Include="NUnit3TestAdapter">
-      <Version>4.6.0</Version>
+      <Version>5.0.0</Version>
       <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
       <PrivateAssets>all</PrivateAssets>
     </PackageReference>
