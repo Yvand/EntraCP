@@ -18,37 +18,43 @@
 <asp:Content ID="PageTitleInTitleArea" ContentPlaceHolderID="PlaceHolderPageTitleInTitleArea" runat="server">Troubleshoot EntraCP installation</asp:Content>
 <asp:Content ID="Main" ContentPlaceHolderID="PlaceHolderMain" runat="server">
     <script runat="server" language="C#">
+        public static class Config
+        {
+            public static string TenantName = "ReplaceWithYourOwnValue";
+            public static string TenantClientId = "ReplaceWithYourOwnValue";
+            public static string TenantClientSecret = "ReplaceWithYourOwnValue";
+            public static string Proxy = "";
+            public static string Input = "yvand";
+            public static string context = SPContext.Current.Web.Url;
+
+            public static string ClaimsProviderName = "EntraCP";
+            public static string IconSuccess = "<span class='ms-status-iconSpan'><img src='/_layouts/15/images/kpinormal-0.gif'></span>";
+            public static string IconError = "<span class='ms-status-iconSpan'><img src='/_layouts/15/images/kpinormal-0.gif'></span>";
+        }
+
         protected override void OnLoad(EventArgs e)
         {
             base.OnLoad(e);
 
-            // Edit the variables below with your own values
-            string tenantName = "ReplaceWithYourOwnValue";
-            string tenantClientId = "ReplaceWithYourOwnValue";
-            string tenantClientSecret = "ReplaceWithYourOwnValue";
-            string proxy = "";
-            string input = "yvand";
-            string context = SPContext.Current.Web.Url;
+            TestConnectionToEntraId();
 
-            TestConnectionToEntraId(proxy);
-
-            EntraIDTenant tenant = TestTenantConnectionAndAssemblyBindings(tenantName, tenantClientId, tenantClientSecret, proxy);
+            EntraIDTenant tenant = TestTenantConnectionAndAssemblyBindings(Config.TenantName, Config.TenantClientId, Config.TenantClientSecret, Config.Proxy);
             if (tenant != null)
             {
-                string claimsProviderName = "EntraCP";
-                ClaimsProviderSettings settings = ClaimsProviderSettings.GetDefaultSettings(claimsProviderName);
+                ClaimsProviderSettings settings = ClaimsProviderSettings.GetDefaultSettings(Config.ClaimsProviderName);
                 settings.EntraIDTenants.Add(tenant);
-                settings.ProxyAddress = proxy;
-                EntraCP claimsProvider = new EntraCP(claimsProviderName, settings);
-                TestClaimsProviderSearch(claimsProvider, context, input);
-                TestClaimsProviderAugmentation(claimsProvider, context, input);
+                settings.ProxyAddress = Config.Proxy;
+                EntraCP claimsProvider = new EntraCP(Config.ClaimsProviderName, settings);
+                TestClaimsProviderSearch(claimsProvider, Config.context, Config.Input);
+                TestClaimsProviderAugmentation(claimsProvider, Config.context, Config.Input);
             }
 
             ShowCurrentUserSessionInfo();
         }
 
-        public bool TestConnectionToEntraId(string proxyAddress)
+        public bool TestConnectionToEntraId()
         {
+            string proxyAddress = Config.Proxy;
             WebProxy proxy = String.IsNullOrWhiteSpace(proxyAddress) ? new WebProxy() : new WebProxy(proxyAddress, true);
             WebClient client = new WebClient
             {
@@ -65,12 +71,13 @@
                     client.DownloadData(url);
                     //client.DownloadString(url);
                     timer.Stop();
-                    LblTestsResult.Text += String.Format("<br/>Test connection to '{0}' through proxy '{1}': OK, took {2} ms.", url, proxyAddress, timer.ElapsedMilliseconds);
+                    string text = String.IsNullOrWhiteSpace(proxyAddress) ? "Connection to '{0}'" : "Connection to '{0}' through proxy '{1}'";
+                    LblTestsResult.Text += "<br/>" + Config.IconSuccess + String.Format(text, url, proxyAddress, timer.ElapsedMilliseconds);
                 }
                 catch (Exception ex)
                 {
                     timer.Stop();
-                    LblTestsResult.Text += String.Format("<br/>Test connection to '{0}' through proxy '{1}' failed after {2} ms: {3}", url, proxyAddress, timer.ElapsedMilliseconds, ex.GetType().Name + " - " + ex.Message);
+                    LblTestsResult.Text += "<br/><span class='ms-status-iconSpan'><img src='/_layouts/15/images/kpinormal-2.gif'></span>" + String.Format("Connection to '{0}' through proxy '{1}' failed after {2} ms: {3}", url, proxyAddress, timer.ElapsedMilliseconds, ex.GetType().Name + " - " + ex.Message);
                 }
             }
             return true;
@@ -180,10 +187,11 @@
                 ClaimsIdentity claimsIdentity = claimsPrincipal.Identity as ClaimsIdentity;
                 BootstrapContext bootstrapContext = claimsIdentity.BootstrapContext as BootstrapContext;
                 string sessionLifetime = bootstrapContext == null ? String.Empty : String.Format("is valid from \"{0}\" to \"{1}\" and it", bootstrapContext.SecurityToken.ValidFrom, bootstrapContext.SecurityToken.ValidTo);
-                LblCurrentUserClaims.Text += String.Format("<br/><br/><br/>Token of current user \"{0}\" {1} contains {2} claims:", claimsIdentity.Name, sessionLifetime, claimsIdentity.Claims.Count());
+                LblCurrentUserClaims.Text += String.Format("The token of current user \"{0}\" {1} contains {2} claims:", claimsIdentity.Name, sessionLifetime, claimsIdentity.Claims.Count());
                 foreach (Claim claim in claimsIdentity.Claims)
                 {
-                    LblCurrentUserClaims.Text += String.Format("<br/>Claim type \"{0}\" with value \"{1}\" issued by \"{2}\".", claim.Type, claim.Value, claim.OriginalIssuer);
+                    //LblCurrentUserClaims.Text += String.Format("<br/>Claim type \"{0}\" with value \"{1}\" issued by \"{2}\".", claim.Type, claim.Value, claim.OriginalIssuer);
+                    LblCurrentUserClaimsList.Text += String.Format("<tr><td>{0}</td><td>{1}</td><td>{2}</td></tr>", claim.Type, claim.Value, claim.OriginalIssuer);
                 }
             }
         }
@@ -192,17 +200,28 @@
         {
         }
     </script>
-    <h1>Overview</h1>
+    <h2>Overview</h2>
     This page is designed to help you troubleshoot common issues with EntraCP.<br />
-    It is located in &quot;16\template\admin\EntraCP\TroubleshootEntraCP.aspx&quot;, and you may copy it anywhere under &quot;16\template\LAYOUTS folder&quot;, to call it from any SharePoint site.<br />
-    This page is standalone and does NOT use the EntraCP configuration<br />
-    It is written with inline code so you can edit it using notepad, to replace the hardcoded value &quot;ReplaceWithYourOwnValue&quot; with your own values.
+    It is standalone and it does NOT use the EntraCP configuration.<br />
+    It is located in &quot;16\template\admin\EntraCP\TroubleshootEntraCP.aspx&quot;, and it is written with inline code, so you can edit it using notepad<br />
     <br />
-    <h1>Tests</h1>
+    <h2>How-to use it</h2>
+    It may be used with no change, but you can also edit it using notepad, to replace the hardcoded values &quot;ReplaceWithYourOwnValue&quot; with your own, and make a full test.<br />
+    You can also copy it anywhere under &quot;16\template\LAYOUTS folder&quot;, to call it from any SharePoint site. This can be very useful in some scenarios, for example if you want to verify what claims an Entra user has in SharePoint.<br />
+    <br />
+    <h2>Tests</h2>
     <asp:Literal ID="LblTestsResult" runat="server" Text="" />
     <br />
-    <h1>Claims of the current user</h1>
+    <h2>Claims of the current user</h2>
     <asp:Literal ID="LblCurrentUserClaims" runat="server" Text="" />
+    <table>
+        <tr>
+            <th>Claim type</th>
+            <th>Claim value</th>
+            <th>Issuer</th>
+        </tr>
+        <asp:Literal ID="LblCurrentUserClaimsList" runat="server" Text="" />
+    </table>
     <br />
     <%--<asp:TextBox ID="TxtUrl" runat="server" CssClass="ms-inputformcontrols" Text="URL..."></asp:TextBox>
     <br />
