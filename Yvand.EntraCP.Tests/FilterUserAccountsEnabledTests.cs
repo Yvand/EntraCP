@@ -5,7 +5,7 @@ namespace Yvand.EntraClaimsProvider.Tests
 {
     [TestFixture]
     [Parallelizable(ParallelScope.Children)]
-    public class FilterAccountEnabledTests : ClaimsProviderTestsBase
+    public class FilterUserAccountsEnabledTests : ClaimsProviderTestsBase
     {
         public override void InitializeSettings()
         {
