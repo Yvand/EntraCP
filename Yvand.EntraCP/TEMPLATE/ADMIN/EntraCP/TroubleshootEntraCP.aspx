@@ -15,7 +15,7 @@
 <%@ Import Namespace="System.IdentityModel.Tokens" %>
 
 <asp:Content ID="PageTitle" ContentPlaceHolderID="PlaceHolderPageTitle" runat="server">Troubleshoot EntraCP</asp:Content>
-<asp:Content ID="PageTitleInTitleArea" ContentPlaceHolderID="PlaceHolderPageTitleInTitleArea" runat="server">Troubleshoot EntraCP in the context of current site</asp:Content>
+<asp:Content ID="PageTitleInTitleArea" ContentPlaceHolderID="PlaceHolderPageTitleInTitleArea" runat="server">Troubleshoot EntraCP installation</asp:Content>
 <asp:Content ID="Main" ContentPlaceHolderID="PlaceHolderMain" runat="server">
     <script runat="server" language="C#">
         protected override void OnLoad(EventArgs e)
@@ -65,12 +65,12 @@
                     client.DownloadData(url);
                     //client.DownloadString(url);
                     timer.Stop();
-                    LblResult.Text += String.Format("<br/>Test connection to '{0}' through proxy '{1}': OK, took {2} ms.", url, proxyAddress, timer.ElapsedMilliseconds);
+                    LblTestsResult.Text += String.Format("<br/>Test connection to '{0}' through proxy '{1}': OK, took {2} ms.", url, proxyAddress, timer.ElapsedMilliseconds);
                 }
                 catch (Exception ex)
                 {
                     timer.Stop();
-                    LblResult.Text += String.Format("<br/>Test connection to '{0}' through proxy '{1}' failed after {2} ms: {3}", url, proxyAddress, timer.ElapsedMilliseconds, ex.GetType().Name + " - " + ex.Message);
+                    LblTestsResult.Text += String.Format("<br/>Test connection to '{0}' through proxy '{1}' failed after {2} ms: {3}", url, proxyAddress, timer.ElapsedMilliseconds, ex.GetType().Name + " - " + ex.Message);
                 }
             }
             return true;
@@ -96,37 +96,37 @@
                 Task<bool> taskTestConnection = Task.Run(async () => await tenant.TestConnectionAsync(proxy));
                 taskTestConnection.Wait();
                 success = taskTestConnection.Result;
-                LblResult.Text += String.Format("<br/>Test loading of dependencies: OK");
-                LblResult.Text += String.Format("<br/>Test connection to tenant '{0}': {1}", tenant.Name, success ? "OK" : "Failed");
+                LblTestsResult.Text += String.Format("<br/>Test loading of dependencies: OK");
+                LblTestsResult.Text += String.Format("<br/>Test connection to tenant '{0}': {1}", tenant.Name, success ? "OK" : "Failed");
             }
             catch (FileNotFoundException ex)
             {
-                LblResult.Text += String.Format("<br/>Test loading of dependencies: Failed. Check your assembly bindings in the machine.config file. Exception: '{0}'", ex.Message);
+                LblTestsResult.Text += String.Format("<br/>Test loading of dependencies: Failed. Check your assembly bindings in the machine.config file. Exception: '{0}'", ex.Message);
             }
             // An exception in an async task is always wrapped and returned in an AggregateException
             catch (AggregateException ex)
             {
                 if (ex.InnerException is FileNotFoundException)
                 {
-                    LblResult.Text += String.Format("<br/>Test loading of dependencies: Failed. Check your assembly bindings in the machine.config file. Exception: '{0}'", ex.InnerException.Message);
+                    LblTestsResult.Text += String.Format("<br/>Test loading of dependencies: Failed. Check your assembly bindings in the machine.config file. Exception: '{0}'", ex.InnerException.Message);
                 }
                 else
                 {
-                    LblResult.Text += String.Format("<br/>Test loading of dependencies: OK");
+                    LblTestsResult.Text += String.Format("<br/>Test loading of dependencies: OK");
                     // Azure.Identity.AuthenticationFailedException is expected if credentials are not valid
                     if (String.Equals(ex.InnerException.GetType().FullName, "Azure.Identity.AuthenticationFailedException", StringComparison.InvariantCultureIgnoreCase))
                     {
-                        LblResult.Text += String.Format("<br/>Test connection to tenant '{0}' failed due to invalid credentials: {1}", tenant.Name, ex.InnerException.Message);
+                        LblTestsResult.Text += String.Format("<br/>Test connection to tenant '{0}' failed due to invalid credentials: {1}", tenant.Name, ex.InnerException.Message);
                     }
                     else
                     {
-                        LblResult.Text += String.Format("<br/>Test connection to tenant '{0}' failed for an unknown reason: {1}", tenant.Name, ex.InnerException.GetType().Name + " - " + ex.InnerException.Message);
+                        LblTestsResult.Text += String.Format("<br/>Test connection to tenant '{0}' failed for an unknown reason: {1}", tenant.Name, ex.InnerException.GetType().Name + " - " + ex.InnerException.Message);
                     }
                 }
             }
             catch (Exception ex)
             {
-                LblResult.Text += String.Format("<br/>Unexpected error {0}: {1}", ex.GetType().Name, ex.Message);
+                LblTestsResult.Text += String.Format("<br/>Unexpected error {0}: {1}", ex.GetType().Name, ex.Message);
             }
             return success ? tenant : null;
         }
@@ -144,12 +144,12 @@
                         searchResultCount += children.EntityData.Count;
                     }
                 }
-                LblResult.Text += String.Format("<br/>Test search with input '{0}' on '{1}': OK with {2} results returned.", input, context, searchResultCount);
+                LblTestsResult.Text += String.Format("<br/>Test search with input '{0}' on '{1}': OK with {2} results returned.", input, context, searchResultCount);
                 return true;
             }
             catch (Exception ex)
             {
-                LblResult.Text += String.Format("<br/>Test search with input '{0}' on '{1}': Failed: {2}", input, context, ex.Message);
+                LblTestsResult.Text += String.Format("<br/>Test search with input '{0}' on '{1}': Failed: {2}", input, context, ex.Message);
             }
             return false;
         }
@@ -162,12 +162,12 @@
                 string originalIssuer = SPOriginalIssuers.Format(SPOriginalIssuerType.TrustedProvider, Utils.GetSPTrustAssociatedWithClaimsProvider("EntraCP").Name);
                 SPClaim claim = new SPClaim(idClaim.ClaimType, input, idClaim.ClaimValueType, originalIssuer);
                 SPClaim[] groups = claimsProvider.GetClaimsForEntity(new Uri(context), claim);
-                LblResult.Text += String.Format("<br/>Test augmentation for user '{0}' on '{1}': OK with {2} groups returned.", input, context, groups == null ? 0 : groups.Length);
+                LblTestsResult.Text += String.Format("<br/>Test augmentation for user '{0}' on '{1}': OK with {2} groups returned.", input, context, groups == null ? 0 : groups.Length);
                 return true;
             }
             catch (Exception ex)
             {
-                LblResult.Text += String.Format("<br/>Test augmentation for user '{0}' on '{1}': Failed: {2}", input, context, ex.Message);
+                LblTestsResult.Text += String.Format("<br/>Test augmentation for user '{0}' on '{1}': Failed: {2}", input, context, ex.Message);
             }
             return false;
         }
@@ -180,10 +180,10 @@
                 ClaimsIdentity claimsIdentity = claimsPrincipal.Identity as ClaimsIdentity;
                 BootstrapContext bootstrapContext = claimsIdentity.BootstrapContext as BootstrapContext;
                 string sessionLifetime = bootstrapContext == null ? String.Empty : String.Format("is valid from \"{0}\" to \"{1}\" and it", bootstrapContext.SecurityToken.ValidFrom, bootstrapContext.SecurityToken.ValidTo);
-                LblResult.Text += String.Format("<br/><br/><br/>Token of current user \"{0}\" {1} contains {2} claims:", claimsIdentity.Name, sessionLifetime, claimsIdentity.Claims.Count());
+                LblCurrentUserClaims.Text += String.Format("<br/><br/><br/>Token of current user \"{0}\" {1} contains {2} claims:", claimsIdentity.Name, sessionLifetime, claimsIdentity.Claims.Count());
                 foreach (Claim claim in claimsIdentity.Claims)
                 {
-                    LblResult.Text += String.Format("<br/>Claim type \"{0}\" with value \"{1}\" issued by \"{2}\".", claim.Type, claim.Value, claim.OriginalIssuer);
+                    LblCurrentUserClaims.Text += String.Format("<br/>Claim type \"{0}\" with value \"{1}\" issued by \"{2}\".", claim.Type, claim.Value, claim.OriginalIssuer);
                 }
             }
         }
@@ -192,13 +192,17 @@
         {
         }
     </script>
+    <h1>Overview</h1>
     This page is designed to help you troubleshoot common issues with EntraCP.<br />
     It is located in &quot;16\template\admin\EntraCP\TroubleshootEntraCP.aspx&quot;, and you may copy it anywhere under &quot;16\template\LAYOUTS folder&quot;, to call it from any SharePoint site.<br />
     This page is standalone and does NOT use the EntraCP configuration<br />
     It is written with inline code so you can edit it using notepad, to replace the hardcoded value &quot;ReplaceWithYourOwnValue&quot; with your own values.
     <br />
-    <asp:Literal ID="LblResult" runat="server" Text="" />
+    <h1>Tests</h1>
+    <asp:Literal ID="LblTestsResult" runat="server" Text="" />
     <br />
+    <h1>Claims of the current user</h1>
+    <asp:Literal ID="LblCurrentUserClaims" runat="server" Text="" />
     <br />
     <%--<asp:TextBox ID="TxtUrl" runat="server" CssClass="ms-inputformcontrols" Text="URL..."></asp:TextBox>
     <br />
