@@ -38,39 +38,48 @@
         {
             base.OnLoad(e);
 
-            TestConnectionToEntraId();
+            try
+            {
+                TestConnectionToEntraId();
 
-            bool testAssemblyBindingsOk = TestAssemblyBindings(Config.TenantName, Config.TenantClientId, Config.TenantClientSecret, Config.Proxy);
-            if (!testAssemblyBindingsOk)
-            {
-                LblTestsResult.Text += "<br/>" + Config.IconWarning + "Search of users and groups skipped since loading the dependencies failed.";
-                LblTestsResult.Text += "<br/>" + Config.IconWarning + "Augmentation skipped since test loading the dependencies failed.";
-            }
-            else if (String.Equals(Config.TenantName, "TOREPLACE", StringComparison.InvariantCultureIgnoreCase))
-            {
-                LblTestsResult.Text += "<br/>" + Config.IconWarning + "Search of users and groups skipped, edit this page in notepad to set the tenant and credentials.";
-                LblTestsResult.Text += "<br/>" + Config.IconWarning + "Augmentation skipped, edit this page in notepad to set the tenant and credentials.";
-            }
-            else
-            {
-                EntraIDTenant tenant = TestTenantCredentials(Config.TenantName, Config.TenantClientId, Config.TenantClientSecret, Config.Proxy);
-                if (tenant == null)
+                bool testAssemblyBindingsOk = TestAssemblyBindings(Config.TenantName, Config.TenantClientId, Config.TenantClientSecret, Config.Proxy);
+                if (!testAssemblyBindingsOk)
                 {
-                    LblTestsResult.Text += "<br/>" + Config.IconWarning + String.Format("Search of users and groups skipped (could not establish connection to tenant '{0}').", Config.TenantName);
-                    LblTestsResult.Text += "<br/>" + Config.IconWarning + String.Format("Augmentation skipped (could not establish connection to tenant '{0}').", Config.TenantName);
+                    LblTestsResult.Text += "<br/>" + Config.IconWarning + "Authentication to tenant skipped skipped since loading the dependencies failed.";
+                    LblTestsResult.Text += "<br/>" + Config.IconWarning + "Search of users and groups skipped since loading the dependencies failed.";
+                    LblTestsResult.Text += "<br/>" + Config.IconWarning + "Augmentation skipped since test loading the dependencies failed.";
+                }
+                else if (String.Equals(Config.TenantName, "TOREPLACE", StringComparison.InvariantCultureIgnoreCase))
+                {
+                    LblTestsResult.Text += "<br/>" + Config.IconWarning + "Authentication to tenant skipped skipped, edit this page in notepad to set the tenant and credentials.";
+                    LblTestsResult.Text += "<br/>" + Config.IconWarning + "Search of users and groups skipped, edit this page in notepad to set the tenant and credentials.";
+                    LblTestsResult.Text += "<br/>" + Config.IconWarning + "Augmentation skipped, edit this page in notepad to set the tenant and credentials.";
                 }
                 else
                 {
-                    ClaimsProviderSettings settings = ClaimsProviderSettings.GetDefaultSettings(Config.ClaimsProviderName);
-                    settings.EntraIDTenants.Add(tenant);
-                    settings.ProxyAddress = Config.Proxy;
-                    EntraCP claimsProvider = new EntraCP(Config.ClaimsProviderName, settings);
-                    TestClaimsProviderSearch(claimsProvider, Config.context, Config.Input);
-                    TestClaimsProviderAugmentation(claimsProvider, Config.context, Config.Input);
+                    EntraIDTenant tenant = TestTenantCredentials(Config.TenantName, Config.TenantClientId, Config.TenantClientSecret, Config.Proxy);
+                    if (tenant == null)
+                    {
+                        LblTestsResult.Text += "<br/>" + Config.IconWarning + String.Format("Search of users and groups skipped (could not establish connection to tenant '{0}').", Config.TenantName);
+                        LblTestsResult.Text += "<br/>" + Config.IconWarning + String.Format("Augmentation skipped (could not establish connection to tenant '{0}').", Config.TenantName);
+                    }
+                    else
+                    {
+                        ClaimsProviderSettings settings = ClaimsProviderSettings.GetDefaultSettings(Config.ClaimsProviderName);
+                        settings.EntraIDTenants.Add(tenant);
+                        settings.ProxyAddress = Config.Proxy;
+                        EntraCP claimsProvider = new EntraCP(Config.ClaimsProviderName, settings);
+                        TestClaimsProviderSearch(claimsProvider, Config.context, Config.Input);
+                        TestClaimsProviderAugmentation(claimsProvider, Config.context, Config.Input);
+                    }
                 }
             }
+            catch (Exception ex)
+            {
+                LblTestsResult.Text += "<br/>" + Config.IconError + String.Format("Something very unexpected happened: {0}", ex.GetType().Name + ": " + ex.Message);
+            }
 
-            ShowCurrentUserSessionInfo();
+            ListCurrentUserClaims();
         }
 
         public bool TestConnectionToEntraId()
@@ -200,7 +209,7 @@
                 // Azure.Identity.AuthenticationFailedException is expected if credentials are not valid
                 if (String.Equals(ex.InnerException.GetType().FullName, "Azure.Identity.AuthenticationFailedException", StringComparison.InvariantCultureIgnoreCase))
                 {
-                    LblTestsResult.Text += "<br/>" + Config.IconError + String.Format("Authentication to tenant '{0}' using client ID '{1}' failed due to invalid credentials: {2}", tenant.Name, tenantClientId, ex.InnerException.Message);
+                    LblTestsResult.Text += "<br/>" + Config.IconError + String.Format("Authentication to tenant '{0}' using client ID '{1}' failed due to invalid credentials: {2}", tenant.Name, tenantClientId, ex.InnerException.Message + ex.InnerException.InnerException.Message);
                 }
                 else
                 {
@@ -209,7 +218,7 @@
             }
             catch (Exception ex)
             {
-                LblTestsResult.Text += "<br/>" + Config.IconError + String.Format("Authentication to tenant '{0}' using client ID '{1}' failed: {2}", tenant.Name, tenantClientId, ex.Message);
+                LblTestsResult.Text += "<br/>" + Config.IconError + String.Format("Authentication to tenant '{0}' using client ID '{1}' failed: {2}", tenant.Name, tenantClientId, ex.GetType().Name + ": " + ex.Message);
             }
             return success ? tenant : null;
         }
@@ -220,19 +229,28 @@
             {
                 var searchResult = claimsProvider.Search(new Uri(context), new[] { "User", "Group" }, input, null, 30);
                 int searchResultCount = 0;
+                List<string> searchResultsClaimValue = new List<string>();
                 if (searchResult != null)
                 {
                     foreach (var children in searchResult.Children)
                     {
                         searchResultCount += children.EntityData.Count;
+                        searchResultsClaimValue.AddRange(children.EntityData.Select(x => x.Claim.Value));
                     }
                 }
-                LblTestsResult.Text += String.Format("<br/>Test search with input '{0}' on '{1}': OK with {2} results returned.", input, context, searchResultCount);
+                if (searchResultCount == 0)
+                {
+                    LblTestsResult.Text += "<br/>" + Config.IconWarning + String.Format("Searched '{0}' in Entra ID (in context '{1}'): No result was returned.", input, context, searchResultCount);
+                }
+                else
+                {
+                    LblTestsResult.Text += "<br/>" + Config.IconSuccess + String.Format("Searched '{0}' in Entra ID (in context '{1}'): {2} results were returned: {3}", input, context, searchResultCount, String.Join(",", searchResultsClaimValue));
+                }
                 return true;
             }
             catch (Exception ex)
             {
-                LblTestsResult.Text += String.Format("<br/>Test search with input '{0}' on '{1}': Failed: {2}", input, context, ex.Message);
+                LblTestsResult.Text += "<br/>" + Config.IconError + String.Format("Searching '{0}' in Entra ID (in context '{1}') failed: {2}", input, context, ex.Message);
             }
             return false;
         }
@@ -243,31 +261,45 @@
             {
                 IdentityClaimTypeConfig idClaim = claimsProvider.Settings.ClaimTypes.UserIdentifierConfig;
                 string originalIssuer = SPOriginalIssuers.Format(SPOriginalIssuerType.TrustedProvider, Utils.GetSPTrustAssociatedWithClaimsProvider("EntraCP").Name);
-                SPClaim claim = new SPClaim(idClaim.ClaimType, input, idClaim.ClaimValueType, originalIssuer);
-                SPClaim[] groups = claimsProvider.GetClaimsForEntity(new Uri(context), claim);
-                LblTestsResult.Text += String.Format("<br/>Test augmentation for user '{0}' on '{1}': OK with {2} groups returned.", input, context, groups == null ? 0 : groups.Length);
+                SPClaim userClaim = new SPClaim(idClaim.ClaimType, input, idClaim.ClaimValueType, originalIssuer);
+                SPClaim[] groups = claimsProvider.GetClaimsForEntity(new Uri(context), userClaim);
+                if (groups == null || groups.Length == 0)
+                {
+                    LblTestsResult.Text += "<br/>" + Config.IconWarning + String.Format("Augmentation of user with identifier '{0}' (in context '{1}'): No group was returned.", input, context);
+                }
+                else
+                {
+                    LblTestsResult.Text += "<br/>" + Config.IconSuccess + String.Format("Augmentation of user with identifier '{0}' (in context '{1}'): {2} groups were returned: {3}.", input, context, groups.Length, String.Join(",", groups.Select(x => x.Value)));
+                }
                 return true;
             }
             catch (Exception ex)
             {
-                LblTestsResult.Text += String.Format("<br/>Test augmentation for user '{0}' on '{1}': Failed: {2}", input, context, ex.Message);
+                LblTestsResult.Text += "<br/>" + Config.IconError + String.Format("Augmentation of with identifier user '{0}' (in context '{1}') failed: {2}", input, context, ex.Message);
             }
             return false;
         }
 
-        public void ShowCurrentUserSessionInfo()
+        public void ListCurrentUserClaims()
         {
-            ClaimsPrincipal claimsPrincipal = Page.User as ClaimsPrincipal;
-            if (claimsPrincipal != null)
+            try
             {
-                ClaimsIdentity claimsIdentity = claimsPrincipal.Identity as ClaimsIdentity;
-                BootstrapContext bootstrapContext = claimsIdentity.BootstrapContext as BootstrapContext;
-                string sessionLifetime = bootstrapContext == null ? String.Empty : String.Format("is valid from \"{0}\" to \"{1}\" and it", bootstrapContext.SecurityToken.ValidFrom, bootstrapContext.SecurityToken.ValidTo);
-                LblCurrentUserClaims.Text += String.Format("The token of the current user \"{0}\" {1} contains {2} claims:", claimsIdentity.Name, sessionLifetime, claimsIdentity.Claims.Count());
-                foreach (Claim claim in claimsIdentity.Claims)
+                ClaimsPrincipal claimsPrincipal = Page.User as ClaimsPrincipal;
+                if (claimsPrincipal != null)
                 {
-                    LblCurrentUserClaimsList.Text += String.Format("<tr><td>{0}</td><td>{1}</td><td>{2}</td></tr>", claim.Type, claim.Value, claim.OriginalIssuer);
+                    ClaimsIdentity claimsIdentity = claimsPrincipal.Identity as ClaimsIdentity;
+                    BootstrapContext bootstrapContext = claimsIdentity.BootstrapContext as BootstrapContext;
+                    string sessionLifetime = bootstrapContext == null ? String.Empty : String.Format("is valid from \"{0}\" to \"{1}\" and it", bootstrapContext.SecurityToken.ValidFrom, bootstrapContext.SecurityToken.ValidTo);
+                    LblCurrentUserClaims.Text += String.Format("The token of the current user \"{0}\" {1} contains {2} claims:", claimsIdentity.Name, sessionLifetime, claimsIdentity.Claims.Count());
+                    foreach (Claim claim in claimsIdentity.Claims)
+                    {
+                        LblCurrentUserClaimsList.Text += String.Format("<tr><td>{0}</td><td>{1}</td><td>{2}</td></tr>", claim.Type, claim.Value, claim.OriginalIssuer);
+                    }
                 }
+            }
+            catch (Exception ex)
+            {
+                LblCurrentUserClaims.Text += String.Format("Could not get the claims of the current user: {0}", ex.GetType().Name + ": " + ex.Message);
             }
         }
 
@@ -284,6 +316,7 @@
         <li>Written in inline code: You can view and edit its code using a notepad.</li>
         <li>Located in &quot;16\template\admin\EntraCP\TroubleshootEntraCP.aspx&quot;.</li>
     </ul>
+    <p>Beside, EntraCP records all its activity in the SharePoint logs. You can use <a href="https://www.microsoft.com/en-us/download/details.aspx?id=44020&msockid=1428a673f6cf6d172683b376f7be6c1f" target="_blank">ULS Viewer</a> to easily inspect them (including real time monitoring). Filter on Product/Area &quot;EntraCP&quot; to only view the messages generated by EntraCP.</p>
     <h2>How-to use it</h2>
     <p>
         It may be used as-is, or you can edit it using a notepad to set valid values to connect to your tenant, and run all the tests.<br />
