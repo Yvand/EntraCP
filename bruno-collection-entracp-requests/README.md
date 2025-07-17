@@ -10,6 +10,6 @@ To use this collection:
 - Rename/copy the file `.env.example` to `.env` and edit it with your tenant data
 - Open this collection in **Bruno**
 - Select the environment `entracp-environment` and review its variables
-- Expand **authentication** > **get access token**: Click tab **Auth** and **Get Access Token**
+- Go to folder **authentication** > **get access token**: Click tab **Auth** and **Get Access Token**
 
 You can now run any request.

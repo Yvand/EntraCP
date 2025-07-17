@@ -5,14 +5,14 @@ meta {
 }
 
 get {
-  url: https://graph.microsoft.com/v1.0/users?$select=id, displayName, userPrincipalName, UserType, mail, givenName&$filter=startswith(userPrincipalName, 'testEntraCP')
+  url: https://graph.microsoft.com/v1.0/users?$select=id, displayName, userPrincipalName, UserType, mail, givenName&$filter=startswith(userPrincipalName, 'testEntraCPUser_')
   body: none
   auth: inherit
 }
 
 params:query {
   $select: id, displayName, userPrincipalName, UserType, mail, givenName
-  $filter: startswith(userPrincipalName, 'testEntraCP')
+  $filter: startswith(userPrincipalName, 'testEntraCPUser_')
 }
 
 headers {

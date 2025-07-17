@@ -5,14 +5,14 @@ meta {
 }
 
 get {
-  url: https://graph.microsoft.com/v1.0/groups?$select=ID, displayName, groupTypes, securityEnabled&$filter=startswith(DisplayName, 'testentracp')
+  url: https://graph.microsoft.com/v1.0/groups?$select=ID, displayName, groupTypes, securityEnabled&$filter=startswith(DisplayName, 'testEntraCPGroup_')
   body: none
   auth: inherit
 }
 
 params:query {
   $select: ID, displayName, groupTypes, securityEnabled
-  $filter: startswith(DisplayName, 'testentracp')
+  $filter: startswith(DisplayName, 'testEntraCPGroup_')
 }
 
 headers {
