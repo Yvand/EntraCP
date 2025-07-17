@@ -303,7 +303,7 @@
     </script>
     <h2>Overview</h2>
     <p>
-        This page helps you to troubleshoot common issues with EntraCP, in particular the connectivity with Entra ID and .NET assembly binding issues. It is:
+        This page helps you troubleshoot common issues with EntraCP, in particular the connectivity with Entra ID and .NET assembly binding issues. It is:
     </p>
     <ul>
         <li>Standalone: It does NOT use the EntraCP configuration.</li>
