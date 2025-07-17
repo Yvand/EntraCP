@@ -45,13 +45,13 @@
                 bool testAssemblyBindingsOk = TestAssemblyBindings(Config.TenantName, Config.TenantClientId, Config.TenantClientSecret, Config.Proxy);
                 if (!testAssemblyBindingsOk)
                 {
-                    LblTestsResult.Text += "<br/>" + Config.IconWarning + "Authentication to tenant skipped skipped since loading the dependencies failed.";
+                    LblTestsResult.Text += "<br/>" + Config.IconWarning + "Authentication to tenant skipped since loading the dependencies failed.";
                     LblTestsResult.Text += "<br/>" + Config.IconWarning + "Search of users and groups skipped since loading the dependencies failed.";
                     LblTestsResult.Text += "<br/>" + Config.IconWarning + "Augmentation skipped since test loading the dependencies failed.";
                 }
                 else if (String.Equals(Config.TenantName, "TOREPLACE", StringComparison.InvariantCultureIgnoreCase))
                 {
-                    LblTestsResult.Text += "<br/>" + Config.IconWarning + "Authentication to tenant skipped skipped, edit this page in notepad to set the tenant and credentials.";
+                    LblTestsResult.Text += "<br/>" + Config.IconWarning + "Authentication to tenant skipped, edit this page in notepad to set the tenant and credentials.";
                     LblTestsResult.Text += "<br/>" + Config.IconWarning + "Search of users and groups skipped, edit this page in notepad to set the tenant and credentials.";
                     LblTestsResult.Text += "<br/>" + Config.IconWarning + "Augmentation skipped, edit this page in notepad to set the tenant and credentials.";
                 }
