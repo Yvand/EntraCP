@@ -15,7 +15,7 @@
 <%@ Import Namespace="System.IdentityModel.Tokens" %>
 
 <asp:Content ID="PageTitle" ContentPlaceHolderID="PlaceHolderPageTitle" runat="server">Troubleshoot EntraCP</asp:Content>
-<asp:Content ID="PageTitleInTitleArea" ContentPlaceHolderID="PlaceHolderPageTitleInTitleArea" runat="server">Troubleshoot EntraCP installation</asp:Content>
+<asp:Content ID="PageTitleInTitleArea" ContentPlaceHolderID="PlaceHolderPageTitleInTitleArea" runat="server">Troubleshoot common issues with EntraCP</asp:Content>
 <asp:Content ID="Main" ContentPlaceHolderID="PlaceHolderMain" runat="server">
     <script runat="server" language="C#">
         public static class Config
@@ -40,18 +40,24 @@
 
             TestConnectionToEntraId();
 
-            EntraIDTenant tenant = TestTenantConnectionAndAssemblyBindings(Config.TenantName, Config.TenantClientId, Config.TenantClientSecret, Config.Proxy);
-            if (String.IsNullOrWhiteSpace(Config.TenantName))
+            bool testAssemblyBindingsOk = TestAssemblyBindings(Config.TenantName, Config.TenantClientId, Config.TenantClientSecret, Config.Proxy);
+            if (!testAssemblyBindingsOk)
+            {
+                LblTestsResult.Text += "<br/>" + Config.IconWarning + "Search of users and groups skipped since loading the dependencies failed.";
+                LblTestsResult.Text += "<br/>" + Config.IconWarning + "Augmentation skipped since test loading the dependencies failed.";
+            }
+            else if (String.Equals(Config.TenantName, "TOREPLACE", StringComparison.InvariantCultureIgnoreCase))
             {
                 LblTestsResult.Text += "<br/>" + Config.IconWarning + "Search of users and groups skipped, edit this page in notepad to set the tenant and credentials.";
                 LblTestsResult.Text += "<br/>" + Config.IconWarning + "Augmentation skipped, edit this page in notepad to set the tenant and credentials.";
             }
             else
             {
+                EntraIDTenant tenant = TestTenantCredentials(Config.TenantName, Config.TenantClientId, Config.TenantClientSecret, Config.Proxy);
                 if (tenant == null)
                 {
-                    LblTestsResult.Text += "<br/>" + Config.IconWarning + "Search of users and groups skipped, could not get a valid tenant.";
-                    LblTestsResult.Text += "<br/>" + Config.IconWarning + "Augmentation skipped, could not get a valid tenant.";
+                    LblTestsResult.Text += "<br/>" + Config.IconWarning + String.Format("Search of users and groups skipped (could not establish connection to tenant '{0}').", Config.TenantName);
+                    LblTestsResult.Text += "<br/>" + Config.IconWarning + String.Format("Augmentation skipped (could not establish connection to tenant '{0}').", Config.TenantName);
                 }
                 else
                 {
@@ -98,15 +104,22 @@
             return true;
         }
 
-        public EntraIDTenant TestTenantConnectionAndAssemblyBindings(string tenantName, string tenantClientId, string tenantClientSecret, string proxy)
+        /// <summary>
+        /// Tests assembly bindings by instanciating objects and calling methods in EntraCP that trigger the load of dependent .NET assemblies
+        /// </summary>
+        /// <param name="tenantName"></param>
+        /// <param name="tenantClientId"></param>
+        /// <param name="tenantClientSecret"></param>
+        /// <param name="proxy"></param>
+        /// <returns></returns>
+        public bool TestAssemblyBindings(string tenantName, string tenantClientId, string tenantClientSecret, string proxy)
         {
-            EntraIDTenant tenant = null;
             bool success = false;
-            bool hasDefaultValue = String.Equals(tenantName, "TOREPLACE", StringComparison.InvariantCultureIgnoreCase);
+            string errorMessage = "<br/>" + Config.IconError + "Loading of the dependencies failed, check your assembly bindings in the machine.config file. Exception: {0}";
             try
             {
                 // Calling constructor of EntraIDTenant may throw FileNotFoundException on Azure.Identity
-                tenant = new EntraIDTenant(tenantName);
+                EntraIDTenant tenant = new EntraIDTenant(tenantName);
                 tenant.SetCredentials(tenantClientId, tenantClientSecret);
 
                 // EntraIDTenant.InitializeAuthentication() will throw an exception if .NET cannot load one of the following assemblies:
@@ -118,27 +131,12 @@
                 // Azure.Identity.AuthenticationFailedException if invalid credentials 
                 Task<bool> taskTestConnection = Task.Run(async () => await tenant.TestConnectionAsync(proxy));
                 taskTestConnection.Wait();
-                success = taskTestConnection.Result;
                 LblTestsResult.Text += "<br/>" + Config.IconSuccess + "Loading of the dependencies";
-                if (hasDefaultValue)
-                {
-                    LblTestsResult.Text += "<br/>" + Config.IconWarning + "Authentication to tenant skipped, edit this page in notepad to set the tenant and credentials.";
-                }
-                else
-                {
-                    if (success)
-                    {
-                        LblTestsResult.Text += "<br/>" + Config.IconSuccess + String.Format("Authentication to tenant '{0}' using client ID '{1}'", tenant.Name, tenantClientId);
-                    }
-                    else
-                    {
-                        LblTestsResult.Text += "<br/>" + Config.IconError + String.Format("Authentication to tenant '{0}' using client ID '{1}'", tenant.Name, tenantClientId);
-                    }
-                }
+                success = true;
             }
             catch (FileNotFoundException ex)
             {
-                LblTestsResult.Text += "<br/>" + Config.IconError + String.Format("Loading of the dependencies failed, check your assembly bindings in the machine.config file. Exception: '{0}'", ex.Message);
+                LblTestsResult.Text += String.Format(errorMessage, ex.Message);
             }
             // An exception in an async task is always wrapped and returned in an AggregateException
             catch (AggregateException ex)
@@ -146,20 +144,19 @@
                 if (ex.InnerException is FileNotFoundException)
                 {
                     FileNotFoundException fnfEx = ex.InnerException as FileNotFoundException;
-                    LblTestsResult.Text += "<br/>" + Config.IconError + String.Format("Loading of the dependencies failed, check your assembly bindings in the machine.config file. Exception: '{0}'", fnfEx.Message);
+                    LblTestsResult.Text += String.Format(errorMessage, fnfEx.Message);
                 }
                 else
                 {
-                    // Azure.Identity.AuthenticationFailedException is expected if credentials are not valid
+                    // Azure.Identity.AuthenticationFailedException is expected if credentials are not valid, not an assembly load issue
                     if (String.Equals(ex.InnerException.GetType().FullName, "Azure.Identity.AuthenticationFailedException", StringComparison.InvariantCultureIgnoreCase))
                     {
                         LblTestsResult.Text += "<br/>" + Config.IconSuccess + "Loading of the dependencies";
-                        LblTestsResult.Text += String.Format("<br/>Test connection to tenant '{0}' failed due to invalid credentials: {1}", tenant.Name, ex.InnerException.Message);
+                        success = true;
                     }
                     else
                     {
-                        LblTestsResult.Text += "<br/>" + Config.IconWarning + "Loading of the dependencies might not be successful";
-                        LblTestsResult.Text += String.Format("<br/>Test connection to tenant '{0}' failed for an unknown reason: {1}", tenant.Name, ex.InnerException.GetType().Name + " - " + ex.InnerException.Message);
+                        LblTestsResult.Text += "<br/>" + Config.IconWarning + String.Format("Loading of the dependencies might not be successful. Exception: {0}", ex.InnerException.Message);
                     }
                 }
             }
@@ -168,12 +165,51 @@
                 if (ex.InnerException is TypeInitializationException && ex.InnerException.InnerException is FileNotFoundException)
                 {
                     FileNotFoundException fnfEx = ex.InnerException.InnerException as FileNotFoundException;
-                    LblTestsResult.Text += "<br/>" + Config.IconError + String.Format("Loading of the dependencies failed, check your assembly bindings in the machine.config file. Exception: '{0}'", fnfEx.Message);
+                    LblTestsResult.Text += String.Format(errorMessage, fnfEx.Message);
                 }
             }
             catch (Exception ex)
             {
-                LblTestsResult.Text += "<br/>" + Config.IconError + String.Format("Unexpected error {0}: {1}", ex.GetType().Name, ex.Message);
+                LblTestsResult.Text += String.Format(errorMessage, ex.GetType().Name + ": " + ex.Message);
+            }
+            return success;
+        }
+
+        public EntraIDTenant TestTenantCredentials(string tenantName, string tenantClientId, string tenantClientSecret, string proxy)
+        {
+            if (String.Equals(tenantName, "TOREPLACE", StringComparison.InvariantCultureIgnoreCase))
+            {
+                LblTestsResult.Text += "<br/>" + Config.IconWarning + "Authentication to tenant skipped, edit this page in notepad to set the tenant and credentials.";
+                return null;
+            }
+            EntraIDTenant tenant = null;
+            bool success = false;
+            try
+            {
+                tenant = new EntraIDTenant(tenantName);
+                tenant.SetCredentials(tenantClientId, tenantClientSecret);
+                tenant.InitializeAuthentication(ClaimsProviderConstants.DEFAULT_TIMEOUT, proxy);
+                Task<bool> taskTestConnection = Task.Run(async () => await tenant.TestConnectionAsync(proxy));
+                taskTestConnection.Wait();
+                success = taskTestConnection.Result;
+                LblTestsResult.Text += "<br/>" + Config.IconSuccess + String.Format("Authentication to tenant '{0}' using client ID '{1}'", tenant.Name, tenantClientId);
+            }
+            // An exception in an async task is always wrapped and returned in an AggregateException
+            catch (AggregateException ex)
+            {
+                // Azure.Identity.AuthenticationFailedException is expected if credentials are not valid
+                if (String.Equals(ex.InnerException.GetType().FullName, "Azure.Identity.AuthenticationFailedException", StringComparison.InvariantCultureIgnoreCase))
+                {
+                    LblTestsResult.Text += "<br/>" + Config.IconError + String.Format("Authentication to tenant '{0}' using client ID '{1}' failed due to invalid credentials: {2}", tenant.Name, tenantClientId, ex.InnerException.Message);
+                }
+                else
+                {
+                    LblTestsResult.Text += "<br/>" + Config.IconError + String.Format("Authentication to tenant '{0}' using client ID '{1}' failed: {2}", tenant.Name, tenantClientId, ex.InnerException.Message);
+                }
+            }
+            catch (Exception ex)
+            {
+                LblTestsResult.Text += "<br/>" + Config.IconError + String.Format("Authentication to tenant '{0}' using client ID '{1}' failed: {2}", tenant.Name, tenantClientId, ex.Message);
             }
             return success ? tenant : null;
         }
@@ -227,7 +263,7 @@
                 ClaimsIdentity claimsIdentity = claimsPrincipal.Identity as ClaimsIdentity;
                 BootstrapContext bootstrapContext = claimsIdentity.BootstrapContext as BootstrapContext;
                 string sessionLifetime = bootstrapContext == null ? String.Empty : String.Format("is valid from \"{0}\" to \"{1}\" and it", bootstrapContext.SecurityToken.ValidFrom, bootstrapContext.SecurityToken.ValidTo);
-                LblCurrentUserClaims.Text += String.Format("The token of current user \"{0}\" {1} contains {2} claims:", claimsIdentity.Name, sessionLifetime, claimsIdentity.Claims.Count());
+                LblCurrentUserClaims.Text += String.Format("The token of the current user \"{0}\" {1} contains {2} claims:", claimsIdentity.Name, sessionLifetime, claimsIdentity.Claims.Count());
                 foreach (Claim claim in claimsIdentity.Claims)
                 {
                     LblCurrentUserClaimsList.Text += String.Format("<tr><td>{0}</td><td>{1}</td><td>{2}</td></tr>", claim.Type, claim.Value, claim.OriginalIssuer);
@@ -240,29 +276,36 @@
         }
     </script>
     <h2>Overview</h2>
-    This page is designed to help you troubleshoot common issues with EntraCP.<br />
-    It is standalone and it does NOT use the EntraCP configuration.<br />
-    It is located in &quot;16\template\admin\EntraCP\TroubleshootEntraCP.aspx&quot;, and it is written with inline code, so you can edit it using notepad<br />
-    <br />
+    <p>
+        This page helps you to troubleshoot common issues with EntraCP, in particular the connectivity with Entra ID and .NET assembly binding issues. It is:
+    </p>
+    <ul>
+        <li>Standalone: It does NOT use the EntraCP configuration.</li>
+        <li>Written in inline code: You can view and edit its code using a notepad.</li>
+        <li>Located in &quot;16\template\admin\EntraCP\TroubleshootEntraCP.aspx&quot;.</li>
+    </ul>
     <h2>How-to use it</h2>
-    It may be used with no change, but you can edit it using the notepad, to set the values to connect to your tenant, and run all the tests.<br />
-    You can also copy it anywhere under &quot;16\template\LAYOUTS folder&quot;, to call it from any SharePoint site. This can be very useful in some scenarios, for example if you want to verify what claims an Entra user has in SharePoint.<br />
-    <br />
+    <p>
+        It may be used as-is, or you can edit it using a notepad to set valid values to connect to your tenant, and run all the tests.<br />
+        You can also copy it anywhere under the folder &quot;16\TEMPLATE\LAYOUTS&quot;, to be able to call it from any SharePoint site. This can be very useful in some scenarios, for example if you want to list the claims of a user.<br />
+    </p>
     <h2>Tests</h2>
-    <asp:Literal ID="LblTestsResult" runat="server" Text="" />
-    <br />
-    <br />
+    <p>
+        Tests results:
+        <asp:Literal ID="LblTestsResult" runat="server" Text="" />
+    </p>
     <h2>Claims of the current user</h2>
-    <asp:Literal ID="LblCurrentUserClaims" runat="server" Text="" />
-    <table>
-        <tr>
-            <th>Claim type</th>
-            <th>Claim value</th>
-            <th>Issuer</th>
-        </tr>
-        <asp:Literal ID="LblCurrentUserClaimsList" runat="server" Text="" />
-    </table>
-    <br />
+    <p>
+        <asp:Literal ID="LblCurrentUserClaims" runat="server" Text="" />
+        <table>
+            <tr>
+                <th>Claim type</th>
+                <th>Claim value</th>
+                <th>Issuer</th>
+            </tr>
+            <asp:Literal ID="LblCurrentUserClaimsList" runat="server" Text="" />
+        </table>
+    </p>
     <%--<asp:TextBox ID="TxtUrl" runat="server" CssClass="ms-inputformcontrols" Text="URL..."></asp:TextBox>
     <br />
 	<asp:Button ID="BtnAction" runat="server" Text="Boom" OnClick="BtnAction_Click" />--%>
