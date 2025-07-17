@@ -2,7 +2,8 @@
 
 ## Unreleased
 
-* Add property FilterAccountsEnabledOnly, to return only enabled user accounts
+* Add property FilterUserAccountsEnabledOnly, to return only enabled user accounts
+* Improve the EntraCP troubleshooting page (TroubleshootEntraCP.aspx)
 
 ## EntraCP v28.0 - enhancements & bug-fixes - Published in December 12, 2024
 
