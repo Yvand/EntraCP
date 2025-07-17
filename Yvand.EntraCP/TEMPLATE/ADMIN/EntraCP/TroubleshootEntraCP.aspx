@@ -223,39 +223,35 @@
             return success ? tenant : null;
         }
 
-        public bool TestClaimsProviderSearch(EntraCP claimsProvider, string context, string input)
+        public void TestClaimsProviderSearch(EntraCP claimsProvider, string context, string input)
         {
             try
             {
                 var searchResult = claimsProvider.Search(new Uri(context), new[] { "User", "Group" }, input, null, 30);
-                int searchResultCount = 0;
                 List<string> searchResultsClaimValue = new List<string>();
                 if (searchResult != null)
                 {
                     foreach (var children in searchResult.Children)
                     {
-                        searchResultCount += children.EntityData.Count;
                         searchResultsClaimValue.AddRange(children.EntityData.Select(x => x.Claim.Value));
                     }
                 }
-                if (searchResultCount == 0)
+                if (searchResultsClaimValue.Count == 0)
                 {
-                    LblTestsResult.Text += "<br/>" + Config.IconWarning + String.Format("Searched '{0}' in Entra ID (in context '{1}'): No result was returned.", input, context, searchResultCount);
+                    LblTestsResult.Text += "<br/>" + Config.IconWarning + String.Format("Searched '{0}' in Entra ID (in context '{1}'): No result was returned.", input, context);
                 }
                 else
                 {
-                    LblTestsResult.Text += "<br/>" + Config.IconSuccess + String.Format("Searched '{0}' in Entra ID (in context '{1}'): {2} results were returned: {3}", input, context, searchResultCount, String.Join(",", searchResultsClaimValue));
+                    LblTestsResult.Text += "<br/>" + Config.IconSuccess + String.Format("Searched '{0}' in Entra ID (in context '{1}'): {2} results were returned: {3}", input, context, searchResultsClaimValue.Count, String.Join(",", searchResultsClaimValue));
                 }
-                return true;
             }
             catch (Exception ex)
             {
                 LblTestsResult.Text += "<br/>" + Config.IconError + String.Format("Searching '{0}' in Entra ID (in context '{1}') failed: {2}", input, context, ex.Message);
             }
-            return false;
         }
 
-        public bool TestClaimsProviderAugmentation(EntraCP claimsProvider, string context, string input)
+        public void TestClaimsProviderAugmentation(EntraCP claimsProvider, string context, string input)
         {
             try
             {
@@ -271,13 +267,11 @@
                 {
                     LblTestsResult.Text += "<br/>" + Config.IconSuccess + String.Format("Augmentation of user with identifier '{0}' (in context '{1}'): {2} groups were returned: {3}.", input, context, groups.Length, String.Join(",", groups.Select(x => x.Value)));
                 }
-                return true;
             }
             catch (Exception ex)
             {
                 LblTestsResult.Text += "<br/>" + Config.IconError + String.Format("Augmentation of with identifier user '{0}' (in context '{1}') failed: {2}", input, context, ex.Message);
             }
-            return false;
         }
 
         public void ListCurrentUserClaims()
