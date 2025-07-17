@@ -114,7 +114,7 @@
         }
 
         /// <summary>
-        /// Tests assembly bindings by instanciating objects and calling methods in EntraCP that trigger the load of dependent .NET assemblies
+        /// Tests assembly bindings by instantiating objects and calling methods in EntraCP that trigger the load of dependent .NET assemblies
         /// </summary>
         /// <param name="tenantName"></param>
         /// <param name="tenantClientId"></param>
