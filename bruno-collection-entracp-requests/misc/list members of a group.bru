@@ -1,0 +1,19 @@
+meta {
+  name: list members of a group
+  type: http
+  seq: 4
+}
+
+get {
+  url: https://graph.microsoft.com/v1.0/groups/{{groupId}}/members/microsoft.graph.user?$select=id, userPrincipalName, mail
+  body: none
+  auth: inherit
+}
+
+params:query {
+  $select: id, userPrincipalName, mail
+}
+
+headers {
+  Accept: application/json
+}

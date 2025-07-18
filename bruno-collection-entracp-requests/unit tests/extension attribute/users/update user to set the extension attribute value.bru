@@ -1,0 +1,22 @@
+meta {
+  name: update user to set the extension attribute value
+  type: http
+  seq: 2
+}
+
+patch {
+  url: https://graph.microsoft.com/v1.0/users/testEntraCPUser_001@Yvand.onmicrosoft.com
+  body: json
+  auth: inherit
+}
+
+headers {
+  Content-Type: application/json
+  Accept: application/json
+}
+
+body:json {
+  {
+      "extension_7ade56f812b0472ba923102874ee083a_extensionAttribute1": "value1"
+  }
+}

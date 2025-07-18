@@ -1,0 +1,11 @@
+meta {
+  name: list claimsMappingPolicies assigned to a service principal Copy 2
+  type: http
+  seq: 1
+}
+
+get {
+  url: https://graph.microsoft.com/v1.0/servicePrincipals(appId='7ade56f8-12b0-472b-a923-102874ee083a')/claimsMappingPolicies
+  body: json
+  auth: inherit
+}

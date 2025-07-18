@@ -1,0 +1,18 @@
+meta {
+  name: search users
+  type: http
+  seq: 1
+}
+
+get {
+  url: https://graph.microsoft.com/v1.0/users?$select=UserType, Mail, UserPrincipalName, accountEnabled, DisplayName, GivenName, Surname, DisplayName, Mail, MobilePhone, JobTitle, Department, OfficeLocation&$filter=accountEnabled eq true and startswith(UserPrincipalName,'{{entityStartsWithValue}}')&$expand=memberOf($select=id, displayName)&$top=30
+  body: none
+  auth: inherit
+}
+
+params:query {
+  $select: UserType, Mail, UserPrincipalName, accountEnabled, DisplayName, GivenName, Surname, DisplayName, Mail, MobilePhone, JobTitle, Department, OfficeLocation
+  $filter: accountEnabled eq true and startswith(UserPrincipalName,'{{entityStartsWithValue}}')
+  $expand: memberOf($select=id, displayName)
+  $top: 30
+}
