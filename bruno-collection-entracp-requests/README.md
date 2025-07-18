@@ -1,6 +1,7 @@
 # Replay the requests EntraCP sends to Microsoft Graph
 
-This folder is a **[Bruno](https://www.usebruno.com/)** collection which contains the typical requests EntraCP sends to Microsoft Graph.
+This folder is a **[Bruno](https://www.usebruno.com/)** collection which contains the typical requests EntraCP sends to Microsoft Graph.  
+You can use it to test / replay the requests sent by EntraCP, and compare against the values returned to SharePoint.
 
 ## Usage
 

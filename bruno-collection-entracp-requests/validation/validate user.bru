@@ -5,14 +5,14 @@ meta {
 }
 
 get {
-  url: https://graph.microsoft.com/v1.0/users?$select=id, userType, mail, userPrincipalName, displayName, Mail, mobilePhone, jobTitle, department, officeLocation&$filter=( (UserPrincipalName eq '{{entityUpn}}' and UserType eq 'Member') or (Mail eq '{{EntityUPN}}' and UserType eq 'Guest') )&$top=1
+  url: https://graph.microsoft.com/v1.0/users?$select=id, userType, mail, userPrincipalName, displayName, Mail, mobilePhone, jobTitle, department, officeLocation&$filter=( (UserPrincipalName eq '{{entityUpn}}' and UserType eq 'Member') or (Mail eq '{{entityUpn}}' and UserType eq 'Guest') )&$top=1
   body: none
   auth: inherit
 }
 
 params:query {
   $select: id, userType, mail, userPrincipalName, displayName, Mail, mobilePhone, jobTitle, department, officeLocation
-  $filter: ( (UserPrincipalName eq '{{entityUpn}}' and UserType eq 'Member') or (Mail eq '{{EntityUPN}}' and UserType eq 'Guest') )
+  $filter: ( (UserPrincipalName eq '{{entityUpn}}' and UserType eq 'Member') or (Mail eq '{{entityUpn}}' and UserType eq 'Guest') )
   $top: 1
 }
 
