@@ -1,0 +1,20 @@
+meta {
+  name: search 1 group and set groupId var
+  type: http
+  seq: 1
+}
+
+get {
+  url: https://graph.microsoft.com/v1.0/groups?$select=Id, DisplayName&$filter=DisplayName eq 'site1'
+  body: none
+  auth: inherit
+}
+
+params:query {
+  $select: Id, DisplayName
+  $filter: DisplayName eq 'site1'
+}
+
+vars:post-response {
+  groupId: res.body.value[0].id
+}

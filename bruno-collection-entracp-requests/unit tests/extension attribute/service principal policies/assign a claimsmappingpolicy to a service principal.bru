@@ -1,0 +1,18 @@
+meta {
+  name: assign a claimsMappingPolicy to a service principal
+  type: http
+  seq: 2
+}
+
+post {
+  url: https://graph.microsoft.com/v1.0/servicePrincipals(appId='7ade56f8-12b0-472b-a923-102874ee083a')/claimsMappingPolicies/$ref
+  body: json
+  auth: inherit
+}
+
+body:json {
+  
+  {
+    "@odata.id":"https://graph.microsoft.com/v1.0/policies/claimsMappingPolicies/fc3beba5-5869-4020-9366-8bf7d0e8d924"
+  }
+}

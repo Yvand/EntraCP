@@ -1,0 +1,16 @@
+meta {
+  name: search groups
+  type: http
+  seq: 2
+}
+
+get {
+  url: https://graph.microsoft.com/v1.0/groups?$select=Id, DisplayName&$filter=startswith(DisplayName,'{{entityStartsWithValue}}')
+  body: none
+  auth: inherit
+}
+
+params:query {
+  $select: Id, DisplayName
+  $filter: startswith(DisplayName,'{{entityStartsWithValue}}')
+}

@@ -1,0 +1,21 @@
+meta {
+  name: list test users
+  type: http
+  seq: 1
+}
+
+get {
+  url: https://graph.microsoft.com/v1.0/users?$select=id, displayName, userPrincipalName, UserType, mail, givenName&$filter=startswith(userPrincipalName, 'testEntraCPUser_')
+  body: none
+  auth: inherit
+}
+
+params:query {
+  $select: id, displayName, userPrincipalName, UserType, mail, givenName
+  $filter: startswith(userPrincipalName, 'testEntraCPUser_')
+}
+
+headers {
+  Content-Type: application/json
+  Accept: application/json
+}

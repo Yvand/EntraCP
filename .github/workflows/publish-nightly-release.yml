@@ -1,4 +1,6 @@
 name: Publish nightly release
+permissions:
+  contents: write
 on: workflow_dispatch
 jobs:
   call-workflow-publish-nightly-release:

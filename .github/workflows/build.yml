@@ -1,5 +1,6 @@
 name: Build solution
-
+permissions:
+  contents: read
 on:
   workflow_dispatch:
   push:

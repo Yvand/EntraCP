@@ -204,6 +204,15 @@ namespace Yvand.EntraClaimsProvider.Administration
         protected global::System.Web.UI.WebControls.DropDownList DdlUserGraphPropertyToDisplay;
 
         /// <summary>
+        /// ChkFilterUserAccountsEnabledOnly control.
+        /// </summary>
+        /// <remarks>
+        /// Auto-generated field.
+        /// To modify move field declaration from designer file to code-behind file.
+        /// </remarks>
+        protected global::System.Web.UI.WebControls.CheckBox ChkFilterUserAccountsEnabledOnly;
+
+        /// <summary>
         /// DdlGroupClaimType control.
         /// </summary>
         /// <remarks>
