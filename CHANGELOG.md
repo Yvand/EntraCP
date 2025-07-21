@@ -1,11 +1,18 @@
 # Change log for EntraCP (~~AzureCP~~)
 
-## Unreleased
+## EntraCP v29.0.20250721.38 - enhancements & bug-fixes - Published in July 21, 2025
 
 * Add property FilterUserAccountsEnabledOnly, to return only enabled user accounts
-* Improve the EntraCP troubleshooting page (TroubleshootEntraCP.aspx)
+* Update global configuration page to add an option to enable / disable filtering of enabled user accounts
+* Improve the EntraCP troubleshooting page (TroubleshootEntraCP.aspx) to be more user friendly, split tests and cover more scenarios of assembly load issues
+* Update the required assembly bindings in `assembly-bindings.config`
+* Update tests to cover more scenarios
+* Update the **[Bruno](https://www.usebruno.com/)** collection
+* Remove outdated Azure DevOps pipeline
+* Update Azure.Identity from 1.13.1 to 1.14.2
+* Update Microsoft.Graph from 5.63.0 to 5.85.0
 
-## EntraCP v28.0 - enhancements & bug-fixes - Published in December 12, 2024
+## EntraCP v28.0.20241202.37 - enhancements & bug-fixes - Published in December 12, 2024
 
 * Address security advisory CVE-2024-43485 (related to `System.Text.Json` 6.0.0) by bumping dependencies `Azure.Identity` and `Microsoft.Graph` to their latest version
 * Fix a validation issue that impacted guest users, when the identifier property for guest users is the UserPrincipalName
