@@ -5,13 +5,13 @@ meta {
 }
 
 get {
-  url: https://graph.microsoft.com/v1.0/users?$select=UserType, Mail, UserPrincipalName, accountEnabled, DisplayName, GivenName, Surname, DisplayName, Mail, MobilePhone, JobTitle, Department, OfficeLocation&$filter=UserPrincipalName eq 'yvand_microsoft.com%23EXT%23@{{tenantPrefix}}.onmicrosoft.com'&$expand=memberOf($select=id, displayName)&$top=30
+  url: https://graph.microsoft.com/v1.0/users?$select=UserType, Mail, UserPrincipalName, accountEnabled, DisplayName, GivenName, Surname, MobilePhone, JobTitle, Department, OfficeLocation&$filter=UserPrincipalName eq 'yvand_microsoft.com%23EXT%23@{{tenantPrefix}}.onmicrosoft.com'&$expand=memberOf($select=id, displayName)&$top=30
   body: none
   auth: inherit
 }
 
 params:query {
-  $select: UserType, Mail, UserPrincipalName, accountEnabled, DisplayName, GivenName, Surname, DisplayName, Mail, MobilePhone, JobTitle, Department, OfficeLocation
+  $select: UserType, Mail, UserPrincipalName, accountEnabled, DisplayName, GivenName, Surname, MobilePhone, JobTitle, Department, OfficeLocation
   $filter: UserPrincipalName eq 'yvand_microsoft.com%23EXT%23@{{tenantPrefix}}.onmicrosoft.com'
   $expand: memberOf($select=id, displayName)
   $top: 30
