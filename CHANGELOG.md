@@ -1,6 +1,6 @@
 # Change log for EntraCP (~~AzureCP~~)
 
-## EntraCP v29.0 - enhancements & bug-fixes - Published in July 21, 2025
+## EntraCP v29.0.20250721.38 - enhancements & bug-fixes - Published in July 21, 2025
 
 * Add property FilterUserAccountsEnabledOnly, to return only enabled user accounts
 * Update global configuration page to add an option to enable / disable filtering of enabled user accounts
