@@ -489,7 +489,7 @@ namespace Yvand.EntraClaimsProvider
                                     {
                                         Select = new string[] { "Id" },
                                         // max items count per page is 999: https://learn.microsoft.com/en-us/graph/api/group-list-members?view=graph-rest-1.0&tabs=http#optional-query-parameters
-                                        Top = 100,
+                                        Top = 999,
                                     };
                                     conf.Options = new List<IRequestOption>
                                     {
