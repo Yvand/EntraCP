@@ -567,7 +567,7 @@ namespace Yvand.EntraClaimsProvider
                         cachedTenantData.WriteDataLock.Release();
                         lockToWriteInCachedDataWasTaken = false;
                         refreshAllowedUsersCacheTimer.Stop();
-                        Logger.Log($"[{ClaimsProviderName}] Refreshed the cache that contains all the members of the {allowedGroupMembersRequests.Length} Entra group(s) \"{allowedGroupsIDs}\" in tenant \"{tenant.Name}\" in {refreshAllowedUsersCacheTimer.ElapsedMilliseconds}ms.", TraceSeverity.Medium, TraceCategory.Lookup);
+                        Logger.Log($"[{ClaimsProviderName}] Refreshed the cache that contains all the members of the {allowedGroupMembersRequests.Length} Entra group(s) \"{allowedGroupsIDs}\" in tenant \"{tenant.Name}\" in {refreshAllowedUsersCacheTimer.ElapsedMilliseconds}ms. It contains {cachedTenantData.SearchableUsersId.Count} users", TraceSeverity.Medium, TraceCategory.Lookup);
                     }
 
                     Logger.Log($"[{ClaimsProviderName}] Query to tenant '{tenant.Name}' returned {(userCollectionResult?.Value == null ? 0 : userCollectionResult.Value.Count)} user(s) with filter \"{tenant.UserFilter}\" and {(groupCollectionResult?.Value == null ? 0 : groupCollectionResult.Value.Count)} group(s) with filter \"{tenant.GroupFilter}\"", TraceSeverity.VerboseEx, TraceCategory.Lookup);
