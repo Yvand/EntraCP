@@ -36,7 +36,7 @@ namespace Yvand.EntraClaimsProvider
             CachedTenantsData = new List<CachedEntraIDTenantData>();
             foreach (var tenant in this.Settings.EntraIDTenants)
             {
-                CachedTenantsData.Add(new CachedEntraIDTenantData(tenant.Identifier, Settings.TenantDataCacheLifetimeInMinutes));
+                CachedTenantsData.Add(new CachedEntraIDTenantData(tenant.Identifier, tenant.Name, Settings.TenantDataCacheLifetimeInMinutes));
             }
         }
 
@@ -802,6 +802,7 @@ namespace Yvand.EntraClaimsProvider
     public class CachedEntraIDTenantData
     {
         public readonly Guid TenantIdentifier;
+        public readonly string TenantName;
         public SemaphoreSlim WriteDataLock = new SemaphoreSlim(1, 1);
 
         /// <summary>
@@ -818,6 +819,7 @@ namespace Yvand.EntraClaimsProvider
                 TimeSpan interval = DateTime.UtcNow - SearchableUsersIdCacheTime;
                 if (interval > SearchableUsersIdCacheTTL)
                 {
+                    Logger.Log($"[{EntraCP.ClaimsProviderName}] Cache for tenant \"{TenantName}\" is {Math.Round(interval.TotalMinutes)} minutes old and has exceeded its TTL of {SearchableUsersIdCacheTTL.TotalMinutes} minutes, clearing it.", TraceSeverity.Medium, TraceCategory.Augmentation);
                     SearchableUsersIdCacheTime = default(DateTime);
                     _SearchableUsersId = null;
                 }
@@ -833,9 +835,10 @@ namespace Yvand.EntraClaimsProvider
         private DateTime SearchableUsersIdCacheTime;
         private TimeSpan SearchableUsersIdCacheTTL = new TimeSpan(0, 1, 0);
 
-        public CachedEntraIDTenantData(Guid tenantIdentifier, int tenantDataCacheLifetimeInMinutes)
+        public CachedEntraIDTenantData(Guid tenantIdentifier, string tenantName, int tenantDataCacheLifetimeInMinutes)
         {
             this.TenantIdentifier = tenantIdentifier;
+            this.TenantName = tenantName;
             this.SearchableUsersIdCacheTTL = new TimeSpan(0, tenantDataCacheLifetimeInMinutes, 0);
         }
     }
