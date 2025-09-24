@@ -833,7 +833,7 @@ namespace Yvand.EntraClaimsProvider
         }
         private HashSet<string> _SearchableUsersId;
         private DateTime SearchableUsersIdCacheTime;
-        private TimeSpan SearchableUsersIdCacheTTL = new TimeSpan(0, 1, 0);
+        private TimeSpan SearchableUsersIdCacheTTL;
 
         public CachedEntraIDTenantData(Guid tenantIdentifier, string tenantName, int tenantDataCacheLifetimeInMinutes)
         {
