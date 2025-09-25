@@ -485,7 +485,7 @@ namespace Yvand.EntraClaimsProvider
                                 allowedGroupMembersOfGroupsRequestsId = new string[allowedGroupMembersRequests.Length];
                                 for (int i = 0; i < allowedGroupMembersRequests.Length; i++)
                                 {
-                                    allowedGroupMembersOfGroupsRequestsId[i] = await batchRequestContent.AddBatchRequestStepAsync(allowedGroupMembersRequests[i]).ConfigureAwait(false); ;
+                                    allowedGroupMembersOfGroupsRequestsId[i] = await batchRequestContent.AddBatchRequestStepAsync(allowedGroupMembersRequests[i]).ConfigureAwait(false);
                                 }
                             }
                         }
