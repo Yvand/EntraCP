@@ -86,7 +86,7 @@ namespace Yvand.EntraClaimsProvider.Configuration
         bool FilterUserAccountsEnabledOnly { get; }
         
         /// <summary>
-        /// Gets the count of group members returned per page in a request. Its value mnust be between 1 and 999 inclusive. Default value is 100.
+        /// Gets the count of group members returned per page in a request. Its value must be between 1 and 999 inclusive. Default value is 100.
         /// </summary>
         int AllowedGroupMembersRequestPageSize { get; }
 
