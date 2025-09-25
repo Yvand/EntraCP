@@ -695,7 +695,6 @@ namespace Yvand.EntraClaimsProvider
         {
             // List of groups that users must be member of, to be returned to SharePoint
             RequestInformation[] allowedGroupMembersRequests;
-            string[] allowedGroupMembersOfGroupsRequestsId = null;
             string allowedGroupsIDs = this.Settings.RestrictSearchableUsersByGroups;
             //restrictSearchableUsersByGroups = "c9a94341-89b5-4109-a501-2a14027b5bf0"; // testEntraCPGroup_005 - everyone member
             //restrictSearchableUsersByGroups = "cd5f135c-9fe5-4ec2-90d9-114e9ad2e236"; // testEntraCPGroup_004 - testEntraCPUser_001 and testEntraCPUser_010 members
@@ -703,7 +702,6 @@ namespace Yvand.EntraClaimsProvider
             {
                 string[] groupsId = allowedGroupsIDs.Split(new char[] { ',' }, StringSplitOptions.RemoveEmptyEntries);
                 allowedGroupMembersRequests = new RequestInformation[groupsId.Length];
-                allowedGroupMembersOfGroupsRequestsId = new string[groupsId.Length];
                 int groupIdx = 0;
                 foreach (string allowedGroupId in groupsId)
                 {
