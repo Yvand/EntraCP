@@ -84,6 +84,11 @@ namespace Yvand.EntraClaimsProvider.Configuration
         /// Gets if only enabled user accounts should be returned
         /// </summary>
         bool FilterUserAccountsEnabledOnly { get; }
+        
+        /// <summary>
+        /// Gets the count of group members returned per page in a request. Its value must be between 1 and 999 inclusive. Default value is 100.
+        /// </summary>
+        int AllowedGroupMembersRequestPageSize { get; }
 
         #endregion
     }
@@ -108,6 +113,7 @@ namespace Yvand.EntraClaimsProvider.Configuration
         public string RestrictSearchableUsersByGroups { get; set; }
         public int TenantDataCacheLifetimeInMinutes { get; set; } = ClaimsProviderConstants.DefaultTenantDataCacheLifetimeInMinutes;
         public bool FilterUserAccountsEnabledOnly { get; set; } = false;
+        public int AllowedGroupMembersRequestPageSize { get; set; } = ClaimsProviderConstants.DefaultAllowedGroupMembersRequestPageSize;
         #endregion
 
         public EntraIDProviderSettings() { }
@@ -326,6 +332,17 @@ namespace Yvand.EntraClaimsProvider.Configuration
         }
         [Persisted]
         private bool _FilterAccountsEnabledOnly = false;
+
+        /// <summary>
+        /// Gets or sets the count of group members returned per page in a request. Its value must be between 1 and 999 inclusive. Default value is 100.
+        /// </summary>
+        public int AllowedGroupMembersRequestPageSize
+        {
+            get => _AllowedGroupMembersRequestPageSize;
+            set => _AllowedGroupMembersRequestPageSize = value < 1 || value > 999 ? ClaimsProviderConstants.DefaultAllowedGroupMembersRequestPageSize : value;
+        }
+        [Persisted]
+        private int _AllowedGroupMembersRequestPageSize = ClaimsProviderConstants.DefaultAllowedGroupMembersRequestPageSize;
         #endregion
 
         #region "Other properties"
@@ -399,6 +416,7 @@ namespace Yvand.EntraClaimsProvider.Configuration
                 FilterUserAccountsEnabledOnly = this.FilterUserAccountsEnabledOnly,
                 RestrictSearchableUsersByGroups = this.RestrictSearchableUsersByGroups,
                 TenantDataCacheLifetimeInMinutes = this.TenantDataCacheLifetimeInMinutes,
+                AllowedGroupMembersRequestPageSize = this.AllowedGroupMembersRequestPageSize,
             };
             return (IEntraIDProviderSettings)entityProviderSettings;
         }
@@ -649,6 +667,7 @@ namespace Yvand.EntraClaimsProvider.Configuration
             this.ProxyAddress = settings.ProxyAddress;
             this.RestrictSearchableUsersByGroups = settings.RestrictSearchableUsersByGroups;
             this.TenantDataCacheLifetimeInMinutes = settings.TenantDataCacheLifetimeInMinutes;
+            this.AllowedGroupMembersRequestPageSize = settings.AllowedGroupMembersRequestPageSize;
 
             if (commitChangesInDatabase)
             {

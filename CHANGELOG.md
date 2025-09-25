@@ -2,6 +2,11 @@
 
 ## EntraCP v29.0.20250721.38 - enhancements & bug-fixes - Published in July 21, 2025
 
+* Add property AllowedGroupMembersRequestPageSize, to set the page size of the requests that get the users members of the allowed groups (set in property RestrictSearchableUsersByGroups) - https://github.com/Yvand/EntraCP/pull/321
+* Improve the logging for the information related to the cached data - https://github.com/Yvand/EntraCP/pull/321
+
+## EntraCP v29.0.20250721.38 - enhancements & bug-fixes - Published in July 21, 2025
+
 * Add property FilterUserAccountsEnabledOnly, to return only enabled user accounts
 * Update global configuration page to add an option to enable / disable filtering of enabled user accounts
 * Improve the EntraCP troubleshooting page (TroubleshootEntraCP.aspx) to be more user friendly, split tests and cover more scenarios of assembly load issues

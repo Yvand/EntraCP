@@ -101,6 +101,7 @@ namespace Yvand.EntraClaimsProvider.Configuration
 #endif
 
         public static readonly int DefaultTenantDataCacheLifetimeInMinutes = 15;
+        public static readonly int DefaultAllowedGroupMembersRequestPageSize = 100;
     }
 
     public enum AzureCloudName
