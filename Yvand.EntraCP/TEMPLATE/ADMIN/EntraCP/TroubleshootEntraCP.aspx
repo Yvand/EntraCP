@@ -318,6 +318,7 @@
     </p>
     <h2>Tests</h2>
     <p>
+        Current server name: <%= Environment.MachineName %><br />
         Tests results:
         <asp:Literal ID="LblTestsResult" runat="server" Text="" />
     </p>
