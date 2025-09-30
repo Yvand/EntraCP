@@ -1,4 +1,6 @@
 name: Prepare test environment
+permissions:
+  id-token: write
 on:
   repository_dispatch:
     types:
