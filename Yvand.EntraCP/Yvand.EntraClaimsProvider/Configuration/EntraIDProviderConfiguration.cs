@@ -610,6 +610,11 @@ namespace Yvand.EntraClaimsProvider.Configuration
                     }
                 }
             }
+
+            if (!String.IsNullOrWhiteSpace(this.ProxyAddress) && !this.ProxyAddress.StartsWith("http://", StringComparison.OrdinalIgnoreCase))
+            {
+                throw new InvalidOperationException($"The configuration is invalid because property {nameof(ProxyAddress)} must be either empty, or start with \"http://\".");
+            }
         }
 
         /// <summary>
