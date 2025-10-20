@@ -5,6 +5,9 @@
 * Add property AllowedGroupMembersRequestPageSize, to set the page size of the requests that get the users members of the allowed groups (set in property RestrictSearchableUsersByGroups) - https://github.com/Yvand/EntraCP/pull/321
 * Improve the logging for the information related to the cached data - https://github.com/Yvand/EntraCP/pull/321
 * Print the current server name in the standalone troubleshooting page - https://github.com/Yvand/EntraCP/pull/323
+* Update the links in the global configuration page - https://github.com/Yvand/EntraCP/pull/324
+* Update the description for the proxy in the global configuration page - https://github.com/Yvand/EntraCP/pull/324
+* Ensure the proxy has a value in a valid format before committing the new configuration - https://github.com/Yvand/EntraCP/pull/324
 
 ## EntraCP v29.0.20250721.38 - enhancements & bug-fixes - Published in July 21, 2025
 
