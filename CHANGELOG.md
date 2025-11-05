@@ -8,6 +8,7 @@
 * Update the links in the global configuration page - https://github.com/Yvand/EntraCP/pull/324
 * Update the description for the proxy in the global configuration page - https://github.com/Yvand/EntraCP/pull/324
 * Ensure the proxy has a value in a valid format before committing the new configuration - https://github.com/Yvand/EntraCP/pull/324
+* Fix again the exception thrown if the claims provider is used in the context of an anonymous user - https://github.com/Yvand/EntraCP/issues/240
 
 ## EntraCP v29.0.20250721.38 - enhancements & bug-fixes - Published in July 21, 2025
 

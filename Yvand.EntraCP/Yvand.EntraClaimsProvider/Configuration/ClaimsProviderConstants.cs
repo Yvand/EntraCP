@@ -283,7 +283,7 @@ namespace Yvand.EntraClaimsProvider.Configuration
             if (httpctx != null)
             {
                 WIF4_5.ClaimsPrincipal cp = httpctx.User as WIF4_5.ClaimsPrincipal;
-                if (cp != null && cp.Identity != null)
+                if (cp != null && cp.Identity != null && !String.IsNullOrWhiteSpace(cp.Identity.Name))
                 {
                     if (SPClaimProviderManager.IsEncodedClaim(cp.Identity.Name))
                     {
