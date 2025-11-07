@@ -472,7 +472,7 @@ namespace Yvand.EntraClaimsProvider
                 if (entities == null || entities.Count == 0) { return; }
                 
                 // Cache hierarchy nodes to avoid repeated FirstOrDefault() lookups
-                Dictionary<string, SPProviderHierarchyNode> hierarchyNodeCache = new Dictionary<string, SPProviderHierarchyNode>(StringComparer.OrdinalIgnoreCase);
+                Dictionary<string, SPProviderHierarchyNode> hierarchyNodeCache = new Dictionary<string, SPProviderHierarchyNode>(StringComparer.InvariantCultureIgnoreCase);
                 
                 foreach (PickerEntity entity in entities)
                 {
@@ -707,8 +707,8 @@ namespace Yvand.EntraClaimsProvider
             }
 
             List<PickerEntity> spEntities = new List<PickerEntity>();
-            // Use HashSet for faster duplicate detection with OrdinalIgnoreCase for better performance
-            HashSet<string> uniqueKeys = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+            // Use HashSet for faster duplicate detection
+            HashSet<string> uniqueKeys = new HashSet<string>(StringComparer.InvariantCultureIgnoreCase);
             List<ClaimsProviderEntity> uniqueDirectoryResults = new List<ClaimsProviderEntity>();
             
             foreach (DirectoryObject userOrGroup in usersAndGroups)
@@ -801,8 +801,8 @@ namespace Yvand.EntraClaimsProvider
 
                     // if claim type and claim value already exists, skip
                     // Use HashSet for O(1) lookup instead of O(n) with List.Exists
-                    // Use string.Concat for better performance than string interpolation
-                    string uniqueKey = string.Concat(claimTypeConfigToCompare.ClaimType, "|", entityClaimValue);
+                    // Use string.Concat with null character separator (guaranteed not to appear in claim types or values)
+                    string uniqueKey = string.Concat(claimTypeConfigToCompare.ClaimType, "\0", entityClaimValue);
                     if (!uniqueKeys.Add(uniqueKey)) { continue; }
 
                     // Passed the checks, add it to the uniqueDirectoryResults list

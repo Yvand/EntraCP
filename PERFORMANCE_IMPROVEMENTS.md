@@ -29,7 +29,7 @@ private static readonly ConcurrentDictionary<string, PropertyInfo> PropertyInfoC
 // Use cached PropertyInfo to avoid repeated reflection calls
 Type objectType = directoryObject.GetType();
 string cacheKey = $"{objectType.FullName}.{propertyName}";
-PropertyInfo pi = PropertyInfoCache.GetOrAdd(cacheKey, key => objectType.GetProperty(propertyName));
+PropertyInfo pi = PropertyInfoCache.GetOrAdd(cacheKey, _ => objectType.GetProperty(propertyName));
 ```
 
 **Impact**: 
