@@ -51,8 +51,9 @@ bool resultAlreadyExists = uniqueDirectoryResults.Exists(x =>
     String.Equals(x.ClaimTypeConfigMatch.ClaimType, claimTypeConfigToCompare.ClaimType, ...) &&
     String.Equals(x.PermissionValue, entityClaimValue, ...));
 
-// After: O(1) lookup
-string uniqueKey = $"{claimTypeConfigToCompare.ClaimType}|{entityClaimValue}";
+// After: O(1) lookup using HashSet with null character separator
+// Null character is guaranteed not to appear in claim types (URIs) or entity values
+string uniqueKey = string.Concat(claimTypeConfigToCompare.ClaimType, "\0", entityClaimValue);
 if (!uniqueKeys.Add(uniqueKey)) { continue; }
 ```
 
