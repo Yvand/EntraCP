@@ -280,8 +280,13 @@ namespace Yvand.EntraClaimsProvider
 
             // Check if there are additional properties to use in queries (UseMainClaimTypeOfDirectoryObject set to true)
             List<ClaimTypeConfig> additionalClaimTypeConfigList = new List<ClaimTypeConfig>();
-            foreach (ClaimTypeConfig claimTypeConfig in settings.ClaimTypes.Where(x => x.UseMainClaimTypeOfDirectoryObject))
+            foreach (ClaimTypeConfig claimTypeConfig in settings.ClaimTypes)
             {
+                if (!claimTypeConfig.UseMainClaimTypeOfDirectoryObject)
+                {
+                    continue;
+                }
+                
                 ClaimTypeConfig localClaimTypeConfig = claimTypeConfig.CopyConfiguration();
                 if (localClaimTypeConfig.EntityType == DirectoryObjectType.User)
                 {
@@ -307,9 +312,10 @@ namespace Yvand.EntraClaimsProvider
             settings.RuntimeClaimTypesList.AddRange(additionalClaimTypeConfigList);
 
             // Get all PickerEntity metadata with a DirectoryObjectProperty set
+            // Materialize to list to avoid repeated enumeration
             settings.RuntimeMetadataConfig = settings.ClaimTypes.Where(x =>
                 !String.IsNullOrWhiteSpace(x.EntityDataKey) &&
-                x.EntityProperty != DirectoryObjectProperty.NotSet);
+                x.EntityProperty != DirectoryObjectProperty.NotSet).ToList();
 
             if (settings.EntraIDTenants == null || settings.EntraIDTenants.Count < 1)
             {
@@ -464,24 +470,36 @@ namespace Yvand.EntraClaimsProvider
                 OperationContext currentContext = new OperationContext(this.Settings as ClaimsProviderSettings, OperationType.Search, searchPattern, null, context, entityTypes, hierarchyNodeID, maxCount);
                 List<PickerEntity> entities = this.SearchOrValidate(currentContext);
                 if (entities == null || entities.Count == 0) { return; }
-                SPProviderHierarchyNode matchNode = null;
+                
+                // Cache hierarchy nodes to avoid repeated FirstOrDefault() lookups
+                Dictionary<string, SPProviderHierarchyNode> hierarchyNodeCache = new Dictionary<string, SPProviderHierarchyNode>(StringComparer.InvariantCultureIgnoreCase);
+                
                 foreach (PickerEntity entity in entities)
                 {
-                    // Add current PickerEntity to the corresponding ClaimType in the hierarchy
-                    if (searchTree.HasChild(entity.Claim.ClaimType))
+                    SPProviderHierarchyNode matchNode;
+                    string claimType = entity.Claim.ClaimType;
+                    
+                    // Check cache first before searching the tree
+                    if (!hierarchyNodeCache.TryGetValue(claimType, out matchNode))
                     {
-                        matchNode = searchTree.Children.First(x => x.HierarchyNodeID == entity.Claim.ClaimType);
-                    }
-                    else
-                    {
-                        ClaimTypeConfig ctConfig = currentContext.CurrentClaimTypeConfigList.FirstOrDefault(x =>
-                            !x.UseMainClaimTypeOfDirectoryObject &&
-                            String.Equals(x.ClaimType, entity.Claim.ClaimType, StringComparison.InvariantCultureIgnoreCase));
+                        // Add current PickerEntity to the corresponding ClaimType in the hierarchy
+                        if (searchTree.HasChild(claimType))
+                        {
+                            matchNode = searchTree.Children.First(x => x.HierarchyNodeID == claimType);
+                        }
+                        else
+                        {
+                            ClaimTypeConfig ctConfig = currentContext.CurrentClaimTypeConfigList.FirstOrDefault(x =>
+                                !x.UseMainClaimTypeOfDirectoryObject &&
+                                String.Equals(x.ClaimType, claimType, StringComparison.InvariantCultureIgnoreCase));
 
-                        string nodeName = ctConfig != null ? ctConfig.ClaimTypeDisplayName : entity.Claim.ClaimType;
-                        matchNode = new SPProviderHierarchyNode(Name, nodeName, entity.Claim.ClaimType, true);
-                        searchTree.AddChild(matchNode);
+                            string nodeName = ctConfig != null ? ctConfig.ClaimTypeDisplayName : claimType;
+                            matchNode = new SPProviderHierarchyNode(Name, nodeName, claimType, true);
+                            searchTree.AddChild(matchNode);
+                        }
+                        hierarchyNodeCache[claimType] = matchNode;
                     }
+                    
                     matchNode.AddEntity(entity);
                     Logger.Log($"[{Name}] Added entity: display text: '{entity.DisplayText}', claim value: '{entity.Claim.Value}', claim type: '{entity.Claim.ClaimType}'",
                         TraceSeverity.Verbose, TraceCategory.Claims_Picking);

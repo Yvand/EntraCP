@@ -203,7 +203,8 @@ namespace Yvand.EntraClaimsProvider
                 string currentPropertyString = ctConfig.EntityProperty.ToString();
                 if (currentPropertyString.StartsWith("extensionAttribute"))
                 {
-                    currentPropertyString = String.Format("{0}_{1}_{2}", "extension", "EXTENSIONATTRIBUTESAPPLICATIONID", currentPropertyString);
+                    // Use string concatenation instead of String.Format for better performance
+                    currentPropertyString = "extension_EXTENSIONATTRIBUTESAPPLICATIONID_" + currentPropertyString;
                 }
 
                 string filterForCurrentProp;
@@ -212,8 +213,7 @@ namespace Yvand.EntraClaimsProvider
                 if (ctConfig.EntityProperty == DirectoryObjectProperty.Id)
                 {
                     ctConfig.DirectoryPropertySupportsWildcard = false;
-                    Guid idGuid = new Guid();
-                    if (!Guid.TryParse(input, out idGuid))
+                    if (!Guid.TryParse(input, out _))
                     {
                         continue;
                     }
