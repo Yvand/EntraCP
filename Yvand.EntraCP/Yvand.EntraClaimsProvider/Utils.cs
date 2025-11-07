@@ -161,6 +161,10 @@ namespace Yvand.EntraClaimsProvider
             return target;
         }
 
+        // Cache for reflection property lookups to improve performance
+        private static readonly System.Collections.Concurrent.ConcurrentDictionary<string, PropertyInfo> PropertyInfoCache = 
+            new System.Collections.Concurrent.ConcurrentDictionary<string, PropertyInfo>();
+
         /// <summary>
         /// Uses reflection to return the value of a public property for the given object
         /// </summary>
@@ -212,7 +216,11 @@ namespace Yvand.EntraClaimsProvider
                 }
             }
 
-            PropertyInfo pi = directoryObject.GetType().GetProperty(propertyName);
+            // Use cached PropertyInfo to avoid repeated reflection calls
+            Type objectType = directoryObject.GetType();
+            string cacheKey = $"{objectType.FullName}.{propertyName}";
+            PropertyInfo pi = PropertyInfoCache.GetOrAdd(cacheKey, key => objectType.GetProperty(propertyName));
+            
             if (pi == null)
             {
                 return null; // Property does not exist, return null

@@ -589,28 +589,26 @@ namespace Yvand.EntraClaimsProvider.Configuration
         /// <returns></returns>
         public bool Contains(ClaimTypeConfig item)
         {
-            bool found = false;
             foreach (ClaimTypeConfig ct in innerCol)
             {
                 if (ct.Equals(item))
                 {
-                    found = true;
+                    return true;
                 }
             }
-            return found;
+            return false;
         }
 
         public bool Contains(ClaimTypeConfig item, EqualityComparer<ClaimTypeConfig> comp)
         {
-            bool found = false;
             foreach (ClaimTypeConfig ct in innerCol)
             {
                 if (comp.Equals(ct, item))
                 {
-                    found = true;
+                    return true;
                 }
             }
-            return found;
+            return false;
         }
 
         public void CopyTo(ClaimTypeConfig[] array, int arrayIndex)

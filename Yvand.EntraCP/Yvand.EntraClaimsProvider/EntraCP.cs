@@ -661,10 +661,10 @@ namespace Yvand.EntraClaimsProvider
 
         private List<PickerEntity> ProcessAzureADResults(OperationContext currentContext, List<DirectoryObject> usersAndGroups)
         {
-            if (usersAndGroups == null || !usersAndGroups.Any())
+            if (usersAndGroups == null || usersAndGroups.Count == 0)
             {
                 return null;
-            };
+            }
 
             List<ClaimTypeConfig> ctConfigs = currentContext.CurrentClaimTypeConfigList;
             //Really?
@@ -673,21 +673,41 @@ namespace Yvand.EntraClaimsProvider
             //    ctConfigs = currentContext.CurrentClaimTypeConfigList.FindAll(x => !x.UseMainClaimTypeOfDirectoryObject);
             //}
 
+            // Pre-filter configs by entity type to avoid repeated LINQ queries in the inner loop
+            List<ClaimTypeConfig> userConfigs = new List<ClaimTypeConfig>();
+            List<ClaimTypeConfig> groupConfigs = new List<ClaimTypeConfig>();
+            foreach (ClaimTypeConfig config in ctConfigs)
+            {
+                if (config.EntityType == DirectoryObjectType.User)
+                {
+                    userConfigs.Add(config);
+                }
+                else if (config.EntityType == DirectoryObjectType.Group)
+                {
+                    groupConfigs.Add(config);
+                }
+            }
+
             List<PickerEntity> spEntities = new List<PickerEntity>();
+            // Use HashSet for faster duplicate detection
+            HashSet<string> uniqueKeys = new HashSet<string>(StringComparer.InvariantCultureIgnoreCase);
             List<ClaimsProviderEntity> uniqueDirectoryResults = new List<ClaimsProviderEntity>();
+            
             foreach (DirectoryObject userOrGroup in usersAndGroups)
             {
-                DirectoryObject currentObject = null;
+                DirectoryObject currentObject = userOrGroup;
                 DirectoryObjectType objectType;
+                List<ClaimTypeConfig> relevantConfigs;
+                
                 if (userOrGroup is User)
                 {
-                    currentObject = userOrGroup;
                     objectType = DirectoryObjectType.User;
+                    relevantConfigs = userConfigs;
                 }
                 else
                 {
-                    currentObject = userOrGroup;
                     objectType = DirectoryObjectType.Group;
+                    relevantConfigs = groupConfigs;
 
                     // No longer necessary since now it is handled directly when building the filter for Graph
                     //if (this.Settings.FilterSecurityEnabledGroupsOnly)
@@ -701,7 +721,7 @@ namespace Yvand.EntraClaimsProvider
                     //}
                 }
 
-                foreach (ClaimTypeConfig ctConfig in ctConfigs.Where(x => x.EntityType == objectType))
+                foreach (ClaimTypeConfig ctConfig in relevantConfigs)
                 {
                     // Get value with of current GraphProperty
                     string directoryObjectPropertyValue = Utils.GetDirectoryObjectPropertyValue(currentObject, ctConfig.EntityProperty.ToString());
@@ -762,10 +782,9 @@ namespace Yvand.EntraClaimsProvider
                     }
 
                     // if claim type and claim value already exists, skip
-                    bool resultAlreadyExists = uniqueDirectoryResults.Exists(x =>
-                        String.Equals(x.ClaimTypeConfigMatch.ClaimType, claimTypeConfigToCompare.ClaimType, StringComparison.InvariantCultureIgnoreCase) &&
-                        String.Equals(x.PermissionValue, entityClaimValue, StringComparison.InvariantCultureIgnoreCase));
-                    if (resultAlreadyExists) { continue; }
+                    // Use HashSet for O(1) lookup instead of O(n) with List.Exists
+                    string uniqueKey = $"{claimTypeConfigToCompare.ClaimType}|{entityClaimValue}";
+                    if (!uniqueKeys.Add(uniqueKey)) { continue; }
 
                     // Passed the checks, add it to the uniqueDirectoryResults list
                     ClaimsProviderEntity claimsProviderEntity = new ClaimsProviderEntity(currentObject, ctConfig, entityClaimValue, directoryObjectPropertyValue);
@@ -805,9 +824,15 @@ namespace Yvand.EntraClaimsProvider
 
             int nbMetadata = 0;
             // Populate the metadata for this PickerEntity
-            // Populate metadata of new PickerEntity
-            foreach (ClaimTypeConfig ctConfig in this.Settings.RuntimeMetadataConfig.Where(x => x.EntityType == result.ClaimTypeConfigMatch.EntityType))
+            // Avoid LINQ Where() by checking entity type in the loop
+            DirectoryObjectType entityType = result.ClaimTypeConfigMatch.EntityType;
+            foreach (ClaimTypeConfig ctConfig in this.Settings.RuntimeMetadataConfig)
             {
+                if (ctConfig.EntityType != entityType)
+                {
+                    continue;
+                }
+                
                 // if there is actally a value in the GraphObject, then it can be set
                 string entityAttribValue = Utils.GetDirectoryObjectPropertyValue(result.DirectoryEntity, ctConfig.EntityProperty.ToString());
                 if (!String.IsNullOrEmpty(entityAttribValue))
@@ -957,14 +982,18 @@ namespace Yvand.EntraClaimsProvider
                 if (hierarchyNodeID == null)
                 {
                     // Root level
-                    foreach (var azureObject in ((ClaimsProviderSettings)this.Settings).RuntimeClaimTypesList.FindAll(x => !x.UseMainClaimTypeOfDirectoryObject && aadEntityTypes.Contains(x.EntityType)))
+                    // Optimize by avoiding FindAll with LINQ Contains - iterate once
+                    foreach (var azureObject in ((ClaimsProviderSettings)this.Settings).RuntimeClaimTypesList)
                     {
-                        hierarchy.AddChild(
-                            new Microsoft.SharePoint.WebControls.SPProviderHierarchyNode(
-                                Name,
-                                azureObject.ClaimTypeDisplayName,
-                                azureObject.ClaimType,
-                                true));
+                        if (!azureObject.UseMainClaimTypeOfDirectoryObject && aadEntityTypes.Contains(azureObject.EntityType))
+                        {
+                            hierarchy.AddChild(
+                                new Microsoft.SharePoint.WebControls.SPProviderHierarchyNode(
+                                    Name,
+                                    azureObject.ClaimTypeDisplayName,
+                                    azureObject.ClaimType,
+                                    true));
+                        }
                     }
                 }
             }
