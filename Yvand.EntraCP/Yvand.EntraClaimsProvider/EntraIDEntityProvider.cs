@@ -9,6 +9,7 @@ using Microsoft.Kiota.Abstractions;
 using Microsoft.Kiota.Http.HttpClientLibrary.Middleware.Options;
 using Microsoft.SharePoint.Administration;
 using Microsoft.SharePoint.Utilities;
+using Microsoft.Web.Hosting.Administration;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
@@ -20,6 +21,7 @@ using System.Threading.Tasks;
 using Yvand.EntraClaimsProvider.Configuration;
 using Yvand.EntraClaimsProvider.Logging;
 using Logger = Yvand.EntraClaimsProvider.Logging.Logger;
+using User = Microsoft.Graph.Models.User;
 
 namespace Yvand.EntraClaimsProvider
 {
@@ -120,16 +122,21 @@ namespace Yvand.EntraClaimsProvider
                 else
                 {
                     // Fallback to GET to /v1.0/users/user@TENANT.onmicrosoft.com/memberOf, which returns all group properties but does not return nested groups
-                    DirectoryObjectCollectionResponse memberOfResponse = await Task.Run(() => tenant.GraphService.Users[user.Id].MemberOf.GetAsync()).ConfigureAwait(false);
+                    // https://github.com/Yvand/EntraCP/issues/328: Make sure to get only groups (not also directory roles or other object types)
+                    GroupCollectionResponse memberOfResponse = await Task.Run(() => tenant.GraphService.Users[user.Id].MemberOf.GraphGroup.GetAsync()).ConfigureAwait(false);
                     if (memberOfResponse?.Value != null)
                     {
-                        PageIterator<Group, DirectoryObjectCollectionResponse> memberGroupsPageIterator = PageIterator<Group, DirectoryObjectCollectionResponse>.CreatePageIterator(
+                        PageIterator<Group, GroupCollectionResponse> memberGroupsPageIterator = PageIterator<Group, GroupCollectionResponse>.CreatePageIterator(
                         tenant.GraphService,
                         memberOfResponse,
                         (group) =>
                         {
                             string groupClaimValue = GetPropertyValue(group, groupProperty.ToString());
-                            groupsInTenant.Add(groupClaimValue);
+                            // Test if this group has a value in the property set as the group identifier
+                            if (!String.IsNullOrWhiteSpace(groupClaimValue))
+                            {
+                                groupsInTenant.Add(groupClaimValue);
+                            }
                             return true; // return true to continue the iteration
                         });
                         await memberGroupsPageIterator.IterateAsync().ConfigureAwait(false);
