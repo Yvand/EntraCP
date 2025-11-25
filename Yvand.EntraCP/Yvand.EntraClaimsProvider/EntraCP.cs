@@ -709,7 +709,6 @@ namespace Yvand.EntraClaimsProvider
             List<PickerEntity> spEntities = new List<PickerEntity>();
             // Use HashSet for faster duplicate detection
             HashSet<string> uniqueKeys = new HashSet<string>(StringComparer.InvariantCultureIgnoreCase);
-            List<ClaimsProviderEntity> uniqueDirectoryResults = new List<ClaimsProviderEntity>();
             
             foreach (DirectoryObject userOrGroup in usersAndGroups)
             {
@@ -808,8 +807,6 @@ namespace Yvand.EntraClaimsProvider
                     // Passed the checks, add it to the uniqueDirectoryResults list
                     ClaimsProviderEntity claimsProviderEntity = new ClaimsProviderEntity(currentObject, ctConfig, entityClaimValue, directoryObjectPropertyValue);
                     spEntities.Add(CreatePickerEntityHelper(currentContext, claimsProviderEntity));
-                    uniqueDirectoryResults.Add(claimsProviderEntity);
-
                 }
             }
             Logger.Log($"[{Name}] Created {spEntities.Count} entity(ies) after filtering directory results", TraceSeverity.Verbose, TraceCategory.Lookup);
