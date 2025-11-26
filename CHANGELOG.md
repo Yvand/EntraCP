@@ -10,6 +10,7 @@
 * Ensure the proxy has a value in a valid format before committing the new configuration - https://github.com/Yvand/EntraCP/pull/324
 * Fix again the exception thrown if the claims provider is used in the context of an anonymous user - https://github.com/Yvand/EntraCP/issues/240
 * Fix the ArgumentException: The Parsable does not contain a collection property, during augmentation, when not using the Id as the group identifier - https://github.com/Yvand/EntraCP/pull/329
+* Add a test scenario, when the group identifier is not the property Id. This will cover the blind spot identified in https://github.com/Yvand/EntraCP/issues/328 - https://github.com/Yvand/EntraCP/pull/336
 * Fix EntraCP returning groups with an empty value during augmentation, when not using the Id as the group identifier, if the property set as the group identifier was empty - https://github.com/Yvand/EntraCP/pull/329
 
 ## EntraCP v29.0.20250721.38 - enhancements & bug-fixes - Published in July 21, 2025

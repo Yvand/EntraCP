@@ -199,7 +199,9 @@ namespace Yvand.EntraClaimsProvider.Tests
         public void TestSearchAndValidateForTestGroup(TestGroup entity)
         {
             string inputValue = entity.DisplayName;
-            string claimValue = entity.Id;
+            string claimValue = this.Settings.ClaimTypes.GroupIdentifierConfig.EntityProperty == DirectoryObjectProperty.Id ?
+                entity.Id :
+                entity.DisplayName; // Assume it is always the DisplayName, if not the Id
             int expectedCount = 1;
             bool shouldValidate = true;
 
@@ -238,7 +240,10 @@ namespace Yvand.EntraClaimsProvider.Tests
             TestGroup randomGroup = TestEntitySourceManager.GetOneGroup(Settings.FilterSecurityEnabledGroupsOnly);
             bool userShouldBeMember = user.IsMemberOfAllGroups || randomGroup.EveryoneIsMember ? true : false;
             Trace.TraceInformation($"{DateTime.Now:s} [{this.GetType().Name}] TestAugmentationAgainst1RandomGroup for user \"{user.UserPrincipalName}\", IsMemberOfAllGroupsp: {user.IsMemberOfAllGroups} against group \"{randomGroup.DisplayName}\". userShouldBeMember: {userShouldBeMember}");
-            TestAugmentationOperation(user.UserPrincipalName, userShouldBeMember, randomGroup.Id);
+            string groupClaimValueToTest = this.Settings.ClaimTypes.GroupIdentifierConfig.EntityProperty == DirectoryObjectProperty.Id ?
+                randomGroup.Id :
+                randomGroup.DisplayName; // Assume it is always the DisplayName, if not the Id
+            TestAugmentationOperation(user.UserPrincipalName, userShouldBeMember, groupClaimValueToTest);
         }
 
         /// <summary>
