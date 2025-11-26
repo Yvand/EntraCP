@@ -429,7 +429,7 @@ namespace Yvand.EntraClaimsProvider.Configuration
         /// <param name="newClientId">New client id, or empty if it does not change</param>
         /// <returns>True if credentials were successfully updated</returns>
         /// <exception cref="ArgumentNullException"></exception>
-        public bool UpdateTenantCredentials(string tenantName, string newClientSecret, string newClientId = "")
+        public bool SetTenantSecret(string tenantName, string newClientSecret, string newClientId = "")
         {
             if (String.IsNullOrWhiteSpace(tenantName))
             {
@@ -456,7 +456,7 @@ namespace Yvand.EntraClaimsProvider.Configuration
         /// <param name="newClientId">New client id, or empty if it does not change</param>
         /// <returns></returns>
         /// <exception cref="ArgumentNullException"></exception>
-        public bool UpdateTenantCredentials(string tenantName, string newClientCertificatePfxFilePath, string newClientCertificatePfxPassword = "", string newClientId = "")
+        public bool SetTenantCertificate(string tenantName, string newClientCertificatePfxFilePath, string newClientCertificatePfxPassword = "", string newClientId = "")
         {
             if (String.IsNullOrWhiteSpace(tenantName))
             {
