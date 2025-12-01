@@ -12,10 +12,10 @@ on:
 
 jobs:
   call-build:
-    uses: Yvand/EntraCP/.github/workflows/reusable-build.yml@master
+    uses: Yvand/EntraCP/.github/workflows/reusable-build.yml@dev
     with:
       project-name: ${{ vars.PROJECT_NAME }}
-      version-major-minor: ${{ vars.VERSION_MAJOR_MINOR }}
+      release-version: ${{ vars.RELEASE_VERSION }}
       is-production-release: false
     secrets:
       base64-encoded-signingkey: ${{ secrets.BASE64_ENCODED_SIGNINGKEY }}

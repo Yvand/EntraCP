@@ -6,7 +6,7 @@ on:
       project-name:
         required: true
         type: string
-      version-major-minor:
+      release-version :
         required: true
         type: string
       is-production-release:
@@ -18,7 +18,7 @@ on:
     outputs:
       assembly-version:
         description: "The full assembly version generated"
-        value: ${{ jobs.calculate-version.outputs.assembly-version }}
+        value: ${{ inputs.release-version }}
       tag-name:
         description: "The name of the tag, if it was set"
         value: ${{ jobs.tag-with-version.outputs.tag-name }}
@@ -26,26 +26,26 @@ jobs:
   calculate-version:
     runs-on: ubuntu-latest
     outputs:
-      assembly-version: ${{ steps.set-version.outputs.assembly-version }}
-      year: ${{ steps.set-version.outputs.year }}
+      year: ${{ steps.set-current-date.outputs.year }}
     steps:
-    - name: set-version
-      id: set-version
+    - name: set-current-date
+      id: set-current-date
       run: |
-        echo "date=$(date +'%Y%m%d')" >> $GITHUB_OUTPUT
         echo "year=$(date +'%Y')" >> $GITHUB_OUTPUT
-        isprod=${{ fromJSON(inputs.is-production-release) }}
-        suffix=""
-        if [ "$isprod" = "false" ]; then
-            suffix="-nightly"
-        fi
-        echo "assembly-version=${{ inputs.version-major-minor }}.$(date +'%Y%m%d').${{ github.run_number }}$suffix" >> $GITHUB_OUTPUT
+        # Deprecated logic - kept for reference
+        # echo "date=$(date +'%Y%m%d')" >> $GITHUB_OUTPUT
+        # isprod=${{ fromJSON(inputs.is-production-release) }}
+        # suffix=""
+        # if [ "$isprod" = "false" ]; then
+        #     suffix="-nightly"
+        # fi
+        # echo "assembly-version=${{ inputs.release-version  }}.$(date +'%Y%m%d').${{ github.run_number }}$suffix" >> $GITHUB_OUTPUT
         
     - name: Show the version
       run: |
-        echo "assembly-version: ${{steps.set-version.outputs.assembly-version}}"
-        echo "date: ${{steps.set-version.outputs.date}}"
-        echo "year: ${{steps.set-version.outputs.year}}"
+        # echo "assembly-version: ${{steps.set-current-date.outputs.assembly-version}}"
+        # echo "date: ${{steps.set-current-date.outputs.date}}"
+        echo "year: ${{steps.set-current-date.outputs.year}}"
 
   tag-with-version:
     runs-on: ubuntu-latest
@@ -66,7 +66,7 @@ jobs:
         result-encoding: string
         script: |
             const { owner, repo } = context.repo;
-            const tagName = "v${{ needs.calculate-version.outputs.assembly-version }}";
+            const tagName = "v${{ inputs.release-version }}";
             const ref = `refs/tags/${tagName}`;
             try {
                 console.log(`Create tag '${tagName}' on commit '${context.sha}'`);
@@ -96,7 +96,7 @@ jobs:
       matrix:
         configuration: [Debug, Release]
     outputs:
-      assembly-version: ${{ needs.calculate-version.outputs.assembly-version }}
+      assembly-version: ${{ inputs.release-version }}
     env:
       project-name: ${{ inputs.project-name }}
 
@@ -110,7 +110,7 @@ jobs:
       id: set-assembly-version
       uses: Yvand/assemblyinfo-update@main
       with:
-        version: "${{ needs.calculate-version.outputs.assembly-version }}" #"${{ inputs.version-major-minor }}.${{ steps.date.outputs.date }}"
+        version: "${{ inputs.release-version  }}"
         directory: "${{ env.project-name }}/Properties"
         filename: 'AssemblyInfo.cs'
         recursive: false
@@ -145,7 +145,7 @@ jobs:
       shell: pwsh
       run: |
         # Expected format of the version is either "1.0.0.0" or "1.0.0.0-nightly"
-        $version = "${{ needs.calculate-version.outputs.assembly-version }}"
+        $version = "${{ inputs.release-version }}"
         if ($version.Contains('-')) {
             $suffix = $version.Split('-')[1]
             $version = $version.Split('-')[0]
