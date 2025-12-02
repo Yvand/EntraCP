@@ -116,6 +116,14 @@ jobs:
         recursive: false
         copyright: "Copyright © Yvan Duhamel ${{ needs.calculate-version.outputs.year }}"
 
+    - name: Print the assembly version generated
+      shell: pwsh
+      env: 
+        inputs_release_version: ${{ inputs.release-version }}
+        assembly_version: ${{ steps.set-assembly-version.outputs.version }}
+      run: |
+        Write-Host "Input release version: `"$($env:inputs_release_version)`""
+        Write-Host ".NET assembly version: `"$($env:assembly_version)`""
       
     # Add MSBuild to the PATH: https://github.com/microsoft/setup-msbuild
     - name: Setup MSBuild.exe
