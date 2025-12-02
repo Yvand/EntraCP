@@ -160,7 +160,7 @@ jobs:
       run: Remove-Item -path "${{ env.project-name }}/${{ env.project-name }}.snk"
 
     - name: Upload artifact - wsp solution
-      uses: actions/upload-artifact@v3
+      uses: actions/upload-artifact@v4
       with:
         name: "${{ env.project-name }}-${{ env.Configuration }}-wsp"
         path: "${{ env.project-name }}/bin/${{ env.Configuration }}/*.wsp"
@@ -169,7 +169,7 @@ jobs:
         Configuration: ${{ matrix.configuration }}
         
     - name: Upload artifact - dependencies
-      uses: actions/upload-artifact@v3
+      uses: actions/upload-artifact@v4
       with:
         name: "${{ env.project-name }}-${{ env.Configuration }}-dependencies"
         path: "${{ env.project-name }}/bin/${{ env.Configuration }}/*.dll"
@@ -178,7 +178,7 @@ jobs:
         Configuration: ${{ matrix.configuration }}
         
     - name: Upload artifact - symbols
-      uses: actions/upload-artifact@v3
+      uses: actions/upload-artifact@v4
       with:
         name: "${{ env.project-name }}-${{ env.Configuration }}-symbols"
         path: |
@@ -190,7 +190,7 @@ jobs:
         Configuration: ${{ matrix.configuration }}
         
     - name: Upload artifact - unit tests
-      uses: actions/upload-artifact@v3
+      uses: actions/upload-artifact@v4
       with:
         name: "${{ env.project-name }}-${{ env.Configuration }}-unit-tests"
         path: "${{ env.project-name }}.Tests/bin/${{ env.Configuration }}/*.dll"
@@ -199,7 +199,7 @@ jobs:
         Configuration: ${{ matrix.configuration }}
         
     - name: Upload artifact - assembly-bindings.config if it exists
-      uses: actions/upload-artifact@v3
+      uses: actions/upload-artifact@v4
       if: matrix.configuration == 'release' # string tests are not case sensitive - https://docs.github.com/en/actions/learn-github-actions/expressions
       with:
         name: "assembly-bindings.config"
@@ -207,7 +207,7 @@ jobs:
         if-no-files-found: ignore
     
     - name: Upload artifact - NuGet package if it exists
-      uses: actions/upload-artifact@v3
+      uses: actions/upload-artifact@v4
       if: matrix.configuration == 'release' # string tests are not case sensitive - https://docs.github.com/en/actions/learn-github-actions/expressions
       with:
         name: "NuGet"
