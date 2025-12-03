@@ -3,27 +3,24 @@ name: (reusable) Build
 on:
   workflow_call:
     inputs:
-      project-name:
+      project_name:
         required: true
         type: string
-      release-version :
+      release_version :
         required: true
         type: string
-      is-production-release:
+      is_production_release:
         default: false
         type: boolean
     secrets:
-      base64-encoded-signingkey:
+      base64_encoded_signingkey:
         required: true
     outputs:
-      assembly-version:
-        description: "The full assembly version generated"
-        value: ${{ inputs.release-version }}
-      tag-name:
+      tag_name:
         description: "The name of the tag, if it was set"
-        value: ${{ jobs.tag-with-version.outputs.tag-name }}
+        value: ${{ jobs.tag-with-version.outputs.tag_name }}
 jobs:
-  calculate-version:
+  preparation:
     runs-on: ubuntu-latest
     outputs:
       year: ${{ steps.set-current-date.outputs.year }}
@@ -34,25 +31,25 @@ jobs:
         echo "year=$(date +'%Y')" >> $GITHUB_OUTPUT
         # Deprecated logic - kept for reference
         # echo "date=$(date +'%Y%m%d')" >> $GITHUB_OUTPUT
-        # isprod=${{ fromJSON(inputs.is-production-release) }}
+        # isprod=${{ fromJSON(inputs.is_production_release) }}
         # suffix=""
         # if [ "$isprod" = "false" ]; then
         #     suffix="-nightly"
         # fi
-        # echo "assembly-version=${{ inputs.release-version  }}.$(date +'%Y%m%d').${{ github.run_number }}$suffix" >> $GITHUB_OUTPUT
+        # echo "assembly_version=${{ inputs.release_version  }}.$(date +'%Y%m%d').${{ github.run_number }}$suffix" >> $GITHUB_OUTPUT
         
-    - name: Show the version
-      run: |
-        # echo "assembly-version: ${{steps.set-current-date.outputs.assembly-version}}"
-        # echo "date: ${{steps.set-current-date.outputs.date}}"
-        echo "year: ${{steps.set-current-date.outputs.year}}"
+    # - name: Show the version
+    #   run: |
+    #     # echo "assembly_version: ${{steps.set-current-date.outputs.assembly_version}}"
+    #     # echo "date: ${{steps.set-current-date.outputs.date}}"
+    #     echo "year: ${{steps.set-current-date.outputs.year}}"
 
   tag-with-version:
     runs-on: ubuntu-latest
-    if: inputs.is-production-release == true
-    needs: calculate-version
+    if: inputs.is_production_release == true
+    needs: preparation
     outputs:
-      tag-name: ${{ steps.tag-commit.outputs.tagName }}
+      tag_name: ${{ steps.tag-commit.outputs.tagName }}
     steps:
     - name: Checkout
       uses: actions/checkout@v3
@@ -66,7 +63,7 @@ jobs:
         result-encoding: string
         script: |
             const { owner, repo } = context.repo;
-            const tagName = "v${{ inputs.release-version }}";
+            const tagName = "v${{ inputs.release_version }}";
             const ref = `refs/tags/${tagName}`;
             try {
                 console.log(`Create tag '${tagName}' on commit '${context.sha}'`);
@@ -91,14 +88,12 @@ jobs:
   
   build:
     runs-on: windows-latest
-    needs: calculate-version
+    needs: preparation
     strategy:
       matrix:
         configuration: [Debug, Release]
-    outputs:
-      assembly-version: ${{ inputs.release-version }}
     env:
-      project-name: ${{ inputs.project-name }}
+      project_name: ${{ inputs.project_name }}
 
     steps:
     - name: Checkout
@@ -108,29 +103,31 @@ jobs:
 
     - name: Set assembly version
       id: set-assembly-version
-      uses: Yvand/assemblyinfo-update@main
+      uses: Yvand/assemblyinfo-update@v3
       with:
-        version: "${{ inputs.release-version  }}"
-        directory: "${{ env.project-name }}/Properties"
+        version: "${{ inputs.release_version  }}"
+        directory: "${{ env.project_name }}/Properties"
         filename: 'AssemblyInfo.cs'
         recursive: false
-        copyright: "Copyright © Yvan Duhamel ${{ needs.calculate-version.outputs.year }}"
+        copyright: "Copyright © Yvan Duhamel ${{ needs.preparation.outputs.year }}"
 
     - name: Print the assembly version generated
       shell: pwsh
       env: 
-        inputs_release_version: ${{ inputs.release-version }}
-        assembly_version: ${{ steps.set-assembly-version.outputs.version }}
+        input_release_version: ${{ inputs.release_version }}
+        assembly_version: ${{ steps.set-assembly-version.outputs.assembly_version }}
+        assembly_file_version: ${{ steps.set-assembly-version.outputs.assembly_file_version }}
       run: |
-        Write-Host "Input release version: `"$($env:inputs_release_version)`""
+        Write-Host "Input release version: `"$($env:input_release_version)`""
         Write-Host ".NET assembly version: `"$($env:assembly_version)`""
+        Write-Host ".NET assembly version: `"$($env:assembly_file_version)`""
       
     # Add MSBuild to the PATH: https://github.com/microsoft/setup-msbuild
     - name: Setup MSBuild.exe
-      uses: microsoft/setup-msbuild@v1.3.1
+      uses: microsoft/setup-msbuild@v2
     
     - name: Restore Packages
-      run: nuget restore "${{ env.project-name }}.sln"
+      run: nuget restore "${{ env.project_name }}.sln"
 
     # Decode the base 64 encoded signing key
     # Key encoded using PowerShell Core:
@@ -138,13 +135,13 @@ jobs:
     # [System.Convert]::ToBase64String($cert) | Out-File "C:\...\key_b64Encoded.txt"
     - name: Decode the signing key
       run: |
-        $data = [System.Convert]::FromBase64String("${{ secrets.base64-encoded-signingkey }}")
-        $certificatePath = Join-Path -Path ${{ env.project-name }} -ChildPath "${{ env.project-name }}.snk"
+        $data = [System.Convert]::FromBase64String("${{ secrets.base64_encoded_signingkey }}")
+        $certificatePath = Join-Path -Path ${{ env.project_name }} -ChildPath "${{ env.project_name }}.snk"
         [IO.File]::WriteAllBytes($certificatePath, $data)
 
     # Build the application
     - name: Build the application and create the solution package
-      run: msbuild "${{ env.project-name }}.sln" /p:Configuration=$env:Configuration /p:IsPackaging=true /p:platform="x64" /p:ContinuousIntegrationBuild=true
+      run: msbuild "${{ env.project_name }}.sln" /p:Configuration=$env:Configuration /p:IsPackaging=true /p:platform="x64" /p:ContinuousIntegrationBuild=true
       env:
         Configuration: ${{ matrix.configuration }}
     
@@ -153,25 +150,25 @@ jobs:
       shell: pwsh
       run: |
         # Expected format of the version is either "1.0.0.0" or "1.0.0.0-nightly"
-        $version = "${{ inputs.release-version }}"
+        $version = "${{ inputs.release_version }}"
         if ($version.Contains('-')) {
             $suffix = $version.Split('-')[1]
             $version = $version.Split('-')[0]
             "Final version: " + $version
-            nuget pack "${{ env.project-name }}/${{ env.project-name }}.csproj" -OutputDirectory "${{ env.project-name }}/bin/${{ matrix.configuration }}" -Properties "Configuration=${{ matrix.configuration }};commit=${{ github.sha }};fileversion=$version" -Symbols -SymbolPackageFormat snupkg -Suffix $suffix
+            nuget pack "${{ env.project_name }}/${{ env.project_name }}.csproj" -OutputDirectory "${{ env.project_name }}/bin/${{ matrix.configuration }}" -Properties "Configuration=${{ matrix.configuration }};commit=${{ github.sha }};fileversion=$version" -Symbols -SymbolPackageFormat snupkg -Suffix $suffix
         } else {
             "Final version: " + $version
-            nuget pack "${{ env.project-name }}/${{ env.project-name }}.csproj" -OutputDirectory "${{ env.project-name }}/bin/${{ matrix.configuration }}" -Properties "Configuration=${{ matrix.configuration }};commit=${{ github.sha }};fileversion=$version" -Symbols -SymbolPackageFormat snupkg
+            nuget pack "${{ env.project_name }}/${{ env.project_name }}.csproj" -OutputDirectory "${{ env.project_name }}/bin/${{ matrix.configuration }}" -Properties "Configuration=${{ matrix.configuration }};commit=${{ github.sha }};fileversion=$version" -Symbols -SymbolPackageFormat snupkg
         }
 
     - name: Remove the signing key
-      run: Remove-Item -path "${{ env.project-name }}/${{ env.project-name }}.snk"
+      run: Remove-Item -path "${{ env.project_name }}/${{ env.project_name }}.snk"
 
     - name: Upload artifact - wsp solution
       uses: actions/upload-artifact@v4
       with:
-        name: "${{ env.project-name }}-${{ env.Configuration }}-wsp"
-        path: "${{ env.project-name }}/bin/${{ env.Configuration }}/*.wsp"
+        name: "${{ env.project_name }}-${{ env.Configuration }}-wsp"
+        path: "${{ env.project_name }}/bin/${{ env.Configuration }}/*.wsp"
         if-no-files-found: error
       env:
         Configuration: ${{ matrix.configuration }}
@@ -179,8 +176,8 @@ jobs:
     - name: Upload artifact - dependencies
       uses: actions/upload-artifact@v4
       with:
-        name: "${{ env.project-name }}-${{ env.Configuration }}-dependencies"
-        path: "${{ env.project-name }}/bin/${{ env.Configuration }}/*.dll"
+        name: "${{ env.project_name }}-${{ env.Configuration }}-dependencies"
+        path: "${{ env.project_name }}/bin/${{ env.Configuration }}/*.dll"
         if-no-files-found: error
       env:
         Configuration: ${{ matrix.configuration }}
@@ -188,11 +185,11 @@ jobs:
     - name: Upload artifact - symbols
       uses: actions/upload-artifact@v4
       with:
-        name: "${{ env.project-name }}-${{ env.Configuration }}-symbols"
+        name: "${{ env.project_name }}-${{ env.Configuration }}-symbols"
         path: |
-            ${{ env.project-name }}/bin/${{ env.Configuration }}/${{ env.project-name }}.dll
-            ${{ env.project-name }}/bin/${{ env.Configuration }}/${{ env.project-name }}.pdb
-            ${{ env.project-name }}/bin/${{ env.Configuration }}/*.wsp
+            ${{ env.project_name }}/bin/${{ env.Configuration }}/${{ env.project_name }}.dll
+            ${{ env.project_name }}/bin/${{ env.Configuration }}/${{ env.project_name }}.pdb
+            ${{ env.project_name }}/bin/${{ env.Configuration }}/*.wsp
         if-no-files-found: error
       env:
         Configuration: ${{ matrix.configuration }}
@@ -200,8 +197,8 @@ jobs:
     - name: Upload artifact - unit tests
       uses: actions/upload-artifact@v4
       with:
-        name: "${{ env.project-name }}-${{ env.Configuration }}-unit-tests"
-        path: "${{ env.project-name }}.Tests/bin/${{ env.Configuration }}/*.dll"
+        name: "${{ env.project_name }}-${{ env.Configuration }}-unit-tests"
+        path: "${{ env.project_name }}.Tests/bin/${{ env.Configuration }}/*.dll"
         if-no-files-found: error
       env:
         Configuration: ${{ matrix.configuration }}
@@ -220,6 +217,6 @@ jobs:
       with:
         name: "NuGet"
         path: |
-            ${{ env.project-name }}/bin/${{ matrix.configuration }}/*.nupkg
-            ${{ env.project-name }}/bin/${{ matrix.configuration }}/*.snupkg
+            ${{ env.project_name }}/bin/${{ matrix.configuration }}/*.nupkg
+            ${{ env.project_name }}/bin/${{ matrix.configuration }}/*.snupkg
         if-no-files-found: ignore
