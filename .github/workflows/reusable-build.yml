@@ -103,9 +103,9 @@ jobs:
 
     - name: Set assembly version
       id: set-assembly-version
-      uses: Yvand/assemblyinfo-update@v3
+      uses: Yvand/assemblyinfo-update@dev
       with:
-        version: "${{ inputs.release_version  }}"
+        assembly_file_version: "${{ inputs.release_version  }}"
         directory: "${{ env.project_name }}/Properties"
         filename: 'AssemblyInfo.cs'
         recursive: false
