@@ -40,6 +40,8 @@
 
             try
             {
+                string entracpAssemblyFileVersion = FileVersionInfo.GetVersionInfo(Assembly.GetAssembly(typeof(EntraCP)).Location).FileVersion;
+                LblTestsResult.Text += "<br/>" + Config.IconSuccess + String.Format("Found EntraCP v{0}", entracpAssemblyFileVersion);
                 TestConnectionToEntraId();
 
                 bool testAssemblyBindingsOk = TestAssemblyBindings(Config.TenantName, Config.TenantClientId, Config.TenantClientSecret, Config.Proxy);
@@ -336,5 +338,5 @@
     </p>
     <%--<asp:TextBox ID="TxtUrl" runat="server" CssClass="ms-inputformcontrols" Text="URL..."></asp:TextBox>
     <br />
-	<asp:Button ID="BtnAction" runat="server" Text="Boom" OnClick="BtnAction_Click" />--%>
+    <asp:Button ID="BtnAction" runat="server" Text="Boom" OnClick="BtnAction_Click" />--%>
 </asp:Content>
