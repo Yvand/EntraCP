@@ -41,7 +41,7 @@
             try
             {
                 string entracpAssemblyFileVersion = FileVersionInfo.GetVersionInfo(Assembly.GetAssembly(typeof(EntraCP)).Location).FileVersion;
-                LblTestsResult.Text += "<br/>" + Config.IconSuccess + String.Format("Found EntraCP v{0}", entracpAssemblyFileVersion);
+                LblTestsResult.Text += "<br/>" + Config.IconSuccess + String.Format("Found EntraCP v{0} on server \"{1}\"", entracpAssemblyFileVersion, Environment.MachineName);
                 TestConnectionToEntraId();
 
                 bool testAssemblyBindingsOk = TestAssemblyBindings(Config.TenantName, Config.TenantClientId, Config.TenantClientSecret, Config.Proxy);
@@ -320,7 +320,6 @@
     </p>
     <h2>Tests</h2>
     <p>
-        Current machine name: <%= Environment.MachineName %><br />
         Tests results:
         <asp:Literal ID="LblTestsResult" runat="server" Text="" />
     </p>
