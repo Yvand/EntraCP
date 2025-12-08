@@ -240,6 +240,7 @@ jobs:
           name: '${{ env.project_name }} ${{ env.project_version }}'
           prerelease: true
           draft: true
+          generate_release_notes: true
           body: |
             ${{ env.project_name }} ${{ env.project_version }}
           files: |
