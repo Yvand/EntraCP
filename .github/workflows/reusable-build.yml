@@ -26,16 +26,16 @@ jobs:
 
     - name: Extract version number from git tag
       id: tagVersion
-      if: startsWith(github.ref, 'refs/tags/v')
+      if: startsWith(github.event.ref, 'refs/tags/v')
       shell: bash
       env:
         TAG: ${{ github.ref_name }}
       run: echo "version=$(echo $TAG | grep --perl-regexp --only-matching '(?<=v).*')" >> $GITHUB_OUTPUT
 
-    # - name: Print outputs
-    #   run: |
-    #     echo "year: ${{steps.set-current-date.outputs.year}}"
-    #     echo "version: ${{steps.tagVersion.outputs.version}}"
+    - name: Print outputs
+      run: |
+        echo "year: ${{steps.set-current-date.outputs.year}}"
+        echo "version: ${{steps.tagVersion.outputs.version}}"
   
   build:
     runs-on: windows-latest
@@ -117,7 +117,7 @@ jobs:
       run: Remove-Item -path "${{ env.project_name }}/${{ env.project_name }}.snk"
 
     - name: Upload artifact - wsp solution
-      uses: actions/upload-artifact@v4
+      uses: actions/upload-artifact@v5
       with:
         name: "${{ env.project_name }}-${{ env.Configuration }}-wsp"
         path: "${{ env.project_name }}/bin/${{ env.Configuration }}/*.wsp"
@@ -126,7 +126,7 @@ jobs:
         Configuration: ${{ matrix.configuration }}
         
     - name: Upload artifact - dependencies
-      uses: actions/upload-artifact@v4
+      uses: actions/upload-artifact@v5
       with:
         name: "${{ env.project_name }}-${{ env.Configuration }}-dependencies"
         path: "${{ env.project_name }}/bin/${{ env.Configuration }}/*.dll"
@@ -135,7 +135,7 @@ jobs:
         Configuration: ${{ matrix.configuration }}
         
     - name: Upload artifact - symbols
-      uses: actions/upload-artifact@v4
+      uses: actions/upload-artifact@v5
       with:
         name: "${{ env.project_name }}-${{ env.Configuration }}-symbols"
         path: |
@@ -147,7 +147,7 @@ jobs:
         Configuration: ${{ matrix.configuration }}
         
     - name: Upload artifact - unit tests
-      uses: actions/upload-artifact@v4
+      uses: actions/upload-artifact@v5
       with:
         name: "${{ env.project_name }}-${{ env.Configuration }}-unit-tests"
         path: "${{ env.project_name }}.Tests/bin/${{ env.Configuration }}/*.dll"
@@ -156,7 +156,7 @@ jobs:
         Configuration: ${{ matrix.configuration }}
         
     - name: Upload artifact - assembly-bindings.config if it exists
-      uses: actions/upload-artifact@v4
+      uses: actions/upload-artifact@v5
       if: matrix.configuration == 'release' # string tests are not case sensitive - https://docs.github.com/en/actions/learn-github-actions/expressions
       with:
         name: "assembly-bindings.config"
@@ -164,7 +164,7 @@ jobs:
         if-no-files-found: ignore
     
     - name: Upload artifact - NuGet package if it exists
-      uses: actions/upload-artifact@v4
+      uses: actions/upload-artifact@v5
       if: matrix.configuration == 'release' # string tests are not case sensitive - https://docs.github.com/en/actions/learn-github-actions/expressions
       with:
         name: "NuGet"
@@ -176,15 +176,15 @@ jobs:
   publish-release:
     needs: build
     runs-on: ubuntu-latest
-    if: startsWith(github.ref, 'refs/tags/v')
+    if: startsWith(github.event.ref, 'refs/tags/v')
     env:
       project_name: ${{ inputs.project_name }}
       project_version: ${{ needs.build.outputs.project_version }}
     steps:
       - name: Download all artifacts
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@v5
         with:
-          path: ./
+          merge-multiple: true
           
       - name: Create zip files to publish
         run: |
@@ -233,7 +233,6 @@ jobs:
           name: '${{ env.project_name }} ${{ env.project_version }}'
           prerelease: true
           draft: true
-          # tag_name: ${{ env.project_version }}
           body: |
             ${{ env.project_name }} ${{ env.project_version }}
           files: |
