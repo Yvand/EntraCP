@@ -181,7 +181,7 @@ jobs:
   deploy:
     needs: build
     runs-on: ubuntu-latest
-    if: ${{ inputs.publish_release }} == true || startsWith(github.event.ref, 'refs/tags/v')
+    if: ${{ (inputs.publish_release == true) || (startsWith(github.event.ref, 'refs/tags/v')) }}
     permissions:
       contents: write
     env:
@@ -192,10 +192,6 @@ jobs:
         uses: actions/download-artifact@v5
         with:
           merge-multiple: false
-
-      - run: |
-          echo "inputs.publish_release: ${{ inputs.publish_release }}"
-          echo "github.event.ref: ${{ github.event.ref }}"
           
       - name: Create zip files to publish
         run: |
