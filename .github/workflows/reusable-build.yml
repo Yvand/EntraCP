@@ -192,10 +192,14 @@ jobs:
         uses: actions/download-artifact@v5
         with:
           merge-multiple: false
+
+      - run: |
+          echo "inputs.publish_release: ${{ inputs.publish_release }}"
+          echo "github.event.ref: ${{ github.event.ref }}"
           
       - name: Create zip files to publish
         run: |
-          echo "assembly-version: ${{ env.project_version }}"
+          echo "project_version: ${{ env.project_version }}"
           mkdir ${{ env.project_name }}-symbols
           mkdir ${{ env.project_name }}-symbols/debug
           mkdir ${{ env.project_name }}-symbols/release
@@ -231,8 +235,8 @@ jobs:
             mv assembly-bindings.config dir-assembly-bindings-config
             mv dir-assembly-bindings-config/assembly-bindings.config .
           fi
-          ls -al
-          realpath assembly-bindings.config
+          # ls -alh
+          # realpath assembly-bindings.config
 
       - name: Publish release
         uses: softprops/action-gh-release@v2
