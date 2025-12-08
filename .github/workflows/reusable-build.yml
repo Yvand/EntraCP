@@ -208,7 +208,7 @@ jobs:
           echo "Generate dependencies zip file"
           mkdir ${{ env.project_name }}-dependencies
           mv ./${{ env.project_name }}-Release-dependencies/* ${{ env.project_name }}-dependencies
-          mv ${{ env.project_name }}-dependencies
+          cd ${{ env.project_name }}-dependencies
           zip -r ../${{ env.project_name }}-${{ env.project_version }}-dependencies.zip ./*
           cd ..
           echo "Generate unit-tests zip file"
