@@ -193,6 +193,8 @@ jobs:
           
       - name: Create zip files to publish
         run: |
+          pwd
+          ls -alh
           echo "assembly-version: ${{ env.project_version }}"
           mkdir ${{ env.project_name }}-symbols
           mkdir ${{ env.project_name }}-symbols/debug
