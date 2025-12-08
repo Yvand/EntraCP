@@ -5,9 +5,6 @@ on:
       project-name:
         required: true
         type: string
-      version-major-minor:
-        required: true
-        type: string
       is-production-release:
         description: "true to publish a production release, false to publish a nightly release"
         default: false
@@ -19,10 +16,9 @@ on:
         required: false
 jobs:
   call-build:
-    uses: Yvand/EntraCP/.github/workflows/reusable-build.yml@master
+    uses: Yvand/EntraCP/.github/workflows/reusable-build.yml@dev
     with:
       project-name: ${{ inputs.project-name }}
-      version-major-minor: ${{ inputs.version-major-minor }}
       is-production-release: ${{ inputs.is-production-release }}
     secrets:
       base64-encoded-signingkey: ${{ secrets.base64-encoded-signingkey }}
