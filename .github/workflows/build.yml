@@ -17,6 +17,5 @@ jobs:
     uses: Yvand/EntraCP/.github/workflows/reusable-build.yml@dev
     with:
       project_name: ${{ vars.PROJECT_NAME }}
-      is_production_release: false
     secrets:
       base64_encoded_signingkey: ${{ secrets.BASE64_ENCODED_SIGNINGKEY }}
