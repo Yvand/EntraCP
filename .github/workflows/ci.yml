@@ -19,8 +19,8 @@ on:
     branches: [ "dev", "master", "releases/**" ]
 
 jobs:
-  call-build:
-    uses: Yvand/EntraCP/.github/workflows/reusable-build.yml@dev
+  call-ci-workflow:
+    uses: Yvand/EntraCP/.github/workflows/reusable-ci.yml@dev
     with:
       project_name: ${{ vars.PROJECT_NAME }}
       publish_release: ${{ inputs.publish_release || false }}
