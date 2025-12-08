@@ -6,9 +6,6 @@ on:
       project_name:
         required: true
         type: string
-      is_production_release:
-        default: false
-        type: boolean
     secrets:
       base64_encoded_signingkey:
         required: true
@@ -175,3 +172,73 @@ jobs:
             ${{ env.project_name }}/bin/${{ matrix.configuration }}/*.nupkg
             ${{ env.project_name }}/bin/${{ matrix.configuration }}/*.snupkg
         if-no-files-found: ignore
+
+  publish-release:
+    needs: build
+    runs-on: ubuntu-latest
+    if: startsWith(github.ref, 'refs/tags/v')
+    env:
+      project_name: ${{ inputs.project_name }}
+      project_version: ${{ needs.build.outputs.project_version }}
+    steps:
+      - name: Download all artifacts
+        uses: actions/download-artifact@v4
+        with:
+          path: ./
+          
+      - name: Create zip files to publish
+        run: |
+          echo "assembly-version: ${{ env.project_version }}"
+          mkdir ${{ env.project_name }}-symbols
+          mkdir ${{ env.project_name }}-symbols/debug
+          mkdir ${{ env.project_name }}-symbols/release
+          echo "Generate symbols zip file"
+          cp ./${{ env.project_name }}-Debug-symbols/* ${{ env.project_name }}-symbols/debug
+          cp ./${{ env.project_name }}-Release-symbols/* ${{ env.project_name }}-symbols/release
+          cd ${{ env.project_name }}-symbols
+          zip -r ../${{ env.project_name }}-${{ env.project_version }}-symbols.zip ./*
+          cd ..
+          echo "Generate dependencies zip file"
+          mkdir ${{ env.project_name }}-dependencies
+          cp ./${{ env.project_name }}-Release-dependencies/* ${{ env.project_name }}-dependencies
+          cd ${{ env.project_name }}-dependencies
+          zip -r ../${{ env.project_name }}-${{ env.project_version }}-dependencies.zip ./*
+          cd ..
+          echo "Generate unit-tests zip file"
+          mkdir ${{ env.project_name }}-unit-tests
+          mkdir ${{ env.project_name }}-unit-tests/debug
+          mkdir ${{ env.project_name }}-unit-tests/release
+          cp ./${{ env.project_name }}-Debug-unit-tests/* ${{ env.project_name }}-unit-tests/debug
+          cp ./${{ env.project_name }}-Release-unit-tests/* ${{ env.project_name }}-unit-tests/release
+          cd ${{ env.project_name }}-unit-tests
+          zip -r ../${{ env.project_name }}-unit-tests.zip ./*
+          cd ..
+          echo "Generate NuGet zip file if NuGet directory exists"
+          if [ -d "NuGet" ]; then
+            cd NuGet
+            zip -r ../NuGet.zip ./*
+            cd ..
+          fi
+          if [ -d "assembly-bindings.config" ]; then
+            echo "Move file assembly-bindings.config to the parent folder"
+            mv assembly-bindings.config dir-assembly-bindings-config
+            mv dir-assembly-bindings-config/assembly-bindings.config .
+          fi
+          ls -al
+          realpath assembly-bindings.config
+
+      - name: Publish release
+        uses: softprops/action-gh-release@v2
+        with:
+          name: '${{ env.project_name }} ${{ env.project_version }}'
+          prerelease: true
+          draft: true
+          # tag_name: ${{ env.project_version }}
+          body: |
+            ${{ env.project_name }} ${{ env.project_version }}
+          files: |
+            ./${{ env.project_name }}-Release-wsp/*.wsp
+            ./${{ env.project_name }}-${{ env.project_version }}-symbols.zip
+            ./${{ env.project_name }}-${{ env.project_version }}-dependencies.zip
+            ./assembly-bindings.config
+            ./NuGet.zip
