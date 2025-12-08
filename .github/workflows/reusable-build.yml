@@ -182,6 +182,8 @@ jobs:
     needs: build
     runs-on: ubuntu-latest
     if: ${{ inputs.publish_release }} == true || startsWith(github.event.ref, 'refs/tags/v')
+    permissions:
+      contents: write
     env:
       project_name: ${{ inputs.project_name }}
       project_version: ${{ needs.build.outputs.project_version }}
