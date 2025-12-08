@@ -195,30 +195,28 @@ jobs:
           
       - name: Create zip files to publish
         run: |
-          pwd
-          ls -alh
           echo "assembly-version: ${{ env.project_version }}"
           mkdir ${{ env.project_name }}-symbols
           mkdir ${{ env.project_name }}-symbols/debug
           mkdir ${{ env.project_name }}-symbols/release
           echo "Generate symbols zip file"
-          cp ./${{ env.project_name }}-Debug-symbols/* ${{ env.project_name }}-symbols/debug
-          cp ./${{ env.project_name }}-Release-symbols/* ${{ env.project_name }}-symbols/release
+          mv ./${{ env.project_name }}-Debug-symbols/* ${{ env.project_name }}-symbols/debug
+          mv ./${{ env.project_name }}-Release-symbols/* ${{ env.project_name }}-symbols/release
           cd ${{ env.project_name }}-symbols
           zip -r ../${{ env.project_name }}-${{ env.project_version }}-symbols.zip ./*
           cd ..
           echo "Generate dependencies zip file"
           mkdir ${{ env.project_name }}-dependencies
-          cp ./${{ env.project_name }}-Release-dependencies/* ${{ env.project_name }}-dependencies
-          cd ${{ env.project_name }}-dependencies
+          mv ./${{ env.project_name }}-Release-dependencies/* ${{ env.project_name }}-dependencies
+          mv ${{ env.project_name }}-dependencies
           zip -r ../${{ env.project_name }}-${{ env.project_version }}-dependencies.zip ./*
           cd ..
           echo "Generate unit-tests zip file"
           mkdir ${{ env.project_name }}-unit-tests
           mkdir ${{ env.project_name }}-unit-tests/debug
           mkdir ${{ env.project_name }}-unit-tests/release
-          cp ./${{ env.project_name }}-Debug-unit-tests/* ${{ env.project_name }}-unit-tests/debug
-          cp ./${{ env.project_name }}-Release-unit-tests/* ${{ env.project_name }}-unit-tests/release
+          mv ./${{ env.project_name }}-Debug-unit-tests/* ${{ env.project_name }}-unit-tests/debug
+          mv ./${{ env.project_name }}-Release-unit-tests/* ${{ env.project_name }}-unit-tests/release
           cd ${{ env.project_name }}-unit-tests
           zip -r ../${{ env.project_name }}-unit-tests.zip ./*
           cd ..
@@ -248,5 +246,6 @@ jobs:
             ./${{ env.project_name }}-Release-wsp/*.wsp
             ./${{ env.project_name }}-${{ env.project_version }}-symbols.zip
             ./${{ env.project_name }}-${{ env.project_version }}-dependencies.zip
+            ./${{ env.project_name }}-unit-tests.zip
             ./assembly-bindings.config
             ./NuGet.zip
