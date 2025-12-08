@@ -6,9 +6,6 @@ on:
       project_name:
         required: true
         type: string
-      release_version :
-        required: true
-        type: string
       is_production_release:
         default: false
         type: boolean
@@ -16,75 +13,32 @@ on:
       base64_encoded_signingkey:
         required: true
     outputs:
-      tag_name:
-        description: "The name of the tag, if it was set"
-        value: ${{ jobs.tag-with-version.outputs.tag_name }}
+      project_version:
+        description: "The project version"
+        value: ${{ jobs.build.outputs.project_version }}
 jobs:
   preparation:
     runs-on: ubuntu-latest
     outputs:
       year: ${{ steps.set-current-date.outputs.year }}
+      tag_version: ${{ steps.tagVersion.outputs.version }}
     steps:
-    - name: set-current-date
+    - name: Set current date
       id: set-current-date
-      run: |
-        echo "year=$(date +'%Y')" >> $GITHUB_OUTPUT
-        # Deprecated logic - kept for reference
-        # echo "date=$(date +'%Y%m%d')" >> $GITHUB_OUTPUT
-        # isprod=${{ fromJSON(inputs.is_production_release) }}
-        # suffix=""
-        # if [ "$isprod" = "false" ]; then
-        #     suffix="-nightly"
-        # fi
-        # echo "assembly_version=${{ inputs.release_version  }}.$(date +'%Y%m%d').${{ github.run_number }}$suffix" >> $GITHUB_OUTPUT
-        
-    # - name: Show the version
+      run: echo "year=$(date +'%Y')" >> $GITHUB_OUTPUT
+
+    - name: Extract version number from git tag
+      id: tagVersion
+      if: startsWith(github.ref, 'refs/tags/v')
+      shell: bash
+      env:
+        TAG: ${{ github.ref_name }}
+      run: echo "version=$(echo $TAG | grep --perl-regexp --only-matching '(?<=v).*')" >> $GITHUB_OUTPUT
+
+    # - name: Print outputs
     #   run: |
-    #     # echo "assembly_version: ${{steps.set-current-date.outputs.assembly_version}}"
-    #     # echo "date: ${{steps.set-current-date.outputs.date}}"
     #     echo "year: ${{steps.set-current-date.outputs.year}}"
-
-  tag-with-version:
-    runs-on: ubuntu-latest
-    if: inputs.is_production_release == true
-    needs: preparation
-    outputs:
-      tag_name: ${{ steps.tag-commit.outputs.tagName }}
-    steps:
-    - name: Checkout
-      uses: actions/checkout@v3
-      with:
-        fetch-depth: 0
-
-    - name: Tag commit
-      id: tag-commit
-      uses: actions/github-script@v6
-      with:
-        result-encoding: string
-        script: |
-            const { owner, repo } = context.repo;
-            const tagName = "v${{ inputs.release_version }}";
-            const ref = `refs/tags/${tagName}`;
-            try {
-                console.log(`Create tag '${tagName}' on commit '${context.sha}'`);
-                github.rest.git.createRef({
-                  owner: owner,
-                  repo: repo,
-                  ref: ref,
-                  sha: context.sha
-                });
-            } catch (exception) {
-                console.log(`Could not set tag '${tagName}' to commit '${context.sha}' due to error: $(exception)`);
-                console.log(`Update tag '${tagName}' on commit '${context.sha}'`);
-                github.rest.git.updateRef({
-                  owner: owner,
-                  repo: repo,
-                  ref: ref,
-                  sha: context.sha
-                });
-            }
-            console.log(`tagName: '${tagName}'`);
-            core.setOutput("tagName", tagName);
+    #     echo "version: ${{steps.tagVersion.outputs.version}}"
   
   build:
     runs-on: windows-latest
@@ -94,7 +48,10 @@ jobs:
         configuration: [Debug, Release]
     env:
       project_name: ${{ inputs.project_name }}
-
+      tag_version: ${{ needs.preparation.outputs.tag_version || '' }}
+      year: ${{ needs.preparation.outputs.year }}
+    outputs:
+      project_version: ${{ steps.set-assembly-version.outputs.assembly_file_version }}
     steps:
     - name: Checkout
       uses: actions/checkout@v3
@@ -105,7 +62,7 @@ jobs:
       id: set-assembly-version
       uses: Yvand/assemblyinfo-update@dev
       with:
-        assembly_file_version: "${{ inputs.release_version  }}"
+        assembly_file_version: "${{ env.tag_version }}"
         directory: "${{ env.project_name }}/Properties"
         filename: 'AssemblyInfo.cs'
         recursive: false
@@ -114,13 +71,11 @@ jobs:
     - name: Print the assembly version generated
       shell: pwsh
       env: 
-        input_release_version: ${{ inputs.release_version }}
         assembly_version: ${{ steps.set-assembly-version.outputs.assembly_version }}
         assembly_file_version: ${{ steps.set-assembly-version.outputs.assembly_file_version }}
       run: |
-        Write-Host "Input release version: `"$($env:input_release_version)`""
         Write-Host ".NET assembly version: `"$($env:assembly_version)`""
-        Write-Host ".NET assembly version: `"$($env:assembly_file_version)`""
+        Write-Host ".NET assembly file version: `"$($env:assembly_file_version)`""
       
     # Add MSBuild to the PATH: https://github.com/microsoft/setup-msbuild
     - name: Setup MSBuild.exe
@@ -150,7 +105,7 @@ jobs:
       shell: pwsh
       run: |
         # Expected format of the version is either "1.0.0.0" or "1.0.0.0-nightly"
-        $version = "${{ inputs.release_version }}"
+        $version = "${{ steps.set-assembly-version.outputs.assembly_file_version }}"
         if ($version.Contains('-')) {
             $suffix = $version.Split('-')[1]
             $version = $version.Split('-')[0]
