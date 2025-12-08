@@ -6,6 +6,11 @@ on:
       project_name:
         required: true
         type: string
+      publish_release:
+        description: 'Create a release'
+        type: boolean
+        required: false
+        default: false
     secrets:
       base64_encoded_signingkey:
         required: true
@@ -57,7 +62,7 @@ jobs:
 
     - name: Set assembly version
       id: set-assembly-version
-      uses: Yvand/assemblyinfo-update@dev
+      uses: Yvand/assemblyinfo-update@v4
       with:
         assembly_file_version: "${{ env.tag_version }}"
         directory: "${{ env.project_name }}/Properties"
@@ -173,10 +178,10 @@ jobs:
             ${{ env.project_name }}/bin/${{ matrix.configuration }}/*.snupkg
         if-no-files-found: ignore
 
-  publish-release:
+  deploy:
     needs: build
     runs-on: ubuntu-latest
-    if: startsWith(github.event.ref, 'refs/tags/v')
+    if: ${{ inputs.publish_release }} == true || startsWith(github.event.ref, 'refs/tags/v')
     env:
       project_name: ${{ inputs.project_name }}
       project_version: ${{ needs.build.outputs.project_version }}
