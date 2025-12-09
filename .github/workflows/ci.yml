@@ -1,4 +1,4 @@
-name: Build solution
+name: CI
 permissions:
   contents: write
 on:

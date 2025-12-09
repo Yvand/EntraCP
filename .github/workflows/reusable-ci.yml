@@ -1,4 +1,4 @@
-name: (reusable) Build
+name: (reusable) CI
 
 on:
   workflow_call:
