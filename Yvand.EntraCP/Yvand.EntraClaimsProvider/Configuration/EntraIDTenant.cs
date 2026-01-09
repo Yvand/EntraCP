@@ -198,13 +198,14 @@ namespace Yvand.EntraClaimsProvider.Configuration
                 requestsTimeout = ClaimsProviderConstants.DEFAULT_TIMEOUT;
             }
 
-
+            string proxyInfo = "with direct connection (no proxy)";
             WebProxy webProxy = null;
             HttpClientTransport clientTransportProxy = null;
             if (!String.IsNullOrWhiteSpace(proxyAddress))
             {
                 webProxy = new WebProxy(new Uri(proxyAddress));
                 clientTransportProxy = new HttpClientTransport(new HttpClientHandler { Proxy = webProxy });
+                proxyInfo = $"connection through proxy \"{proxyAddress}\"";
             }
 
             var handlers = GraphClientFactory.CreateDefaultHandlers(new GraphClientOptions { GraphProductPrefix = "EntraCP" });
@@ -250,7 +251,7 @@ namespace Yvand.EntraClaimsProvider.Configuration
             HttpClient httpClient = GraphClientFactory.Create(handlers: handlers, proxy: webProxy, nationalCloud: cloudInstanceSettings.NameInGraphCore);
             httpClient.Timeout = TimeSpan.FromMilliseconds(requestsTimeout);
             this.GraphService = new GraphServiceClient(httpClient, tokenCredential, new[] { cloudInstanceSettings.GraphScope });
-            Logger.Log($"[{EntraCP.ClaimsProviderName}] Initialized authentication for tenant \"{this.Name}\" on cloud instance \"{cloudInstanceSettings.Name}\" (authority \"{cloudInstanceSettings.Authority}\" and scope \"{cloudInstanceSettings.GraphScope}\").", TraceSeverity.High, TraceCategory.Configuration);
+            Logger.Log($"[{EntraCP.ClaimsProviderName}] Initialized authentication for tenant \"{this.Name}\" on cloud instance \"{cloudInstanceSettings.Name}\" (authority \"{cloudInstanceSettings.Authority}\" and scope \"{cloudInstanceSettings.GraphScope}\"), {proxyInfo}.", TraceSeverity.High, TraceCategory.Configuration);
         }
 
         public async Task<bool> TestConnectionAsync(string proxyAddress)
