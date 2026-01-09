@@ -1,4 +1,4 @@
-name: (reusable) Build
+name: (reusable) CI
 
 on:
   workflow_call:
@@ -6,85 +6,41 @@ on:
       project_name:
         required: true
         type: string
-      release_version :
-        required: true
-        type: string
-      is_production_release:
-        default: false
+      publish_release:
+        description: 'Create a release'
         type: boolean
+        required: false
+        default: false
     secrets:
       base64_encoded_signingkey:
         required: true
     outputs:
-      tag_name:
-        description: "The name of the tag, if it was set"
-        value: ${{ jobs.tag-with-version.outputs.tag_name }}
+      project_version:
+        description: "The project version"
+        value: ${{ jobs.build.outputs.project_version }}
 jobs:
   preparation:
     runs-on: ubuntu-latest
     outputs:
       year: ${{ steps.set-current-date.outputs.year }}
+      tag_version: ${{ steps.tagVersion.outputs.version }}
     steps:
-    - name: set-current-date
+    - name: Set current date
       id: set-current-date
+      run: echo "year=$(date +'%Y')" >> $GITHUB_OUTPUT
+
+    - name: Extract version number from git tag
+      id: tagVersion
+      if: startsWith(github.event.ref, 'refs/tags/v')
+      shell: bash
+      env:
+        TAG: ${{ github.ref_name }}
+      run: echo "version=$(echo $TAG | grep --perl-regexp --only-matching '(?<=v).*')" >> $GITHUB_OUTPUT
+
+    - name: Print outputs
       run: |
-        echo "year=$(date +'%Y')" >> $GITHUB_OUTPUT
-        # Deprecated logic - kept for reference
-        # echo "date=$(date +'%Y%m%d')" >> $GITHUB_OUTPUT
-        # isprod=${{ fromJSON(inputs.is_production_release) }}
-        # suffix=""
-        # if [ "$isprod" = "false" ]; then
-        #     suffix="-nightly"
-        # fi
-        # echo "assembly_version=${{ inputs.release_version  }}.$(date +'%Y%m%d').${{ github.run_number }}$suffix" >> $GITHUB_OUTPUT
-        
-    # - name: Show the version
-    #   run: |
-    #     # echo "assembly_version: ${{steps.set-current-date.outputs.assembly_version}}"
-    #     # echo "date: ${{steps.set-current-date.outputs.date}}"
-    #     echo "year: ${{steps.set-current-date.outputs.year}}"
-
-  tag-with-version:
-    runs-on: ubuntu-latest
-    if: inputs.is_production_release == true
-    needs: preparation
-    outputs:
-      tag_name: ${{ steps.tag-commit.outputs.tagName }}
-    steps:
-    - name: Checkout
-      uses: actions/checkout@v3
-      with:
-        fetch-depth: 0
-
-    - name: Tag commit
-      id: tag-commit
-      uses: actions/github-script@v6
-      with:
-        result-encoding: string
-        script: |
-            const { owner, repo } = context.repo;
-            const tagName = "v${{ inputs.release_version }}";
-            const ref = `refs/tags/${tagName}`;
-            try {
-                console.log(`Create tag '${tagName}' on commit '${context.sha}'`);
-                github.rest.git.createRef({
-                  owner: owner,
-                  repo: repo,
-                  ref: ref,
-                  sha: context.sha
-                });
-            } catch (exception) {
-                console.log(`Could not set tag '${tagName}' to commit '${context.sha}' due to error: $(exception)`);
-                console.log(`Update tag '${tagName}' on commit '${context.sha}'`);
-                github.rest.git.updateRef({
-                  owner: owner,
-                  repo: repo,
-                  ref: ref,
-                  sha: context.sha
-                });
-            }
-            console.log(`tagName: '${tagName}'`);
-            core.setOutput("tagName", tagName);
+        echo "year: ${{steps.set-current-date.outputs.year}}"
+        echo "version: ${{steps.tagVersion.outputs.version}}"
   
   build:
     runs-on: windows-latest
@@ -94,7 +50,10 @@ jobs:
         configuration: [Debug, Release]
     env:
       project_name: ${{ inputs.project_name }}
-
+      tag_version: ${{ needs.preparation.outputs.tag_version || '' }}
+      year: ${{ needs.preparation.outputs.year }}
+    outputs:
+      project_version: ${{ steps.set-assembly-version.outputs.assembly_file_version }}
     steps:
     - name: Checkout
       uses: actions/checkout@v3
@@ -103,9 +62,9 @@ jobs:
 
     - name: Set assembly version
       id: set-assembly-version
-      uses: Yvand/assemblyinfo-update@dev
+      uses: Yvand/assemblyinfo-update@v4
       with:
-        assembly_file_version: "${{ inputs.release_version  }}"
+        assembly_file_version: "${{ env.tag_version }}"
         directory: "${{ env.project_name }}/Properties"
         filename: 'AssemblyInfo.cs'
         recursive: false
@@ -114,13 +73,11 @@ jobs:
     - name: Print the assembly version generated
       shell: pwsh
       env: 
-        input_release_version: ${{ inputs.release_version }}
         assembly_version: ${{ steps.set-assembly-version.outputs.assembly_version }}
         assembly_file_version: ${{ steps.set-assembly-version.outputs.assembly_file_version }}
       run: |
-        Write-Host "Input release version: `"$($env:input_release_version)`""
         Write-Host ".NET assembly version: `"$($env:assembly_version)`""
-        Write-Host ".NET assembly version: `"$($env:assembly_file_version)`""
+        Write-Host ".NET assembly file version: `"$($env:assembly_file_version)`""
       
     # Add MSBuild to the PATH: https://github.com/microsoft/setup-msbuild
     - name: Setup MSBuild.exe
@@ -150,7 +107,7 @@ jobs:
       shell: pwsh
       run: |
         # Expected format of the version is either "1.0.0.0" or "1.0.0.0-nightly"
-        $version = "${{ inputs.release_version }}"
+        $version = "${{ steps.set-assembly-version.outputs.assembly_file_version }}"
         if ($version.Contains('-')) {
             $suffix = $version.Split('-')[1]
             $version = $version.Split('-')[0]
@@ -165,7 +122,7 @@ jobs:
       run: Remove-Item -path "${{ env.project_name }}/${{ env.project_name }}.snk"
 
     - name: Upload artifact - wsp solution
-      uses: actions/upload-artifact@v4
+      uses: actions/upload-artifact@v5
       with:
         name: "${{ env.project_name }}-${{ env.Configuration }}-wsp"
         path: "${{ env.project_name }}/bin/${{ env.Configuration }}/*.wsp"
@@ -174,7 +131,7 @@ jobs:
         Configuration: ${{ matrix.configuration }}
         
     - name: Upload artifact - dependencies
-      uses: actions/upload-artifact@v4
+      uses: actions/upload-artifact@v5
       with:
         name: "${{ env.project_name }}-${{ env.Configuration }}-dependencies"
         path: "${{ env.project_name }}/bin/${{ env.Configuration }}/*.dll"
@@ -183,7 +140,7 @@ jobs:
         Configuration: ${{ matrix.configuration }}
         
     - name: Upload artifact - symbols
-      uses: actions/upload-artifact@v4
+      uses: actions/upload-artifact@v5
       with:
         name: "${{ env.project_name }}-${{ env.Configuration }}-symbols"
         path: |
@@ -195,7 +152,7 @@ jobs:
         Configuration: ${{ matrix.configuration }}
         
     - name: Upload artifact - unit tests
-      uses: actions/upload-artifact@v4
+      uses: actions/upload-artifact@v5
       with:
         name: "${{ env.project_name }}-${{ env.Configuration }}-unit-tests"
         path: "${{ env.project_name }}.Tests/bin/${{ env.Configuration }}/*.dll"
@@ -204,7 +161,7 @@ jobs:
         Configuration: ${{ matrix.configuration }}
         
     - name: Upload artifact - assembly-bindings.config if it exists
-      uses: actions/upload-artifact@v4
+      uses: actions/upload-artifact@v5
       if: matrix.configuration == 'release' # string tests are not case sensitive - https://docs.github.com/en/actions/learn-github-actions/expressions
       with:
         name: "assembly-bindings.config"
@@ -212,7 +169,7 @@ jobs:
         if-no-files-found: ignore
     
     - name: Upload artifact - NuGet package if it exists
-      uses: actions/upload-artifact@v4
+      uses: actions/upload-artifact@v5
       if: matrix.configuration == 'release' # string tests are not case sensitive - https://docs.github.com/en/actions/learn-github-actions/expressions
       with:
         name: "NuGet"
@@ -220,3 +177,76 @@ jobs:
             ${{ env.project_name }}/bin/${{ matrix.configuration }}/*.nupkg
             ${{ env.project_name }}/bin/${{ matrix.configuration }}/*.snupkg
         if-no-files-found: ignore
+
+  deploy:
+    needs: build
+    runs-on: ubuntu-latest
+    if: ${{ (inputs.publish_release == true) || (startsWith(github.event.ref, 'refs/tags/v')) }}
+    permissions:
+      contents: write
+    env:
+      project_name: ${{ inputs.project_name }}
+      project_version: ${{ needs.build.outputs.project_version }}
+    steps:
+      - name: Download all artifacts
+        uses: actions/download-artifact@v5
+        with:
+          merge-multiple: false
+          
+      - name: Create zip files to publish
+        run: |
+          echo "project_version: ${{ env.project_version }}"
+          mkdir ${{ env.project_name }}-symbols
+          mkdir ${{ env.project_name }}-symbols/debug
+          mkdir ${{ env.project_name }}-symbols/release
+          echo "Generate symbols zip file"
+          mv ./${{ env.project_name }}-Debug-symbols/* ${{ env.project_name }}-symbols/debug
+          mv ./${{ env.project_name }}-Release-symbols/* ${{ env.project_name }}-symbols/release
+          cd ${{ env.project_name }}-symbols
+          zip -r ../${{ env.project_name }}-${{ env.project_version }}-symbols.zip ./*
+          cd ..
+          echo "Generate dependencies zip file"
+          mkdir ${{ env.project_name }}-dependencies
+          mv ./${{ env.project_name }}-Release-dependencies/* ${{ env.project_name }}-dependencies
+          cd ${{ env.project_name }}-dependencies
+          zip -r ../${{ env.project_name }}-${{ env.project_version }}-dependencies.zip ./*
+          cd ..
+          echo "Generate unit-tests zip file"
+          mkdir ${{ env.project_name }}-unit-tests
+          mkdir ${{ env.project_name }}-unit-tests/debug
+          mkdir ${{ env.project_name }}-unit-tests/release
+          mv ./${{ env.project_name }}-Debug-unit-tests/* ${{ env.project_name }}-unit-tests/debug
+          mv ./${{ env.project_name }}-Release-unit-tests/* ${{ env.project_name }}-unit-tests/release
+          cd ${{ env.project_name }}-unit-tests
+          zip -r ../${{ env.project_name }}-unit-tests.zip ./*
+          cd ..
+          echo "Generate NuGet zip file if NuGet directory exists"
+          if [ -d "NuGet" ]; then
+            cd NuGet
+            zip -r ../NuGet.zip ./*
+            cd ..
+          fi
+          if [ -d "assembly-bindings.config" ]; then
+            echo "Move file assembly-bindings.config to the parent folder"
+            mv assembly-bindings.config dir-assembly-bindings-config
+            mv dir-assembly-bindings-config/assembly-bindings.config .
+          fi
+          # ls -alh
+          # realpath assembly-bindings.config
+
+      - name: Publish release
+        uses: softprops/action-gh-release@v2
+        with:
+          name: '${{ env.project_name }} ${{ env.project_version }}'
+          prerelease: true
+          draft: true
+          generate_release_notes: true
+          body: |
+            ${{ env.project_name }} ${{ env.project_version }}
+          files: |
+            ./${{ env.project_name }}-Release-wsp/*.wsp
+            ./${{ env.project_name }}-${{ env.project_version }}-symbols.zip
+            ./${{ env.project_name }}-${{ env.project_version }}-dependencies.zip
+            ./${{ env.project_name }}-unit-tests.zip
+            ./assembly-bindings.config
+            ./NuGet.zip

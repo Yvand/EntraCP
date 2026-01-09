@@ -210,7 +210,8 @@ namespace Yvand.EntraClaimsProvider
                 string currentPropertyString = ctConfig.EntityProperty.ToString();
                 if (currentPropertyString.StartsWith("extensionAttribute"))
                 {
-                    currentPropertyString = String.Format("{0}_{1}_{2}", "extension", "EXTENSIONATTRIBUTESAPPLICATIONID", currentPropertyString);
+                    // Use string concatenation instead of String.Format for better performance
+                    currentPropertyString = "extension_EXTENSIONATTRIBUTESAPPLICATIONID_" + currentPropertyString;
                 }
 
                 string filterForCurrentProp;
@@ -219,8 +220,7 @@ namespace Yvand.EntraClaimsProvider
                 if (ctConfig.EntityProperty == DirectoryObjectProperty.Id)
                 {
                     ctConfig.DirectoryPropertySupportsWildcard = false;
-                    Guid idGuid = new Guid();
-                    if (!Guid.TryParse(input, out idGuid))
+                    if (!Guid.TryParse(input, out _))
                     {
                         continue;
                     }
@@ -271,18 +271,19 @@ namespace Yvand.EntraClaimsProvider
             }
 
             // Also add metadata properties to $select of corresponding object type
-            if (userFilterBuilder.Count > 0)
+            // Avoid repeated LINQ enumeration by iterating once and checking entity type
+            if (userFilterBuilder.Count > 0 || groupFilterBuilder.Count > 0)
             {
-                foreach (ClaimTypeConfig ctConfig in this.Settings.RuntimeMetadataConfig.Where(x => x.EntityType == DirectoryObjectType.User))
+                foreach (ClaimTypeConfig ctConfig in this.Settings.RuntimeMetadataConfig)
                 {
-                    userSelectBuilder.Add(ctConfig.EntityProperty.ToString());
-                }
-            }
-            if (groupFilterBuilder.Count > 0)
-            {
-                foreach (ClaimTypeConfig ctConfig in this.Settings.RuntimeMetadataConfig.Where(x => x.EntityType == DirectoryObjectType.Group))
-                {
-                    groupSelectBuilder.Add(ctConfig.EntityProperty.ToString());
+                    if (userFilterBuilder.Count > 0 && ctConfig.EntityType == DirectoryObjectType.User)
+                    {
+                        userSelectBuilder.Add(ctConfig.EntityProperty.ToString());
+                    }
+                    else if (groupFilterBuilder.Count > 0 && ctConfig.EntityType == DirectoryObjectType.Group)
+                    {
+                        groupSelectBuilder.Add(ctConfig.EntityProperty.ToString());
+                    }
                 }
             }
 
@@ -733,6 +734,10 @@ namespace Yvand.EntraClaimsProvider
             return null;
         }
 
+        // Cache for reflection property lookups to improve performance
+        private static readonly System.Collections.Concurrent.ConcurrentDictionary<string, PropertyInfo> PropertyInfoCache = 
+            new System.Collections.Concurrent.ConcurrentDictionary<string, PropertyInfo>();
+
         /// <summary>
         /// Uses reflection to return the value of a public property for the given object
         /// </summary>
@@ -791,7 +796,11 @@ namespace Yvand.EntraClaimsProvider
                 }
             }
 
-            PropertyInfo pi = directoryObject.GetType().GetProperty(propertyName);
+            // Use cached PropertyInfo to avoid repeated reflection calls
+            Type objectType = directoryObject.GetType();
+            string cacheKey = $"{objectType.FullName}.{propertyName}";
+            PropertyInfo pi = PropertyInfoCache.GetOrAdd(cacheKey, _ => objectType.GetProperty(propertyName));
+            
             if (pi == null)
             {
                 return null;
