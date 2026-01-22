@@ -15,6 +15,7 @@
 * Rename both methods UpdateTenantCredentials in class EntraIDProviderConfiguration, to SetTenantSecret and SetTenantCertificate, to prevent using the unexpected overload, due to the last, optional newClientId parameter - https://github.com/Yvand/EntraCP/pull/334
 * Improve performance and make some optimizations in the code - https://github.com/Yvand/EntraCP/pull/327
 * Add proxy information in the logging
+* Restrict the list of properties that can be set as user identifiers in the global config page
 
 ## EntraCP v29.0.20250721.38 - enhancements & bug-fixes - Published in July 21, 2025
 
