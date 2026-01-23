@@ -82,6 +82,7 @@ namespace Yvand.EntraClaimsProvider.Administration
         {
             // User identifier settings
             this.lblUserIdClaimType.Text = Settings.ClaimTypes.UserIdentifierConfig.ClaimType;
+            this.ChkFilterUserAccountsEnabledOnly.Checked = Settings.FilterUserAccountsEnabledOnly;
 
             // Group identifier settings
             var possibleGroupClaimTypes = SPTrust.ClaimTypeInformation
@@ -151,7 +152,6 @@ namespace Yvand.EntraClaimsProvider.Administration
                     PropertyInfo pi = typeof(User).GetProperty(prop.ToString());
                     if (pi != null && pi.PropertyType == typeof(String))
                     {
-                        string strProp = prop.ToString();
                         if (preferredUserIdentifiers.Contains(prop))
                         {
                             this.DdlUserIdDirectoryPropertyMembers.Items.Add(new ListItem(prop.ToString(), ((int)prop).ToString()));

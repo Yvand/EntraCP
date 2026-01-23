@@ -619,7 +619,7 @@ namespace Yvand.EntraClaimsProvider.Configuration
             }
 
             // Ensure the group identifier is valid
-            if (Utils.GetDirectoryObjectPropertyValue(new Group(), this.ClaimTypes.GroupIdentifierConfig.EntityProperty.ToString()) == null)
+            if (this.ClaimTypes.GroupIdentifierConfig != null && Utils.GetDirectoryObjectPropertyValue(new Group(), this.ClaimTypes.GroupIdentifierConfig.EntityProperty.ToString()) == null)
             {
                 throw new InvalidOperationException($"{configInvalidStartText} because the selected group identifier property \"{this.ClaimTypes.GroupIdentifierConfig.EntityProperty}\" does not exist for a Group.");
             }
