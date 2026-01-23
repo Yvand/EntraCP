@@ -16,7 +16,6 @@ using System.Security.Cryptography.X509Certificates;
 using System.Threading.Tasks;
 using System.Web.UI.HtmlControls;
 using System.Web.UI.WebControls;
-using System.Windows.Forms.VisualStyles;
 using Yvand.EntraClaimsProvider.Configuration;
 using Yvand.EntraClaimsProvider.Logging;
 using ListItem = System.Web.UI.WebControls.ListItem;
