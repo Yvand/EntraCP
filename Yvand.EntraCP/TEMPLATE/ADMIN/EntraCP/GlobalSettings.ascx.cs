@@ -174,15 +174,33 @@ namespace Yvand.EntraClaimsProvider.Administration
                 }
             }
 
-            this.DdlUserIdDirectoryPropertyMembers.Items.FindByValue(((int)IdentityCTConfig.EntityProperty).ToString()).Selected = true;
-            this.DdlUserIdDirectoryPropertyGuests.Items.FindByValue(((int)IdentityCTConfig.DirectoryObjectPropertyForGuestUsers).ToString()).Selected = true;
+            ListItem userIdMembersItem = this.DdlUserIdDirectoryPropertyMembers.Items.FindByValue(((int)IdentityCTConfig.EntityProperty).ToString());
+            if (userIdMembersItem != null)
+            {
+                userIdMembersItem.Selected = true;
+            }
+
+            ListItem userIdGuestsItem = this.DdlUserIdDirectoryPropertyGuests.Items.FindByValue(((int)IdentityCTConfig.DirectoryObjectPropertyForGuestUsers).ToString());
+            if (userIdGuestsItem != null)
+            {
+                userIdGuestsItem.Selected = true;
+            }
+
             if (IdentityCTConfig.EntityPropertyToUseAsDisplayText == DirectoryObjectProperty.NotSet)
             {
-                this.DdlUserGraphPropertyToDisplay.Items.FindByValue("NotSet").Selected = true;
+                ListItem notSetItem = this.DdlUserGraphPropertyToDisplay.Items.FindByValue("NotSet");
+                if (notSetItem != null)
+                {
+                    notSetItem.Selected = true;
+                }
             }
             else
             {
-                this.DdlUserGraphPropertyToDisplay.Items.FindByValue(((int)IdentityCTConfig.EntityPropertyToUseAsDisplayText).ToString()).Selected = true;
+                ListItem displayTextItem = this.DdlUserGraphPropertyToDisplay.Items.FindByValue(((int)IdentityCTConfig.EntityPropertyToUseAsDisplayText).ToString());
+                if (displayTextItem != null)
+                {
+                    displayTextItem.Selected = true;
+                }
             }
         }
 
