@@ -177,31 +177,8 @@ namespace Yvand.EntraClaimsProvider.Tests
         [Test]
         public void InvalidGroupIdentifier()
         {
-            // Set GroupIdentifierConfig to use UserPrincipalName, which exists for User but not Group
-            ClaimTypeConfig groupClaimTypeConfig = new ClaimTypeConfig
-            {
-                ClaimType = ClaimsProviderConstants.DefaultMainGroupClaimType,
-                EntityType = DirectoryObjectType.Group,
-                EntityProperty = DirectoryObjectProperty.UserPrincipalName, // Invalid for Group - this property exists for User but not for Group
-                EntityPropertyToUseAsDisplayText = DirectoryObjectProperty.DisplayName,
-            };
-            
-            // Create a new configuration with minimal user identity config and invalid group config
-            ClaimTypeConfigCollection newClaimTypes = new ClaimTypeConfigCollection(UnitTestsHelper.SPTrust);
-            
-            // Add a minimal user identity config (required for the configuration to be somewhat valid)
-            IdentityClaimTypeConfig userIdentityConfig = new IdentityClaimTypeConfig
-            {
-                EntityType = DirectoryObjectType.User,
-                EntityProperty = DirectoryObjectProperty.UserPrincipalName,
-                ClaimType = UnitTestsHelper.SPTrust.IdentityClaimTypeInformation.MappedClaimType
-            };
-            newClaimTypes.Add(userIdentityConfig);
-            
-            // Add the invalid group config
-            newClaimTypes.Add(groupClaimTypeConfig);
-            
-            Settings.ClaimTypes = newClaimTypes;
+            // Update GroupIdentifierConfig to use UserPrincipalName, which exists for User but not Group
+            Settings.ClaimTypes.UpdateGroupIdentifier(DirectoryObjectProperty.UserPrincipalName);
 
             // ValidateConfiguration should throw InvalidOperationException because the group identifier property is invalid
             Assert.Throws<InvalidOperationException>(() => UnitTestsHelper.PersistedConfiguration.ApplySettings(Settings, false), "ValidateConfiguration should throw when GroupIdentifierConfig.EntityProperty doesn't exist for Group");
