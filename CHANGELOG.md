@@ -16,6 +16,7 @@
 * Improve performance and make some optimizations in the code - https://github.com/Yvand/EntraCP/pull/327
 * Add proxy information in the logging
 * Restrict the list of properties that can be set as user identifiers in the global config page
+* Ensure the group identifier property is valid before committing the changes
 
 ## EntraCP v29.0.20250721.38 - enhancements & bug-fixes - Published in July 21, 2025
 
