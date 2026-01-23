@@ -204,7 +204,7 @@ namespace Yvand.EntraClaimsProvider.Tests
             Settings.ClaimTypes = newClaimTypes;
 
             // ValidateConfiguration should throw InvalidOperationException because the group identifier property is invalid
-            Assert.Throws<InvalidOperationException>(() => UnitTestsHelper.PersistedConfiguration.ApplySettings(Settings, false), $"ValidateConfiguration should throw InvalidOperationException when GroupIdentifierConfig.EntityProperty is set to a property that doesn't exist for Group");
+            Assert.Throws<InvalidOperationException>(() => UnitTestsHelper.PersistedConfiguration.ApplySettings(Settings, false), "ValidateConfiguration should throw when GroupIdentifierConfig.EntityProperty doesn't exist for Group");
         }
     }
 }
