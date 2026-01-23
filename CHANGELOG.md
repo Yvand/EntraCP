@@ -13,6 +13,7 @@
 * Add a test scenario, when the group identifier is not the property Id. This will cover the blind spot identified in https://github.com/Yvand/EntraCP/issues/328 - https://github.com/Yvand/EntraCP/pull/336
 * Fix EntraCP returning groups with an empty value during augmentation, when not using the Id as the group identifier, if the property set as the group identifier was empty - https://github.com/Yvand/EntraCP/pull/329
 * Rename both methods UpdateTenantCredentials in class EntraIDProviderConfiguration, to SetTenantSecret and SetTenantCertificate, to prevent using the unexpected overload, due to the last, optional newClientId parameter - https://github.com/Yvand/EntraCP/pull/334
+* Show the EntraCP version in the troubleshooting page (TroubleshootEntraCP.aspx)
 * Improve performance and make some optimizations in the code - https://github.com/Yvand/EntraCP/pull/327
 * Add proxy information in the logging
 * Restrict the list of properties that can be set as user identifiers in the global config page - https://github.com/Yvand/EntraCP/pull/342
