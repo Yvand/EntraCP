@@ -1,4 +1,5 @@
-﻿using Microsoft.SharePoint.Administration;
+﻿using Microsoft.Graph.Models;
+using Microsoft.SharePoint.Administration;
 using Microsoft.SharePoint.Administration.Claims;
 using Microsoft.SharePoint.WebControls;
 using System;
@@ -84,7 +85,7 @@ namespace Yvand.EntraClaimsProvider.Configuration
         /// Gets if only enabled user accounts should be returned
         /// </summary>
         bool FilterUserAccountsEnabledOnly { get; }
-        
+
         /// <summary>
         /// Gets the count of group members returned per page in a request. Its value must be between 1 and 999 inclusive. Default value is 100.
         /// </summary>
@@ -615,6 +616,12 @@ namespace Yvand.EntraClaimsProvider.Configuration
             if (!String.IsNullOrWhiteSpace(this.ProxyAddress) && !this.ProxyAddress.StartsWith("http://", StringComparison.OrdinalIgnoreCase))
             {
                 throw new InvalidOperationException($"{configInvalidStartText} because property {nameof(ProxyAddress)} must be either empty, or start with \"http://\".");
+            }
+
+            // Ensure the group identifier is valid
+            if (Utils.GetDirectoryObjectPropertyValue(new Group(), this.ClaimTypes.GroupIdentifierConfig.EntityProperty.ToString()) == null)
+            {
+                throw new InvalidOperationException($"{configInvalidStartText} because the selected group identifier property \"{this.ClaimTypes.GroupIdentifierConfig.EntityProperty}\" does not exist for a Group.");
             }
         }
 
