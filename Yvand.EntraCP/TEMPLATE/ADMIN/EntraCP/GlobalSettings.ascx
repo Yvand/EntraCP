@@ -143,9 +143,9 @@
             <wssawc:EncodedLiteral runat="server" Text="Microsoft Entra ID tenants currently registered in EntraCP configuration." EncodeMethod='HtmlEncodeAllowSimpleTextFormatting' />
             <br />
             <br />
-            <wssawc:EncodedLiteral runat="server" Text="You can update the client secret here." EncodeMethod='HtmlEncodeAllowSimpleTextFormatting' />
+            <wssawc:EncodedLiteral runat="server" Text="You can update the client secret by clicking on 'Edit'." EncodeMethod='HtmlEncodeAllowSimpleTextFormatting' />
             <br />
-            <wssawc:EncodedLiteral runat="server" Text="<a href='https://entracp.yvand.net/docs/how-to/set-the-credentials/' target='_blank'>Read this article</a> if you need to set a client certificate." EncodeMethod='NoEncode' />
+            <wssawc:EncodedLiteral runat="server" Text="<a href='https://entracp.yvand.net/docs/how-to/set-the-credentials/#update-the-credentials-of-a-tenant' target='_blank'>Follow this procedure</a> to set a client certificate instead." EncodeMethod='NoEncode' />
         </template_description>
         <template_inputformcontrols>
             <tr>
@@ -193,7 +193,7 @@
     </wssuc:InputFormSection>
     <wssuc:InputFormSection Title="Register a new Microsoft Entra ID tenant" runat="server">
         <template_description>
-            <wssawc:EncodedLiteral runat="server" Text="<p>EntraCP needs its own app registration to connect to your Microsoft Entra ID tenant, with permissions 'GroupMember.Read.All' and 'User.Read.All'.<br /><br />Read <a href='https://entracp.yvand.net/docs/how-to/register-your-application/' target='_blank'>this article</a> to find how to register the app in your tenant.<br /><br />EntraCP can authenticate using <a href='https://learn.microsoft.com/en-us/entra/identity-platform/v2-oauth2-client-creds-grant-flow#get-a-token' target='_blank'>either a secret or a certificate</a>.</p>" EncodeMethod='NoEncode' />
+            <wssawc:EncodedLiteral runat="server" Text="<p>EntraCP needs <a href='https://entracp.yvand.net/docs/how-to/register-your-application/' target='_blank'>its own app registration</a> to connect to your Microsoft Entra ID tenant, with the permissions 'GroupMember.Read.All' and 'User.Read.All'. It can authenticate using <a href='https://learn.microsoft.com/en-us/entra/identity-platform/v2-oauth2-client-creds-grant-flow#get-a-token' target='_blank'>either a secret or a certificate</a>.<br /><br />See <a href='https://entracp.yvand.net/docs/how-to/set-the-credentials/' target='_blank'>this documentation</a> on adding or updating a tenant in EntraCP." EncodeMethod='NoEncode' />
         </template_description>
         <template_inputformcontrols>
             <tr>
@@ -268,6 +268,8 @@
             <sharepoint:encodedliteral runat="server" text="- For guests:" encodemethod='HtmlEncodeAllowSimpleTextFormatting' />
             <br />
             <b><span><%= UserIdentifierEncodedValuePrefix %><span id="lblGuestPermissionValuePreview"></span></span></b>
+			<br />
+            <wssawc:EncodedLiteral runat="server" Text="<p>Do it <a href='https://entracp.yvand.net/docs/usage/configuration/#configure-the-user-identifier' target='_blank'>in PowerShell</a>.</p>" EncodeMethod='NoEncode' />
         </template_description>
         <template_inputformcontrols>
             <tr>
@@ -316,6 +318,8 @@
             <br />
             <br />
             <sharepoint:encodedliteral runat="server" text="- Augmentation: If enabled, EntraCP gets the group membership of the users when they sign-in, or whenever SharePoint asks for it. If not enabled, permissions granted to Microsoft Entra ID groups may not work." encodemethod='HtmlEncodeAllowSimpleTextFormatting' />
+			<br />
+            <wssawc:EncodedLiteral runat="server" Text="<p>Do it <a href='https://entracp.yvand.net/docs/usage/configuration/#configure-the-group-identifier' target='_blank'>in PowerShell</a>.</p>" EncodeMethod='NoEncode' />
         </template_description>
         <template_inputformcontrols>
             <tr>
