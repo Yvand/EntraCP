@@ -148,7 +148,7 @@ jobs:
           # sps_version: '2016'
           # dtl_poolName: 'AzureCP-Tests-2016'
     env:
-      vm_name: ${{ format('SP{0}', matrix.sharepoint_version) }} #${{ format('SP{0}', matrix.sps_version) }} #SPSE
+      vm_name: ${{ format('vm-SP{0}', matrix.sharepoint_version) }} #${{ format('vm-SP{0}', matrix.sps_version) }} #vm-SPSE
       dtl_poolName: ${{ format('{0}-Tests-{1}', inputs.project-name, matrix.sharepoint_version) }}
       project_name: ${{ inputs.project-name }}
     steps:
