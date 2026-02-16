@@ -819,7 +819,7 @@ namespace Yvand.EntraClaimsProvider
         public SemaphoreSlim WriteDataLock = new SemaphoreSlim(1, 1);
 
         /// <summary>
-        /// Gets or sets the list of users ID, matching users that may be returned to SharePoint. Set to null to not apply amy restriction
+        /// Gets or sets the set of unique user IDs matching users that may be returned to SharePoint. Set to null to not apply any restriction
         /// </summary>
         public HashSet<string> SearchableUsersId
         {
