@@ -199,9 +199,19 @@ namespace Yvand.EntraClaimsProvider.Tests
         public void TestSearchAndValidateForTestGroup(TestGroup entity)
         {
             string inputValue = entity.DisplayName;
-            string claimValue = this.Settings.ClaimTypes.GroupIdentifierConfig.EntityProperty == DirectoryObjectProperty.Id ?
-                entity.Id :
-                entity.DisplayName; // Assume it is always the DisplayName, if not the Id
+            string claimValue;
+            switch (this.Settings.ClaimTypes.GroupIdentifierConfig.EntityProperty)
+            {
+                case DirectoryObjectProperty.Id:
+                    claimValue = entity.Id;
+                    break;
+                case DirectoryObjectProperty.DisplayName:
+                    claimValue = entity.DisplayName;
+                    break;
+                default:
+                    throw new NotSupportedException(
+                        $"Unsupported group identifier property: {this.Settings.ClaimTypes.GroupIdentifierConfig.EntityProperty}");
+            }
             int expectedCount = 1;
             bool shouldValidate = true;
 
