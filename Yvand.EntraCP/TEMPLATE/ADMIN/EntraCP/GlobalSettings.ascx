@@ -145,7 +145,7 @@
             <br />
             <wssawc:EncodedLiteral runat="server" Text="You can update the client secret by clicking on 'Edit'." EncodeMethod='HtmlEncodeAllowSimpleTextFormatting' />
             <br />
-            <wssawc:EncodedLiteral runat="server" Text="<a href='https://entracp.yvand.net/docs/how-to/set-the-credentials/#update-the-credentials-of-a-tenant' target='_blank'>Follow this procedure</a> to set a client certificate instead." EncodeMethod='NoEncode' />
+            <wssawc:EncodedLiteral runat="server" Text="<a href='https://entracp.yvand.net/docs/how-to/set-the-credentials/#update-credentials-for-a-tenant' target='_blank'>Follow this procedure</a> to set a client certificate instead." EncodeMethod='NoEncode' />
         </template_description>
         <template_inputformcontrols>
             <tr>
