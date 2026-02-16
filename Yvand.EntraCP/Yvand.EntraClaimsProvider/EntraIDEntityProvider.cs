@@ -9,7 +9,6 @@ using Microsoft.Kiota.Abstractions;
 using Microsoft.Kiota.Http.HttpClientLibrary.Middleware.Options;
 using Microsoft.SharePoint.Administration;
 using Microsoft.SharePoint.Utilities;
-using Microsoft.Web.Hosting.Administration;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
