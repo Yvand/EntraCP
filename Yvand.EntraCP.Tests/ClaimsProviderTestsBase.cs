@@ -250,9 +250,20 @@ namespace Yvand.EntraClaimsProvider.Tests
             TestGroup randomGroup = TestEntitySourceManager.GetOneGroup(Settings.FilterSecurityEnabledGroupsOnly);
             bool userShouldBeMember = user.IsMemberOfAllGroups || randomGroup.EveryoneIsMember ? true : false;
             Trace.TraceInformation($"{DateTime.Now:s} [{this.GetType().Name}] TestAugmentationAgainst1RandomGroup for user \"{user.UserPrincipalName}\", IsMemberOfAllGroupsp: {user.IsMemberOfAllGroups} against group \"{randomGroup.DisplayName}\". userShouldBeMember: {userShouldBeMember}");
-            string groupClaimValueToTest = this.Settings.ClaimTypes.GroupIdentifierConfig.EntityProperty == DirectoryObjectProperty.Id ?
-                randomGroup.Id :
-                randomGroup.DisplayName; // Assume it is always the DisplayName, if not the Id
+            string groupClaimValueToTest;
+            switch (this.Settings.ClaimTypes.GroupIdentifierConfig.EntityProperty)
+            {
+                case DirectoryObjectProperty.Id:
+                    groupClaimValueToTest = randomGroup.Id;
+                    break;
+                case DirectoryObjectProperty.DisplayName:
+                    groupClaimValueToTest = randomGroup.DisplayName;
+                    break;
+                default:
+                    throw new InvalidOperationException(
+                        $"Unsupported group identifier property '{this.Settings.ClaimTypes.GroupIdentifierConfig.EntityProperty}' for augmentation tests. " +
+                        "The test data model does not provide a corresponding property on TestGroup.");
+            }
             TestAugmentationOperation(user.UserPrincipalName, userShouldBeMember, groupClaimValueToTest);
         }
 
