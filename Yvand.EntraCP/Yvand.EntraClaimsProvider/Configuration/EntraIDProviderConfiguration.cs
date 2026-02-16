@@ -613,9 +613,13 @@ namespace Yvand.EntraClaimsProvider.Configuration
                 }
             }
 
-            if (!String.IsNullOrWhiteSpace(this.ProxyAddress) && !this.ProxyAddress.StartsWith("http://", StringComparison.OrdinalIgnoreCase))
+            if (!String.IsNullOrWhiteSpace(this.ProxyAddress))
             {
-                throw new InvalidOperationException($"{configInvalidStartText} because property {nameof(ProxyAddress)} must be either empty, or start with \"http://\".");
+                if (!Uri.TryCreate(this.ProxyAddress, UriKind.Absolute, out Uri proxyUri) ||
+                    !String.Equals(proxyUri.Scheme, Uri.UriSchemeHttp, StringComparison.OrdinalIgnoreCase))
+                {
+                    throw new InvalidOperationException($"{configInvalidStartText} because property {nameof(ProxyAddress)} must be either empty, or a valid absolute \"http://\" URL.");
+                }
             }
 
             // Ensure the group identifier is valid
