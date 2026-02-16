@@ -173,5 +173,21 @@ namespace Yvand.EntraClaimsProvider.Tests
             configUpdated = Settings.ClaimTypes.UpdateIdentifierForGuestUsers(backupIdentityCTConfig.DirectoryObjectPropertyForGuestUsers);
             Assert.That(configUpdated, Is.False, $"Update user identifier of Guest UserType with the same DirectoryObjectProperty should not change anything and return false");
         }
+
+        [Test]
+        public void InvalidGroupIdentifier()
+        {
+            if (Settings.ClaimTypes.GroupIdentifierConfig != null)
+            {
+                DirectoryObjectProperty backupGroupIdentifier = Settings.ClaimTypes.GroupIdentifierConfig.EntityProperty;
+
+                // Update GroupIdentifierConfig to use UserPrincipalName, which exists for User but not Group
+                Settings.ClaimTypes.UpdateGroupIdentifier(DirectoryObjectProperty.UserPrincipalName);
+                // ValidateConfiguration should throw InvalidOperationException because the group identifier property is invalid
+                Assert.Throws<InvalidOperationException>(() => UnitTestsHelper.PersistedConfiguration.ApplySettings(Settings, true), "ValidateConfiguration should throw when GroupIdentifierConfig.EntityProperty doesn't exist for Group");
+                
+                Settings.ClaimTypes.UpdateGroupIdentifier(backupGroupIdentifier);
+            }
+        }
     }
 }

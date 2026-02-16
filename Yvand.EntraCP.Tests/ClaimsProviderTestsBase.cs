@@ -199,7 +199,19 @@ namespace Yvand.EntraClaimsProvider.Tests
         public void TestSearchAndValidateForTestGroup(TestGroup entity)
         {
             string inputValue = entity.DisplayName;
-            string claimValue = entity.Id;
+            string claimValue;
+            switch (this.Settings.ClaimTypes.GroupIdentifierConfig.EntityProperty)
+            {
+                case DirectoryObjectProperty.Id:
+                    claimValue = entity.Id;
+                    break;
+                case DirectoryObjectProperty.DisplayName:
+                    claimValue = entity.DisplayName;
+                    break;
+                default:
+                    throw new NotSupportedException(
+                        $"Unsupported group identifier property: {this.Settings.ClaimTypes.GroupIdentifierConfig.EntityProperty}");
+            }
             int expectedCount = 1;
             bool shouldValidate = true;
 
@@ -238,7 +250,21 @@ namespace Yvand.EntraClaimsProvider.Tests
             TestGroup randomGroup = TestEntitySourceManager.GetOneGroup(Settings.FilterSecurityEnabledGroupsOnly);
             bool userShouldBeMember = user.IsMemberOfAllGroups || randomGroup.EveryoneIsMember ? true : false;
             Trace.TraceInformation($"{DateTime.Now:s} [{this.GetType().Name}] TestAugmentationAgainst1RandomGroup for user \"{user.UserPrincipalName}\", IsMemberOfAllGroupsp: {user.IsMemberOfAllGroups} against group \"{randomGroup.DisplayName}\". userShouldBeMember: {userShouldBeMember}");
-            TestAugmentationOperation(user.UserPrincipalName, userShouldBeMember, randomGroup.Id);
+            string groupClaimValueToTest;
+            switch (this.Settings.ClaimTypes.GroupIdentifierConfig.EntityProperty)
+            {
+                case DirectoryObjectProperty.Id:
+                    groupClaimValueToTest = randomGroup.Id;
+                    break;
+                case DirectoryObjectProperty.DisplayName:
+                    groupClaimValueToTest = randomGroup.DisplayName;
+                    break;
+                default:
+                    throw new InvalidOperationException(
+                        $"Unsupported group identifier property '{this.Settings.ClaimTypes.GroupIdentifierConfig.EntityProperty}' for augmentation tests. " +
+                        "The test data model does not provide a corresponding property on TestGroup.");
+            }
+            TestAugmentationOperation(user.UserPrincipalName, userShouldBeMember, groupClaimValueToTest);
         }
 
         /// <summary>

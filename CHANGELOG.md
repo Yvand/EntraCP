@@ -1,5 +1,24 @@
 # Change log for EntraCP (~~AzureCP~~)
 
+## Unreleased
+
+* Add property AllowedGroupMembersRequestPageSize, to set the page size of the requests that get the users members of the allowed groups (set in property RestrictSearchableUsersByGroups) - https://github.com/Yvand/EntraCP/pull/321
+* Improve the logging for the information related to the cached data - https://github.com/Yvand/EntraCP/pull/321
+* Print the current server name in the standalone troubleshooting page - https://github.com/Yvand/EntraCP/pull/323
+* Update the links in the global configuration page - https://github.com/Yvand/EntraCP/pull/324
+* Update the description for the proxy in the global configuration page - https://github.com/Yvand/EntraCP/pull/324
+* Ensure the proxy has a value in a valid format before committing the new configuration - https://github.com/Yvand/EntraCP/pull/324
+* Fix again the exception thrown if the claims provider is used in the context of an anonymous user - https://github.com/Yvand/EntraCP/issues/240
+* Fix the ArgumentException: The Parsable does not contain a collection property, during augmentation, when not using the Id as the group identifier - https://github.com/Yvand/EntraCP/pull/329
+* Add a test scenario, when the group identifier is not the property Id. This will cover the blind spot identified in https://github.com/Yvand/EntraCP/issues/328 - https://github.com/Yvand/EntraCP/pull/336
+* Fix EntraCP returning groups with an empty value during augmentation, when not using the Id as the group identifier, if the property set as the group identifier was empty - https://github.com/Yvand/EntraCP/pull/329
+* Rename both methods UpdateTenantCredentials in class EntraIDProviderConfiguration, to SetTenantSecret and SetTenantCertificate, to prevent using the unexpected overload, due to the last, optional newClientId parameter - https://github.com/Yvand/EntraCP/pull/334
+* Show the EntraCP version in the troubleshooting page (TroubleshootEntraCP.aspx)
+* Improve performance and make some optimizations in the code - https://github.com/Yvand/EntraCP/pull/327
+* Add proxy information in the logging
+* Restrict the list of properties that can be set as user identifiers in the global config page - https://github.com/Yvand/EntraCP/pull/342
+* Ensure the group identifier property is valid before committing the changes - https://github.com/Yvand/EntraCP/pull/342
+
 ## EntraCP v29.0.20250721.38 - enhancements & bug-fixes - Published in July 21, 2025
 
 * Add property FilterUserAccountsEnabledOnly, to return only enabled user accounts

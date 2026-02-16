@@ -1,4 +1,6 @@
 name: Prepare test environment
+permissions:
+  id-token: write
 on:
   repository_dispatch:
     types:
@@ -12,6 +14,7 @@ on:
       skip_create_environment:
         description: 'Set to true to skip deployment of template and jump to artifacts installation'
         required: true
+        type: boolean
         default: false
 
 jobs:

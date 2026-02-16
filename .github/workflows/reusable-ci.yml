@@ -1,0 +1,252 @@
+name: (reusable) CI
+
+on:
+  workflow_call:
+    inputs:
+      project_name:
+        required: true
+        type: string
+      publish_release:
+        description: 'Create a release'
+        type: boolean
+        required: false
+        default: false
+    secrets:
+      base64_encoded_signingkey:
+        required: true
+    outputs:
+      project_version:
+        description: "The project version"
+        value: ${{ jobs.build.outputs.project_version }}
+jobs:
+  preparation:
+    runs-on: ubuntu-latest
+    outputs:
+      year: ${{ steps.set-current-date.outputs.year }}
+      tag_version: ${{ steps.tagVersion.outputs.version }}
+    steps:
+    - name: Set current date
+      id: set-current-date
+      run: echo "year=$(date +'%Y')" >> $GITHUB_OUTPUT
+
+    - name: Extract version number from git tag
+      id: tagVersion
+      if: startsWith(github.event.ref, 'refs/tags/v')
+      shell: bash
+      env:
+        TAG: ${{ github.ref_name }}
+      run: echo "version=$(echo $TAG | grep --perl-regexp --only-matching '(?<=v).*')" >> $GITHUB_OUTPUT
+
+    - name: Print outputs
+      run: |
+        echo "year: ${{steps.set-current-date.outputs.year}}"
+        echo "version: ${{steps.tagVersion.outputs.version}}"
+  
+  build:
+    runs-on: windows-latest
+    needs: preparation
+    strategy:
+      matrix:
+        configuration: [Debug, Release]
+    env:
+      project_name: ${{ inputs.project_name }}
+      tag_version: ${{ needs.preparation.outputs.tag_version || '' }}
+      year: ${{ needs.preparation.outputs.year }}
+    outputs:
+      project_version: ${{ steps.set-assembly-version.outputs.assembly_file_version }}
+    steps:
+    - name: Checkout
+      uses: actions/checkout@v3
+      with:
+        fetch-depth: 0
+
+    - name: Set assembly version
+      id: set-assembly-version
+      uses: Yvand/assemblyinfo-update@v4
+      with:
+        assembly_file_version: "${{ env.tag_version }}"
+        directory: "${{ env.project_name }}/Properties"
+        filename: 'AssemblyInfo.cs'
+        recursive: false
+        copyright: "Copyright © Yvan Duhamel ${{ needs.preparation.outputs.year }}"
+
+    - name: Print the assembly version generated
+      shell: pwsh
+      env: 
+        assembly_version: ${{ steps.set-assembly-version.outputs.assembly_version }}
+        assembly_file_version: ${{ steps.set-assembly-version.outputs.assembly_file_version }}
+      run: |
+        Write-Host ".NET assembly version: `"$($env:assembly_version)`""
+        Write-Host ".NET assembly file version: `"$($env:assembly_file_version)`""
+      
+    # Add MSBuild to the PATH: https://github.com/microsoft/setup-msbuild
+    - name: Setup MSBuild.exe
+      uses: microsoft/setup-msbuild@v2
+    
+    - name: Restore Packages
+      run: nuget restore "${{ env.project_name }}.sln"
+
+    # Decode the base 64 encoded signing key
+    # Key encoded using PowerShell Core:
+    # $cert = Get-Content "C:\...\key.snk" -AsByteStream -ReadCount 
+    # [System.Convert]::ToBase64String($cert) | Out-File "C:\...\key_b64Encoded.txt"
+    - name: Decode the signing key
+      run: |
+        $data = [System.Convert]::FromBase64String("${{ secrets.base64_encoded_signingkey }}")
+        $certificatePath = Join-Path -Path ${{ env.project_name }} -ChildPath "${{ env.project_name }}.snk"
+        [IO.File]::WriteAllBytes($certificatePath, $data)
+
+    # Build the application
+    - name: Build the application and create the solution package
+      run: msbuild "${{ env.project_name }}.sln" /p:Configuration=$env:Configuration /p:IsPackaging=true /p:platform="x64" /p:ContinuousIntegrationBuild=true
+      env:
+        Configuration: ${{ matrix.configuration }}
+    
+    - name: Create NuGet package if configuration is release and .nuspec file exists
+      if: ${{ matrix.configuration == 'release' && hashFiles('**/*.nuspec') != '' }}
+      shell: pwsh
+      run: |
+        # Expected format of the version is either "1.0.0.0" or "1.0.0.0-nightly"
+        $version = "${{ steps.set-assembly-version.outputs.assembly_file_version }}"
+        if ($version.Contains('-')) {
+            $suffix = $version.Split('-')[1]
+            $version = $version.Split('-')[0]
+            "Final version: " + $version
+            nuget pack "${{ env.project_name }}/${{ env.project_name }}.csproj" -OutputDirectory "${{ env.project_name }}/bin/${{ matrix.configuration }}" -Properties "Configuration=${{ matrix.configuration }};commit=${{ github.sha }};fileversion=$version" -Symbols -SymbolPackageFormat snupkg -Suffix $suffix
+        } else {
+            "Final version: " + $version
+            nuget pack "${{ env.project_name }}/${{ env.project_name }}.csproj" -OutputDirectory "${{ env.project_name }}/bin/${{ matrix.configuration }}" -Properties "Configuration=${{ matrix.configuration }};commit=${{ github.sha }};fileversion=$version" -Symbols -SymbolPackageFormat snupkg
+        }
+
+    - name: Remove the signing key
+      run: Remove-Item -path "${{ env.project_name }}/${{ env.project_name }}.snk"
+
+    - name: Upload artifact - wsp solution
+      uses: actions/upload-artifact@v5
+      with:
+        name: "${{ env.project_name }}-${{ env.Configuration }}-wsp"
+        path: "${{ env.project_name }}/bin/${{ env.Configuration }}/*.wsp"
+        if-no-files-found: error
+      env:
+        Configuration: ${{ matrix.configuration }}
+        
+    - name: Upload artifact - dependencies
+      uses: actions/upload-artifact@v5
+      with:
+        name: "${{ env.project_name }}-${{ env.Configuration }}-dependencies"
+        path: "${{ env.project_name }}/bin/${{ env.Configuration }}/*.dll"
+        if-no-files-found: error
+      env:
+        Configuration: ${{ matrix.configuration }}
+        
+    - name: Upload artifact - symbols
+      uses: actions/upload-artifact@v5
+      with:
+        name: "${{ env.project_name }}-${{ env.Configuration }}-symbols"
+        path: |
+            ${{ env.project_name }}/bin/${{ env.Configuration }}/${{ env.project_name }}.dll
+            ${{ env.project_name }}/bin/${{ env.Configuration }}/${{ env.project_name }}.pdb
+            ${{ env.project_name }}/bin/${{ env.Configuration }}/*.wsp
+        if-no-files-found: error
+      env:
+        Configuration: ${{ matrix.configuration }}
+        
+    - name: Upload artifact - unit tests
+      uses: actions/upload-artifact@v5
+      with:
+        name: "${{ env.project_name }}-${{ env.Configuration }}-unit-tests"
+        path: "${{ env.project_name }}.Tests/bin/${{ env.Configuration }}/*.dll"
+        if-no-files-found: error
+      env:
+        Configuration: ${{ matrix.configuration }}
+        
+    - name: Upload artifact - assembly-bindings.config if it exists
+      uses: actions/upload-artifact@v5
+      if: matrix.configuration == 'release' # string tests are not case sensitive - https://docs.github.com/en/actions/learn-github-actions/expressions
+      with:
+        name: "assembly-bindings.config"
+        path: "assembly-bindings.config"
+        if-no-files-found: ignore
+    
+    - name: Upload artifact - NuGet package if it exists
+      uses: actions/upload-artifact@v5
+      if: matrix.configuration == 'release' # string tests are not case sensitive - https://docs.github.com/en/actions/learn-github-actions/expressions
+      with:
+        name: "NuGet"
+        path: |
+            ${{ env.project_name }}/bin/${{ matrix.configuration }}/*.nupkg
+            ${{ env.project_name }}/bin/${{ matrix.configuration }}/*.snupkg
+        if-no-files-found: ignore
+
+  deploy:
+    needs: build
+    runs-on: ubuntu-latest
+    if: ${{ (inputs.publish_release == true) || (startsWith(github.event.ref, 'refs/tags/v')) }}
+    permissions:
+      contents: write
+    env:
+      project_name: ${{ inputs.project_name }}
+      project_version: ${{ needs.build.outputs.project_version }}
+    steps:
+      - name: Download all artifacts
+        uses: actions/download-artifact@v5
+        with:
+          merge-multiple: false
+          
+      - name: Create zip files to publish
+        run: |
+          echo "project_version: ${{ env.project_version }}"
+          mkdir ${{ env.project_name }}-symbols
+          mkdir ${{ env.project_name }}-symbols/debug
+          mkdir ${{ env.project_name }}-symbols/release
+          echo "Generate symbols zip file"
+          mv ./${{ env.project_name }}-Debug-symbols/* ${{ env.project_name }}-symbols/debug
+          mv ./${{ env.project_name }}-Release-symbols/* ${{ env.project_name }}-symbols/release
+          cd ${{ env.project_name }}-symbols
+          zip -r ../${{ env.project_name }}-${{ env.project_version }}-symbols.zip ./*
+          cd ..
+          echo "Generate dependencies zip file"
+          mkdir ${{ env.project_name }}-dependencies
+          mv ./${{ env.project_name }}-Release-dependencies/* ${{ env.project_name }}-dependencies
+          cd ${{ env.project_name }}-dependencies
+          zip -r ../${{ env.project_name }}-${{ env.project_version }}-dependencies.zip ./*
+          cd ..
+          echo "Generate unit-tests zip file"
+          mkdir ${{ env.project_name }}-unit-tests
+          mkdir ${{ env.project_name }}-unit-tests/debug
+          mkdir ${{ env.project_name }}-unit-tests/release
+          mv ./${{ env.project_name }}-Debug-unit-tests/* ${{ env.project_name }}-unit-tests/debug
+          mv ./${{ env.project_name }}-Release-unit-tests/* ${{ env.project_name }}-unit-tests/release
+          cd ${{ env.project_name }}-unit-tests
+          zip -r ../${{ env.project_name }}-unit-tests.zip ./*
+          cd ..
+          echo "Generate NuGet zip file if NuGet directory exists"
+          if [ -d "NuGet" ]; then
+            cd NuGet
+            zip -r ../NuGet.zip ./*
+            cd ..
+          fi
+          if [ -d "assembly-bindings.config" ]; then
+            echo "Move file assembly-bindings.config to the parent folder"
+            mv assembly-bindings.config dir-assembly-bindings-config
+            mv dir-assembly-bindings-config/assembly-bindings.config .
+          fi
+          # ls -alh
+          # realpath assembly-bindings.config
+
+      - name: Publish release
+        uses: softprops/action-gh-release@v2
+        with:
+          name: '${{ env.project_name }} ${{ env.project_version }}'
+          prerelease: true
+          draft: true
+          generate_release_notes: true
+          body: |
+            ${{ env.project_name }} ${{ env.project_version }}
+          files: |
+            ./${{ env.project_name }}-Release-wsp/*.wsp
+            ./${{ env.project_name }}-${{ env.project_version }}-symbols.zip
+            ./${{ env.project_name }}-${{ env.project_version }}-dependencies.zip
+            ./${{ env.project_name }}-unit-tests.zip
+            ./assembly-bindings.config
+            ./NuGet.zip

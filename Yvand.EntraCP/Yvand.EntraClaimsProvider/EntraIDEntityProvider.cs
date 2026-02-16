@@ -20,6 +20,7 @@ using System.Threading.Tasks;
 using Yvand.EntraClaimsProvider.Configuration;
 using Yvand.EntraClaimsProvider.Logging;
 using Logger = Yvand.EntraClaimsProvider.Logging.Logger;
+using User = Microsoft.Graph.Models.User;
 
 namespace Yvand.EntraClaimsProvider
 {
@@ -36,7 +37,7 @@ namespace Yvand.EntraClaimsProvider
             CachedTenantsData = new List<CachedEntraIDTenantData>();
             foreach (var tenant in this.Settings.EntraIDTenants)
             {
-                CachedTenantsData.Add(new CachedEntraIDTenantData(tenant.Identifier, Settings.TenantDataCacheLifetimeInMinutes));
+                CachedTenantsData.Add(new CachedEntraIDTenantData(tenant.Identifier, tenant.Name, Settings.TenantDataCacheLifetimeInMinutes));
             }
         }
 
@@ -120,16 +121,21 @@ namespace Yvand.EntraClaimsProvider
                 else
                 {
                     // Fallback to GET to /v1.0/users/user@TENANT.onmicrosoft.com/memberOf, which returns all group properties but does not return nested groups
-                    DirectoryObjectCollectionResponse memberOfResponse = await Task.Run(() => tenant.GraphService.Users[user.Id].MemberOf.GetAsync()).ConfigureAwait(false);
+                    // https://github.com/Yvand/EntraCP/issues/328: Make sure to get only groups (not also directory roles or other object types)
+                    GroupCollectionResponse memberOfResponse = await Task.Run(() => tenant.GraphService.Users[user.Id].MemberOf.GraphGroup.GetAsync()).ConfigureAwait(false);
                     if (memberOfResponse?.Value != null)
                     {
-                        PageIterator<Group, DirectoryObjectCollectionResponse> memberGroupsPageIterator = PageIterator<Group, DirectoryObjectCollectionResponse>.CreatePageIterator(
+                        PageIterator<Group, GroupCollectionResponse> memberGroupsPageIterator = PageIterator<Group, GroupCollectionResponse>.CreatePageIterator(
                         tenant.GraphService,
                         memberOfResponse,
                         (group) =>
                         {
                             string groupClaimValue = GetPropertyValue(group, groupProperty.ToString());
-                            groupsInTenant.Add(groupClaimValue);
+                            // Test if this group has a value in the property set as the group identifier
+                            if (!String.IsNullOrWhiteSpace(groupClaimValue))
+                            {
+                                groupsInTenant.Add(groupClaimValue);
+                            }
                             return true; // return true to continue the iteration
                         });
                         await memberGroupsPageIterator.IterateAsync().ConfigureAwait(false);
@@ -203,7 +209,8 @@ namespace Yvand.EntraClaimsProvider
                 string currentPropertyString = ctConfig.EntityProperty.ToString();
                 if (currentPropertyString.StartsWith("extensionAttribute"))
                 {
-                    currentPropertyString = String.Format("{0}_{1}_{2}", "extension", "EXTENSIONATTRIBUTESAPPLICATIONID", currentPropertyString);
+                    // Use string concatenation instead of String.Format for better performance
+                    currentPropertyString = "extension_EXTENSIONATTRIBUTESAPPLICATIONID_" + currentPropertyString;
                 }
 
                 string filterForCurrentProp;
@@ -212,8 +219,7 @@ namespace Yvand.EntraClaimsProvider
                 if (ctConfig.EntityProperty == DirectoryObjectProperty.Id)
                 {
                     ctConfig.DirectoryPropertySupportsWildcard = false;
-                    Guid idGuid = new Guid();
-                    if (!Guid.TryParse(input, out idGuid))
+                    if (!Guid.TryParse(input, out _))
                     {
                         continue;
                     }
@@ -229,9 +235,9 @@ namespace Yvand.EntraClaimsProvider
                         {
                             filterPatternForCurrentProp = identityConfigSearchPatternStartsWith;
                         }
-                        filterForCurrentProp = 
-                            String.Format(filterPatternForCurrentProp, currentPropertyString, input, ClaimsProviderConstants.MEMBER_USERTYPE) + 
-                            " or " + 
+                        filterForCurrentProp =
+                            String.Format(filterPatternForCurrentProp, currentPropertyString, input, ClaimsProviderConstants.MEMBER_USERTYPE) +
+                            " or " +
                             String.Format(filterPatternForCurrentProp, identityClaimTypeConfig.DirectoryObjectPropertyForGuestUsers, input, ClaimsProviderConstants.GUEST_USERTYPE);
                     }
                     else if (currentContext.ExactSearch || !ctConfig.DirectoryPropertySupportsWildcard)
@@ -264,18 +270,19 @@ namespace Yvand.EntraClaimsProvider
             }
 
             // Also add metadata properties to $select of corresponding object type
-            if (userFilterBuilder.Count > 0)
+            // Avoid repeated LINQ enumeration by iterating once and checking entity type
+            if (userFilterBuilder.Count > 0 || groupFilterBuilder.Count > 0)
             {
-                foreach (ClaimTypeConfig ctConfig in this.Settings.RuntimeMetadataConfig.Where(x => x.EntityType == DirectoryObjectType.User))
+                foreach (ClaimTypeConfig ctConfig in this.Settings.RuntimeMetadataConfig)
                 {
-                    userSelectBuilder.Add(ctConfig.EntityProperty.ToString());
-                }
-            }
-            if (groupFilterBuilder.Count > 0)
-            {
-                foreach (ClaimTypeConfig ctConfig in this.Settings.RuntimeMetadataConfig.Where(x => x.EntityType == DirectoryObjectType.Group))
-                {
-                    groupSelectBuilder.Add(ctConfig.EntityProperty.ToString());
+                    if (userFilterBuilder.Count > 0 && ctConfig.EntityType == DirectoryObjectType.User)
+                    {
+                        userSelectBuilder.Add(ctConfig.EntityProperty.ToString());
+                    }
+                    else if (groupFilterBuilder.Count > 0 && ctConfig.EntityType == DirectoryObjectType.Group)
+                    {
+                        groupSelectBuilder.Add(ctConfig.EntityProperty.ToString());
+                    }
                 }
             }
 
@@ -462,11 +469,12 @@ namespace Yvand.EntraClaimsProvider
                         groupsRequestId = await batchRequestContent.AddBatchRequestStepAsync(groupRequest).ConfigureAwait(false);
                     }
 
-                    // List of groups that users must be member of, to be returned to SharePoint
+                    //// List of groups that users must be member of, to be returned to SharePoint
+                    RequestInformation[] allowedGroupMembersRequests = null;
                     string[] allowedGroupMembersOfGroupsRequestsId = null;
                     string allowedGroupsIDs = this.Settings.RestrictSearchableUsersByGroups;
-                    //restrictSearchableUsersByGroups = "c9a94341-89b5-4109-a501-2a14027b5bf0"; // testEntraCPGroup_005 - everyone member
-                    //restrictSearchableUsersByGroups = "cd5f135c-9fe5-4ec2-90d9-114e9ad2e236"; // testEntraCPGroup_004 - testEntraCPUser_001 and testEntraCPUser_010 members
+                    ////restrictSearchableUsersByGroups = "c9a94341-89b5-4109-a501-2a14027b5bf0"; // testEntraCPGroup_005 - everyone member
+                    ////restrictSearchableUsersByGroups = "cd5f135c-9fe5-4ec2-90d9-114e9ad2e236"; // testEntraCPGroup_004 - testEntraCPUser_001 and testEntraCPUser_010 members
                     if (!String.IsNullOrWhiteSpace(allowedGroupsIDs) && cachedTenantData.SearchableUsersId == null)
                     {
                         await cachedTenantData.WriteDataLock.WaitAsync().ConfigureAwait(false);
@@ -478,26 +486,14 @@ namespace Yvand.EntraClaimsProvider
                         }
                         else
                         {
-                            string[] groupsId = allowedGroupsIDs.Split(new char[] { ',' }, StringSplitOptions.RemoveEmptyEntries);
-                            allowedGroupMembersOfGroupsRequestsId = new string[groupsId.Length];
-                            int groupIdx = 0;
-                            foreach (string allowedGroupId in groupsId)
+                            allowedGroupMembersRequests = GetAllowedGroupMembersRequests(tenant, retryHandlerOption);
+                            if (allowedGroupMembersRequests != null)
                             {
-                                RequestInformation allowedGroupMembersRequest = tenant.GraphService.Groups[allowedGroupId].Members.GraphUser.ToGetRequestInformation(conf =>
+                                allowedGroupMembersOfGroupsRequestsId = new string[allowedGroupMembersRequests.Length];
+                                for (int i = 0; i < allowedGroupMembersRequests.Length; i++)
                                 {
-                                    conf.QueryParameters = new Microsoft.Graph.Groups.Item.Members.GraphUser.GraphUserRequestBuilder.GraphUserRequestBuilderGetQueryParameters
-                                    {
-                                        Select = new string[] { "Id" },
-                                        // max items count per page is 999: https://learn.microsoft.com/en-us/graph/api/group-list-members?view=graph-rest-1.0&tabs=http#optional-query-parameters
-                                        Top = 100,
-                                    };
-                                    conf.Options = new List<IRequestOption>
-                                    {
-                                        retryHandlerOption,
-                                    };
-                                });
-                                allowedGroupMembersOfGroupsRequestsId[groupIdx] = await batchRequestContent.AddBatchRequestStepAsync(allowedGroupMembersRequest).ConfigureAwait(false);
-                                groupIdx++;
+                                    allowedGroupMembersOfGroupsRequestsId[i] = await batchRequestContent.AddBatchRequestStepAsync(allowedGroupMembersRequests[i]).ConfigureAwait(false);
+                                }
                             }
                         }
                     }
@@ -538,8 +534,11 @@ namespace Yvand.EntraClaimsProvider
 
                     if (allowedGroupMembersOfGroupsRequestsId != null)
                     {
+                        Logger.Log($"[{ClaimsProviderName}] Refreshing the cache that contains all the members of the {allowedGroupMembersRequests.Length} Entra group(s) \"{allowedGroupsIDs}\" in tenant \"{tenant.Name}\".", TraceSeverity.Verbose, TraceCategory.Lookup);
+                        Stopwatch refreshAllowedUsersCacheTimer = new Stopwatch();
+                        refreshAllowedUsersCacheTimer.Start();
                         // only need 1 list that contains unique user ids
-                        cachedTenantData.SearchableUsersId = new List<string>();
+                        cachedTenantData.SearchableUsersId = new HashSet<string>();
                         foreach (string allowedGroupMembersOfGroupRequestId in allowedGroupMembersOfGroupsRequestsId)
                         {
                             HttpStatusCode allowedGroupMembersOfGroupResponseStatus;
@@ -574,6 +573,8 @@ namespace Yvand.EntraClaimsProvider
                         }
                         cachedTenantData.WriteDataLock.Release();
                         lockToWriteInCachedDataWasTaken = false;
+                        refreshAllowedUsersCacheTimer.Stop();
+                        Logger.Log($"[{ClaimsProviderName}] Refreshed the cache that contains all the members of the {allowedGroupMembersRequests.Length} Entra group(s) \"{allowedGroupsIDs}\" in tenant \"{tenant.Name}\" in {refreshAllowedUsersCacheTimer.ElapsedMilliseconds}ms. It contains {cachedTenantData.SearchableUsersId.Count} users", TraceSeverity.Medium, TraceCategory.Lookup);
                     }
 
                     Logger.Log($"[{ClaimsProviderName}] Query to tenant '{tenant.Name}' returned {(userCollectionResult?.Value == null ? 0 : userCollectionResult.Value.Count)} user(s) with filter \"{tenant.UserFilter}\" and {(groupCollectionResult?.Value == null ? 0 : groupCollectionResult.Value.Count)} group(s) with filter \"{tenant.GroupFilter}\"", TraceSeverity.VerboseEx, TraceCategory.Lookup);
@@ -697,6 +698,45 @@ namespace Yvand.EntraClaimsProvider
             return tenantResults;
         }
 
+        private RequestInformation[] GetAllowedGroupMembersRequests(EntraIDTenant tenant, RetryHandlerOption retryHandlerOption)
+        {
+            // List of groups that users must be member of, to be returned to SharePoint
+            RequestInformation[] allowedGroupMembersRequests;
+            string allowedGroupsIDs = this.Settings.RestrictSearchableUsersByGroups;
+            //restrictSearchableUsersByGroups = "c9a94341-89b5-4109-a501-2a14027b5bf0"; // testEntraCPGroup_005 - everyone member
+            //restrictSearchableUsersByGroups = "cd5f135c-9fe5-4ec2-90d9-114e9ad2e236"; // testEntraCPGroup_004 - testEntraCPUser_001 and testEntraCPUser_010 members
+            if (!String.IsNullOrWhiteSpace(allowedGroupsIDs))
+            {
+                string[] groupsId = allowedGroupsIDs.Split(new char[] { ',' }, StringSplitOptions.RemoveEmptyEntries);
+                allowedGroupMembersRequests = new RequestInformation[groupsId.Length];
+                int groupIdx = 0;
+                foreach (string allowedGroupId in groupsId)
+                {
+                    RequestInformation allowedGroupMembersRequest = tenant.GraphService.Groups[allowedGroupId].Members.GraphUser.ToGetRequestInformation(conf =>
+                    {
+                        conf.QueryParameters = new Microsoft.Graph.Groups.Item.Members.GraphUser.GraphUserRequestBuilder.GraphUserRequestBuilderGetQueryParameters
+                        {
+                            Select = new string[] { "Id" },
+                            // max items count per page is 999: https://learn.microsoft.com/en-us/graph/api/group-list-members?view=graph-rest-1.0&tabs=http#optional-query-parameters
+                            Top = this.Settings.AllowedGroupMembersRequestPageSize,
+                        };
+                        conf.Options = new List<IRequestOption>
+                                {
+                                        retryHandlerOption,
+                                };
+                    });
+                    allowedGroupMembersRequests[groupIdx] = allowedGroupMembersRequest;
+                    groupIdx++;
+                }
+                return allowedGroupMembersRequests;
+            }
+            return null;
+        }
+
+        // Cache for reflection property lookups to improve performance
+        private static readonly System.Collections.Concurrent.ConcurrentDictionary<string, PropertyInfo> PropertyInfoCache = 
+            new System.Collections.Concurrent.ConcurrentDictionary<string, PropertyInfo>();
+
         /// <summary>
         /// Uses reflection to return the value of a public property for the given object
         /// </summary>
@@ -755,7 +795,11 @@ namespace Yvand.EntraClaimsProvider
                 }
             }
 
-            PropertyInfo pi = directoryObject.GetType().GetProperty(propertyName);
+            // Use cached PropertyInfo to avoid repeated reflection calls
+            Type objectType = directoryObject.GetType();
+            string cacheKey = $"{objectType.FullName}.{propertyName}";
+            PropertyInfo pi = PropertyInfoCache.GetOrAdd(cacheKey, _ => objectType.GetProperty(propertyName));
+            
             if (pi == null)
             {
                 return null;
@@ -771,12 +815,13 @@ namespace Yvand.EntraClaimsProvider
     public class CachedEntraIDTenantData
     {
         public readonly Guid TenantIdentifier;
+        public readonly string TenantName;
         public SemaphoreSlim WriteDataLock = new SemaphoreSlim(1, 1);
 
         /// <summary>
-        /// Gets or sets the list of users ID, matching users that may be returned to SharePoint. Set to null to not apply amy restriction
+        /// Gets or sets the set of unique user IDs matching users that may be returned to SharePoint. Set to null to not apply any restriction
         /// </summary>
-        public List<string> SearchableUsersId
+        public HashSet<string> SearchableUsersId
         {
             get
             {
@@ -787,6 +832,7 @@ namespace Yvand.EntraClaimsProvider
                 TimeSpan interval = DateTime.UtcNow - SearchableUsersIdCacheTime;
                 if (interval > SearchableUsersIdCacheTTL)
                 {
+                    Logger.Log($"[{EntraCP.ClaimsProviderName}] Cache for tenant \"{TenantName}\" is {Math.Round(interval.TotalMinutes)} minutes old and has exceeded its TTL of {SearchableUsersIdCacheTTL.TotalMinutes} minutes, clearing it.", TraceSeverity.Medium, TraceCategory.Augmentation);
                     SearchableUsersIdCacheTime = default(DateTime);
                     _SearchableUsersId = null;
                 }
@@ -798,13 +844,14 @@ namespace Yvand.EntraClaimsProvider
                 SearchableUsersIdCacheTime = DateTime.UtcNow;
             }
         }
-        private List<string> _SearchableUsersId;
+        private HashSet<string> _SearchableUsersId;
         private DateTime SearchableUsersIdCacheTime;
-        private TimeSpan SearchableUsersIdCacheTTL = new TimeSpan(0, 1, 0);
+        private TimeSpan SearchableUsersIdCacheTTL;
 
-        public CachedEntraIDTenantData(Guid tenantIdentifier, int tenantDataCacheLifetimeInMinutes)
+        public CachedEntraIDTenantData(Guid tenantIdentifier, string tenantName, int tenantDataCacheLifetimeInMinutes)
         {
             this.TenantIdentifier = tenantIdentifier;
+            this.TenantName = tenantName;
             this.SearchableUsersIdCacheTTL = new TimeSpan(0, tenantDataCacheLifetimeInMinutes, 0);
         }
     }

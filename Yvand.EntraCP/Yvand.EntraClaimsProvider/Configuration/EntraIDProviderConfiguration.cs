@@ -1,4 +1,5 @@
-﻿using Microsoft.SharePoint.Administration;
+﻿using Microsoft.Graph.Models;
+using Microsoft.SharePoint.Administration;
 using Microsoft.SharePoint.Administration.Claims;
 using Microsoft.SharePoint.WebControls;
 using System;
@@ -85,6 +86,11 @@ namespace Yvand.EntraClaimsProvider.Configuration
         /// </summary>
         bool FilterUserAccountsEnabledOnly { get; }
 
+        /// <summary>
+        /// Gets the count of group members returned per page in a request. Its value must be between 1 and 999 inclusive. Default value is 100.
+        /// </summary>
+        int AllowedGroupMembersRequestPageSize { get; }
+
         #endregion
     }
 
@@ -108,6 +114,7 @@ namespace Yvand.EntraClaimsProvider.Configuration
         public string RestrictSearchableUsersByGroups { get; set; }
         public int TenantDataCacheLifetimeInMinutes { get; set; } = ClaimsProviderConstants.DefaultTenantDataCacheLifetimeInMinutes;
         public bool FilterUserAccountsEnabledOnly { get; set; } = false;
+        public int AllowedGroupMembersRequestPageSize { get; set; } = ClaimsProviderConstants.DefaultAllowedGroupMembersRequestPageSize;
         #endregion
 
         public EntraIDProviderSettings() { }
@@ -326,6 +333,17 @@ namespace Yvand.EntraClaimsProvider.Configuration
         }
         [Persisted]
         private bool _FilterAccountsEnabledOnly = false;
+
+        /// <summary>
+        /// Gets or sets the count of group members returned per page in a request. Its value must be between 1 and 999 inclusive. Default value is 100.
+        /// </summary>
+        public int AllowedGroupMembersRequestPageSize
+        {
+            get => _AllowedGroupMembersRequestPageSize;
+            set => _AllowedGroupMembersRequestPageSize = value < 1 || value > 999 ? ClaimsProviderConstants.DefaultAllowedGroupMembersRequestPageSize : value;
+        }
+        [Persisted]
+        private int _AllowedGroupMembersRequestPageSize = ClaimsProviderConstants.DefaultAllowedGroupMembersRequestPageSize;
         #endregion
 
         #region "Other properties"
@@ -399,6 +417,7 @@ namespace Yvand.EntraClaimsProvider.Configuration
                 FilterUserAccountsEnabledOnly = this.FilterUserAccountsEnabledOnly,
                 RestrictSearchableUsersByGroups = this.RestrictSearchableUsersByGroups,
                 TenantDataCacheLifetimeInMinutes = this.TenantDataCacheLifetimeInMinutes,
+                AllowedGroupMembersRequestPageSize = this.AllowedGroupMembersRequestPageSize,
             };
             return (IEntraIDProviderSettings)entityProviderSettings;
         }
@@ -411,7 +430,7 @@ namespace Yvand.EntraClaimsProvider.Configuration
         /// <param name="newClientId">New client id, or empty if it does not change</param>
         /// <returns>True if credentials were successfully updated</returns>
         /// <exception cref="ArgumentNullException"></exception>
-        public bool UpdateTenantCredentials(string tenantName, string newClientSecret, string newClientId = "")
+        public bool SetTenantSecret(string tenantName, string newClientSecret, string newClientId = "")
         {
             if (String.IsNullOrWhiteSpace(tenantName))
             {
@@ -438,7 +457,7 @@ namespace Yvand.EntraClaimsProvider.Configuration
         /// <param name="newClientId">New client id, or empty if it does not change</param>
         /// <returns></returns>
         /// <exception cref="ArgumentNullException"></exception>
-        public bool UpdateTenantCredentials(string tenantName, string newClientCertificatePfxFilePath, string newClientCertificatePfxPassword = "", string newClientId = "")
+        public bool SetTenantCertificate(string tenantName, string newClientCertificatePfxFilePath, string newClientCertificatePfxPassword = "", string newClientId = "")
         {
             if (String.IsNullOrWhiteSpace(tenantName))
             {
@@ -512,10 +531,11 @@ namespace Yvand.EntraClaimsProvider.Configuration
         /// <exception cref="InvalidOperationException"></exception>
         public virtual void ValidateConfiguration()
         {
+            const string configInvalidStartText = "The EntraCP configuration is invalid";
             // In case ClaimTypes collection was modified, test if it is still valid
             if (this.ClaimTypes == null)
             {
-                throw new InvalidOperationException($"Configuration is not valid because collection {nameof(ClaimTypes)} is null");
+                throw new InvalidOperationException($"{configInvalidStartText} because collection {nameof(ClaimTypes)} is null");
             }
             try
             {
@@ -527,51 +547,51 @@ namespace Yvand.EntraClaimsProvider.Configuration
             }
             catch (InvalidOperationException ex)
             {
-                throw new InvalidOperationException($"Some changes made to collection {nameof(ClaimTypes)} are invalid and cannot be committed to configuration database. Inspect inner exception for more details about the error.", ex);
+                throw new InvalidOperationException($"{configInvalidStartText} because some changes made to collection {nameof(ClaimTypes)} are wrong and cannot be committed to configuration database. Inspect the inner exception for more details about the error.", ex);
             }
 
             // Ensure identity claim type is present and valid
             ClaimTypeConfig identityClaimTypeConfig = this.ClaimTypes.GetIdentifierConfiguration(DirectoryObjectType.User);
             if (identityClaimTypeConfig == null)
             {
-                throw new InvalidOperationException($"The configuration is invalid because the identity claim type configuration is missing in the collection {nameof(ClaimTypes)}, so changes cannot be committed to the configuration database.");
+                throw new InvalidOperationException($"{configInvalidStartText} because the identity claim type configuration is missing in the collection {nameof(ClaimTypes)}, so changes cannot be committed to the configuration database.");
             }
             else if (identityClaimTypeConfig is IdentityClaimTypeConfig == false)
             {
-                throw new InvalidOperationException($"The configuration is invalid because the identity claim type configuration is invalid in the collection {nameof(ClaimTypes)}, so changes cannot be committed to the configuration database.");
+                throw new InvalidOperationException($"{configInvalidStartText} because the identity claim type configuration is invalid in the collection {nameof(ClaimTypes)}, so changes cannot be committed to the configuration database.");
             }
 
             foreach (EntraIDTenant tenant in this.EntraIDTenants)
             {
                 if (tenant == null)
                 {
-                    throw new InvalidOperationException($"Configuration is not valid because a tenant is null in list {nameof(EntraIDTenants)}");
+                    throw new InvalidOperationException($"{configInvalidStartText} because a tenant is null in list {nameof(EntraIDTenants)}");
                 }
 
                 if (String.IsNullOrWhiteSpace(tenant.Name))
                 {
-                    throw new InvalidOperationException($"Configuration is not valid because a tenant has its property {nameof(tenant.Name)} not set in list {nameof(EntraIDTenants)}");
+                    throw new InvalidOperationException($"{configInvalidStartText} because a tenant has its property {nameof(tenant.Name)} not set in list {nameof(EntraIDTenants)}");
                 }
 
                 if (String.IsNullOrWhiteSpace(tenant.ClientId))
                 {
-                    throw new InvalidOperationException($"Configuration is not valid because tenant \"{tenant.Name}\" has its property {nameof(tenant.ClientId)} not set in list {nameof(EntraIDTenants)}");
+                    throw new InvalidOperationException($"{configInvalidStartText} because tenant \"{tenant.Name}\" has its property {nameof(tenant.ClientId)} not set in list {nameof(EntraIDTenants)}");
                 }
 
                 if (String.IsNullOrWhiteSpace(tenant.ClientSecret) && tenant.ClientCertificateWithPrivateKey == null)
                 {
-                    throw new InvalidOperationException($"Configuration is not valid because tenant \"{tenant.Name}\" has both properties {nameof(tenant.ClientSecret)} and {nameof(tenant.ClientCertificateWithPrivateKey)} not set in list {nameof(EntraIDTenants)}, while one must be set");
+                    throw new InvalidOperationException($"{configInvalidStartText} because tenant \"{tenant.Name}\" has both properties {nameof(tenant.ClientSecret)} and {nameof(tenant.ClientCertificateWithPrivateKey)} not set in list {nameof(EntraIDTenants)}, while one must be set");
                 }
 
                 if (!String.IsNullOrWhiteSpace(tenant.ClientSecret) && tenant.ClientCertificateWithPrivateKey != null)
                 {
-                    throw new InvalidOperationException($"Configuration is not valid because tenant \"{tenant.Name}\" has both properties {nameof(tenant.ClientSecret)} and {nameof(tenant.ClientCertificateWithPrivateKey)} set in list {nameof(EntraIDTenants)}, while only one must be set");
+                    throw new InvalidOperationException($"{configInvalidStartText} because tenant \"{tenant.Name}\" has both properties {nameof(tenant.ClientSecret)} and {nameof(tenant.ClientCertificateWithPrivateKey)} set in list {nameof(EntraIDTenants)}, while only one must be set");
                 }
             }
 
             if (this.TenantDataCacheLifetimeInMinutes < 1)
             {
-                throw new InvalidOperationException($"The configuration is invalid because property {nameof(TenantDataCacheLifetimeInMinutes)} is set to 0 or a negative value. Minimum value is 1");
+                throw new InvalidOperationException($"{configInvalidStartText} because property {nameof(TenantDataCacheLifetimeInMinutes)} is set to 0 or a negative value. Minimum value is 1");
             }
 
             if (this.RestrictSearchableUsersByGroups != null)
@@ -581,16 +601,31 @@ namespace Yvand.EntraClaimsProvider.Configuration
                 // So max is 18 + 1 to get users + 1 to get groups
                 if (groupsId.Length > 18)
                 {
-                    throw new InvalidOperationException($"The configuration is invalid because property {nameof(RestrictSearchableUsersByGroups)} exceeds the limit of 18 groups, which would generate a batch request too big for Graph. More information in https://learn.microsoft.com/en-us/graph/json-batching#batch-size-limitations");
+                    throw new InvalidOperationException($"{configInvalidStartText} because property {nameof(RestrictSearchableUsersByGroups)} exceeds the limit of 18 groups, which would generate a batch request too big for Graph. More information in https://learn.microsoft.com/en-us/graph/json-batching#batch-size-limitations");
                 }
                 Guid testGuidResult = Guid.Empty;
                 foreach (string groupId in groupsId)
                 {
                     if (!Guid.TryParse(groupId, out testGuidResult))
                     {
-                        throw new InvalidOperationException($"The configuration is invalid because property {nameof(RestrictSearchableUsersByGroups)} is not set correctly. It should be a csv list of group IDs");
+                        throw new InvalidOperationException($"{configInvalidStartText} because property {nameof(RestrictSearchableUsersByGroups)} is not set correctly. It should be a csv list of group IDs");
                     }
                 }
+            }
+
+            if (!String.IsNullOrWhiteSpace(this.ProxyAddress))
+            {
+                if (!Uri.TryCreate(this.ProxyAddress, UriKind.Absolute, out Uri proxyUri) ||
+                    !String.Equals(proxyUri.Scheme, Uri.UriSchemeHttp, StringComparison.OrdinalIgnoreCase))
+                {
+                    throw new InvalidOperationException($"{configInvalidStartText} because property {nameof(ProxyAddress)} must be either empty, or a valid absolute \"http://\" URL.");
+                }
+            }
+
+            // Ensure the group identifier is valid
+            if (this.ClaimTypes.GroupIdentifierConfig != null && Utils.GetDirectoryObjectPropertyValue(new Group(), this.ClaimTypes.GroupIdentifierConfig.EntityProperty.ToString()) == null)
+            {
+                throw new InvalidOperationException($"{configInvalidStartText} because the selected group identifier property \"{this.ClaimTypes.GroupIdentifierConfig.EntityProperty}\" does not exist for a Group.");
             }
         }
 
@@ -649,6 +684,7 @@ namespace Yvand.EntraClaimsProvider.Configuration
             this.ProxyAddress = settings.ProxyAddress;
             this.RestrictSearchableUsersByGroups = settings.RestrictSearchableUsersByGroups;
             this.TenantDataCacheLifetimeInMinutes = settings.TenantDataCacheLifetimeInMinutes;
+            this.AllowedGroupMembersRequestPageSize = settings.AllowedGroupMembersRequestPageSize;
 
             if (commitChangesInDatabase)
             {
