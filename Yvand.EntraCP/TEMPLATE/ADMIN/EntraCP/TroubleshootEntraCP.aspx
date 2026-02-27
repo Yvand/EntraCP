@@ -172,10 +172,22 @@
             }
             catch (TargetInvocationException ex)
             {
-                if (ex.InnerException is TypeInitializationException && ex.InnerException.InnerException is FileNotFoundException)
+                if (ex.InnerException is FileNotFoundException)
                 {
-                    FileNotFoundException fnfEx = ex.InnerException.InnerException as FileNotFoundException;
+                    FileNotFoundException fnfEx = ex.InnerException as FileNotFoundException;
                     LblTestsResult.Text += String.Format(errorMessage, fnfEx.Message);
+                }
+                else if (ex.InnerException is TypeInitializationException)
+                {
+                    if (ex.InnerException.InnerException is FileNotFoundException)
+                    {
+                        FileNotFoundException fnfEx = ex.InnerException.InnerException as FileNotFoundException;
+                        LblTestsResult.Text += String.Format(errorMessage, fnfEx.Message);
+                    }
+                    else if (ex.InnerException.InnerException is MissingMethodException)
+                    {
+                        LblTestsResult.Text += String.Format(errorMessage, "MissingMethodException from " + ex.InnerException.InnerException.Source + ": " + ex.InnerException.InnerException.Message);
+                    }
                 }
             }
             catch (Exception ex)
