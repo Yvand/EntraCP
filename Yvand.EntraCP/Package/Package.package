@@ -48,6 +48,7 @@
     <customAssembly location="System.Text.Encodings.Web.dll" deploymentTarget="GlobalAssemblyCache" sourcePath="bin\System.Text.Encodings.Web.dll" />
     <customAssembly location="System.Text.Json.dll" deploymentTarget="GlobalAssemblyCache" sourcePath="bin\System.Text.Json.dll" />
     <customAssembly location="System.Threading.Tasks.Extensions.dll" deploymentTarget="GlobalAssemblyCache" sourcePath="bin\System.Threading.Tasks.Extensions.dll" />
+    <customAssembly location="System.ValueTuple.dll" deploymentTarget="GlobalAssemblyCache" sourcePath="bin\System.ValueTuple.dll" />
   </assemblies>
   <features>
     <featureReference itemId="70b104e2-19df-4cb1-9802-c98eaf14d84e" />
