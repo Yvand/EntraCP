@@ -4,10 +4,14 @@
     <customAssembly location="Azure.Core.dll" deploymentTarget="GlobalAssemblyCache" sourcePath="bin\Azure.Core.dll" />
     <customAssembly location="Azure.Identity.dll" deploymentTarget="GlobalAssemblyCache" sourcePath="bin\Azure.Identity.dll" />
     <customAssembly location="Microsoft.Bcl.AsyncInterfaces.dll" deploymentTarget="GlobalAssemblyCache" sourcePath="bin\Microsoft.Bcl.AsyncInterfaces.dll" />
-    <customAssembly location="Microsoft.Bcl.Memory.dll" deploymentTarget="GlobalAssemblyCache" sourcePath="bin\Microsoft.Bcl.Memory.dll" />
     <customAssembly location="Microsoft.Bcl.TimeProvider.dll" deploymentTarget="GlobalAssemblyCache" sourcePath="bin\Microsoft.Bcl.TimeProvider.dll" />
     <customAssembly location="Microsoft.Extensions.DependencyInjection.Abstractions.dll" deploymentTarget="GlobalAssemblyCache" sourcePath="bin\Microsoft.Extensions.DependencyInjection.Abstractions.dll" />
+    <customAssembly location="Microsoft.Extensions.Diagnostics.Abstractions.dll" deploymentTarget="GlobalAssemblyCache" sourcePath="bin\Microsoft.Extensions.Diagnostics.Abstractions.dll" />
+    <customAssembly location="Microsoft.Extensions.FileProviders.Abstractions.dll" deploymentTarget="GlobalAssemblyCache" sourcePath="bin\Microsoft.Extensions.FileProviders.Abstractions.dll" />
+    <customAssembly location="Microsoft.Extensions.Hosting.Abstractions.dll" deploymentTarget="GlobalAssemblyCache" sourcePath="bin\Microsoft.Extensions.Hosting.Abstractions.dll" />
     <customAssembly location="Microsoft.Extensions.Logging.Abstractions.dll" deploymentTarget="GlobalAssemblyCache" sourcePath="bin\Microsoft.Extensions.Logging.Abstractions.dll" />
+    <customAssembly location="Microsoft.Extensions.Options.dll" deploymentTarget="GlobalAssemblyCache" sourcePath="bin\Microsoft.Extensions.Options.dll" />
+    <customAssembly location="Microsoft.Extensions.Primitives.dll" deploymentTarget="GlobalAssemblyCache" sourcePath="bin\Microsoft.Extensions.Primitives.dll" />
     <customAssembly location="Microsoft.Graph.Core.dll" deploymentTarget="GlobalAssemblyCache" sourcePath="bin\Microsoft.Graph.Core.dll" />
     <customAssembly location="Microsoft.Graph.dll" deploymentTarget="GlobalAssemblyCache" sourcePath="bin\Microsoft.Graph.dll" />
     <customAssembly location="Microsoft.Identity.Client.dll" deploymentTarget="GlobalAssemblyCache" sourcePath="bin\Microsoft.Identity.Client.dll" />
@@ -32,6 +36,7 @@
     <customAssembly location="System.Diagnostics.DiagnosticSource.dll" deploymentTarget="GlobalAssemblyCache" sourcePath="bin\System.Diagnostics.DiagnosticSource.dll" />
     <customAssembly location="System.IdentityModel.Tokens.Jwt.dll" deploymentTarget="GlobalAssemblyCache" sourcePath="bin\System.IdentityModel.Tokens.Jwt.dll" />
     <customAssembly location="System.IO.FileSystem.AccessControl.dll" deploymentTarget="GlobalAssemblyCache" sourcePath="bin\System.IO.FileSystem.AccessControl.dll" />
+    <customAssembly location="System.IO.Pipelines.dll" deploymentTarget="GlobalAssemblyCache" sourcePath="bin\System.IO.Pipelines.dll" />
     <customAssembly location="System.Memory.Data.dll" deploymentTarget="GlobalAssemblyCache" sourcePath="bin\System.Memory.Data.dll" />
     <customAssembly location="System.Memory.dll" deploymentTarget="GlobalAssemblyCache" sourcePath="bin\System.Memory.dll" />
     <customAssembly location="System.Net.Http.WinHttpHandler.dll" deploymentTarget="GlobalAssemblyCache" sourcePath="bin\System.Net.Http.WinHttpHandler.dll" />
@@ -43,7 +48,6 @@
     <customAssembly location="System.Text.Encodings.Web.dll" deploymentTarget="GlobalAssemblyCache" sourcePath="bin\System.Text.Encodings.Web.dll" />
     <customAssembly location="System.Text.Json.dll" deploymentTarget="GlobalAssemblyCache" sourcePath="bin\System.Text.Json.dll" />
     <customAssembly location="System.Threading.Tasks.Extensions.dll" deploymentTarget="GlobalAssemblyCache" sourcePath="bin\System.Threading.Tasks.Extensions.dll" />
-    <customAssembly location="System.ValueTuple.dll" deploymentTarget="GlobalAssemblyCache" sourcePath="bin\System.ValueTuple.dll" />
   </assemblies>
   <features>
     <featureReference itemId="70b104e2-19df-4cb1-9802-c98eaf14d84e" />
