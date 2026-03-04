@@ -1,6 +1,6 @@
 # Change log for EntraCP (~~AzureCP~~)
 
-## EntraCP v30.0 - enhancements & bug-fixes - Published in March 4, 2026
+## Unreleased
 
 * Add property AllowedGroupMembersRequestPageSize, to set the page size of the requests that get the users members of the allowed groups (set in property RestrictSearchableUsersByGroups) - https://github.com/Yvand/EntraCP/pull/321
 * Improve the logging for the information related to the cached data - https://github.com/Yvand/EntraCP/pull/321
