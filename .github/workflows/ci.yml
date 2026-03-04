@@ -10,13 +10,10 @@ on:
         required: false
         default: false
   push:
-    branches:
-    - dev
-    - 'releases/**'
     tags:
       - "v*"
   pull_request:
-    branches: [ "dev", "master", "releases/**" ]
+    branches: [ "master" ]
 
 jobs:
   call-ci-workflow:
