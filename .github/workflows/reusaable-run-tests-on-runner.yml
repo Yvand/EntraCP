@@ -23,10 +23,50 @@ jobs:
       test_folder_path: 'C:\drop\unit-tests'
     steps:
     - name: Run tests
-      uses: rusty-bender/vstest-action@7c003c343f0b521f14a3bfbcace6d5f328e3bf71 # main
+      shell: pwsh
+      env:
+        test_project_folder_name: ${{ inputs.test_project_folder_name }}
+        test_runsettings_file: '${{ env.test_folder_path }}\DTLServer.runsettings'
+        test_results_path: '${{ github.workspace }}\TestResults'
+      run: |
+        $testSearchFolder = Join-Path (Join-Path $env:test_folder_path $env:test_project_folder_name) 'release'
+        $testAssemblies = @(Get-ChildItem -LiteralPath $testSearchFolder -Filter '*tests*.dll' -File | ForEach-Object { $_.FullName })
+        if ($testAssemblies.Count -eq 0) {
+          throw "No test assemblies found in $testSearchFolder"
+        }
+
+        $vswherePath = Join-Path ${env:ProgramFiles(x86)} 'Microsoft Visual Studio\Installer\vswhere.exe'
+        $vsInstallPath = & $vswherePath -latest -products '*' -property installationPath
+        if (-not $vsInstallPath) {
+          throw 'Unable to locate a Visual Studio installation.'
+        }
+        $vstestPath = Join-Path $vsInstallPath 'Common7\IDE\CommonExtensions\Microsoft\TestWindow\vstest.console.exe'
+        if (-not (Test-Path -LiteralPath $vstestPath)) {
+          throw "VSTest was not found at $vstestPath"
+        }
+
+        New-Item -ItemType Directory -Path $env:test_results_path -Force | Out-Null
+        Push-Location $testSearchFolder
+        try {
+          $vstestArgs = @($testAssemblies) + @(
+            '/Platform:x64'
+            "/Settings:$env:test_runsettings_file"
+            '/Logger:trx'
+            "/ResultsDirectory:$env:test_results_path"
+          )
+          & $vstestPath @vstestArgs
+          if ($LASTEXITCODE -ne 0) {
+            exit $LASTEXITCODE
+          }
+        }
+        finally {
+          Pop-Location
+        }
+
+    - name: Upload test results
+      if: always()
+      uses: actions/upload-artifact@330a01c490aca151604b8cf639adc76d48f6c5d4 # v5
       with:
-        searchFolder: '${{ env.test_folder_path }}\${{ inputs.test_project_folder_name }}\release\'
-        testAssembly: '*tests*.dll'
-        platform: 'x64'
-        runSettingsFile: '${{ env.test_folder_path }}\DTLServer.runsettings'
-        codeCoverageEnabled: false
+        name: TestResults
+        path: '${{ github.workspace }}\TestResults\*.trx'
+        if-no-files-found: warn
