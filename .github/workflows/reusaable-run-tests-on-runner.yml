@@ -6,15 +6,24 @@ on:
         required: true
         type: string
         description: 'Folder name of the NUnit test project'
+      runner_environment:
+        required: true
+        type: string
+        description: 'Custom label assigned to the Windows x64 runner for this test environment'
+permissions: {}
 jobs:
   run-tests:
-    runs-on: self-hosted
+    runs-on: [self-hosted, Windows, X64, "${{ inputs.runner_environment }}"]
+    timeout-minutes: 60
+    concurrency:
+      group: tests-${{ github.repository }}-${{ inputs.runner_environment }}
+      cancel-in-progress: false
     name: Run Visual Studio tests
     env:
       test_folder_path: 'C:\drop\unit-tests'
     steps:
     - name: Run tests
-      uses: rusty-bender/vstest-action@main
+      uses: rusty-bender/vstest-action@7c003c343f0b521f14a3bfbcace6d5f328e3bf71 # main
       with:
         searchFolder: '${{ env.test_folder_path }}\${{ inputs.test_project_folder_name }}\release\'
         testAssembly: '*tests*.dll'

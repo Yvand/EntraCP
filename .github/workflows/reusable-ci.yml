@@ -11,6 +11,11 @@ on:
         type: boolean
         required: false
         default: false
+      release_tag:
+        description: 'Tag to create or reuse when publishing manually from a branch (v-prefixed version)'
+        type: string
+        required: false
+        default: ''
     secrets:
       base64_encoded_signingkey:
         required: true
@@ -18,32 +23,49 @@ on:
       project_version:
         description: "The project version"
         value: ${{ jobs.build.outputs.project_version }}
+permissions:
+  contents: read
 jobs:
   preparation:
     runs-on: ubuntu-latest
+    timeout-minutes: 5
     outputs:
       year: ${{ steps.set-current-date.outputs.year }}
       tag_version: ${{ steps.tagVersion.outputs.version }}
     steps:
     - name: Set current date
       id: set-current-date
-      run: echo "year=$(date +'%Y')" >> $GITHUB_OUTPUT
+      run: echo "year=$(date +'%Y')" >> "$GITHUB_OUTPUT"
 
     - name: Extract version number from git tag
       id: tagVersion
-      if: startsWith(github.event.ref, 'refs/tags/v')
       shell: bash
       env:
-        TAG: ${{ github.ref_name }}
-      run: echo "version=$(echo $TAG | grep --perl-regexp --only-matching '(?<=v).*')" >> $GITHUB_OUTPUT
+        TAG: ${{ github.ref_type == 'tag' && github.ref_name || inputs.release_tag }}
+        PUBLISH_RELEASE: ${{ inputs.publish_release }}
+      run: |
+        if [[ -n "$TAG" ]]; then
+          if [[ ! "$TAG" =~ ^v[0-9]+\.[0-9]+\.[0-9]+(\.[0-9]+)?(-[A-Za-z0-9.-]+)?$ ]]; then
+            echo "::error::Release tags must be v-prefixed three- or four-part versions, optionally with a prerelease suffix."
+            exit 1
+          fi
+          echo "version=${TAG#v}" >> "$GITHUB_OUTPUT"
+        elif [[ "$PUBLISH_RELEASE" == true ]]; then
+          echo "::error::release_tag is required when publishing from a branch."
+          exit 1
+        fi
 
     - name: Print outputs
+      env:
+        YEAR: ${{ steps.set-current-date.outputs.year }}
+        VERSION: ${{ steps.tagVersion.outputs.version }}
       run: |
-        echo "year: ${{steps.set-current-date.outputs.year}}"
-        echo "version: ${{steps.tagVersion.outputs.version}}"
+        echo "year: $YEAR"
+        echo "version: $VERSION"
   
   build:
     runs-on: windows-latest
+    timeout-minutes: 30
     needs: preparation
     strategy:
       matrix:
@@ -56,13 +78,14 @@ jobs:
       project_version: ${{ steps.set-assembly-version.outputs.assembly_file_version }}
     steps:
     - name: Checkout
-      uses: actions/checkout@v3
+      uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5
       with:
         fetch-depth: 0
+        persist-credentials: false
 
     - name: Set assembly version
       id: set-assembly-version
-      uses: Yvand/assemblyinfo-update@v4
+      uses: Yvand/assemblyinfo-update@c5b342e7366865bd4537e565094d0a1fc9649eea # v4
       with:
         assembly_file_version: "${{ env.tag_version }}"
         directory: "${{ env.project_name }}/Properties"
@@ -81,48 +104,58 @@ jobs:
       
     # Add MSBuild to the PATH: https://github.com/microsoft/setup-msbuild
     - name: Setup MSBuild.exe
-      uses: microsoft/setup-msbuild@v2
+      uses: microsoft/setup-msbuild@6fb02220983dee41ce7ae257b6f4d8f9bf5ed4ce # v2
     
     - name: Restore Packages
-      run: nuget restore "${{ env.project_name }}.sln"
+      run: nuget restore "$($env:project_name).sln"
 
     # Decode the base 64 encoded signing key
     # Key encoded using PowerShell Core:
     # $cert = Get-Content "C:\...\key.snk" -AsByteStream -ReadCount 
     # [System.Convert]::ToBase64String($cert) | Out-File "C:\...\key_b64Encoded.txt"
     - name: Decode the signing key
+      env:
+        SIGNING_KEY: ${{ secrets.base64_encoded_signingkey }}
       run: |
-        $data = [System.Convert]::FromBase64String("${{ secrets.base64_encoded_signingkey }}")
-        $certificatePath = Join-Path -Path ${{ env.project_name }} -ChildPath "${{ env.project_name }}.snk"
+        $data = [System.Convert]::FromBase64String($env:SIGNING_KEY)
+        $certificatePath = Join-Path -Path $env:project_name -ChildPath "$($env:project_name).snk"
         [IO.File]::WriteAllBytes($certificatePath, $data)
 
     # Build the application
     - name: Build the application and create the solution package
-      run: msbuild "${{ env.project_name }}.sln" /p:Configuration=$env:Configuration /p:IsPackaging=true /p:platform="x64" /p:ContinuousIntegrationBuild=true
+      run: msbuild "$($env:project_name).sln" /p:Configuration=$env:Configuration /p:IsPackaging=true /p:platform="x64" /p:ContinuousIntegrationBuild=true
       env:
         Configuration: ${{ matrix.configuration }}
     
     - name: Create NuGet package if configuration is release and .nuspec file exists
       if: ${{ matrix.configuration == 'release' && hashFiles('**/*.nuspec') != '' }}
       shell: pwsh
+      env:
+        PACKAGE_VERSION: ${{ steps.set-assembly-version.outputs.assembly_file_version }}
+        Configuration: ${{ matrix.configuration }}
       run: |
         # Expected format of the version is either "1.0.0.0" or "1.0.0.0-nightly"
-        $version = "${{ steps.set-assembly-version.outputs.assembly_file_version }}"
+        $version = $env:PACKAGE_VERSION
         if ($version.Contains('-')) {
             $suffix = $version.Split('-')[1]
             $version = $version.Split('-')[0]
             "Final version: " + $version
-            nuget pack "${{ env.project_name }}/${{ env.project_name }}.csproj" -OutputDirectory "${{ env.project_name }}/bin/${{ matrix.configuration }}" -Properties "Configuration=${{ matrix.configuration }};commit=${{ github.sha }};fileversion=$version" -Symbols -SymbolPackageFormat snupkg -Suffix $suffix
+            nuget pack "$($env:project_name)/$($env:project_name).csproj" -OutputDirectory "$($env:project_name)/bin/$($env:Configuration)" -Properties "Configuration=$($env:Configuration);commit=$($env:GITHUB_SHA);fileversion=$version" -Symbols -SymbolPackageFormat snupkg -Suffix $suffix
         } else {
             "Final version: " + $version
-            nuget pack "${{ env.project_name }}/${{ env.project_name }}.csproj" -OutputDirectory "${{ env.project_name }}/bin/${{ matrix.configuration }}" -Properties "Configuration=${{ matrix.configuration }};commit=${{ github.sha }};fileversion=$version" -Symbols -SymbolPackageFormat snupkg
+            nuget pack "$($env:project_name)/$($env:project_name).csproj" -OutputDirectory "$($env:project_name)/bin/$($env:Configuration)" -Properties "Configuration=$($env:Configuration);commit=$($env:GITHUB_SHA);fileversion=$version" -Symbols -SymbolPackageFormat snupkg
         }
 
     - name: Remove the signing key
-      run: Remove-Item -path "${{ env.project_name }}/${{ env.project_name }}.snk"
+      if: always()
+      run: |
+        $keyPath = Join-Path $env:project_name "$($env:project_name).snk"
+        if (Test-Path -LiteralPath $keyPath) {
+          Remove-Item -LiteralPath $keyPath -Force
+        }
 
     - name: Upload artifact - wsp solution
-      uses: actions/upload-artifact@v5
+      uses: actions/upload-artifact@330a01c490aca151604b8cf639adc76d48f6c5d4 # v5
       with:
         name: "${{ env.project_name }}-${{ env.Configuration }}-wsp"
         path: "${{ env.project_name }}/bin/${{ env.Configuration }}/*.wsp"
@@ -131,7 +164,7 @@ jobs:
         Configuration: ${{ matrix.configuration }}
         
     - name: Upload artifact - dependencies
-      uses: actions/upload-artifact@v5
+      uses: actions/upload-artifact@330a01c490aca151604b8cf639adc76d48f6c5d4 # v5
       with:
         name: "${{ env.project_name }}-${{ env.Configuration }}-dependencies"
         path: "${{ env.project_name }}/bin/${{ env.Configuration }}/*.dll"
@@ -140,7 +173,7 @@ jobs:
         Configuration: ${{ matrix.configuration }}
         
     - name: Upload artifact - symbols
-      uses: actions/upload-artifact@v5
+      uses: actions/upload-artifact@330a01c490aca151604b8cf639adc76d48f6c5d4 # v5
       with:
         name: "${{ env.project_name }}-${{ env.Configuration }}-symbols"
         path: |
@@ -152,7 +185,7 @@ jobs:
         Configuration: ${{ matrix.configuration }}
         
     - name: Upload artifact - unit tests
-      uses: actions/upload-artifact@v5
+      uses: actions/upload-artifact@330a01c490aca151604b8cf639adc76d48f6c5d4 # v5
       with:
         name: "${{ env.project_name }}-${{ env.Configuration }}-unit-tests"
         path: "${{ env.project_name }}.Tests/bin/${{ env.Configuration }}/*.dll"
@@ -161,7 +194,7 @@ jobs:
         Configuration: ${{ matrix.configuration }}
         
     - name: Upload artifact - assembly-bindings.config if it exists
-      uses: actions/upload-artifact@v5
+      uses: actions/upload-artifact@330a01c490aca151604b8cf639adc76d48f6c5d4 # v5
       if: matrix.configuration == 'release' # string tests are not case sensitive - https://docs.github.com/en/actions/learn-github-actions/expressions
       with:
         name: "assembly-bindings.config"
@@ -169,7 +202,7 @@ jobs:
         if-no-files-found: ignore
     
     - name: Upload artifact - NuGet package if it exists
-      uses: actions/upload-artifact@v5
+      uses: actions/upload-artifact@330a01c490aca151604b8cf639adc76d48f6c5d4 # v5
       if: matrix.configuration == 'release' # string tests are not case sensitive - https://docs.github.com/en/actions/learn-github-actions/expressions
       with:
         name: "NuGet"
@@ -181,7 +214,11 @@ jobs:
   deploy:
     needs: build
     runs-on: ubuntu-latest
-    if: ${{ (inputs.publish_release == true) || (startsWith(github.event.ref, 'refs/tags/v')) }}
+    timeout-minutes: 15
+    if: ${{ inputs.publish_release || (github.ref_type == 'tag' && startsWith(github.ref_name, 'v')) }}
+    concurrency:
+      group: release-${{ github.repository }}-${{ github.ref_type == 'tag' && github.ref_name || inputs.release_tag }}
+      cancel-in-progress: false
     permissions:
       contents: write
     env:
@@ -189,36 +226,34 @@ jobs:
       project_version: ${{ needs.build.outputs.project_version }}
     steps:
       - name: Download all artifacts
-        uses: actions/download-artifact@v5
+        uses: actions/download-artifact@634f93cb2916e3fdff6788551b99b062d0335ce0 # v5
         with:
           merge-multiple: false
           
       - name: Create zip files to publish
+        shell: bash
         run: |
-          echo "project_version: ${{ env.project_version }}"
-          mkdir ${{ env.project_name }}-symbols
-          mkdir ${{ env.project_name }}-symbols/debug
-          mkdir ${{ env.project_name }}-symbols/release
+          set -euo pipefail
+          echo "project_version: $project_version"
+          mkdir -p "$project_name-symbols/debug" "$project_name-symbols/release"
           echo "Generate symbols zip file"
-          mv ./${{ env.project_name }}-Debug-symbols/* ${{ env.project_name }}-symbols/debug
-          mv ./${{ env.project_name }}-Release-symbols/* ${{ env.project_name }}-symbols/release
-          cd ${{ env.project_name }}-symbols
-          zip -r ../${{ env.project_name }}-${{ env.project_version }}-symbols.zip ./*
+          mv ./"$project_name"-Debug-symbols/* "$project_name-symbols/debug"
+          mv ./"$project_name"-Release-symbols/* "$project_name-symbols/release"
+          cd "$project_name-symbols"
+          zip -r "../$project_name-$project_version-symbols.zip" ./*
           cd ..
           echo "Generate dependencies zip file"
-          mkdir ${{ env.project_name }}-dependencies
-          mv ./${{ env.project_name }}-Release-dependencies/* ${{ env.project_name }}-dependencies
-          cd ${{ env.project_name }}-dependencies
-          zip -r ../${{ env.project_name }}-${{ env.project_version }}-dependencies.zip ./*
+          mkdir "$project_name-dependencies"
+          mv ./"$project_name"-Release-dependencies/* "$project_name-dependencies"
+          cd "$project_name-dependencies"
+          zip -r "../$project_name-$project_version-dependencies.zip" ./*
           cd ..
           echo "Generate unit-tests zip file"
-          mkdir ${{ env.project_name }}-unit-tests
-          mkdir ${{ env.project_name }}-unit-tests/debug
-          mkdir ${{ env.project_name }}-unit-tests/release
-          mv ./${{ env.project_name }}-Debug-unit-tests/* ${{ env.project_name }}-unit-tests/debug
-          mv ./${{ env.project_name }}-Release-unit-tests/* ${{ env.project_name }}-unit-tests/release
-          cd ${{ env.project_name }}-unit-tests
-          zip -r ../${{ env.project_name }}-unit-tests.zip ./*
+          mkdir -p "$project_name-unit-tests/debug" "$project_name-unit-tests/release"
+          mv ./"$project_name"-Debug-unit-tests/* "$project_name-unit-tests/debug"
+          mv ./"$project_name"-Release-unit-tests/* "$project_name-unit-tests/release"
+          cd "$project_name-unit-tests"
+          zip -r "../$project_name-unit-tests.zip" ./*
           cd ..
           echo "Generate NuGet zip file if NuGet directory exists"
           if [ -d "NuGet" ]; then
@@ -231,22 +266,63 @@ jobs:
             mv assembly-bindings.config dir-assembly-bindings-config
             mv dir-assembly-bindings-config/assembly-bindings.config .
           fi
-          # ls -alh
-          # realpath assembly-bindings.config
 
       - name: Publish release
-        uses: softprops/action-gh-release@v2
-        with:
-          name: '${{ env.project_name }} ${{ env.project_version }}'
-          prerelease: true
-          draft: true
-          generate_release_notes: true
-          body: |
-            ${{ env.project_name }} ${{ env.project_version }}
-          files: |
-            ./${{ env.project_name }}-Release-wsp/*.wsp
-            ./${{ env.project_name }}-${{ env.project_version }}-symbols.zip
-            ./${{ env.project_name }}-${{ env.project_version }}-dependencies.zip
-            ./${{ env.project_name }}-unit-tests.zip
-            ./assembly-bindings.config
-            ./NuGet.zip
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
+          RELEASE_TAG: ${{ github.ref_type == 'tag' && github.ref_name || inputs.release_tag }}
+          BUILT_COMMIT: ${{ github.sha }}
+          REF_TYPE: ${{ github.ref_type }}
+        run: |
+          set -euo pipefail
+          shopt -s nullglob
+          assets=(./"$project_name"-Release-wsp/*.wsp)
+          if (( ${#assets[@]} == 0 )); then
+            echo "::error::No release WSP package was found."
+            exit 1
+          fi
+          assets+=(
+            "./$project_name-$project_version-symbols.zip"
+            "./$project_name-$project_version-dependencies.zip"
+            "./$project_name-unit-tests.zip"
+          )
+          for asset in "${assets[@]}"; do
+            [[ -s "$asset" ]] || { echo "::error::Missing or empty required asset: $asset"; exit 1; }
+          done
+          for asset in ./assembly-bindings.config ./NuGet.zip; do
+            if [[ -f "$asset" ]]; then
+              assets+=("$asset")
+            fi
+          done
+
+          tag_ref=$(gh api "repos/$GH_REPO/git/matching-refs/tags/$RELEASE_TAG" \
+            | jq -r --arg ref "refs/tags/$RELEASE_TAG" '.[] | select(.ref == $ref) | .ref')
+          tag_options=(--target "$BUILT_COMMIT")
+          if [[ -n "$tag_ref" ]]; then
+            tag_commit=$(gh api "repos/$GH_REPO/commits/$RELEASE_TAG" --jq '.sha')
+            if [[ "$tag_commit" != "$BUILT_COMMIT" ]]; then
+              echo "::error::The release tag does not point to the built commit."
+              exit 1
+            fi
+            tag_options+=(--verify-tag)
+          elif [[ "$REF_TYPE" == tag ]]; then
+            echo "::error::The triggering tag no longer exists."
+            exit 1
+          fi
+
+          title="$project_name $project_version"
+          release_id=$(gh api --paginate "repos/$GH_REPO/releases" \
+            | jq -r --arg tag "$RELEASE_TAG" '.[] | select(.tag_name == $tag) | .id')
+          if [[ -n "$release_id" ]]; then
+            notes=$(gh api --method POST "repos/$GH_REPO/releases/generate-notes" \
+              -f tag_name="$RELEASE_TAG" -f target_commitish="$BUILT_COMMIT" --jq '.body')
+            gh release edit "$RELEASE_TAG" --repo "$GH_REPO" --title "$title" \
+              "${tag_options[@]}" --draft --prerelease --notes "$title"$'\n\n'"$notes"
+            gh release upload "$RELEASE_TAG" "${assets[@]}" --repo "$GH_REPO" --clobber
+          else
+            gh release create "$RELEASE_TAG" "${assets[@]}" --repo "$GH_REPO" \
+              "${tag_options[@]}" --title "$title" --draft --prerelease \
+              --generate-notes --notes "$title"
+          fi
