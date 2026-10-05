@@ -138,8 +138,7 @@ jobs:
         # Expected format of the version is either "1.0.0.0" or "1.0.0.0-nightly"
         $version = $env:PACKAGE_VERSION
         if ($version.Contains('-')) {
-            $suffix = $version.Split('-')[1]
-            $version = $version.Split('-')[0]
+            $version, $suffix = $version -split '-', 2
             "Final version: " + $version
             nuget pack "$($env:project_name)/$($env:project_name).csproj" -OutputDirectory "$($env:project_name)/bin/$($env:Configuration)" -Properties "Configuration=$($env:Configuration);commit=$($env:GITHUB_SHA);fileversion=$version" -Symbols -SymbolPackageFormat snupkg -Suffix $suffix
         } else {
