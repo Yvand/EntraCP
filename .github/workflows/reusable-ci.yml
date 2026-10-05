@@ -49,6 +49,7 @@ jobs:
             echo "::error::Release tags must be v-prefixed three- or four-part versions, optionally with a prerelease suffix."
             exit 1
           fi
+          git check-ref-format "refs/tags/$TAG"
           echo "version=${TAG#v}" >> "$GITHUB_OUTPUT"
         elif [[ "$PUBLISH_RELEASE" == true ]]; then
           echo "::error::release_tag is required when publishing from a branch."
