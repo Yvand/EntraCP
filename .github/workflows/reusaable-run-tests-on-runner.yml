@@ -55,6 +55,7 @@ jobs:
         try {
           $vstestArgs = @($testAssemblies) + @(
             '/Platform:x64'
+            '/Framework:Framework45'
             "/Settings:$env:test_runsettings_file"
             '/Logger:trx'
             "/ResultsDirectory:$env:test_results_path"
