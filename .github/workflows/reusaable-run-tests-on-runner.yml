@@ -35,12 +35,17 @@ jobs:
           throw "No test assemblies found in $testSearchFolder"
         }
 
-        $vswherePath = Join-Path ${env:ProgramFiles(x86)} 'Microsoft Visual Studio\Installer\vswhere.exe'
-        $vsInstallPath = & $vswherePath -latest -products '*' -property installationPath
-        if (-not $vsInstallPath) {
-          throw 'Unable to locate a Visual Studio installation.'
+        $testPlatformPackageRoot = Join-Path $env:USERPROFILE 'Documents\WindowsPowerShell\Modules\Microsoft.TestPlatform'
+        if (-not (Test-Path -LiteralPath $testPlatformPackageRoot)) {
+          throw "Microsoft.TestPlatform package was not found at $testPlatformPackageRoot"
         }
-        $vstestPath = Join-Path $vsInstallPath 'Common7\IDE\CommonExtensions\Microsoft\TestWindow\vstest.console.exe'
+        $latestVersionFolder = Get-ChildItem -LiteralPath $testPlatformPackageRoot -Directory |
+          Sort-Object { [version]$_.Name } -Descending |
+          Select-Object -First 1
+        if (-not $latestVersionFolder) {
+          throw "No version folders were found under $testPlatformPackageRoot"
+        }
+        $vstestPath = Join-Path $latestVersionFolder.FullName 'tools\net462\Common7\IDE\Extensions\TestPlatform\vstest.console.exe'
         if (-not (Test-Path -LiteralPath $vstestPath)) {
           throw "VSTest was not found at $vstestPath"
         }
