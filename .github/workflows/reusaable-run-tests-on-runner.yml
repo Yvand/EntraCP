@@ -23,7 +23,7 @@ jobs:
       test_folder_path: 'C:\drop\unit-tests'
     steps:
     - name: Run tests
-      shell: pwsh
+      shell: powershell
       env:
         test_project_folder_name: ${{ inputs.test_project_folder_name }}
         test_runsettings_file: '${{ env.test_folder_path }}\DTLServer.runsettings'
