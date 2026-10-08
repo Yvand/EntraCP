@@ -11,11 +11,6 @@ on:
         type: boolean
         required: false
         default: false
-      release_tag:
-        description: 'Tag to create or reuse when publishing manually from a branch (v-prefixed version)'
-        type: string
-        required: false
-        default: ''
     secrets:
       base64_encoded_signingkey:
         required: true
@@ -41,7 +36,7 @@ jobs:
       id: tagVersion
       shell: bash
       env:
-        TAG: ${{ github.ref_type == 'tag' && github.ref_name || inputs.release_tag }}
+        TAG: ${{ github.ref_type == 'tag' && github.ref_name || '' }}
         PUBLISH_RELEASE: ${{ inputs.publish_release }}
       run: |
         if [[ -n "$TAG" ]]; then
@@ -52,7 +47,7 @@ jobs:
           git check-ref-format "refs/tags/$TAG"
           echo "version=${TAG#v}" >> "$GITHUB_OUTPUT"
         elif [[ "$PUBLISH_RELEASE" == true ]]; then
-          echo "::error::release_tag is required when publishing from a branch."
+          echo "::error::publishing requires running from a v-prefixed tag."
           exit 1
         fi
 
@@ -105,7 +100,7 @@ jobs:
       
     # Add MSBuild to the PATH: https://github.com/microsoft/setup-msbuild
     - name: Setup MSBuild.exe
-      uses: microsoft/setup-msbuild@6fb02220983dee41ce7ae257b6f4d8f9bf5ed4ce # v2
+      uses: microsoft/setup-msbuild@30375c66a4eea26614e0d39710365f22f8b0af57 # v3
     
     - name: Restore Packages
       run: nuget restore "$($env:project_name).sln"
@@ -217,7 +212,7 @@ jobs:
     timeout-minutes: 15
     if: ${{ inputs.publish_release || (github.ref_type == 'tag' && startsWith(github.ref_name, 'v')) }}
     concurrency:
-      group: release-${{ github.repository }}-${{ github.ref_type == 'tag' && github.ref_name || inputs.release_tag }}
+      group: release-${{ github.repository }}-${{ github.ref_name }}
       cancel-in-progress: false
     permissions:
       contents: write
@@ -272,7 +267,7 @@ jobs:
         env:
           GH_TOKEN: ${{ github.token }}
           GH_REPO: ${{ github.repository }}
-          RELEASE_TAG: ${{ github.ref_type == 'tag' && github.ref_name || inputs.release_tag }}
+          RELEASE_TAG: ${{ github.ref_name }}
           BUILT_COMMIT: ${{ github.sha }}
           REF_TYPE: ${{ github.ref_type }}
         run: |
