@@ -1,5 +1,10 @@
 # Change log for EntraCP (~~AzureCP~~)
 
+## Unreleased
+
+* Simplify the CI release workflow: remove the `release_tag` input, releases are now published only from `v`-prefixed tag pushes - https://github.com/Yvand/EntraCP/pull/359
+* Update GitHub Actions used in the CI workflow (`actions/checkout`, `actions/upload-artifact`, `actions/download-artifact`, `microsoft/setup-msbuild`) to their latest versions - https://github.com/Yvand/EntraCP/pull/359
+
 ## EntraCP v30.0 - enhancements & bug-fixes - Published in March 6, 2026
 
 * Add property AllowedGroupMembersRequestPageSize, to set the page size of the requests that get the users members of the allowed groups (set in property RestrictSearchableUsersByGroups) - https://github.com/Yvand/EntraCP/pull/321

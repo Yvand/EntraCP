@@ -66,8 +66,13 @@ on:
         required: true
         type: string
         description: 'Relative path to the unit test files in the Azure storage file share'
+      test-registerRunner:
+        required: false
+        type: boolean
+        default: false
+        description: 'Register the DTL server as a self-hosted GitHub runner'
       test_registerRunner_scriptUrl:
-        required: true
+        required: false
         type: string
         description: 'URL of the script that adds the DTL server as a self-hosted runner on the GitHub repository'
     secrets:
@@ -93,16 +98,52 @@ on:
         required: true
         description: 'Azure storage account file share name where unit test files are located'
       GH_TOKEN_ADD_RUNNER:
-        required: true
+        required: false
         description: 'GitHub token to register the DTL server as a self-hosted runner'
 
 permissions:
   id-token: write
-  
+
+concurrency:
+  group: dtl-environment-${{ inputs.dtl-subscriptionId }}-${{ inputs.dtl-rgName }}-${{ inputs.dtl-serviceName }}-${{ inputs.dtl-environmentName }}
+  cancel-in-progress: false
+
+env:
+  DTL_SUBSCRIPTION_ID: ${{ inputs.dtl-subscriptionId }}
+  DTL_RESOURCE_GROUP: ${{ inputs.dtl-rgName }}
+  DTL_LAB_NAME: ${{ inputs.dtl-serviceName }}
+  DTL_ENVIRONMENT_NAME: ${{ inputs.dtl-environmentName }}
+
 jobs:
+  validate-configuration:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+    - name: Validate environment configuration
+      shell: bash
+      env:
+        SHAREPOINT_VERSIONS: ${{ inputs.sharepoint-versions }}
+        REGISTER_RUNNER: ${{ inputs.test-registerRunner }}
+        RUNNER_SCRIPT_URL: ${{ inputs.test_registerRunner_scriptUrl }}
+        RUNNER_TOKEN: ${{ secrets.GH_TOKEN_ADD_RUNNER }}
+      run: |
+        set -euo pipefail
+        jq -e '
+          type == "array" and length > 0 and
+          all(.[]; . == "SE" or . == "2019" or . == "2016") and
+          (length == (unique | length))
+        ' <<< "$SHAREPOINT_VERSIONS" > /dev/null
+        if [[ "$REGISTER_RUNNER" == "true" ]] &&
+           [[ -z "$RUNNER_SCRIPT_URL" || -z "$RUNNER_TOKEN" ]]; then
+          echo "::error::Runner registration requires test_registerRunner_scriptUrl and GH_TOKEN_ADD_RUNNER."
+          exit 1
+        fi
+
   create-test-environment:
+    needs: validate-configuration
     if: inputs.skip-create-environment != true
     runs-on: ubuntu-latest
+    timeout-minutes: 360
     env:
       # ternary 'else' is not supported, so use this workaround: https://github.com/orgs/community/discussions/25725#discussioncomment-3248924
       dtl_provisionSharePointSubscription: ${{ contains(inputs.sharepoint-versions, 'SE') && 'Subscription-RTM' || 'No' }}
@@ -110,101 +151,174 @@ jobs:
       dtl_provisionSharePoint2016: ${{ contains(inputs.sharepoint-versions, '2016') }}
     steps:
     - name: Azure Login
-      uses: azure/login@v2
+      uses: azure/login@a457da9ea143d694b1b9c7c869ebb04ebe844ef5 # v2.3.0
       with:
         client-id: ${{ secrets.AZURE_CLIENT_ID }}
         tenant-id: ${{ secrets.AZURE_TENANT_ID }}
         subscription-id: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
 
     - name: Create DevTest Labs environment
-      uses: azure/cli@v2
-      with:
-        azcliversion: latest
-        inlineScript: |
-          az lab environment create --lab-name ${{ inputs.dtl-serviceName }} --name ${{ inputs.dtl-environmentName }} --resource-group ${{ inputs.dtl-rgName }} --artifact-source-name "Public Repo" \
-          --arm-template "/subscriptions/${{ inputs.dtl-subscriptionId }}/resourceGroups/${{ inputs.dtl-rgName }}/providers/Microsoft.DevTestLab/labs/${{ inputs.dtl-serviceName }}/artifactSources/Public Environment Repo/armTemplates/SharePoint-AllVersions" \
-          --parameters "[ { \"name\": \"provisionSharePoint2016\", \"value\": \"${{ env.dtl_provisionSharePoint2016 }}\" }, { \"name\": \"provisionSharePoint2019\", \"value\": \"${{ env.dtl_provisionSharePoint2019 }}\" }, { \"name\": \"provisionSharePointSubscription\", \"value\": \"${{ env.dtl_provisionSharePointSubscription }}\" }, { \"name\": \"configureADFS\", \"value\": \"true\" }, { \"name\": \"enableHybridBenefitServerLicenses\", \"value\": \"true\" }, { \"name\": \"enableAutomaticUpdates\", \"value\": \"false\" }, { \"name\": \"adminUserName\", \"value\": \"${{ inputs.dtl-env-adminUserName }}\" }, { \"name\": \"adminPassword\", \"value\": \"${{ secrets.DTL_ACCOUNTSPASSWORD }}\" }, { \"name\": \"serviceAccountsPassword\", \"value\": \"${{ secrets.DTL_ACCOUNTSPASSWORD }}\" }, { \"name\": \"addPublicIPAddress\", \"value\": \"${{ inputs.dtl-env-addPublicIPAddress }}\" }, { \"name\": \"RDPTrafficAllowed\", \"value\": \"${{ inputs.dtl-env-rdpTrafficAllowed }}\" }, { \"name\": \"addAzureBastion\", \"value\": \"${{ inputs.dtl-env-addAzureBastion }}\" } ]"
-          
-  #apply-artifacts-spse:
+      shell: bash
+      env:
+        ADMIN_USER_NAME: ${{ inputs.dtl-env-adminUserName }}
+        ACCOUNTS_PASSWORD: ${{ secrets.DTL_ACCOUNTSPASSWORD }}
+        PUBLIC_IP_ADDRESS: ${{ inputs.dtl-env-addPublicIPAddress }}
+        RDP_TRAFFIC_ALLOWED: ${{ inputs.dtl-env-rdpTrafficAllowed }}
+        ADD_AZURE_BASTION: ${{ inputs.dtl-env-addAzureBastion }}
+      run: |
+        set -euo pipefail
+        parameters=$(jq -cn '[
+          {name: "provisionSharePoint2016", value: env.dtl_provisionSharePoint2016},
+          {name: "provisionSharePoint2019", value: env.dtl_provisionSharePoint2019},
+          {name: "provisionSharePointSubscription", value: env.dtl_provisionSharePointSubscription},
+          {name: "configureADFS", value: "true"},
+          {name: "enableHybridBenefitServerLicenses", value: "true"},
+          {name: "enableAutomaticUpdates", value: "false"},
+          {name: "adminUserName", value: env.ADMIN_USER_NAME},
+          {name: "adminPassword", value: env.ACCOUNTS_PASSWORD},
+          {name: "serviceAccountsPassword", value: env.ACCOUNTS_PASSWORD},
+          {name: "addPublicIPAddress", value: env.PUBLIC_IP_ADDRESS},
+          {name: "RDPTrafficAllowed", value: env.RDP_TRAFFIC_ALLOWED},
+          {name: "addAzureBastion", value: env.ADD_AZURE_BASTION}
+        ]')
+        template_id="/subscriptions/$DTL_SUBSCRIPTION_ID/resourceGroups/$DTL_RESOURCE_GROUP/providers/Microsoft.DevTestLab/labs/$DTL_LAB_NAME/artifactSources/Public Environment Repo/armTemplates/SharePoint-AllVersions"
+        az lab environment create --subscription "$DTL_SUBSCRIPTION_ID" \
+          --lab-name "$DTL_LAB_NAME" --name "$DTL_ENVIRONMENT_NAME" \
+          --resource-group "$DTL_RESOURCE_GROUP" --artifact-source-name "Public Repo" \
+          --arm-template "$template_id" --parameters "$parameters" --output none
+
   apply-artifacts:
     runs-on: ubuntu-latest
-    needs: create-test-environment
+    timeout-minutes: 180
+    needs: [validate-configuration, create-test-environment]
     if: |
       always() &&
       !contains(needs.*.result, 'failure') &&
       !contains(needs.*.result, 'cancelled')
-    #if: startsWith(inputs.dtl_provisionSharePointSubscription, 'Subscription-')
     strategy:
       matrix:
         sharepoint_version: ${{ fromJson(inputs.sharepoint-versions) }}
-        # include:
-        # - sharepoint_version: Subscription-RTM #${{ startsWith(matrix.sharepoint_version, 'Subscription-') }}
-          # sps_version: 'SE'
-          # dtl_poolName: 'AzureCP-Tests-Subscription'
-        # - sharepoint_version: 2019
-          # sps_version: '2019'
-          # dtl_poolName: 'AzureCP-Tests-2019'
-        # - sharepoint_version: 2016
-          # sps_version: '2016'
-          # dtl_poolName: 'AzureCP-Tests-2016'
     env:
-      vm_name: ${{ format('vm-SP{0}', matrix.sharepoint_version) }} #${{ format('vm-SP{0}', matrix.sps_version) }} #vm-SPSE
+      vm_name: ${{ format('vm-SP{0}', matrix.sharepoint_version) }}
       dtl_poolName: ${{ format('{0}-Tests-{1}', inputs.project-name, matrix.sharepoint_version) }}
       project_name: ${{ inputs.project-name }}
     steps:
     - name: Azure Login
-      uses: azure/login@v2
+      uses: azure/login@a457da9ea143d694b1b9c7c869ebb04ebe844ef5 # v2.3.0
       with:
         client-id: ${{ secrets.AZURE_CLIENT_ID }}
         tenant-id: ${{ secrets.AZURE_TENANT_ID }}
         subscription-id: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
 
     - name: Apply artifact - Register current VM as a VSTS agent in DevOps agent pools
-      uses: azure/cli@v2
-      with:
-        azcliversion: latest
-        inlineScript: |
-          artifactId="/subscriptions/${{ inputs.dtl-subscriptionId }}/resourceGroups/${{ inputs.dtl-rgName }}/providers/Microsoft.DevTestLab/labs/${{ inputs.dtl-serviceName }}/artifactSources/public repo/artifacts/windows-vsts-build-agent"
-          artifactApplied=$(az lab vm show --lab-name ${{ inputs.dtl-serviceName }} --resource-group ${{ inputs.dtl-rgName }} --name ${{ env.vm_name }} --expand 'properties($expand=artifacts)' --query "artifacts[?artifactId=='$artifactId' && status == 'Succeeded'].status" --output tsv)
-          echo $artifactApplied
-          if [ -z $artifactApplied ]; then
-            az lab vm apply-artifacts --lab-name ${{ inputs.dtl-serviceName }} --name ${{ env.vm_name }} --resource-group ${{ inputs.dtl-rgName }} \
-            --artifacts "[ { \"artifactId\": \"$artifactId\", \"parameters\": [ { \"name\": \"vstsAccount\", \"value\": \"${{ inputs.azdevops-organizationName }}\" }, { \"name\": \"vstsPassword\", \"value\": \"${{ secrets.ADO_PAT_REGISTERAGENT }}\" }, { \"name\": \"poolName\", \"value\": \"${{ env.dtl_poolName }}\" }, { \"name\": \"windowsLogonAccount\", \"value\": \"${{ format('{0}@contoso.local', inputs.dtl-env-adminUserName) }}\" }, { \"name\": \"windowsLogonPassword\", \"value\": \"${{ secrets.DTL_ACCOUNTSPASSWORD }}\" }, { \"name\": \"agentName\", \"value\": \"${{ env.vm_name }}\" }, { \"name\": \"agentNameSuffix\", \"value\": \"${{ format('-{0}', github.sha) }}\" }, { \"name\": \"RunAsAutoLogon\", \"value\": \"false\" }, { \"name\": \"driveLetter\", \"value\": \"C\" }, { \"name\": \"workDirectory\", \"value\": \"\" } ] } ]"
-          fi
+      shell: bash
+      env:
+        AZDEVOPS_ORGANIZATION: ${{ inputs.azdevops-organizationName }}
+        ADO_PAT: ${{ secrets.ADO_PAT_REGISTERAGENT }}
+        ADMIN_USER_NAME: ${{ inputs.dtl-env-adminUserName }}
+        ACCOUNTS_PASSWORD: ${{ secrets.DTL_ACCOUNTSPASSWORD }}
+        COMMIT_SHA: ${{ github.sha }}
+      run: |
+        set -euo pipefail
+        export ARTIFACT_ID="/subscriptions/$DTL_SUBSCRIPTION_ID/resourceGroups/$DTL_RESOURCE_GROUP/providers/Microsoft.DevTestLab/labs/$DTL_LAB_NAME/artifactSources/public repo/artifacts/windows-vsts-build-agent"
+        artifacts=$(jq -cn '[{artifactId: env.ARTIFACT_ID, parameters: [
+          {name: "vstsAccount", value: env.AZDEVOPS_ORGANIZATION},
+          {name: "vstsPassword", value: env.ADO_PAT},
+          {name: "poolName", value: env.dtl_poolName},
+          {name: "windowsLogonAccount", value: (env.ADMIN_USER_NAME + "@contoso.local")},
+          {name: "windowsLogonPassword", value: env.ACCOUNTS_PASSWORD},
+          {name: "agentName", value: env.vm_name},
+          {name: "agentNameSuffix", value: ("-" + env.COMMIT_SHA)},
+          {name: "RunAsAutoLogon", value: "false"},
+          {name: "driveLetter", value: "C"},
+          {name: "workDirectory", value: ""}
+        ]}]')
+        vm=$(az lab vm show --subscription "$DTL_SUBSCRIPTION_ID" \
+          --lab-name "$DTL_LAB_NAME" --resource-group "$DTL_RESOURCE_GROUP" \
+          --name "$vm_name" --expand 'properties($expand=artifacts)' --output json)
+        # Missing or masked persisted parameters cannot establish an exact match; reapply safely.
+        if ! jq -e --argjson expected "$artifacts" '
+          any((.artifacts // .properties.artifacts // [])[];
+            .artifactId == $expected[0].artifactId and .status == "Succeeded" and
+            ((.parameters // [] | map({name, value}) | sort_by(.name)) ==
+             ($expected[0].parameters | sort_by(.name))))
+        ' <<< "$vm" > /dev/null; then
+          az lab vm apply-artifacts --subscription "$DTL_SUBSCRIPTION_ID" \
+            --lab-name "$DTL_LAB_NAME" --name "$vm_name" --resource-group "$DTL_RESOURCE_GROUP" \
+            --artifacts "$artifacts" --output none
+        fi
 
     - name: Apply artifact - Run a PowerShell script to download and install claims provider in current VM
-      uses: azure/cli@v2
-      with:
-        azcliversion: latest
-        inlineScript: |
-          artifactId="/subscriptions/${{ inputs.dtl-subscriptionId }}/resourceGroups/${{ inputs.dtl-rgName }}/providers/Microsoft.DevTestLab/labs/${{ inputs.dtl-serviceName }}/artifactSources/public repo/artifacts/windows-run-powershell"
-          artifactApplied=$(az lab vm show --lab-name ${{ inputs.dtl-serviceName }} --resource-group ${{ inputs.dtl-rgName }} --name ${{ env.vm_name }} --expand 'properties($expand=artifacts)' --query "artifacts[?artifactId=='$artifactId' && status == 'Succeeded'].status" --output tsv)
-          echo $artifactApplied
-          if [ -z $artifactApplied ]; then
-            # Typical value for claimsProviderPackageUri: https://github.com/Yvand/AzureCP/releases/download/nightly/EntraCP.wsp
-            # Typical value for unitTestsProjectUri:      https://github.com/Yvand/AzureCP/releases/download/nightly/Yvand.EntraCP-unit-tests.zip
-            claimsProviderPackageUri=${{ inputs.test-claimsProviderPackageUri }}
-            projectName=${{ env.project_name }}
-            uriLeafPart=$(echo $claimsProviderPackageUri | grep -o '\w*\.\w*$')
-            unitTestsProjectUri=${claimsProviderPackageUri/$uriLeafPart/$projectName-unit-tests.zip}
-            echo $unitTestsProjectUri
-            az lab vm apply-artifacts --lab-name ${{ inputs.dtl-serviceName }} --name ${{ env.vm_name }} --resource-group ${{ inputs.dtl-rgName }} \
-            --artifacts "[ { \"artifactId\": \"$artifactId\", \"parameters\": [ { \"name\": \"scriptFileUris\", \"value\": \" ${{ inputs.test-prepareSharePointVmScriptUris }} \" }, { \"name\": \"scriptToRun\", \"value\": \"ConfigureLab.ps1\" }, { \"name\": \"scriptArguments\", \"value\": \"-claimsProviderPackageUri '$claimsProviderPackageUri' -claimsProviderUnitTestsUri '$unitTestsProjectUri' -spTrustName 'contoso.local' -adminUserName '${{ format('contoso\{0}', inputs.dtl-env-adminUserName) }}' -adminPassword '${{ secrets.DTL_ACCOUNTSPASSWORD }}' -storageAccountEndpoint '${{ secrets.UNITTESTFILES_AZURE_STORAGE_CONNECTION_STRING }}' -storageAccountShareName '${{ secrets.UNITTESTFILES_AZURE_STORAGE_SHARE_NAME }}' -storageAccountSourceRelativePath '${{ inputs.unittestfiles_azure_storage_share_relative_path }}'\" } ] } ]"
-          fi
+      shell: bash
+      env:
+        PACKAGE_URI: ${{ inputs.test-claimsProviderPackageUri }}
+        SCRIPT_FILE_URIS: ${{ inputs.test-prepareSharePointVmScriptUris }}
+        ADMIN_USER_NAME: ${{ inputs.dtl-env-adminUserName }}
+        ACCOUNTS_PASSWORD: ${{ secrets.DTL_ACCOUNTSPASSWORD }}
+        STORAGE_ENDPOINT: ${{ secrets.UNITTESTFILES_AZURE_STORAGE_CONNECTION_STRING }}
+        STORAGE_SHARE_NAME: ${{ secrets.UNITTESTFILES_AZURE_STORAGE_SHARE_NAME }}
+        STORAGE_RELATIVE_PATH: ${{ inputs.unittestfiles_azure_storage_share_relative_path }}
+      run: |
+        set -euo pipefail
+        export ARTIFACT_ID="/subscriptions/$DTL_SUBSCRIPTION_ID/resourceGroups/$DTL_RESOURCE_GROUP/providers/Microsoft.DevTestLab/labs/$DTL_LAB_NAME/artifactSources/public repo/artifacts/windows-run-powershell"
+        unit_tests_uri="${PACKAGE_URI%/*}/$project_name-unit-tests.zip"
+        ps_quote() {
+          local value="${1//\'/\'\'}"
+          printf "'%s'" "$value"
+        }
+        printf -v SCRIPT_ARGUMENTS -- \
+          '-claimsProviderPackageUri %s -claimsProviderUnitTestsUri %s -spTrustName %s -adminUserName %s -adminPassword %s -storageAccountEndpoint %s -storageAccountShareName %s -storageAccountSourceRelativePath %s' \
+          "$(ps_quote "$PACKAGE_URI")" "$(ps_quote "$unit_tests_uri")" "$(ps_quote "contoso.local")" \
+          "$(ps_quote "contoso\\$ADMIN_USER_NAME")" "$(ps_quote "$ACCOUNTS_PASSWORD")" \
+          "$(ps_quote "$STORAGE_ENDPOINT")" "$(ps_quote "$STORAGE_SHARE_NAME")" "$(ps_quote "$STORAGE_RELATIVE_PATH")"
+        export SCRIPT_ARGUMENTS
+        artifacts=$(jq -cn '[{artifactId: env.ARTIFACT_ID, parameters: [
+          {name: "scriptFileUris", value: env.SCRIPT_FILE_URIS},
+          {name: "scriptToRun", value: "ConfigureLab.ps1"},
+          {name: "scriptArguments", value: env.SCRIPT_ARGUMENTS}
+        ]}]')
+        vm=$(az lab vm show --subscription "$DTL_SUBSCRIPTION_ID" \
+          --lab-name "$DTL_LAB_NAME" --resource-group "$DTL_RESOURCE_GROUP" \
+          --name "$vm_name" --expand 'properties($expand=artifacts)' --output json)
+        # Runner registration uses the same artifact ID; compare the script and every parameter.
+        # If Azure omits or masks arguments, reapply rather than incorrectly skipping installation.
+        if ! jq -e --argjson expected "$artifacts" '
+          any((.artifacts // .properties.artifacts // [])[];
+            .artifactId == $expected[0].artifactId and .status == "Succeeded" and
+            ((.parameters // [] | map({name, value}) | sort_by(.name)) ==
+             ($expected[0].parameters | sort_by(.name))))
+        ' <<< "$vm" > /dev/null; then
+          az lab vm apply-artifacts --subscription "$DTL_SUBSCRIPTION_ID" \
+            --lab-name "$DTL_LAB_NAME" --name "$vm_name" --resource-group "$DTL_RESOURCE_GROUP" \
+            --artifacts "$artifacts" --output none
+        fi
 
     - name: Apply artifact - Run a PowerShell script to add self-hosted runner to the repository
-      uses: azure/cli@v2
-      with:
-        azcliversion: latest
-        inlineScript: |
-          artifactId="/subscriptions/${{ inputs.dtl-subscriptionId }}/resourceGroups/${{ inputs.dtl-rgName }}/providers/Microsoft.DevTestLab/labs/${{ inputs.dtl-serviceName }}/artifactSources/public repo/artifacts/windows-run-powershell"
-          
-          gh_token=${{ secrets.GH_TOKEN_ADD_RUNNER }}
-          gh_repo_owner_name=${{ github.repository }}
-          gh_repo_url="https://github.com/$gh_repo_owner_name"
-          scriptFileUris=${{ inputs.test_registerRunner_scriptUrl }}
-          scriptToRun="Add-RunnerToRepo.ps1"
-          echo $gh_repo_url
-          
-          az lab vm apply-artifacts --lab-name ${{ inputs.dtl-serviceName }} --name ${{ env.vm_name }} --resource-group ${{ inputs.dtl-rgName }} \
-          --artifacts "[ { \"artifactId\": \"$artifactId\", \"parameters\": [ { \"name\": \"scriptFileUris\", \"value\": \"$scriptFileUris\" }, { \"name\": \"scriptToRun\", \"value\": \"Add-RunnerToRepo.ps1\" }, { \"name\": \"scriptArguments\", \"value\": \"-gh_repo_url '$gh_repo_url' -gh_token '$gh_token' \" } ] } ]"
+      if: inputs.test-registerRunner
+      shell: bash
+      env:
+        RUNNER_TOKEN: ${{ secrets.GH_TOKEN_ADD_RUNNER }}
+        SCRIPT_FILE_URIS: ${{ inputs.test_registerRunner_scriptUrl }}
+        REPOSITORY: ${{ github.repository }}
+      run: |
+        set -euo pipefail
+        if [[ -z "$SCRIPT_FILE_URIS" || -z "$RUNNER_TOKEN" ]]; then
+          echo "::error::Runner registration requires test_registerRunner_scriptUrl and GH_TOKEN_ADD_RUNNER."
+          exit 1
+        fi
+        export ARTIFACT_ID="/subscriptions/$DTL_SUBSCRIPTION_ID/resourceGroups/$DTL_RESOURCE_GROUP/providers/Microsoft.DevTestLab/labs/$DTL_LAB_NAME/artifactSources/public repo/artifacts/windows-run-powershell"
+        ps_quote() {
+          local value="${1//\'/\'\'}"
+          printf "'%s'" "$value"
+        }
+        printf -v SCRIPT_ARGUMENTS -- '-gh_repo_url %s -gh_token %s' \
+          "$(ps_quote "https://github.com/$REPOSITORY")" "$(ps_quote "$RUNNER_TOKEN")"
+        export SCRIPT_ARGUMENTS
+        artifacts=$(jq -cn '[{artifactId: env.ARTIFACT_ID, parameters: [
+          {name: "scriptFileUris", value: env.SCRIPT_FILE_URIS},
+          {name: "scriptToRun", value: "Add-RunnerToRepo.ps1"},
+          {name: "scriptArguments", value: env.SCRIPT_ARGUMENTS}
+        ]}]')
+        az lab vm apply-artifacts --subscription "$DTL_SUBSCRIPTION_ID" \
+          --lab-name "$DTL_LAB_NAME" --name "$vm_name" --resource-group "$DTL_RESOURCE_GROUP" \
+          --artifacts "$artifacts" --output none

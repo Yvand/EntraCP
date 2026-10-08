@@ -1,6 +1,6 @@
 name: CI
 permissions:
-  contents: write
+  contents: read
 on:
   workflow_dispatch:
     inputs:
@@ -17,7 +17,9 @@ on:
 
 jobs:
   call-ci-workflow:
-    uses: Yvand/EntraCP/.github/workflows/reusable-ci.yml@master
+    permissions:
+      contents: write
+    uses: ./.github/workflows/reusable-ci.yml
     with:
       project_name: ${{ vars.PROJECT_NAME }}
       publish_release: ${{ inputs.publish_release || false }}

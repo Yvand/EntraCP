@@ -1,0 +1,78 @@
+name: (reusable) Run Visual Studio tests
+on:
+  workflow_call:
+    inputs:
+      test_project_folder_name:
+        required: true
+        type: string
+        description: 'Folder name of the NUnit test project'
+      runner_environment:
+        required: true
+        type: string
+        description: 'Custom label assigned to the Windows x64 runner for this test environment'
+permissions: {}
+jobs:
+  run-tests:
+    runs-on: [self-hosted, Windows, X64, "${{ inputs.runner_environment }}"]
+    timeout-minutes: 60
+    concurrency:
+      group: tests-${{ github.repository }}-${{ inputs.runner_environment }}
+      cancel-in-progress: false
+    name: Run Visual Studio tests
+    env:
+      test_folder_path: 'C:\drop\unit-tests'
+    steps:
+    - name: Run tests
+      shell: powershell
+      env:
+        test_project_folder_name: ${{ inputs.test_project_folder_name }}
+        test_runsettings_file: '${{ env.test_folder_path }}\DTLServer.runsettings'
+        test_results_path: '${{ github.workspace }}\TestResults'
+      run: |
+        $testSearchFolder = Join-Path (Join-Path $env:test_folder_path $env:test_project_folder_name) 'release'
+        $testAssemblies = @(Get-ChildItem -LiteralPath $testSearchFolder -Filter '*tests*.dll' -File | ForEach-Object { $_.FullName })
+        if ($testAssemblies.Count -eq 0) {
+          throw "No test assemblies found in $testSearchFolder"
+        }
+
+        $testPlatformPackageRoot = Join-Path $env:USERPROFILE 'Documents\WindowsPowerShell\Modules\Microsoft.TestPlatform'
+        if (-not (Test-Path -LiteralPath $testPlatformPackageRoot)) {
+          throw "Microsoft.TestPlatform package was not found at $testPlatformPackageRoot"
+        }
+        $latestVersionFolder = Get-ChildItem -LiteralPath $testPlatformPackageRoot -Directory |
+          Sort-Object { [version]$_.Name } -Descending |
+          Select-Object -First 1
+        if (-not $latestVersionFolder) {
+          throw "No version folders were found under $testPlatformPackageRoot"
+        }
+        $vstestPath = Join-Path $latestVersionFolder.FullName 'tools\net462\Common7\IDE\Extensions\TestPlatform\vstest.console.exe'
+        if (-not (Test-Path -LiteralPath $vstestPath)) {
+          throw "VSTest was not found at $vstestPath"
+        }
+
+        New-Item -ItemType Directory -Path $env:test_results_path -Force | Out-Null
+        Push-Location $testSearchFolder
+        try {
+          $vstestArgs = @($testAssemblies) + @(
+            '/Platform:x64'
+            '/Framework:.NETFramework,Version=v4.8'
+            "/Settings:$env:test_runsettings_file"
+            '/Logger:trx'
+            "/ResultsDirectory:$env:test_results_path"
+          )
+          & $vstestPath @vstestArgs
+          if ($LASTEXITCODE -ne 0) {
+            exit $LASTEXITCODE
+          }
+        }
+        finally {
+          Pop-Location
+        }
+
+    - name: Upload test results
+      if: always()
+      uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+      with:
+        name: TestResults
+        path: '${{ github.workspace }}\TestResults\*.trx'
+        if-no-files-found: warn
