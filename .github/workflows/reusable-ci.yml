@@ -40,8 +40,8 @@ jobs:
         PUBLISH_RELEASE: ${{ inputs.publish_release }}
       run: |
         if [[ -n "$TAG" ]]; then
-          if [[ ! "$TAG" =~ ^v[0-9]+\.[0-9]+\.[0-9]+(\.[0-9]+)?(-[A-Za-z0-9-]+(\.[A-Za-z0-9-]+)*)?$ ]]; then
-            echo "::error::Release tags must be v-prefixed three- or four-part versions, optionally with a prerelease suffix."
+          if [[ ! "$TAG" =~ ^v[0-9]+\.[0-9]+(\.[0-9]+)?(-[A-Za-z0-9-]+(\.[A-Za-z0-9-]+)*)?$ ]]; then
+            echo "::error::Release tags must be v-prefixed two- or three-part versions, optionally with a hyphen prerelease suffix."
             exit 1
           fi
           git check-ref-format "refs/tags/$TAG"
